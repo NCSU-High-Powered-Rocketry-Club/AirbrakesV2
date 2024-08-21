@@ -1,5 +1,7 @@
 def main():
-    pass
+    while True:
+        pass
+        break
 
 
 if __name__ == '__main__':
