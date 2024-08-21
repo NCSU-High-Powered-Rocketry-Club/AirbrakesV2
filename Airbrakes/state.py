@@ -15,13 +15,29 @@ class State:
 
 
 class StandByState(State):
+    """"
+    On the launch pad
+    """
+    print("Entered Stand By State")  # Recording State Change
     pass
 
 class MotorBurnState(State):
+    """"
+    During motor burn
+    """
+    print("Entered Motor Burn State")  # Recording State Change
     pass
 
 class FlightState(State):
+    """
+    During free flight
+    """
+    print("Entered Free Flight State")  # Recording State Change
     pass
 
 class FreeFallState(State):
+    """
+    During free fall (post apogee)
+    """
+    print("Entered Free Fall State") # Recording State Change
     pass
