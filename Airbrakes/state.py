@@ -3,7 +3,7 @@ from Airbrakes.airbrakes import AirbrakesContext
 
 class State:
     """
-    For Air brakes, we will have 4 states:
+    For Airbrakes, we will have 4 states:
     1. Stand By - when the rocket is on the rail on the ground
     2. Motor Burn - when the motor is burning and the rocket is accelerating
     3. Flight - when the motor has burned out and the rocket is coasting, this is when air brakes will be deployed
@@ -19,7 +19,8 @@ class State:
 
     def update(self):
         """
-        This method will be called every loop iteration. It will be used to update the state of the air brakes.
+        Called every loop iteration. Uses the context to interact with the hardware and decides when to move to the
+        next state.
         """
         pass
 
@@ -33,32 +34,48 @@ class State:
 
 class StandByState(State):
     """
-    When the rocket is on the rail on the ground
+    When the rocket is on the rail on the ground.
     """
 
     def update(self):
         pass
 
+    def next_state(self):
+        self.context.state = MotorBurnState(self.context)
+
 
 class MotorBurnState(State):
-    """"
-    When the motor is burning and the rocket is accelerating
     """
-    print("Entered Motor Burn State")  # Recording State Change
-    pass
+    When the motor is burning and the rocket is accelerating.
+    """
+
+    def update(self):
+        pass
+
+    def next_state(self):
+        self.context.state = FlightState(self.context)
 
 
 class FlightState(State):
     """
-    When the motor has burned out and the rocket is coasting
+    When the motor has burned out and the rocket is coasting.
     """
-    print("Entered Free Flight State")  # Recording State Change
-    pass
+
+    def update(self):
+        pass
+
+    def next_state(self):
+        self.context.state = FreeFallState(self.context)
 
 
 class FreeFallState(State):
     """
-    When the rocket is falling back to the ground after apogee
+    When the rocket is falling back to the ground after apogee.
     """
-    print("Entered Free Fall State") # Recording State Change
-    pass
+
+    def update(self):
+        pass
+
+    def next_state(self):
+        # Explicitly do nothing, there is no next state
+        pass
