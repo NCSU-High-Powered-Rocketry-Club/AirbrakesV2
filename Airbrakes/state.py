@@ -16,6 +16,8 @@ class State:
         :param context: The state context object that will be used to interact with the electronics
         """
         self.context = context
+        # At the very beginning of each state, we retract the airbrakes
+        self.context.set_airbrake_extension(0.0)
 
     def update(self):
         """
