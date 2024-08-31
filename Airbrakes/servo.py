@@ -1,6 +1,10 @@
 import RPi.GPIO as GPIO
 
 class Servo:
+    """
+    A class that represents a servo motor. It can be used to set the extension of the servo, which will change the
+    extension of the airbrakes.
+    """
 
     # The pin that the servo's data wire is plugged into, 32 is for the GPIO 12 pin which is used for PWM
     SERVO_PIN = 32
@@ -24,7 +28,11 @@ class Servo:
 
         self.extension = 0.0
 
-    def set_extension(self, extension):
+    def set_extension(self, extension: float):
+        """
+        Sets the extension of the servo, which will change the extension of the airbrakes.
+        :param extension: the extension of the servo, between 0 and 1
+        """
         # Makes sure the extension is between 0 and 1
         self.extension = max(0.0, min(extension, 1.0))
 
