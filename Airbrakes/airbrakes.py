@@ -28,6 +28,7 @@ class AirbrakesContext:
         """
         Handles shutting down the airbrakes. This will cause the main loop to break.
         """
+        self.set_airbrake_extension(0.0)
         self.shutdown_requested = True
 
     def set_airbrake_extension(self, extension: float):
