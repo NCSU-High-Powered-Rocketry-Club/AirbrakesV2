@@ -1,44 +1,35 @@
 import RPi.GPIO as GPIO
 
 class Servo:
-    """
-    Represents a servo that controls the extension of the airbrakes.
-    """
 
-    def __init__(self, servo_pin, closed_duty, open_duty):
-        self.servo_pin = servo_pin
-        GPIO.setwarnings(False)  # disable warnings
-        GPIO.setmode(GPIO.BOARD)  # set pin numbering system
+    # The pin that the servo's data wire is plugged into, 32 is for the GPIO 12 pin which is used for PWM
+    SERVO_PIN = 32
 
-        # set the servo pin to output
-        GPIO.setup(self.servo_pin, GPIO.OUT)
+    # The duty cycle for the servo to be fully closed and fully open
+    CLOSED_DUTY_CYCLE = 6.3
+    OPEN_DUTY_CYCLE = 9.2
 
-        # create PWM instance with frequency
-        self.pi_pwm = GPIO.PWM(self.servo_pin, 50)
+    def __init__(self):
+        GPIO.setwarnings(False)  # Disable warnings
+        GPIO.setmode(GPIO.BOARD)  # Set pin numbering system
 
-        # start PWM of required Duty Cycle
+        # Set the servo pin to output
+        GPIO.setup(self.SERVO_PIN, GPIO.OUT)
+
+        # Create PWM instance with frequency
+        self.pi_pwm = GPIO.PWM(self.SERVO_PIN, 50)
+
+        # Start PWM of required Duty Cycle
         self.pi_pwm.start(0)
 
-        # minimum duty cycle for left stop (determined with trial and error)
-        self.servo_closed_duty = closed_duty  # 3.5
-        # maximum duty cycle for right stop (determined with trial and error)
-        self.servo_open_duty = open_duty  # 11.5
+        self.extension = 0.0
 
-        self.command = 0.0
+    def set_extension(self, extension):
+        # Makes sure the extension is between 0 and 1
+        self.extension = max(0.0, min(extension, 1.0))
 
-    def set_extension(self, extension: float):
-        """
-        Sets the extension of the servo from 0.0 to 1.0 (0 being the airbrakes fully retracted, 1 the airbrakes fully
-        extended).
-        """
-        command = extension
-        if command > 1:
-            command = 1.0
-        if command < 0:
-            command = 0.0
-
-        self.command = command
+        # Sets the duty cycle of the servo to be a linear interpolation between the closed and open duty cycles
         self.pi_pwm.ChangeDutyCycle(
-            self.servo_closed_duty * (1.0 - command)
-            + (self.servo_open_duty * command)
+            self.CLOSED_DUTY_CYCLE * (1.0 - self.extension)
+            + (self.OPEN_DUTY_CYCLE * self.extension)
         )
