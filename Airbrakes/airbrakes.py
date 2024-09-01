@@ -1,4 +1,4 @@
-from Airbrakes.imu import IMU
+from Airbrakes.imu import IMU, IMUDataPacket
 from Airbrakes.servo import Servo
 from state import *
 
@@ -29,6 +29,7 @@ class AirbrakesContext:
         Handles shutting down the airbrakes. This will cause the main loop to break.
         """
         self.set_airbrake_extension(0.0)
+        self.imu.stop()
         self.shutdown_requested = True
 
     def set_airbrake_extension(self, extension: float):
@@ -37,8 +38,8 @@ class AirbrakesContext:
         """
         self.servo.set_extension(extension)
 
-    def get_imu_reading(self):
+    def get_imu_reading(self) -> IMUDataPacket:
         """
         Gets the current reading from the IMU. It will be called by the states.
         """
-        return self.imu.get_reading()
+        return self.imu.get_imu_data()

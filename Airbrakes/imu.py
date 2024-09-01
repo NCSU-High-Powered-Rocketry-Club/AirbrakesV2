@@ -1,10 +1,11 @@
 import multiprocessing
-from Airbrakes.imu_package import mscl
+import mscl
 
 
 class IMUDataPacket:
     """
-    Represents a data packet from the IMU. It contains the acceleration, velocity, altitude, and timestamp of the data
+    Represents a collection of data packets from the IMU. It contains the acceleration, velocity, altitude, yaw, pitch,
+    roll of the rocket and the timestamp of the data.
     """
 
     def __init__(
@@ -24,6 +25,10 @@ class IMUDataPacket:
         self.yaw = yaw
         self.pitch = pitch
         self.roll = roll
+
+    def __str__(self):
+        return f"IMUDataPacket(timestamp={self.timestamp}, accel={self.accel}, velocity={self.velocity}, " \
+               f"altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, roll={self.roll})"
 
 
 class IMU:
@@ -58,6 +63,9 @@ class IMU:
         self.data_fetch_process.start()
 
     def _fetch_data_loop(self):
+        """
+        This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
+        """
         while self.running.value:
             # Get the latest data packets from the IMU with a timeout of 10ms
             packets = self.node.getDataPackets(1000.0 / self.FREQUENCY)
@@ -90,9 +98,15 @@ class IMU:
                 # Update the timestamp after processing all data points
                 self.latest_data['timestamp'] = timestamp
 
-    def get_imu_data(self):
+    def get_imu_data(self) -> IMUDataPacket:
+        """
+        Gets the latest data from the IMU.
+        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not available, it will
+        be None.
+        """
         # Create an IMUDataPacket object using the latest data
         return IMUDataPacket(
+            # When you use .get() on a dictionary, it will return None if the key doesn't exist
             timestamp=self.latest_data.get('timestamp', 0.0),
             accel=self.latest_data.get('accel'),
             velocity=self.latest_data.get('velocity'),
@@ -103,6 +117,9 @@ class IMU:
         )
 
     def stop(self):
+        """
+        Stops the process fetching data from the IMU. This should be called when the program is shutting down.
+        """
         self.running.value = False
         # Waits for the process to finish before stopping it
         self.data_fetch_process.join()
