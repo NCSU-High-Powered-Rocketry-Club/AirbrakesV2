@@ -1,5 +1,5 @@
 import multiprocessing
-import mscl
+from Airbrakes.imu_package import mscl
 
 
 class IMUDataPacket:
@@ -7,11 +7,23 @@ class IMUDataPacket:
     Represents a data packet from the IMU. It contains the acceleration, velocity, altitude, and timestamp of the data
     """
 
-    def __init__(self, timestamp: float, accel: float = None, velocity: float = None, altitude: float = None):
+    def __init__(
+            self,
+            timestamp: float,
+            accel: float = None,
+            velocity: float = None,
+            altitude: float = None,
+            yaw: float = None,
+            pitch: float = None,
+            roll: float = None
+    ):
         self.timestamp = timestamp
         self.accel = accel
         self.velocity = velocity
         self.altitude = altitude
+        self.yaw = yaw
+        self.pitch = pitch
+        self.roll = roll
 
 
 class IMU:
@@ -45,21 +57,50 @@ class IMU:
         self.data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop)
         self.data_fetch_process.start()
 
-    # TODO: Make sure you fully understand the manager code and make a data point class
-
     def _fetch_data_loop(self):
         while self.running.value:
+            # Get the latest data packets from the IMU with a timeout of 10ms
             packets = self.node.getDataPackets(1000.0 / self.FREQUENCY)
             for packet in packets:
+                # TODO: Add a check to see if the packet is new -- make a list or dictionary of timestamps for each packet
+                # TODO: See which packets contain what data
+                timestamp = packet.collectedTimestamp().nanoseconds()
                 for data_point in packet.data():
                     if data_point.valid():
-                        # Store the latest valid data point in the dictionary
-                        self.latest_data['accel'] = data_point.as_float()
-                        self.latest_data['timestamp'] = packet.collectedTimestamp().nanoseconds()
+                        channel = data_point.channelName()
+                        # This cpp file was the only place I was able to find all the channel names
+                        # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
+                        match channel:
+                            case "estLinearAccelX":
+                                accel = data_point.as_float()
+                                if self.UPSIDE_DOWN:
+                                    accel = -accel
+                                self.latest_data['accel'] = accel
+                            case "estLinearVelX":
+                                self.latest_data['velocity'] = data_point.as_float()
+                            case "estPressureAlt":
+                                self.latest_data['altitude'] = data_point.as_float()
+                            case "estYaw":
+                                self.latest_data['yaw'] = data_point.as_float()
+                            case "estPitch":
+                                self.latest_data['pitch'] = data_point.as_float()
+                            case "estRoll":
+                                self.latest_data['roll'] = data_point.as_float()
+
+                # Update the timestamp after processing all data points
+                self.latest_data['timestamp'] = timestamp
 
     def get_imu_data(self):
-        # Convert the shared dictionary to a regular dictionary before returning
-        return dict(self.latest_data)
+        # Create an IMUDataPacket object using the latest data
+        return IMUDataPacket(
+            timestamp=self.latest_data.get('timestamp', 0.0),
+            accel=self.latest_data.get('accel'),
+            velocity=self.latest_data.get('velocity'),
+            altitude=self.latest_data.get('altitude'),
+            yaw=self.latest_data.get('yaw'),
+            pitch=self.latest_data.get('pitch'),
+            roll=self.latest_data.get('roll')
+        )
 
     def stop(self):
         self.running.value = False
