@@ -42,16 +42,13 @@ class IMU:
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     """
 
-    # Should be checked before launch
-    UPSIDE_DOWN = True
-    # The port that the IMU is connected to
-    PORT = "/dev/ttyACM0"
-    # The frequency in which the IMU polls data in Hz
-    FREQUENCY = 100
+    def __init__(self, port: str, frequency: int, upside_down: bool):
+        self.port = port
+        self.frequency = frequency
+        self.upside_down = upside_down
 
-    def __init__(self):
         # Connect to the IMU
-        self.connection = mscl.Connection.Serial(self.PORT)
+        self.connection = mscl.Connection.Serial(self.port)
         self.node = mscl.InertialNode(self.connection)
 
         # Shared dictionary to store the most recent data packet
@@ -68,7 +65,7 @@ class IMU:
         """
         while self.running.value:
             # Get the latest data packets from the IMU with a timeout of 10ms
-            packets = self.node.getDataPackets(1000.0 / self.FREQUENCY)
+            packets = self.node.getDataPackets(1000.0 / self.frequency)
             for packet in packets:
                 # TODO: Add a check to see if the packet is new -- make a list or dictionary of timestamps for each packet
                 # TODO: See which packets contain what data
@@ -81,13 +78,17 @@ class IMU:
                         match channel:
                             case "estLinearAccelX":
                                 accel = data_point.as_float()
-                                if self.UPSIDE_DOWN:
+                                if self.upside_down:
                                     accel = -accel
                                 self.latest_data['accel'] = accel
                             case "estLinearVelX":
-                                self.latest_data['velocity'] = data_point.as_float()
+                                velocity = data_point.as_float()
+                                if self.upside_down:
+                                    velocity = -velocity
+                                self.latest_data['velocity'] = velocity
                             case "estPressureAlt":
                                 self.latest_data['altitude'] = data_point.as_float()
+                            # TODO: Check the units and if their orientations are correct
                             case "estYaw":
                                 self.latest_data['yaw'] = data_point.as_float()
                             case "estPitch":
