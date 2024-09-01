@@ -17,12 +17,26 @@ class AirbrakesContext:
         self.state: State = StandByState(self)
         self.shutdown_requested = False
 
+        # Placeholder for the current airbrake extension and IMU data until they are set
+        self.current_extension = 0.0
+        self.current_imu_data = IMUDataPacket(0.0)
+
     def update(self):
         """
         Called every loop iteration. Depending on the current state, it will do different things. It
         is what controls the airbrakes and chooses when to move to the next state.
         """
+        # Gets the current extension and IMU data, the states will use these values
+        self.current_extension = self.servo.extension
+        self.current_imu_data = self.imu.get_imu_data()
+
         self.state.update()
+
+    def set_airbrake_extension(self, extension: float):
+        """
+        Sets the airbrake extension via the servo. It will be called by the states.
+        """
+        self.servo.set_extension(extension)
 
     def shutdown(self):
         """
@@ -31,15 +45,3 @@ class AirbrakesContext:
         self.set_airbrake_extension(0.0)
         self.imu.stop()
         self.shutdown_requested = True
-
-    def set_airbrake_extension(self, extension: float):
-        """
-        Sets the airbrake extension via the servo. It will be called by the states.
-        """
-        self.servo.set_extension(extension)
-
-    def get_imu_reading(self) -> IMUDataPacket:
-        """
-        Gets the current reading from the IMU. It will be called by the states.
-        """
-        return self.imu.get_imu_data()
