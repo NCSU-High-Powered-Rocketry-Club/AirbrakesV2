@@ -1,4 +1,5 @@
 from Airbrakes.imu import IMU, IMUDataPacket
+from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
 from state import *
 
@@ -11,7 +12,8 @@ class AirbrakesContext:
     Read more about the state machine pattern here: https://www.tutorialspoint.com/design_pattern/state_pattern.htm
     """
 
-    def __init__(self, servo: Servo, imu: IMU):
+    def __init__(self, logger: Logger, servo: Servo, imu: IMU):
+        self.logger = logger
         self.servo = servo
         self.imu = imu
         self.state: State = StandByState(self)
@@ -29,6 +31,9 @@ class AirbrakesContext:
         # Gets the current extension and IMU data, the states will use these values
         self.current_extension = self.servo.extension
         self.current_imu_data = self.imu.get_imu_data()
+
+        # Log the current state, extension, and IMU data
+        self.logger.log(self.state.get_name(), self.current_extension, self.current_imu_data)
 
         self.state.update()
 

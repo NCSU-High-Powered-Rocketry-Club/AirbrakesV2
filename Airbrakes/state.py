@@ -33,6 +33,12 @@ class State:
         """
         pass
 
+    def get_name(self):
+        """
+        :return: The name of the state
+        """
+        return self.__class__.__name__
+
 
 class StandByState(State):
     """
