@@ -6,8 +6,12 @@ from Airbrakes.imu import IMUDataPacket
 
 class Logger:
     """
-    A class that logs data to a CSV file. It runs in parallel with the main loop and logs the current state, extension,
-    and IMU data to the file. It uses the Python logging module to append data to our logs in real time.
+    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process. This is because the
+    logging process is I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
+    running it in a separate process, we can continue to log data while the main loop is running.
+
+    It uses the Python logging module to append the airbrake's current state, extension, and IMU data to our logs in
+    real time.
     """
 
     def __init__(self, csv_headers: list[str]):
@@ -21,8 +25,11 @@ class Logger:
                 with open(self.log_path, "w", newline="") as file_writer:
                     file_writer.write(",".join(csv_headers) + "\n")
                     break
-            self.log_path = self.log_path[:-5] + str(int(self.log_path[-5]) + 1) + ".csv"
+            # If the file already exists, increment the number at the end of the file name
+            self.log_path = self.log_path[:8] + str(int(self.log_path[8:-4]) + 1) + ".csv"
 
+        # Makes a queue to store log messages, basically it's a process-safe list that you add to the back and pop from
+        # front, meaning that things will be logged in the order they were added
         self.log_queue = multiprocessing.Queue()
         self.running = multiprocessing.Value('b', True)  # Makes a boolean value that is shared between processes
 
@@ -44,7 +51,8 @@ class Logger:
         while self.running.value:
             # Get a message from the queue (this will block until a message is available)
             # Because there's no timeout, it will wait indefinitely until it gets a message -- this is fine in practice,
-            # but if for some reason the queue is empty, it will block forever and stop() won't work
+            # as >100 messages a second should be added to the queue, but if for some reason the queue is empty, it will
+            # block forever and stop() won't work
             message = self.log_queue.get()
             logger.info(message)
 

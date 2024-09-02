@@ -32,7 +32,7 @@ class AirbrakesContext:
         self.current_extension = self.servo.extension
         self.current_imu_data = self.imu.get_imu_data()
 
-        # Log the current state, extension, and IMU data
+        # Logs the current state, extension, and IMU data
         self.logger.log(self.state.get_name(), self.current_extension, self.current_imu_data)
 
         self.state.update()
@@ -40,6 +40,7 @@ class AirbrakesContext:
     def set_airbrake_extension(self, extension: float):
         """
         Sets the airbrake extension via the servo. It will be called by the states.
+        :param extension: the extension of the airbrakes, between 0 and 1
         """
         self.servo.set_extension(extension)
 
@@ -49,4 +50,5 @@ class AirbrakesContext:
         """
         self.set_airbrake_extension(0.0)
         self.imu.stop()
+        self.logger.stop()
         self.shutdown_requested = True
