@@ -1,11 +1,15 @@
 import logging
 import os
 import multiprocessing
-import queue
 from Airbrakes.imu import IMUDataPacket
 
 
 class Logger:
+    """
+    A class that logs data to a CSV file. It runs in parallel with the main loop and logs the current state, extension,
+    and IMU data to the file. It uses the Python logging module to append data to our logs in real time.
+    """
+
     def __init__(self, csv_headers: list[str]):
         self.csv_headers = csv_headers
 
