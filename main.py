@@ -14,7 +14,9 @@ OPEN_DUTY_CYCLE = 9.2
 UPSIDE_DOWN = True
 # The port that the IMU is connected to
 PORT = "/dev/ttyACM0"
-# The frequency in which the IMU polls data in Hz
+# The frequency in Hz that the IMU will be polled at and data will be logged
+# TODO: need to do testing with imu to see how the different data packets affect logging frequency
+# TODO: Potential idea is making a separate method to get raw vs est data, and then have both held in the context
 FREQUENCY = 100
 
 
