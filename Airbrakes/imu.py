@@ -11,7 +11,7 @@ class IMUDataPacket:
     def __init__(
             self,
             timestamp: float,
-            accel: float = None,
+            acceleration: float = None,
             velocity: float = None,
             altitude: float = None,
             yaw: float = None,
@@ -19,7 +19,7 @@ class IMUDataPacket:
             roll: float = None
     ):
         self.timestamp = timestamp
-        self.accel = accel
+        self.acceleration = acceleration
         self.velocity = velocity
         self.altitude = altitude
         self.yaw = yaw
@@ -27,8 +27,9 @@ class IMUDataPacket:
         self.roll = roll
 
     def __str__(self):
-        return f"IMUDataPacket(timestamp={self.timestamp}, accel={self.accel}, velocity={self.velocity}, " \
-               f"altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, roll={self.roll})"
+        return f"IMUDataPacket(timestamp={self.timestamp}, acceleration={self.acceleration}, " \
+               f"velocity={self.velocity}, altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, " \
+               f"roll={self.roll})"
 
 
 class IMU:
@@ -53,7 +54,7 @@ class IMU:
 
         # Shared dictionary to store the most recent data packet
         self.latest_data = multiprocessing.Manager().dict()
-        self.running = multiprocessing.Value('b', True)  # Makes a boolean value that is shared between processes
+        self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
         self.data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop)
@@ -80,24 +81,24 @@ class IMU:
                                 accel = data_point.as_float()
                                 if self.upside_down:
                                     accel = -accel
-                                self.latest_data['accel'] = accel
+                                self.latest_data["accel"] = accel
                             case "estLinearVelX":
                                 velocity = data_point.as_float()
                                 if self.upside_down:
                                     velocity = -velocity
-                                self.latest_data['velocity'] = velocity
+                                self.latest_data["velocity"] = velocity
                             case "estPressureAlt":
-                                self.latest_data['altitude'] = data_point.as_float()
+                                self.latest_data["altitude"] = data_point.as_float()
                             # TODO: Check the units and if their orientations are correct
                             case "estYaw":
-                                self.latest_data['yaw'] = data_point.as_float()
+                                self.latest_data["yaw"] = data_point.as_float()
                             case "estPitch":
-                                self.latest_data['pitch'] = data_point.as_float()
+                                self.latest_data["pitch"] = data_point.as_float()
                             case "estRoll":
-                                self.latest_data['roll'] = data_point.as_float()
+                                self.latest_data["roll"] = data_point.as_float()
 
                 # Update the timestamp after processing all data points
-                self.latest_data['timestamp'] = timestamp
+                self.latest_data["timestamp"] = timestamp
 
     def get_imu_data(self) -> IMUDataPacket:
         """
@@ -108,13 +109,13 @@ class IMU:
         # Create an IMUDataPacket object using the latest data
         return IMUDataPacket(
             # When you use .get() on a dictionary, it will return None if the key doesn't exist
-            timestamp=self.latest_data.get('timestamp', 0.0),
-            accel=self.latest_data.get('accel'),
-            velocity=self.latest_data.get('velocity'),
-            altitude=self.latest_data.get('altitude'),
-            yaw=self.latest_data.get('yaw'),
-            pitch=self.latest_data.get('pitch'),
-            roll=self.latest_data.get('roll')
+            timestamp=self.latest_data.get("timestamp", 0.0),
+            acceleration=self.latest_data.get("acceleration"),
+            velocity=self.latest_data.get("velocity"),
+            altitude=self.latest_data.get("altitude"),
+            yaw=self.latest_data.get("yaw"),
+            pitch=self.latest_data.get("pitch"),
+            roll=self.latest_data.get("roll")
         )
 
     def stop(self):

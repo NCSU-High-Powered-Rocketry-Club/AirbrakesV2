@@ -64,7 +64,7 @@ class Logger:
         :param imu_data: the current IMU data
         """
         # Formats the log message as a CSV line
-        message = f"{state},{extension},{','.join([str(value) for value in imu_data.__dict__.values()])}"
+        message = f"{state},{extension},{','.join(str(value) for value in imu_data.__dict__.values())}"
         # Put the message in the queue
         self.log_queue.put(message)
 

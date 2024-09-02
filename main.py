@@ -21,7 +21,8 @@ PORT = "/dev/ttyACM0"
 FREQUENCY = 100
 
 # The headers for the CSV file
-CSV_HEADERS = ["State", "Extension"] + list(IMUDataPacket.__dict__.keys())
+CSV_HEADERS = ["State", "Extension"] + list(IMUDataPacket(0.0).__dict__.keys())
+
 
 def main():
     logger = Logger(CSV_HEADERS)
