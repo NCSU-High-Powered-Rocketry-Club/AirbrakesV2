@@ -7,6 +7,8 @@ class Servo:
     extension of the airbrakes.
     """
 
+    __slots__ = ("closed_duty_cycle", "open_duty_cycle", "extension", "pi_pwm")
+
     def __init__(self, servo_pin: int, closed_duty_cycle: float, open_duty_cycle: float):
         self.closed_duty_cycle = closed_duty_cycle
         self.open_duty_cycle = open_duty_cycle
@@ -34,6 +36,5 @@ class Servo:
 
         # Sets the duty cycle of the servo to be a linear interpolation between the closed and open duty cycles
         self.pi_pwm.ChangeDutyCycle(
-            self.closed_duty_cycle * (1.0 - self.extension)
-            + (self.open_duty_cycle * self.extension)
+            self.closed_duty_cycle * (1.0 - self.extension) + (self.open_duty_cycle * self.extension)
         )

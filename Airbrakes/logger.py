@@ -14,6 +14,8 @@ class Logger:
     real time.
     """
 
+    __slots__ = ("csv_headers", "log_path", "log_queue", "running", "log_process")
+
     def __init__(self, csv_headers: list[str]):
         self.csv_headers = csv_headers
 
@@ -31,7 +33,7 @@ class Logger:
         # Makes a queue to store log messages, basically it's a process-safe list that you add to the back and pop from
         # front, meaning that things will be logged in the order they were added
         self.log_queue = multiprocessing.Queue()
-        self.running = multiprocessing.Value('b', True)  # Makes a boolean value that is shared between processes
+        self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
 
         # Start the logging process
         self.log_process = multiprocessing.Process(target=self._logging_loop)
@@ -64,7 +66,7 @@ class Logger:
         :param imu_data: the current IMU data
         """
         # Formats the log message as a CSV line
-        message = f"{state},{extension},{','.join(str(value) for value in imu_data.__dict__.values())}"
+        message = f"{state},{extension},{','.join(str(getattr(imu_data, value)) for value in imu_data.__slots__)}"
         # Put the message in the queue
         self.log_queue.put(message)
 
