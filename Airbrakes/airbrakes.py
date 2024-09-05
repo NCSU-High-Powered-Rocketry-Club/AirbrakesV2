@@ -12,6 +12,16 @@ class AirbrakesContext:
     Read more about the state machine pattern here: https://www.tutorialspoint.com/design_pattern/state_pattern.htm
     """
 
+    __slots__ = (
+        "logger",
+        "servo",
+        "imu",
+        "state",
+        "shutdown_requested",
+        "current_extension",
+        "current_imu_data",
+    )
+
     def __init__(self, logger: Logger, servo: Servo, imu: IMU):
         self.logger = logger
         self.servo = servo

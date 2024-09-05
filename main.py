@@ -21,7 +21,7 @@ PORT = "/dev/ttyACM0"
 FREQUENCY = 100
 
 # The headers for the CSV file
-CSV_HEADERS = ["State", "Extension"] + list(IMUDataPacket(0.0).__dict__.keys())
+CSV_HEADERS = ["State", "Extension"] + list(IMUDataPacket(0.0).__slots__)
 
 
 def main():
@@ -37,5 +37,5 @@ def main():
         airbrakes.update()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

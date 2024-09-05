@@ -8,15 +8,25 @@ class IMUDataPacket:
     roll of the rocket and the timestamp of the data.
     """
 
+    __slots__ = (
+        "timestamp",
+        "acceleration",
+        "velocity",
+        "altitude",
+        "yaw",
+        "pitch",
+        "roll",
+    )
+
     def __init__(
-            self,
-            timestamp: float,
-            acceleration: float = None,
-            velocity: float = None,
-            altitude: float = None,
-            yaw: float = None,
-            pitch: float = None,
-            roll: float = None
+        self,
+        timestamp: float,
+        acceleration: float = None,
+        velocity: float = None,
+        altitude: float = None,
+        yaw: float = None,
+        pitch: float = None,
+        roll: float = None,
     ):
         self.timestamp = timestamp
         self.acceleration = acceleration
@@ -27,9 +37,11 @@ class IMUDataPacket:
         self.roll = roll
 
     def __str__(self):
-        return f"IMUDataPacket(timestamp={self.timestamp}, acceleration={self.acceleration}, " \
-               f"velocity={self.velocity}, altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, " \
-               f"roll={self.roll})"
+        return (
+            f"IMUDataPacket(timestamp={self.timestamp}, acceleration={self.acceleration}, "
+            f"velocity={self.velocity}, altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, "
+            f"roll={self.roll})"
+        )
 
 
 class IMU:
@@ -42,6 +54,17 @@ class IMU:
 
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     """
+
+    __slots__ = (
+        "port",
+        "frequency",
+        "upside_down",
+        "connection",
+        "node",
+        "latest_data",
+        "running",
+        "data_fetch_process",
+    )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
         self.port = port
@@ -115,7 +138,7 @@ class IMU:
             altitude=self.latest_data.get("altitude"),
             yaw=self.latest_data.get("yaw"),
             pitch=self.latest_data.get("pitch"),
-            roll=self.latest_data.get("roll")
+            roll=self.latest_data.get("roll"),
         )
 
     def stop(self):

@@ -11,6 +11,8 @@ class State:
     retracted
     """
 
+    __slots__ = ("context",)
+
     def __init__(self, context: AirbrakesContext):
         """
         :param context: The state context object that will be used to interact with the electronics
@@ -45,6 +47,8 @@ class StandByState(State):
     When the rocket is on the rail on the ground.
     """
 
+    __slots__ = ()
+
     def update(self):
         pass
 
@@ -56,6 +60,8 @@ class MotorBurnState(State):
     """
     When the motor is burning and the rocket is accelerating.
     """
+
+    __slots__ = ()
 
     def update(self):
         pass
@@ -69,6 +75,8 @@ class FlightState(State):
     When the motor has burned out and the rocket is coasting.
     """
 
+    __slots__ = ()
+
     def update(self):
         pass
 
@@ -80,6 +88,8 @@ class FreeFallState(State):
     """
     When the rocket is falling back to the ground after apogee.
     """
+
+    __slots__ = ()
 
     def update(self):
         pass

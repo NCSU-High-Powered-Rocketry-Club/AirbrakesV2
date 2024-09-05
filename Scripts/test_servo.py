@@ -3,6 +3,7 @@ Make sure you are in the root directory of the project, not inside Scripts, and 
 `python -m Scripts.test_servo`
 For the pi, you will have to use python3
 """
+
 from Airbrakes.servo import Servo
 
 # The pin that the servo's data wire is plugged into, 32 is for the GPIO 12 pin which is used for PWM
