@@ -55,12 +55,14 @@ class IMU:
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     """
 
+    ESTIMATED_DESCRIPTOR_SET = 130
+    RAW_DESCRIPTOR_SET = 128
+
     __slots__ = (
         "port",
         "frequency",
         "upside_down",
         "connection",
-        "node",
         "latest_data",
         "running",
         "data_fetch_process",
@@ -87,37 +89,32 @@ class IMU:
 
             # Get the latest data packets from the IMU with a timeout of 10ms
             packets: mscl.MipDataPackets = node.getDataPackets(int(1000 / frequency))
+            # Every loop iteration we get the latest data in form of packets from the imu
             for packet in packets:
                 packet: mscl.MipDataPacket
-                print(packet.descriptorSet())
                 timestamp = packet.collectedTimestamp().nanoseconds()
+                # Each of these packets has multiple data points
                 for data_point in packet.data():
                     data_point: mscl.MipDataPoint
                     if data_point.valid():
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                        print(data_point.channelName())
-                        match channel:
-                            case "estLinearAccelX":
-                                accel = data_point.as_float()
-                                if upside_down:
-                                    accel = -accel
-                                self.latest_data["accel"] = accel
-                            case "estLinearVelX":
-                                velocity = data_point.as_float()
-                                if upside_down:
-                                    velocity = -velocity
-                                self.latest_data["velocity"] = velocity
-                            case "estPressureAlt":
-                                self.latest_data["altitude"] = data_point.as_float()
-                            # TODO: Check the units and if their orientations are correct
-                            case "estYaw":
-                                self.latest_data["yaw"] = data_point.as_float()
-                            case "estPitch":
-                                self.latest_data["pitch"] = data_point.as_float()
-                            case "estRoll":
-                                self.latest_data["roll"] = data_point.as_float()
+                        if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET:
+                            print(data_point.channelName())
+                            match channel:
+                                case "estPressureAlt":
+                                    self.latest_data["altitude"] = data_point.as_float()
+                                # TODO: Check the units and if their orientations are correct
+                                case "estYaw":
+                                    self.latest_data["yaw"] = data_point.as_float()
+                                case "estPitch":
+                                    self.latest_data["pitch"] = data_point.as_float()
+                                case "estRoll":
+                                    self.latest_data["roll"] = data_point.as_float()
+                        elif packet.descriptorSet() == self.RAW_DESCRIPTOR_SET:
+                            # depending on the descriptor set, its a different type of packet
+                            pass
 
                 # Update the timestamp after processing all data points
                 self.latest_data["timestamp"] = timestamp
