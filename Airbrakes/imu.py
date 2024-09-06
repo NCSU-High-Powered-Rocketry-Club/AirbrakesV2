@@ -86,16 +86,18 @@ class IMU:
             node = mscl.InertialNode(connection)
 
             # Get the latest data packets from the IMU with a timeout of 10ms
-            packets = node.getDataPackets(1000.0 / frequency)
+            packets: mscl.MipDataPackets = node.getDataPackets(int(1000 / frequency))
             for packet in packets:
-                # TODO: Add a check to see if the packet is new -- make a list or dictionary of timestamps for each packet
-                # TODO: See which packets contain what data
+                packet: mscl.MipDataPacket
+                print(packet.descriptorSet())
                 timestamp = packet.collectedTimestamp().nanoseconds()
                 for data_point in packet.data():
+                    data_point: mscl.MipDataPoint
                     if data_point.valid():
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
+                        print(data_point.channelName())
                         match channel:
                             case "estLinearAccelX":
                                 accel = data_point.as_float()
