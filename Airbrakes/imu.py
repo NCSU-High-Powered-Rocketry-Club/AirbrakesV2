@@ -67,29 +67,26 @@ class IMU:
     )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
-        self.port = port
-        self.frequency = frequency
-        self.upside_down = upside_down
-
-        # Connect to the IMU
-        self.connection = mscl.Connection.Serial(self.port)
-        self.node = mscl.InertialNode(self.connection)
-
         # Shared dictionary to store the most recent data packet
         self.latest_data = multiprocessing.Manager().dict()
         self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
-        self.data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop)
+        self.data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop, args=(port, frequency,
+                                                                                              upside_down))
         self.data_fetch_process.start()
 
-    def _fetch_data_loop(self):
+    def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
         """
         This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
         """
         while self.running.value:
+            # Connect to the IMU
+            connection = mscl.Connection.Serial(port)
+            node = mscl.InertialNode(connection)
+
             # Get the latest data packets from the IMU with a timeout of 10ms
-            packets = self.node.getDataPackets(1000.0 / self.frequency)
+            packets = node.getDataPackets(1000.0 / frequency)
             for packet in packets:
                 # TODO: Add a check to see if the packet is new -- make a list or dictionary of timestamps for each packet
                 # TODO: See which packets contain what data
@@ -102,12 +99,12 @@ class IMU:
                         match channel:
                             case "estLinearAccelX":
                                 accel = data_point.as_float()
-                                if self.upside_down:
+                                if upside_down:
                                     accel = -accel
                                 self.latest_data["accel"] = accel
                             case "estLinearVelX":
                                 velocity = data_point.as_float()
-                                if self.upside_down:
+                                if upside_down:
                                     velocity = -velocity
                                 self.latest_data["velocity"] = velocity
                             case "estPressureAlt":

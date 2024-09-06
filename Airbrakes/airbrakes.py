@@ -26,6 +26,7 @@ class AirbrakesContext:
         self.logger = logger
         self.servo = servo
         self.imu = imu
+
         self.state: State = StandByState(self)
         self.shutdown_requested = False
 
