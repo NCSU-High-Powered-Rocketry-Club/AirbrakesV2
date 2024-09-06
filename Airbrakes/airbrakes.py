@@ -40,7 +40,7 @@ class AirbrakesContext:
         is what controls the airbrakes and chooses when to move to the next state.
         """
         # Gets the current extension and IMU data, the states will use these values
-        self.current_extension = self.servo.extension
+        self.current_extension = self.servo.current_extension
         self.current_imu_data = self.imu.get_imu_data()
 
         # Logs the current state, extension, and IMU data

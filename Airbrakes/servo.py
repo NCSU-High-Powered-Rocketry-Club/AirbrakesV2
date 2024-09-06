@@ -1,40 +1,33 @@
-import RPi.GPIO as GPIO
+import gpiozero
 
 
 class Servo:
     """
-    A class that represents a servo motor. It can be used to set the extension of the servo, which will change the
-    extension of the airbrakes.
+    A custom class that represents a servo motor, controlling the extension of the airbrakes.
     """
 
-    __slots__ = ("closed_duty_cycle", "open_duty_cycle", "extension", "pi_pwm")
+    __slots__ = ("min_extension", "max_extension", "servo", "current_extension")
 
-    def __init__(self, servo_pin: int, closed_duty_cycle: float, open_duty_cycle: float):
-        self.closed_duty_cycle = closed_duty_cycle
-        self.open_duty_cycle = open_duty_cycle
-        self.extension = 0.0
+    def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float):
+        self.min_extension = min_extension
+        self.max_extension = max_extension
+        self.current_extension = 0.0
 
-        # Disable warnings
-        GPIO.setwarnings(False)
-        # Set pin numbering system
-        GPIO.setmode(GPIO.BOARD)
-        # Set the servo pin to output
-        GPIO.setup(servo_pin, GPIO.OUT)
-
-        # Create PWM instance with frequency
-        self.pi_pwm = GPIO.PWM(servo_pin, 50)
-        # Start PWM of required Duty Cycle
-        self.pi_pwm.start(0)
+        # Sets up the servo with the specified GPIO pin number
+        gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
+        self.servo = gpiozero.Servo(gpio_pin_number)
 
     def set_extension(self, extension: float):
         """
-        Sets the extension of the servo, which will change the extension of the airbrakes.
-        :param extension: the extension of the servo, between 0 and 1
+        Sets the extension of the servo.
+        :param extension: The extension of the servo, between 0 and 1.
         """
-        # Makes sure the extension is between 0 and 1
-        self.extension = max(0.0, min(extension, 1.0))
 
-        # Sets the duty cycle of the servo to be a linear interpolation between the closed and open duty cycles
-        self.pi_pwm.ChangeDutyCycle(
-            self.closed_duty_cycle * (1.0 - self.extension) + (self.open_duty_cycle * self.extension)
-        )
+        # Clamps the extension value to be within the specified range
+        extension = min(1.0, max(0.0, extension))
+
+        # Converts the extension from 0 to 1 to the actual extension range
+        self.current_extension = extension * (self.max_extension - self.min_extension) + self.min_extension
+
+        # Sets the servo extension
+        self.servo.value = self.current_extension

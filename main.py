@@ -4,12 +4,12 @@ from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
 
 
-# The pin that the servo's data wire is plugged into, 32 is for the GPIO 12 pin which is used for PWM
-SERVO_PIN = 32
+# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
+SERVO_PIN = 12
 
-# The duty cycle for the servo to be fully closed and fully open
-CLOSED_DUTY_CYCLE = 6.3
-OPEN_DUTY_CYCLE = 9.2
+# The minimum and maximum position of the servo, its range is -1 to 1
+MIN_EXTENSION = -1
+MAX_EXTENSION = 1
 
 # Should be checked before launch
 UPSIDE_DOWN = True
@@ -26,7 +26,7 @@ CSV_HEADERS = ["State", "Extension"] + list(IMUDataPacket(0.0).__slots__)
 
 def main():
     logger = Logger(CSV_HEADERS)
-    servo = Servo(SERVO_PIN, CLOSED_DUTY_CYCLE, OPEN_DUTY_CYCLE)
+    servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
     imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
     # The context that will manage the airbrakes state machine
