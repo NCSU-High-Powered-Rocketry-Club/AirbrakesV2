@@ -1,3 +1,5 @@
+"""Module which contains the Servo class, representing a servo motor that controls the extension of the airbrakes."""
+
 import gpiozero
 
 
@@ -6,7 +8,7 @@ class Servo:
     A custom class that represents a servo motor, controlling the extension of the airbrakes.
     """
 
-    __slots__ = ("min_extension", "max_extension", "servo", "current_extension")
+    __slots__ = ("current_extension", "max_extension", "min_extension", "servo")
 
     def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float):
         self.min_extension = min_extension

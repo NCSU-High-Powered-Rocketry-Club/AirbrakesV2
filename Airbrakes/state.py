@@ -1,3 +1,5 @@
+"""Module for the finite state machine that represents which state of flight we are in."""
+
 from Airbrakes.airbrakes import AirbrakesContext
 
 
@@ -26,14 +28,12 @@ class State:
         Called every loop iteration. Uses the context to interact with the hardware and decides when to move to the
         next state.
         """
-        pass
 
     def next_state(self):
         """
         We never expect/want to go back a state e.g. We're never going to go
         from Flight to Motor Burn, so this method just goes to the next state.
         """
-        pass
 
     def get_name(self):
         """

@@ -1,9 +1,9 @@
-import time
+"""Module to test the logger module."""
+
 from Airbrakes.imu import IMUDataPacket
 from Airbrakes.logger import Logger
 
-
-CSV_HEADERS = ["state", "extension"] + list(IMUDataPacket(0.0).__slots__)
+CSV_HEADERS = ["state", "extension", *list(IMUDataPacket(0.0).__slots__)]
 
 
 def main():

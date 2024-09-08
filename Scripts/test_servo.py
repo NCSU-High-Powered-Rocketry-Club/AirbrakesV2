@@ -18,4 +18,3 @@ servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
 print("Type (1) to deploy and (0) to retract the airbrakes.")
 while True:
     servo.set_extension(float(input()))
-
