@@ -16,6 +16,7 @@ class Servo:
         self.current_extension = 0.0
 
         # Sets up the servo with the specified GPIO pin number
+        # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
         gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
         self.servo = gpiozero.Servo(gpio_pin_number)
 
