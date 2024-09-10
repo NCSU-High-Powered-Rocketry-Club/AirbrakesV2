@@ -16,4 +16,4 @@ FREQUENCY = 100
 imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
 while True:
-    imu.get_imu_data()
+    print(imu.get_imu_data())

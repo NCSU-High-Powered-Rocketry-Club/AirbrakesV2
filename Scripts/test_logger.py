@@ -9,11 +9,8 @@ CSV_HEADERS = ["state", "extension", *list(IMUDataPacket(0.0).__slots__)]
 def main():
     logger = Logger(CSV_HEADERS)
 
-    try:
-        while True:
-            logger.log("state", 0.0, IMUDataPacket(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
-    except KeyboardInterrupt:
-        logger.stop()
+    while True:
+        logger.log("state", 0.0, IMUDataPacket(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
 
 if __name__ == "__main__":
