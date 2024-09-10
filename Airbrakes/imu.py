@@ -1,4 +1,7 @@
+"""Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
+
 import multiprocessing
+
 import mscl
 
 
@@ -9,24 +12,24 @@ class IMUDataPacket:
     """
 
     __slots__ = (
-        "timestamp",
         "acceleration",
-        "velocity",
         "altitude",
-        "yaw",
         "pitch",
         "roll",
+        "timestamp",
+        "velocity",
+        "yaw",
     )
 
     def __init__(
         self,
         timestamp: float,
-        acceleration: float = None,
-        velocity: float = None,
-        altitude: float = None,
-        yaw: float = None,
-        pitch: float = None,
-        roll: float = None,
+        acceleration: float | None = None,
+        velocity: float | None = None,
+        altitude: float | None = None,
+        yaw: float | None = None,
+        pitch: float | None = None,
+        roll: float | None = None,
     ):
         self.timestamp = timestamp
         self.acceleration = acceleration
@@ -59,13 +62,10 @@ class IMU:
     RAW_DESCRIPTOR_SET = 128
 
     __slots__ = (
-        "port",
-        "frequency",
-        "upside_down",
         "connection",
+        "data_fetch_process",
         "latest_data",
         "running",
-        "data_fetch_process",
     )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
@@ -74,11 +74,12 @@ class IMU:
         self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
-        self.data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop, args=(port, frequency,
-                                                                                              upside_down))
+        self.data_fetch_process = multiprocessing.Process(
+            target=self._fetch_data_loop, args=(port, frequency, upside_down)
+        )
         self.data_fetch_process.start()
 
-    def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
+    def _fetch_data_loop(self, port: str, frequency: int, _: bool):
         """
         This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
         """
@@ -101,7 +102,6 @@ class IMU:
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
                         if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET:
-                            print(data_point.channelName())
                             match channel:
                                 case "estPressureAlt":
                                     self.latest_data["altitude"] = data_point.as_float()

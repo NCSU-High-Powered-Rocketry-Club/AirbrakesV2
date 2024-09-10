@@ -1,0 +1,23 @@
+[project]
+name = "AirbrakesV2"
+description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
+requires-python = ">=3.10"
+version = "0.1.0"
+
+
+# RUFF:
+[tool.ruff]
+line-length = 120
+show-fixes = true
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true  # TODO: Drop this when RUF022 and RUF023 are out of preview
+ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PERF203", "ISC001"]
+select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET", "RSE",
+          "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "RUF022",
+          "RUF023", "Q", "INP", "W", "YTT", "DTZ", "ARG", "T20", "FURB", "DOC", "TRY", 
+          "D100", "D101", "D300", "D418", "D419", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"Scripts/test_*.py" = ["T20"]

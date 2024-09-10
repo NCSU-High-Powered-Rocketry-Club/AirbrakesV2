@@ -1,7 +1,9 @@
+"""Module which provides a high level interface to the air brakes system on the rocket."""
+
 from Airbrakes.imu import IMU, IMUDataPacket
 from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
-from state import *
+from Airbrakes.state import StandByState, State
 
 
 class AirbrakesContext:
@@ -13,13 +15,13 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "logger",
-        "servo",
-        "imu",
-        "state",
-        "shutdown_requested",
         "current_extension",
         "current_imu_data",
+        "imu",
+        "logger",
+        "servo",
+        "shutdown_requested",
+        "state",
     )
 
     def __init__(self, logger: Logger, servo: Servo, imu: IMU):

@@ -1,6 +1,9 @@
+"""Module for logging data to a CSV file in real time."""
+
 import logging
-import os
 import multiprocessing
+from pathlib import Path
+
 from Airbrakes.imu import IMUDataPacket
 
 
@@ -14,21 +17,22 @@ class Logger:
     real time.
     """
 
-    __slots__ = ("csv_headers", "log_path", "log_queue", "running", "log_process")
+    __slots__ = ("csv_headers", "log_path", "log_process", "log_queue", "running")
 
     def __init__(self, csv_headers: list[str]):
         self.csv_headers = csv_headers
 
-        self.log_path = os.path.join("logs", "log1.csv")
+        log_dir = Path("logs")
+        log_dir.mkdir(parents=True, exist_ok=True)
 
-        # Creates a new CSV file with the specified headers
-        while True:
-            if not os.path.exists(self.log_path):
-                with open(self.log_path, "w", newline="") as file_writer:
-                    file_writer.write(",".join(csv_headers) + "\n")
-                    break
-            # If the file already exists, increment the number at the end of the file name
-            self.log_path = self.log_path[:8] + str(int(self.log_path[8:-4]) + 1) + ".csv"
+        # Get all existing log files and find the highest suffix number
+        existing_logs = list(log_dir.glob("log_*.csv"))
+        max_suffix = max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
+
+        # Create a new log file with the next number in sequence
+        self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
+        with self.log_path.open(mode="w", newline="") as file_writer:
+            file_writer.write(",".join(csv_headers) + "\n")
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to the back and pop from
         # front, meaning that things will be logged in the order they were added
