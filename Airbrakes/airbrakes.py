@@ -50,6 +50,7 @@ class AirbrakesContext:
 
         self.state.update()
 
+
     def set_airbrake_extension(self, extension: float):
         """
         Sets the airbrake extension via the servo. It will be called by the states.
