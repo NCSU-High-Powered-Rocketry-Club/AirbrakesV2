@@ -64,13 +64,13 @@ class IMU:
     __slots__ = (
         "connection",
         "data_fetch_process",
-        "latest_data",
+        "data_queue",
         "running",
     )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
-        # Shared dictionary to store the most recent data packet
-        self.latest_data = multiprocessing.Manager().dict()
+        # Shared Queue which contains the latest data from the IMU
+        self.data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
         self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
@@ -83,17 +83,28 @@ class IMU:
         """
         This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
         """
-        while self.running.value:
-            # Connect to the IMU
-            connection = mscl.Connection.Serial(port)
-            node = mscl.InertialNode(connection)
+        # Connect to the IMU
+        connection = mscl.Connection.Serial(port)
+        node = mscl.InertialNode(connection)
+        timeout = int(1000 / frequency)
 
-            # Get the latest data packets from the IMU with a timeout of 10ms
-            packets: mscl.MipDataPackets = node.getDataPackets(int(1000 / frequency))
+        while self.running.value:
+            # Get the latest data packets from the IMU, with the help of `getDataPackets`.
+            # `getDataPackets` accepts a timeout in milliseconds.
+            # Testing has shown that the maximum rate at which we can fetch data is roughly every
+            # 2ms on average, so we use a timeout of = 1000 / frequency = 10ms which should be more
+            # than enough.
+            # (help needed: what happens if the timeout is hit? An empty list? Exception?)
+            packets: mscl.MipDataPackets = node.getDataPackets(timeout)
             # Every loop iteration we get the latest data in form of packets from the imu
             for packet in packets:
+                # The data packet from the IMU:
                 packet: mscl.MipDataPacket
                 timestamp = packet.collectedTimestamp().nanoseconds()
+
+                # The data points we need specifically, collected in a class.
+                imu_data_packet = IMUDataPacket(timestamp)  # initialize packet with the timestamp
+
                 # Each of these packets has multiple data points
                 for data_point in packet.data():
                     data_point: mscl.MipDataPoint
@@ -104,38 +115,32 @@ class IMU:
                         if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET:
                             match channel:
                                 case "estPressureAlt":
-                                    self.latest_data["altitude"] = data_point.as_float()
+                                    imu_data_packet.altitude = data_point.as_float()
                                 # TODO: Check the units and if their orientations are correct
                                 case "estYaw":
-                                    self.latest_data["yaw"] = data_point.as_float()
+                                    imu_data_packet.yaw = data_point.as_float()
                                 case "estPitch":
-                                    self.latest_data["pitch"] = data_point.as_float()
+                                    imu_data_packet.pitch = data_point.as_float()
                                 case "estRoll":
-                                    self.latest_data["roll"] = data_point.as_float()
+                                    imu_data_packet.roll = data_point.as_float()
                         elif packet.descriptorSet() == self.RAW_DESCRIPTOR_SET:
                             # depending on the descriptor set, its a different type of packet
                             pass
 
-                # Update the timestamp after processing all data points
-                self.latest_data["timestamp"] = timestamp
+                # Put the latest data into the shared queue
+                self.data_queue.put(imu_data_packet)
 
     def get_imu_data(self) -> IMUDataPacket:
         """
         Gets the latest data from the IMU.
-        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not available, it will
-        be None.
+
+        Note: If `get_imu_data` is called slower than the frequency set, the data will not be the
+        latest, but the first in the queue.
+
+        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is
+        not available, it will be None.
         """
-        # Create an IMUDataPacket object using the latest data
-        return IMUDataPacket(
-            # When you use .get() on a dictionary, it will return None if the key doesn't exist
-            timestamp=self.latest_data.get("timestamp", 0.0),
-            acceleration=self.latest_data.get("acceleration"),
-            velocity=self.latest_data.get("velocity"),
-            altitude=self.latest_data.get("altitude"),
-            yaw=self.latest_data.get("yaw"),
-            pitch=self.latest_data.get("pitch"),
-            roll=self.latest_data.get("roll"),
-        )
+        return self.data_queue.get()
 
     def stop(self):
         """
