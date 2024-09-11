@@ -38,18 +38,28 @@ class AirbrakesContext:
 
     def update(self):
         """
-        Called every loop iteration. Depending on the current state, it will do different things. It
-        is what controls the airbrakes and chooses when to move to the next state.
+        Called every loop iteration from the main process. Depending on the current state, it will
+        do different things. It is what controls the airbrakes and chooses when to move to the next
+        state.
         """
         # Gets the current extension and IMU data, the states will use these values
         self.current_extension = self.servo.current_extension
-        self.current_imu_data = self.imu.get_imu_data()
+        data_packets = []
+
+        # Let's get 50 data packets to ensure we have enough data to work with.
+        # 50 is an arbitrary number for now - if the time resolution between each data packet is
+        # 2ms, then we have 2*50 = 100ms of data to work with at once.
+        while len(data_packets) < 50:
+            # get_imu_data() gets the "first" item in the queue, i.e, it *may* not be the most
+            # recent data. But we want continous data for proper state and apogee calculation, so
+            # we don't need to worry about that, as long as we're not too behind on processing
+            data_packets.append(self.imu.get_imu_data())
 
         # Logs the current state, extension, and IMU data
-        self.logger.log(self.state.get_name(), self.current_extension, self.current_imu_data)
+        # TODO: Compute state(s) for given IMU data
+        self.logger.log(self.state.get_name(), self.current_extension, data_packets)
 
         self.state.update()
-
 
     def set_airbrake_extension(self, extension: float):
         """

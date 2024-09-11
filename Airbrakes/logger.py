@@ -62,17 +62,21 @@ class Logger:
             message = self.log_queue.get()
             logger.info(message)
 
-    def log(self, state: str, extension: float, imu_data: IMUDataPacket):
+    def log(self, state: str, extension: float, imu_data_list: list[IMUDataPacket]):
         """
         Logs the current state, extension, and IMU data to the CSV file.
         :param state: the current state of the airbrakes state machine
         :param extension: the current extension of the airbrakes
-        :param imu_data: the current IMU data
+        :param imu_data_list: the current list of IMU data packets to log
         """
-        # Formats the log message as a CSV line
-        message = f"{state},{extension},{','.join(str(getattr(imu_data, value)) for value in imu_data.__slots__)}"
-        # Put the message in the queue
-        self.log_queue.put(message)
+        imu_slots = IMUDataPacket.__slots__  # used to iterate through all availale attributes
+
+        # Loop through all the IMU data packets
+        for imu_data in imu_data_list:
+            # Formats the log message as a CSV line
+            message = f"{state},{extension},{','.join(str(getattr(imu_data, value)) for value in imu_slots)}"
+            # Put the message in the queue
+            self.log_queue.put(message)
 
     def stop(self):
         """
