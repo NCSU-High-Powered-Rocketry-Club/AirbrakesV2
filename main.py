@@ -5,7 +5,6 @@ from Airbrakes.airbrakes import AirbrakesContext
 from Airbrakes.imu import IMU, IMUDataPacket
 from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
-from Airbrakes.utils import run_at_frequency
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
@@ -37,7 +36,7 @@ def main():
 
     # This is the main loop that will run until the shutdown method on the airbrakes is called
     while not airbrakes.shutdown_requested:
-        run_at_frequency(airbrakes.update(), 100)
+        airbrakes.update()
 
 
 if __name__ == "__main__":
