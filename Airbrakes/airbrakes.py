@@ -1,9 +1,14 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
+from typing import TYPE_CHECKING
+
 from Airbrakes.imu import IMU, IMUDataPacket
 from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
 from Airbrakes.state import StandByState, State
+
+if TYPE_CHECKING:
+    import collections
 
 
 class AirbrakesContext:
@@ -44,20 +49,19 @@ class AirbrakesContext:
         """
         # Gets the current extension and IMU data, the states will use these values
         self.current_extension = self.servo.current_extension
-        data_packets = []
 
         # Let's get 50 data packets to ensure we have enough data to work with.
         # 50 is an arbitrary number for now - if the time resolution between each data packet is
         # 2ms, then we have 2*50 = 100ms of data to work with at once.
-        while len(data_packets) < 50:
-            # get_imu_data() gets the "first" item in the queue, i.e, it *may* not be the most
-            # recent data. But we want continous data for proper state and apogee calculation, so
-            # we don't need to worry about that, as long as we're not too behind on processing
-            data_packets.append(self.imu.get_imu_data())
+        # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
+        # *may* not be the most recent data. But we want continous data for proper state and
+        # apogee calculation, so we don't need to worry about that, as long as we're not too
+        # behind on processing
+        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets(50)
 
         # Logs the current state, extension, and IMU data
         # TODO: Compute state(s) for given IMU data
-        self.logger.log(self.state.get_name(), self.current_extension, data_packets)
+        self.logger.log(self.state.get_name(), self.current_extension, data_packets.copy())
 
         self.state.update()
 

@@ -1,5 +1,6 @@
 """Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
 
+import collections
 import multiprocessing
 
 import mscl
@@ -92,7 +93,7 @@ class IMU:
             # Get the latest data packets from the IMU, with the help of `getDataPackets`.
             # `getDataPackets` accepts a timeout in milliseconds.
             # Testing has shown that the maximum rate at which we can fetch data is roughly every
-            # 2ms on average, so we use a timeout of = 1000 / frequency = 10ms which should be more
+            # 2ms on average, so we use a timeout of 1000 / frequency = 10ms which should be more
             # than enough.
             # (help needed: what happens if the timeout is hit? An empty list? Exception?)
             packets: mscl.MipDataPackets = node.getDataPackets(timeout)
@@ -130,17 +131,48 @@ class IMU:
                 # Put the latest data into the shared queue
                 self.data_queue.put(imu_data_packet)
 
-    def get_imu_data(self) -> IMUDataPacket:
+    def get_imu_data_packet(self, block: bool = True) -> IMUDataPacket:
         """
-        Gets the latest data from the IMU.
+        Gets the last available data packet from the IMU.
 
-        Note: If `get_imu_data` is called slower than the frequency set, the data will not be the
-        latest, but the first in the queue.
+        Note: If `get_imu_data_packet` is called slower than the frequency set, the data will not
+        be the latest, but the first in the queue.
+
+        :param block: If True, the function will block until data is available. If False, it may
+            raise a `multiprocessing.queue.Empty` exception if no data is available.
 
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is
-        not available, it will be None.
+            not available, it will be None.
+
+        :raises multiprocessing.queue.Empty: If block is False and there is no data available.
         """
-        return self.data_queue.get()
+        return self.data_queue.get() if block else self.data_queue.get_nowait()
+
+    def get_imu_data_packets(self, num_packets: int, block: bool = True) -> collections.deque[IMUDataPacket]:
+        """Returns a specified amount of data packets from the IMU.
+
+        :param num_packets: The number of packets to return.
+        :param block: If True, the function will block until the specified number of packets are
+            available. Otherwise, it will return the available packets, which may be less than
+            `num_packets`.
+
+        :return: A deque containing the specified number of data packets, or less, depending on
+            `block`.
+        """
+
+        data_packets = collections.deque()
+
+        if block:
+            while len(data_packets) < num_packets:
+                data_packets.append(self.get_imu_data_packet())
+        else:
+            try:
+                for _ in range(num_packets):
+                    data_packets.append(self.get_imu_data_packet(block=False))
+            except multiprocessing.queues.Empty:
+                pass
+
+        return data_packets
 
     def stop(self):
         """

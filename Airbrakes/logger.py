@@ -1,5 +1,6 @@
 """Module for logging data to a CSV file in real time."""
 
+import collections
 import logging
 import multiprocessing
 from pathlib import Path
@@ -62,7 +63,7 @@ class Logger:
             message = self.log_queue.get()
             logger.info(message)
 
-    def log(self, state: str, extension: float, imu_data_list: list[IMUDataPacket]):
+    def log(self, state: str, extension: float, imu_data_list: collections.deque[IMUDataPacket]):
         """
         Logs the current state, extension, and IMU data to the CSV file.
         :param state: the current state of the airbrakes state machine
