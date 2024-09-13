@@ -1,3 +1,6 @@
+"""Module for describing the datapackets from the IMU"""
+
+
 class IMUDataPacket:
     """
     Represents a collection of data packets from the IMU. It contains the acceleration, velocity, altitude, yaw, pitch,
@@ -32,15 +35,15 @@ class RawDataPacket(IMUDataPacket):
     def __init__(
         self,
         timestamp: float,
-        gpsCorrelTimestampFlags: int,
-        gpsCorrelTimestampTow: float,
-        gpsCorrelTimestampWeekNum: int,
-        scaledAccelX: float,
-        scaledAccelY: float,
-        scaledAccelZ: float,
-        scaledGyroX: float,
-        scaledGyroY: float,
-        scaledGyroZ: float
+        gpsCorrelTimestampFlags: int | None = None,
+        gpsCorrelTimestampTow: float | None = None,
+        gpsCorrelTimestampWeekNum: int | None = None,
+        scaledAccelX: float | None = None,
+        scaledAccelY: float | None = None,
+        scaledAccelZ: float | None = None,
+        scaledGyroX: float | None = None,
+        scaledGyroY: float | None = None,
+        scaledGyroZ: float | None = None
     ):
         super().__init__(timestamp)
 
@@ -57,8 +60,8 @@ class RawDataPacket(IMUDataPacket):
 
 class EstimatedDataPacket(IMUDataPacket):
     """
-    Represents an estimated data packet from the IMU, these values are the processed values of the raw data that are
-    supposed to be more accurate/smoothed. It contains a timestamp and the estimated values of the relevant data points.
+    Represents an estimated data packet from the IMU. These values are the processed values of the raw data
+    that are supposed to be more accurate/smoothed. It contains a timestamp and the estimated values of the relevant data points.
     """
 
     __slots__ = (
@@ -81,22 +84,22 @@ class EstimatedDataPacket(IMUDataPacket):
     def __init__(
         self,
         timestamp: float,
-        estFilterGpsTimeTow: float,
-        estFilterGpsTimeWeekNum: int,
-        estOrientQuaternion: tuple[float, float, float, float],
-        estPressureAlt: float,
-        estFilterState: int,
-        estFilterDynamicsMode: int,
-        estFilterStatusFlags: int,
-        estAttitudeUncertQuaternion: tuple[float, float, float, float],
-        estAngularRateX: float,
-        estAngularRateY: float,
-        estAngularRateZ: float,
-        estCompensatedAccelX: float,
-        estCompensatedAccelY: float,
-        estCompensatedAccelZ: float
+        estFilterGpsTimeTow: float | None = None,
+        estFilterGpsTimeWeekNum: int | None = None,
+        estOrientQuaternion: tuple[float, float, float, float] | None = None,
+        estPressureAlt: float | None = None,
+        estFilterState: int | None = None,
+        estFilterDynamicsMode: int | None = None,
+        estFilterStatusFlags: int | None = None,
+        estAttitudeUncertQuaternion: tuple[float, float, float, float] | None = None,
+        estAngularRateX: float | None = None,
+        estAngularRateY: float | None = None,
+        estAngularRateZ: float | None = None,
+        estCompensatedAccelX: float | None = None,
+        estCompensatedAccelY: float | None = None,
+        estCompensatedAccelZ: float | None = None
     ):
-        super().__init__(timestamp)  # Use the provided timestamp
+        super().__init__(timestamp)
 
         self.estFilterGpsTimeTow = estFilterGpsTimeTow
         self.estFilterGpsTimeWeekNum = estFilterGpsTimeWeekNum

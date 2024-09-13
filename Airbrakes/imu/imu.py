@@ -6,6 +6,8 @@ from typing import Literal
 
 import mscl
 
+from Airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+
 
 class RollingAverages:
     """Calculates the rolling averages of acceleration, (and?) from the set of data points"""
@@ -73,8 +75,8 @@ class IMU:
             # `getDataPackets` accepts a timeout in milliseconds.
             # Testing has shown that the maximum rate at which we can fetch data is roughly every
             # 2ms on average, so we use a timeout of 1000 / frequency = 10ms which should be more
-            # than enough.
-            # (help needed: what happens if the timeout is hit? An empty list? Exception?)
+            # than enough. If the timeout is hit, the function will return an empty list.
+
             packets: mscl.MipDataPackets = node.getDataPackets(timeout)
             # Every loop iteration we get the latest data in form of packets from the imu
             for packet in packets:
@@ -82,8 +84,10 @@ class IMU:
                 packet: mscl.MipDataPacket
                 timestamp = packet.collectedTimestamp().nanoseconds()
 
-                # The data points we need specifically, collected in a class.
-                imu_data_packet = IMUDataPacket(timestamp)  # initialize packet with the timestamp
+                # The data points we need specifically, collected in a class
+                # Initialize packet with the timestamp
+                imu_data_packet = EstimatedDataPacket(timestamp) \
+                    if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET else RawDataPacket(timestamp)
 
                 # Each of these packets has multiple data points
                 for data_point in packet.data():
@@ -93,24 +97,14 @@ class IMU:
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
                         if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET:
-                            match channel:
-                                case "estPressureAlt":
-                                    imu_data_packet.altitude = data_point.as_float()
-                                # TODO: Check the units and if their orientations are correct
-                                case "estYaw":
-                                    imu_data_packet.yaw = data_point.as_float()
-                                case "estPitch":
-                                    imu_data_packet.pitch = data_point.as_float()
-                                case "estRoll":
-                                    imu_data_packet.roll = data_point.as_float()
-                                case "estFilterState":
-                                    imu_data_packet.filter_state = data_point.as_float()
-                                case "estRollUncert":
-                                    imu_data_packet.roll_uncert = data_point.as_float()
-                                case "estPitchUncert":
-                                    imu_data_packet.pitch_uncert = data_point.as_float()
-                                case "estYawUncert":
-                                    imu_data_packet.yaw_uncert = data_point.as_float()
+                            # Check if the imu_data_packet has an attribute with the name of the channel
+                            if hasattr(imu_data_packet, channel):
+                                # Set the attribute if it exists
+                                setattr(imu_data_packet, channel, data_point.as_float())
+                            else:
+                                # Handle the case where the channel name is not an attribute
+                                # You could log this, raise an exception, or simply ignore it
+                                print(f"Warning: Channel '{channel}' not found in IMU data packet.")
 
                         elif packet.descriptorSet() == self.RAW_DESCRIPTOR_SET:
                             # depending on the descriptor set, its a different type of packet
