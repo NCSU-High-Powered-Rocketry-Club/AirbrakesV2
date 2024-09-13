@@ -82,10 +82,11 @@ class IMU:
             for packet in packets:
                 # The data packet from the IMU:
                 packet: mscl.MipDataPacket
+
+                # Get the timestamp of the packet
                 timestamp = packet.collectedTimestamp().nanoseconds()
 
-                # The data points we need specifically, collected in a class
-                # Initialize packet with the timestamp
+                # Initialize packet with the timestamp, determines if the packet is raw or estimated
                 imu_data_packet = EstimatedDataPacket(timestamp) \
                     if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET else RawDataPacket(timestamp)
 
@@ -96,22 +97,25 @@ class IMU:
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                        if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET:
-                            # Check if the imu_data_packet has an attribute with the name of the channel
-                            if hasattr(imu_data_packet, channel):
-                                # Set the attribute if it exists
-                                setattr(imu_data_packet, channel, data_point.as_float())
-                            else:
-                                # Handle the case where the channel name is not an attribute
-                                # You could log this, raise an exception, or simply ignore it
-                                print(f"Warning: Channel '{channel}' not found in IMU data packet.")
-
-                        elif packet.descriptorSet() == self.RAW_DESCRIPTOR_SET:
-                            # depending on the descriptor set, its a different type of packet
-                            pass
+                        # Check if the imu_data_packet has an attribute with the name of the channel
+                        if hasattr(imu_data_packet, channel):
+                            # First checks if the data point needs special handling, if not, just set the attribute
+                            match channel:
+                                # These specific data points are matrix's rather than doubles
+                                case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
+                                    matrix = data_point.as_Matrix()
+                                    # Converts the [4x1] matrix to a tuple
+                                    # TODO: maybe we should just make these be stored in the data packet with individual attributes
+                                    quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
+                                    setattr(imu_data_packet, channel, quaternion_tuple)
+                                case _:
+                                    # Because the attribute names in our data packet classes are the same as the channel
+                                    # names, we can just set the attribute to the value of the data point.
+                                    setattr(imu_data_packet, channel, data_point.as_float())
 
                 # Put the latest data into the shared queue
                 self.data_queue.put(imu_data_packet)
+                # TODO: this is where we should calculate the rolling averages
 
     def get_imu_data_packet(self) -> IMUDataPacket:
         """
