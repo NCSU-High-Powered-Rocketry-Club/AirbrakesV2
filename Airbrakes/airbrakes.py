@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from Airbrakes.imu import IMU, IMUDataPacket
+from Airbrakes.imu import IMU, IMUDataPacket, RollingAverages
 from Airbrakes.logger import Logger
 from Airbrakes.servo import Servo
 from Airbrakes.state import StandByState, State
@@ -57,9 +57,10 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continous data for proper state and
         # apogee calculation, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets(50)
+        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
         # Logs the current state, extension, and IMU data
+        rolling_average = RollingAverages(data_packets.copy())
         # TODO: Compute state(s) for given IMU data
         self.logger.log(self.state.get_name(), self.current_extension, data_packets.copy())
 

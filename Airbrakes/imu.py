@@ -2,6 +2,7 @@
 
 import collections
 import multiprocessing
+from typing import Literal
 
 import mscl
 
@@ -12,40 +13,75 @@ class IMUDataPacket:
     roll of the rocket and the timestamp of the data.
     """
 
-    __slots__ = (
-        "acceleration",
-        "altitude",
-        "pitch",
-        "roll",
-        "timestamp",
-        "velocity",
-        "yaw",
-    )
+    __slots__ = ("timestamp",)
 
-    def __init__(
-        self,
-        timestamp: float,
-        acceleration: float | None = None,
-        velocity: float | None = None,
-        altitude: float | None = None,
-        yaw: float | None = None,
-        pitch: float | None = None,
-        roll: float | None = None,
-    ):
+    def __init__(self, timestamp: float):
         self.timestamp = timestamp
-        self.acceleration = acceleration
-        self.velocity = velocity
+
+
+class RawDataPacket(IMUDataPacket):
+    __slots__ = ("",)
+
+    def __init__(self, altitude: float, yaw: float, pitch: float, roll: float):
+        super().__init__(0.0)
         self.altitude = altitude
         self.yaw = yaw
         self.pitch = pitch
         self.roll = roll
 
-    def __str__(self):
-        return (
-            f"IMUDataPacket(timestamp={self.timestamp}, acceleration={self.acceleration}, "
-            f"velocity={self.velocity}, altitude={self.altitude}, yaw={self.yaw}, pitch={self.pitch}, "
-            f"roll={self.roll})"
-        )
+
+class EstimatedDataPacket(IMUDataPacket):
+    __slots__ = (
+        "altitude",
+        "filter_state",
+        "pitch",
+        "pitch_uncert",
+        "roll",
+        "roll_uncert",
+        "yaw",
+        "yaw_uncert",
+    )
+
+    def __init__(
+        self,
+        altitude: float,
+        yaw: float,
+        pitch: float,
+        roll: float,
+        filter_state: float,
+        roll_uncert: float,
+        pitch_uncert: float,
+        yaw_uncert: float,
+    ):
+        super().__init__(0.0)
+        self.altitude = altitude
+        self.yaw = yaw
+        self.pitch = pitch
+        self.roll = roll
+        self.filter_state = filter_state
+        self.roll_uncert = roll_uncert
+        self.pitch_uncert = pitch_uncert
+        self.yaw_uncert = yaw_uncert
+
+
+class RollingAverages:
+    """Calculates the rolling averages of acceleration, (and?) from the set of data points"""
+
+    def __init__(self, data_points: list[IMUDataPacket]) -> None:
+        self.data_points = data_points
+
+    def add_estimated_data_packet(self):
+        pass
+
+    def calculate_average(self, field: Literal["acceleration"]) -> None:
+        if field == "acceleration":
+            self.averaged_acceleration = sum(data_point.acceleration for data_point in self.data_points) / len(
+                self.data_points
+            )
+
+    @property
+    def averaged_acceleration(self):
+        return self.averaged_acceleration
 
 
 class IMU:
@@ -124,6 +160,15 @@ class IMU:
                                     imu_data_packet.pitch = data_point.as_float()
                                 case "estRoll":
                                     imu_data_packet.roll = data_point.as_float()
+                                case "estFilterState":
+                                    imu_data_packet.filter_state = data_point.as_float()
+                                case "estRollUncert":
+                                    imu_data_packet.roll_uncert = data_point.as_float()
+                                case "estPitchUncert":
+                                    imu_data_packet.pitch_uncert = data_point.as_float()
+                                case "estYawUncert":
+                                    imu_data_packet.yaw_uncert = data_point.as_float()
+
                         elif packet.descriptorSet() == self.RAW_DESCRIPTOR_SET:
                             # depending on the descriptor set, its a different type of packet
                             pass
@@ -131,46 +176,29 @@ class IMU:
                 # Put the latest data into the shared queue
                 self.data_queue.put(imu_data_packet)
 
-    def get_imu_data_packet(self, block: bool = True) -> IMUDataPacket:
+    def get_imu_data_packet(self) -> IMUDataPacket:
         """
         Gets the last available data packet from the IMU.
 
         Note: If `get_imu_data_packet` is called slower than the frequency set, the data will not
         be the latest, but the first in the queue.
 
-        :param block: If True, the function will block until data is available. If False, it may
-            raise a `multiprocessing.queue.Empty` exception if no data is available.
-
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is
             not available, it will be None.
-
-        :raises multiprocessing.queue.Empty: If block is False and there is no data available.
         """
-        return self.data_queue.get() if block else self.data_queue.get_nowait()
+        return self.data_queue.get()
 
-    def get_imu_data_packets(self, num_packets: int, block: bool = True) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """Returns a specified amount of data packets from the IMU.
 
-        :param num_packets: The number of packets to return.
-        :param block: If True, the function will block until the specified number of packets are
-            available. Otherwise, it will return the available packets, which may be less than
-            `num_packets`.
-
-        :return: A deque containing the specified number of data packets, or less, depending on
-            `block`.
+        :return: A deque containing the specified number of data packets
         """
 
         data_packets = collections.deque()
 
-        if block:
-            while len(data_packets) < num_packets:
-                data_packets.append(self.get_imu_data_packet())
-        else:
-            try:
-                for _ in range(num_packets):
-                    data_packets.append(self.get_imu_data_packet(block=False))
-            except multiprocessing.queues.Empty:
-                pass
+        while not self.data_queue.empty():
+            data_packet = self.get_imu_data_packet()
+            data_packets.append(data_packet)
 
         return data_packets
 

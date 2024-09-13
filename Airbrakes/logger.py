@@ -70,7 +70,7 @@ class Logger:
         :param extension: the current extension of the airbrakes
         :param imu_data_list: the current list of IMU data packets to log
         """
-        imu_slots = IMUDataPacket.__slots__  # used to iterate through all availale attributes
+        imu_slots = IMUDataPacket.__slots__  # used to iterate through all available attributes
 
         # Loop through all the IMU data packets
         for imu_data in imu_data_list:
