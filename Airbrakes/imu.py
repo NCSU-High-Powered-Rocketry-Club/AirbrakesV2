@@ -20,17 +20,32 @@ class IMUDataPacket:
 
 
 class RawDataPacket(IMUDataPacket):
-    __slots__ = ("",)
+    """
+    Represents a raw data packet from the IMU, these values are exactly what the IMU read, without any processing done.
+    It contains a timestamp and the raw values of the acceleration and gyroscopes.
+    """
 
-    def __init__(self, altitude: float, yaw: float, pitch: float, roll: float):
+    __slots__ = ("scaledAccelX", "scaledAccelY", "scaledAccelZ", "scaledGyroX", "scaledGyroY", "scaledGyroZ",)
+
+    # TODO: I know these names break snake_case convention, but they are the actual names of the data points so I argue we should keep them
+    def __init__(self, scaledAccelX: float, scaledAccelY: float, scaledAccelZ: float, scaledGyroX: float,
+                 scaledGyroY: float, scaledGyroZ: float):
         super().__init__(0.0)
-        self.altitude = altitude
-        self.yaw = yaw
-        self.pitch = pitch
-        self.roll = roll
+        self.scaledAccelX = scaledAccelX
+        self.scaledAccelY = scaledAccelY
+        self.scaledAccelZ = scaledAccelZ
+        self.scaledGyroX = scaledGyroX
+        self.scaledGyroY = scaledGyroY
+        self.scaledGyroZ = scaledGyroZ
 
 
 class EstimatedDataPacket(IMUDataPacket):
+    """
+    Represents an estimated data packet from the IMU, these values are the processed values of the raw data that are
+    supposed to be more accurate/smoothed. It contains a timestamp and the estimated values of the altitude, yaw, pitch,
+    """
+
+    # TODO: these are not all the right names/values, we will need to check the actual names
     __slots__ = (
         "altitude",
         "filter_state",
@@ -43,15 +58,15 @@ class EstimatedDataPacket(IMUDataPacket):
     )
 
     def __init__(
-        self,
-        altitude: float,
-        yaw: float,
-        pitch: float,
-        roll: float,
-        filter_state: float,
-        roll_uncert: float,
-        pitch_uncert: float,
-        yaw_uncert: float,
+            self,
+            altitude: float,
+            yaw: float,
+            pitch: float,
+            roll: float,
+            filter_state: float,
+            roll_uncert: float,
+            pitch_uncert: float,
+            yaw_uncert: float,
     ):
         super().__init__(0.0)
         self.altitude = altitude
@@ -67,7 +82,7 @@ class EstimatedDataPacket(IMUDataPacket):
 class RollingAverages:
     """Calculates the rolling averages of acceleration, (and?) from the set of data points"""
 
-    def __init__(self, data_points: list[IMUDataPacket]) -> None:
+    def __init__(self, data_points: list[IMUDataPacket]):
         self.data_points = data_points
 
     def add_estimated_data_packet(self):
