@@ -1,6 +1,6 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-from Airbrakes.airbrakes import AirbrakesContext
+from airbrakes.airbrakes import AirbrakesContext
 
 
 class State:

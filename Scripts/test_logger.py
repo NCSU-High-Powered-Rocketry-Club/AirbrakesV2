@@ -1,7 +1,7 @@
 """Module to test the logger module."""
 
-from Airbrakes.imu import IMUDataPacket
-from Airbrakes.logger import Logger
+from airbrakes.imu import IMUDataPacket
+from airbrakes.logger import Logger
 
 CSV_HEADERS = ["state", "extension", *list(IMUDataPacket(0.0).__slots__)]
 

@@ -6,7 +6,7 @@ from typing import Literal
 
 import mscl
 
-from Airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 
 class RollingAverages:
@@ -87,8 +87,11 @@ class IMU:
                 timestamp = packet.collectedTimestamp().nanoseconds()
 
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
-                imu_data_packet = EstimatedDataPacket(timestamp) \
-                    if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET else RawDataPacket(timestamp)
+                imu_data_packet = (
+                    EstimatedDataPacket(timestamp)
+                    if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET
+                    else RawDataPacket(timestamp)
+                )
 
                 # Each of these packets has multiple data points
                 for data_point in packet.data():

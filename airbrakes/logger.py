@@ -5,7 +5,7 @@ import logging
 import multiprocessing
 from pathlib import Path
 
-from Airbrakes.imu import IMUDataPacket
+from airbrakes.imu import IMUDataPacket
 
 
 class Logger:

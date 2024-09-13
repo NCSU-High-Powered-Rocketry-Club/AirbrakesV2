@@ -4,7 +4,7 @@ Make sure you are in the root directory of the project, not inside Scripts, and 
 For the pi, you will have to use python3
 """
 
-from Airbrakes.servo import Servo
+from airbrakes.servo import Servo
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12

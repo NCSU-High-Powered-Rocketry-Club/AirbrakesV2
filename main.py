@@ -1,10 +1,10 @@
 """The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object and run the main
 loop."""
 
-from Airbrakes.airbrakes import AirbrakesContext
-from Airbrakes.imu import IMU, IMUDataPacket
-from Airbrakes.logger import Logger
-from Airbrakes.servo import Servo
+from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.imu import IMU, IMUDataPacket
+from airbrakes.logger import Logger
+from airbrakes.servo import Servo
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12

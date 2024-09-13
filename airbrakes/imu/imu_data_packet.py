@@ -43,7 +43,7 @@ class RawDataPacket(IMUDataPacket):
         scaledAccelZ: float | None = None,
         scaledGyroX: float | None = None,
         scaledGyroY: float | None = None,
-        scaledGyroZ: float | None = None
+        scaledGyroZ: float | None = None,
     ):
         super().__init__(timestamp)
 
@@ -111,7 +111,7 @@ class EstimatedDataPacket(IMUDataPacket):
         estAngularRateZ: float | None = None,
         estCompensatedAccelX: float | None = None,
         estCompensatedAccelY: float | None = None,
-        estCompensatedAccelZ: float | None = None
+        estCompensatedAccelZ: float | None = None,
     ):
         super().__init__(timestamp)
 
