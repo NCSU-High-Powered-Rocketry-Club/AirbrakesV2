@@ -13,6 +13,10 @@ class IMUDataPacket:
     def __init__(self, timestamp: float):
         self.timestamp = timestamp
 
+    def __str__(self):
+        attributes = ", ".join([f"{attr}={getattr(self, attr)}" for attr in self.__slots__])
+        return f"{self.__class__.__name__}({attributes})"
+
 
 class RawDataPacket(IMUDataPacket):
     """
@@ -56,20 +60,6 @@ class RawDataPacket(IMUDataPacket):
         self.scaledGyroX = scaledGyroX
         self.scaledGyroY = scaledGyroY
         self.scaledGyroZ = scaledGyroZ
-
-    def __str__(self):
-        return (
-            f"RawDataPacket(timestamp={self.timestamp}, "
-            f"gpsCorrelTimestampFlags={self.gpsCorrelTimestampFlags}, "
-            f"gpsCorrelTimestampTow={self.gpsCorrelTimestampTow}, "
-            f"gpsCorrelTimestampWeekNum={self.gpsCorrelTimestampWeekNum}, "
-            f"scaledAccelX={self.scaledAccelX}, "
-            f"scaledAccelY={self.scaledAccelY}, "
-            f"scaledAccelZ={self.scaledAccelZ}, "
-            f"scaledGyroX={self.scaledGyroX}, "
-            f"scaledGyroY={self.scaledGyroY}, "
-            f"scaledGyroZ={self.scaledGyroZ})"
-        )
 
 
 class EstimatedDataPacket(IMUDataPacket):
@@ -129,22 +119,3 @@ class EstimatedDataPacket(IMUDataPacket):
         self.estCompensatedAccelX = estCompensatedAccelX
         self.estCompensatedAccelY = estCompensatedAccelY
         self.estCompensatedAccelZ = estCompensatedAccelZ
-
-    def __str__(self):
-        return (
-            f"EstimatedDataPacket(timestamp={self.timestamp}, "
-            f"estFilterGpsTimeTow={self.estFilterGpsTimeTow}, "
-            f"estFilterGpsTimeWeekNum={self.estFilterGpsTimeWeekNum}, "
-            f"estOrientQuaternion={self.estOrientQuaternion}, "
-            f"estPressureAlt={self.estPressureAlt}, "
-            f"estFilterState={self.estFilterState}, "
-            f"estFilterDynamicsMode={self.estFilterDynamicsMode}, "
-            f"estFilterStatusFlags={self.estFilterStatusFlags}, "
-            f"estAttitudeUncertQuaternion={self.estAttitudeUncertQuaternion}, "
-            f"estAngularRateX={self.estAngularRateX}, "
-            f"estAngularRateY={self.estAngularRateY}, "
-            f"estAngularRateZ={self.estAngularRateZ}, "
-            f"estCompensatedAccelX={self.estCompensatedAccelX}, "
-            f"estCompensatedAccelY={self.estCompensatedAccelY}, "
-            f"estCompensatedAccelZ={self.estCompensatedAccelZ})"
-        )
