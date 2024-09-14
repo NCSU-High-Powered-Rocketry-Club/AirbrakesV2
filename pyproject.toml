@@ -3,6 +3,17 @@ name = "AirbrakesV2"
 description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
 requires-python = ">=3.10"
 version = "0.1.0"
+dependencies = [
+    "gpiozero",  # Run sudo pigpiod before running the program
+    # Installation instructions for the following dependencies can be found in the README:
+    # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
 
 
 # RUFF:
@@ -20,4 +31,5 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
           "D100", "D101", "D300", "D418", "D419", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"Scripts/test_*.py" = ["T20"]
+"Scripts/run_*.py" = ["T20"]
+"tests/*.py" = ["T20", "S101", "D100"]
