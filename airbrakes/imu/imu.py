@@ -31,12 +31,18 @@ class IMU:
     def __init__(self, port: str, frequency: int, upside_down: bool):
         # Shared Queue which contains the latest data from the IMU
         self.data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
-        self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
+        self.running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
         self.data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop, args=(port, frequency, upside_down)
         )
+
+    def start(self):
+        """
+        Starts the process fetching data from the IMU.
+        """
+        self.running.value = True
         self.data_fetch_process.start()
 
     def _fetch_data_loop(self, port: str, frequency: int, _: bool):

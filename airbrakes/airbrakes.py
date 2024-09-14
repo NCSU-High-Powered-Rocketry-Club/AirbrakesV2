@@ -44,6 +44,13 @@ class AirbrakesContext:
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0
 
+    def start(self) -> None:
+        """
+        Starts the IMU and logger processes. This is called before the main while loop starts.
+        """
+        self.imu.start()
+        self.logger.start()
+
     def update(self) -> None:
         """
         Called every loop iteration from the main process. Depending on the current state, it will
@@ -65,7 +72,7 @@ class AirbrakesContext:
         )
         # Logs the current state, extension, and IMU data
         # TODO: Compute state(s) for given IMU data
-        self.logger.log(self.state.get_name(), self.current_extension, data_packets.copy())
+        self.logger.log(self.state.get_name(), self.current_extension, data_packets)
 
         self.state.update()
 
@@ -76,7 +83,7 @@ class AirbrakesContext:
         """
         self.servo.set_extension(extension)
 
-    def shutdown(self) -> None:
+    def stop(self) -> None:
         """
         Handles shutting down the airbrakes. This will cause the main loop to break.
         """
