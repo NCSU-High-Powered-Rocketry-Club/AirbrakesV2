@@ -15,12 +15,14 @@ class IMUDataPacket:
     Base class representing a collection of data packets from the IMU.
     The attributes should be named the same as they are when sent from the IMU -- this just means
     they're going to be in camelCase.
+
+    Args:
+        timestamp (int): The timestamp of the data packet in nanoseconds.
     """
 
     __slots__ = ("timestamp",)
 
-    def __init__(self, timestamp: float):
-        # TODO: This likely doesn't work as there is no "timestamp" field in the data packets
+    def __init__(self, timestamp: int):
         self.timestamp = timestamp
 
     def __str__(self):
@@ -48,7 +50,7 @@ class RawDataPacket(IMUDataPacket):
 
     def __init__(
         self,
-        timestamp: float,
+        timestamp: int,
         gpsCorrelTimestampFlags: int | None = None,
         gpsCorrelTimestampTow: float | None = None,
         gpsCorrelTimestampWeekNum: int | None = None,
@@ -98,7 +100,7 @@ class EstimatedDataPacket(IMUDataPacket):
 
     def __init__(
         self,
-        timestamp: float,
+        timestamp: int,
         estFilterGpsTimeTow: float | None = None,
         estFilterGpsTimeWeekNum: int | None = None,
         estOrientQuaternion: tuple[float, float, float, float] | None = None,

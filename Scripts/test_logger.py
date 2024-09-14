@@ -7,7 +7,7 @@ from airbrakes.logger import Logger
 def main():
     logger = Logger()
 
-    while True:  # TODO: will not work
+    while True:  # TODO: will not print. Should now read csv file to print
         logger.log("state", 0.0, IMUDataPacket(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
 

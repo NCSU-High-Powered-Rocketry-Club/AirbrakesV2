@@ -19,8 +19,8 @@ FREQUENCY = 100  # TODO: Remove this since we don't/can't control the frequency 
 
 # The headers for the CSV file
 CSV_HEADERS = [
-    "State",
-    "Extension",
+    "state",
+    "extension",
     *list(IMUDataPacket.__slots__),
     *list(RawDataPacket.__slots__),
     *list(EstimatedDataPacket.__slots__),

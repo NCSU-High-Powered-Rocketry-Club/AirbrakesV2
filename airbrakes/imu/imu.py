@@ -98,7 +98,6 @@ class IMU:
 
                 # Put the latest data into the shared queue
                 self.data_queue.put(imu_data_packet)
-                # TODO: this is where we should calculate the rolling averages
 
     def get_imu_data_packet(self) -> IMUDataPacket | EstimatedDataPacket:
         """
