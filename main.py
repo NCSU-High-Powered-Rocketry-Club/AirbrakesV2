@@ -2,32 +2,14 @@
 loop."""
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.imu import IMU, IMUDataPacket
+from airbrakes.constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
+from airbrakes.imu.imu import IMU
 from airbrakes.logger import Logger
 from airbrakes.servo import Servo
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
-SERVO_PIN = 12
-
-# The minimum and maximum position of the servo, its range is -1 to 1
-MIN_EXTENSION = -1
-MAX_EXTENSION = 1
-
-# Should be checked before launch
-UPSIDE_DOWN = True
-# The port that the IMU is connected to
-PORT = "/dev/ttyACM0"
-# The frequency in Hz that the IMU will be polled at
-# TODO: need to do testing with imu to see how the different data packets affect logging frequency
-# TODO: Potential idea is making a separate method to get raw vs est data, and then have both held in the context
-FREQUENCY = 100
-
-# The headers for the CSV file
-CSV_HEADERS = ["State", "Extension", *list(IMUDataPacket(0.0).__slots__)]
-
 
 def main():
-    logger = Logger(CSV_HEADERS)
+    logger = Logger()
     servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
     imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 

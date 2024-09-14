@@ -2,7 +2,9 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.imu import IMU, IMUDataPacket, RollingAverages
+from airbrakes.imu.data_processor import ProcessedIMUData
+from airbrakes.imu.imu import IMU, IMUDataPacket
+from airbrakes.imu.imu_data_packet import EstimatedDataPacket
 from airbrakes.logger import Logger
 from airbrakes.servo import Servo
 from airbrakes.state import StandByState, State
@@ -21,27 +23,28 @@ class AirbrakesContext:
 
     __slots__ = (
         "current_extension",
-        "current_imu_data",
         "imu",
         "logger",
+        "processed_data",
         "servo",
         "shutdown_requested",
         "state",
     )
 
     def __init__(self, logger: Logger, servo: Servo, imu: IMU):
-        self.logger = logger
-        self.servo = servo
-        self.imu = imu
+        self.logger: Logger = logger
+        self.servo: Servo = servo
+        self.imu: IMU = imu
 
         self.state: State = StandByState(self)
         self.shutdown_requested = False
 
-        # Placeholder for the current airbrake extension and IMU data until they are set
-        self.current_extension = 0.0
-        self.current_imu_data = IMUDataPacket(0.0)
+        self.processed_data: ProcessedIMUData = ProcessedIMUData([])
 
-    def update(self):
+        # Placeholder for the current airbrake extension until they are set
+        self.current_extension: float = 0.0
+
+    def update(self) -> None:
         """
         Called every loop iteration from the main process. Depending on the current state, it will
         do different things. It is what controls the airbrakes and chooses when to move to the next
@@ -50,30 +53,30 @@ class AirbrakesContext:
         # Gets the current extension and IMU data, the states will use these values
         self.current_extension = self.servo.current_extension
 
-        # Let's get 50 data packets to ensure we have enough data to work with.
-        # 50 is an arbitrary number for now - if the time resolution between each data packet is
-        # 2ms, then we have 2*50 = 100ms of data to work with at once.
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
-        # *may* not be the most recent data. But we want continous data for proper state and
-        # apogee calculation, so we don't need to worry about that, as long as we're not too
+        # *may* not be the most recent data. But we want continous data for state, apogee,
+        # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
         data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
+        # Update the processed data with the new data packets. We only care about EstimatedDataPackets
+        self.processed_data.update(
+            data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)
+        )
         # Logs the current state, extension, and IMU data
-        RollingAverages(data_packets.copy())
         # TODO: Compute state(s) for given IMU data
         self.logger.log(self.state.get_name(), self.current_extension, data_packets.copy())
 
         self.state.update()
 
-    def set_airbrake_extension(self, extension: float):
+    def set_airbrake_extension(self, extension: float) -> None:
         """
         Sets the airbrake extension via the servo. It will be called by the states.
         :param extension: the extension of the airbrakes, between 0 and 1
         """
         self.servo.set_extension(extension)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """
         Handles shutting down the airbrakes. This will cause the main loop to break.
         """

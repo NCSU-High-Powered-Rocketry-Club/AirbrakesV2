@@ -2,31 +2,10 @@
 
 import collections
 import multiprocessing
-from typing import Literal
 
 import mscl
 
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-
-
-class RollingAverages:
-    """Calculates the rolling averages of acceleration, (and?) from the set of data points"""
-
-    def __init__(self, data_points: list[IMUDataPacket]):
-        self.data_points = data_points
-
-    def add_estimated_data_packet(self):
-        pass
-
-    def calculate_average(self, field: Literal["acceleration"]) -> None:
-        if field == "acceleration":
-            self.averaged_acceleration = sum(data_point.acceleration for data_point in self.data_points) / len(
-                self.data_points
-            )
-
-    @property
-    def averaged_acceleration(self):
-        return self.averaged_acceleration
 
 
 class IMU:
@@ -44,7 +23,6 @@ class IMU:
     RAW_DESCRIPTOR_SET = 128
 
     __slots__ = (
-        "connection",
         "data_fetch_process",
         "data_queue",
         "running",
@@ -73,8 +51,9 @@ class IMU:
         while self.running.value:
             # Get the latest data packets from the IMU, with the help of `getDataPackets`.
             # `getDataPackets` accepts a timeout in milliseconds.
-            # Testing has shown that the maximum rate at which we can fetch data is roughly every
-            # 2ms on average, so we use a timeout of 1000 / frequency = 10ms which should be more
+            # During IMU configuration (outside of this code), we set the sampling rate of the IMU
+            # as 1ms for RawDataPackets, and 2ms for EstimatedDataPackets.
+            # So we use a timeout of 1000 / frequency = 10ms which should be more
             # than enough. If the timeout is hit, the function will return an empty list.
 
             packets: mscl.MipDataPackets = node.getDataPackets(timeout)
@@ -108,7 +87,8 @@ class IMU:
                                 case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
                                     matrix = data_point.as_Matrix()
                                     # Converts the [4x1] matrix to a tuple
-                                    # TODO: maybe we should just make these be stored in the data packet with individual attributes
+                                    # TODO: maybe we should just make these be stored in the data
+                                    # packet with individual attributes
                                     quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
                                     setattr(imu_data_packet, channel, quaternion_tuple)
                                 case _:
@@ -120,7 +100,7 @@ class IMU:
                 self.data_queue.put(imu_data_packet)
                 # TODO: this is where we should calculate the rolling averages
 
-    def get_imu_data_packet(self) -> IMUDataPacket:
+    def get_imu_data_packet(self) -> IMUDataPacket | EstimatedDataPacket:
         """
         Gets the last available data packet from the IMU.
 
@@ -132,8 +112,8 @@ class IMU:
         """
         return self.data_queue.get()
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        """Returns a specified amount of data packets from the IMU.
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket | EstimatedDataPacket]:
+        """Returns all available data packets from the IMU.
 
         :return: A deque containing the specified number of data packets
         """

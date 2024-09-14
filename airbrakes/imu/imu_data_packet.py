@@ -1,20 +1,30 @@
 """Module for describing the datapackets from the IMU"""
 
 
+def _mro_slots(obj) -> list[str]:
+    """Helper function to get all __slots__ from the MRO (Method Resolution Order) of an object"""
+    return [
+        attr
+        for cls in obj.__class__.__mro__[:-1]  # :-1 doesn't include the object class
+        for attr in cls.__slots__
+    ]
+
+
 class IMUDataPacket:
     """
-    Represents a collection of data packets from the IMU. It contains the acceleration, velocity, altitude, yaw, pitch,
-    roll of the rocket and the timestamp of the data. The attributes should be named the same as they are when sent from
-    the IMU--this just means they're going to be in camelCase.
+    Base class representing a collection of data packets from the IMU.
+    The attributes should be named the same as they are when sent from the IMU -- this just means
+    they're going to be in camelCase.
     """
 
     __slots__ = ("timestamp",)
 
     def __init__(self, timestamp: float):
+        # TODO: This likely doesn't work as there is no "timestamp" field in the data packets
         self.timestamp = timestamp
 
     def __str__(self):
-        attributes = ", ".join([f"{attr}={getattr(self, attr)}" for attr in self.__slots__])
+        attributes = ", ".join(f"{attr}={getattr(self, attr)}" for attr in _mro_slots(self))
         return f"{self.__class__.__name__}({attributes})"
 
 
@@ -26,8 +36,8 @@ class RawDataPacket(IMUDataPacket):
 
     __slots__ = (
         "gpsCorrelTimestampFlags",
-        "gpsCorrelTimestampTow",
-        "gpsCorrelTimestampWeekNum",
+        "gpsCorrelTimestampTow",  # Time of week
+        "gpsCorrelTimestampWeekNum",  # Week number
         "scaledAccelX",
         "scaledAccelY",
         "scaledAccelZ",
@@ -64,8 +74,9 @@ class RawDataPacket(IMUDataPacket):
 
 class EstimatedDataPacket(IMUDataPacket):
     """
-    Represents an estimated data packet from the IMU. These values are the processed values of the raw data
-    that are supposed to be more accurate/smoothed. It contains a timestamp and the estimated values of the relevant data points.
+    Represents an estimated data packet from the IMU. These values are the processed values of the
+    raw data that are supposed to be more accurate/smoothed. It contains a timestamp and the
+    estimated values of the relevant data points.
     """
 
     __slots__ = (
@@ -77,8 +88,8 @@ class EstimatedDataPacket(IMUDataPacket):
         "estCompensatedAccelY",
         "estCompensatedAccelZ",
         "estFilterDynamicsMode",
-        "estFilterGpsTimeTow",
-        "estFilterGpsTimeWeekNum",
+        "estFilterGpsTimeTow",  # Time of week
+        "estFilterGpsTimeWeekNum",  # Week number
         "estFilterState",
         "estFilterStatusFlags",
         "estOrientQuaternion",

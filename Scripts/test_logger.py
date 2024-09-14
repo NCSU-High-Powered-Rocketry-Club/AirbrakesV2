@@ -1,15 +1,13 @@
 """Module to test the logger module."""
 
-from airbrakes.imu import IMUDataPacket
+from airbrakes.imu.imu_data_packet import IMUDataPacket
 from airbrakes.logger import Logger
-
-CSV_HEADERS = ["state", "extension", *list(IMUDataPacket(0.0).__slots__)]
 
 
 def main():
-    logger = Logger(CSV_HEADERS)
+    logger = Logger()
 
-    while True:
+    while True:  # TODO: will not work
         logger.log("state", 0.0, IMUDataPacket(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
 

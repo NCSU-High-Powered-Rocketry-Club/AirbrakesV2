@@ -4,14 +4,8 @@ Make sure you are in the root directory of the project, not inside Scripts, and 
 For the pi, you will have to use python3
 """
 
-from airbrakes.imu import IMU
-
-# Should be checked before launch
-UPSIDE_DOWN = True
-# The port that the IMU is connected to
-PORT = "/dev/ttyACM0"
-# The frequency in which the IMU polls data in Hz
-FREQUENCY = 100
+from airbrakes.constants import FREQUENCY, PORT, UPSIDE_DOWN
+from airbrakes.imu.imu import IMU
 
 imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
