@@ -45,29 +45,21 @@ class Logger:
         # Start the logging process
         self._log_process = multiprocessing.Process(target=self._logging_loop)
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
         """
         self._log_process.start()
 
-    def _logging_loop(self):
+    def stop(self) -> None:
         """
-        The loop that saves data to the logs. It runs in parallel with the main loop.
+        Stops the logging process. It will finish logging the current message and then stop.
         """
-        # Set up the csv logging in the new process
-        with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
-            while True:
-                # Get a message from the queue (this will block until a message is available)
-                # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get()
-                # If the message is the stop signal, break out of the loop
-                if message_fields == STOP_SIGNAL:
-                    break
-                writer.writerow(message_fields)
+        self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        # Waits for the process to finish before stopping it
+        self._log_process.join()
 
-    def log(self, state: str, extension: float, imu_data_list: collections.deque[IMUDataPacket]):
+    def log(self, state: str, extension: float, imu_data_list: collections.deque[IMUDataPacket]) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
         :param state: the current state of the airbrakes state machine
@@ -82,13 +74,21 @@ class Logger:
             # Put the message in the queue
             self._log_queue.put(message_dict)
 
-    def stop(self):
+    def _logging_loop(self) -> None:
         """
-        Stops the logging process. It will finish logging the current message and then stop.
+        The loop that saves data to the logs. It runs in parallel with the main loop.
         """
-        self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
-        # Waits for the process to finish before stopping it
-        self._log_process.join()
+        # Set up the csv logging in the new process
+        with self.log_path.open(mode="a", newline="") as file_writer:
+            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
+            while True:
+                # Get a message from the queue (this will block until a message is available)
+                # Because there's no timeout, it will wait indefinitely until it gets a message.
+                message_fields = self._log_queue.get()
+                # If the message is the stop signal, break out of the loop
+                if message_fields == STOP_SIGNAL:
+                    break
+                writer.writerow(message_fields)
 
     @property
     def is_running(self) -> bool:
