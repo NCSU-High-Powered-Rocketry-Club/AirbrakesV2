@@ -1,7 +1,7 @@
 import time
 from collections import deque
 
-from airbrakes.imu.imu_data_packet import RawDataPacket  # Assuming this is your IMU data packet class
+from airbrakes.imu.imu_data_packet import RawDataPacket
 from airbrakes.logger import Logger
 
 
