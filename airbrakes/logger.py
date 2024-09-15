@@ -45,6 +45,13 @@ class Logger:
         # Start the logging process
         self._log_process = multiprocessing.Process(target=self._logging_loop)
 
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the logging process is running.
+        """
+        return self._log_process.is_alive()
+
     def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
@@ -69,8 +76,8 @@ class Logger:
         # Loop through all the IMU data packets
         for imu_data in imu_data_list:
             # Formats the log message as a CSV line
-            message_dict = {"state": state, "extension": extension, "timestamp": imu_data.timestamp}
-            message_dict.update({key: getattr(imu_data, key) for key in imu_data.__slots__})
+            message_dict = {"state": state, "extension": extension}
+            message_dict.update({key: getattr(imu_data, key) for key in imu_data.__struct_fields__})
             # Put the message in the queue
             self._log_queue.put(message_dict)
 
@@ -89,10 +96,3 @@ class Logger:
                 if message_fields == STOP_SIGNAL:
                     break
                 writer.writerow(message_fields)
-
-    @property
-    def is_running(self) -> bool:
-        """
-        Returns whether the logging process is running.
-        """
-        return self._log_process.is_alive()
