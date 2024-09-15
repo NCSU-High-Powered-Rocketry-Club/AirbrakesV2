@@ -29,10 +29,6 @@ class TestLogger:
         for log in self.LOG_PATH.glob("log_*.csv"):
             log.unlink()
 
-    def test_slots(self, logger):
-        for attr in logger.__slots__:
-            assert getattr(logger, attr, "err") != "err", f"got extra slot '{attr}'"
-
     def test_init(self, logger):
         # Test if "logs" directory was created
         assert logger.log_path.parent.exists()
@@ -101,8 +97,8 @@ class TestLogger:
         "data_packet",
         [
             # Initialize RawDataPacket and EstimatedDataPacket with all dummy values
-            RawDataPacket("1", *("2" for _ in range(len(RawDataPacket.__slots__)))),
-            EstimatedDataPacket("2", *("3" for _ in range(len(EstimatedDataPacket.__slots__)))),
+            RawDataPacket(*("2" for _ in range(len(RawDataPacket.__struct_fields__)))),
+            EstimatedDataPacket(*("3" for _ in range(len(EstimatedDataPacket.__struct_fields__)))),
         ],
         ids=["RawDataPacket", "EstimatedDataPacket"],
     )
@@ -128,6 +124,5 @@ class TestLogger:
             assert row_dict == {
                 "state": "state",
                 "extension": "0.1",
-                "timestamp": data_packet.timestamp,
-                **{attr: getattr(data_packet, attr) for attr in data_packet.__slots__},
+                **{attr: getattr(data_packet, attr) for attr in data_packet.__struct_fields__},
             }
