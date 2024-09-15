@@ -46,4 +46,8 @@ CSV_HEADERS = [
     *list(IMUDataPacket.__slots__),
     *list(RawDataPacket.__slots__),
     *list(EstimatedDataPacket.__slots__),
-]  # TODO: this needs to be used in the logger module
+]
+
+# The signal to stop the logging process, this will be put in the queue to stop the process
+# see stop() and _logging_loop() for more details.
+STOP_SIGNAL = "STOP"

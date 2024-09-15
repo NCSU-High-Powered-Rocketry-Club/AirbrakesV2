@@ -5,7 +5,7 @@ import csv
 import multiprocessing
 from pathlib import Path
 
-from airbrakes.constants import CSV_HEADERS
+from airbrakes.constants import CSV_HEADERS, STOP_SIGNAL
 from airbrakes.imu.imu_data_packet import IMUDataPacket
 
 
@@ -22,10 +22,6 @@ class Logger:
     """
 
     __slots__ = ("_log_process", "_log_queue", "log_path")
-
-    # The signal to stop the logging process, this will be put in the queue to stop the process
-    # see stop() and _logging_loop() for more details.
-    _STOP_SIGNAL = "STOP"
 
     def __init__(self, log_dir: Path):
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -67,7 +63,7 @@ class Logger:
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 message_fields = self._log_queue.get()
                 # If the message is the stop signal, break out of the loop
-                if message_fields == self._STOP_SIGNAL:
+                if message_fields == STOP_SIGNAL:
                     break
                 writer.writerow(message_fields)
 
@@ -90,6 +86,13 @@ class Logger:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
-        self._log_queue.put(self._STOP_SIGNAL)  # Put the stop signal in the queue
+        self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         # Waits for the process to finish before stopping it
         self._log_process.join()
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the logging process is running.
+        """
+        return self._log_process.is_alive()
