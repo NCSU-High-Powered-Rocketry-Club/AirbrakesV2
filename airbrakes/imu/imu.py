@@ -101,7 +101,7 @@ class IMU:
                 # Put the latest data into the shared queue
                 self.data_queue.put(imu_data_packet)
 
-    def get_imu_data_packet(self) -> IMUDataPacket | EstimatedDataPacket:
+    def get_imu_data_packet(self) -> IMUDataPacket:
         """
         Gets the last available data packet from the IMU.
 
@@ -113,7 +113,7 @@ class IMU:
         """
         return self.data_queue.get()
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket | EstimatedDataPacket]:
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """Returns all available data packets from the IMU.
 
         :return: A deque containing the specified number of data packets
