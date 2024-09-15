@@ -40,7 +40,7 @@ class Logger:
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
         # the back and pop from front, meaning that things will be logged in the order they were
         # added
-        self._log_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
+        self._log_queue: multiprocessing.Queue[dict[str, object]] = multiprocessing.Queue()
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Start the logging process
@@ -71,12 +71,9 @@ class Logger:
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
-            while self._running.value:
-                # Get a message from the queue (this will block until a message is available)
-                # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get()
-                if message_fields == self._stop_signal:
-                    break
+            # Get a message from the queue (this will block until a message is available)
+            # Because there's no timeout, it will wait indefinitely until it gets a message.
+            while (message_fields:=self._log_queue.get()) != self._stop_signal:
                 writer.writerow(message_fields)
 
     def log(self, state: str, extension: float, imu_data_list: collections.deque[IMUDataPacket]):
