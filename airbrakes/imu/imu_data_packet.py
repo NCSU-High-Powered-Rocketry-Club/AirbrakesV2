@@ -1,4 +1,4 @@
-"""Module for describing the datapackets from the IMU"""
+"""Module for describing the data packets from the IMU"""
 
 import msgspec
 
@@ -8,9 +8,6 @@ class IMUDataPacket(msgspec.Struct):
     Base class representing a collection of data packets from the IMU.
     The attributes should be named the same as they are when sent from the IMU -- this just means
     they're going to be in camelCase.
-
-    Args:
-        timestamp (int): The timestamp of the data packet in nanoseconds.
     """
 
     timestamp: int
@@ -42,10 +39,10 @@ class EstimatedDataPacket(IMUDataPacket):
 
     estFilterGpsTimeTow: float | None = None  # Time of week
     estFilterGpsTimeWeekNum: int | None = None  # Week number
-    estOrientQuaternionW: float | None = None
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
+    estOrientQuaternionW: float | None = None
     estPressureAlt: float | None = None
     estFilterState: int | None = None
     estFilterDynamicsMode: int | None = None
