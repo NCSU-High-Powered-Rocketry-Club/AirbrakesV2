@@ -140,10 +140,10 @@ class EstimatedDataPacket(IMUDataPacket):
         self.estFilterState = estFilterState
         self.estFilterDynamicsMode = estFilterDynamicsMode
         self.estFilterStatusFlags = estFilterStatusFlags
-        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionW
+        self.estAttitudeUncertQuaternionW = estAttitudeUncertQuaternionW
         self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionX
-        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionY
-        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionZ
+        self.estAttitudeUncertQuaternionY = estAttitudeUncertQuaternionY
+        self.estAttitudeUncertQuaternionZ = estAttitudeUncertQuaternionZ
         self.estAngularRateX = estAngularRateX
         self.estAngularRateY = estAngularRateY
         self.estAngularRateZ = estAngularRateZ
