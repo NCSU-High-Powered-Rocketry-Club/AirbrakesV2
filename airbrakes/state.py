@@ -1,10 +1,17 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-from Airbrakes.airbrakes import AirbrakesContext
+from abc import ABC, abstractmethod
+from typing import override
+
+from airbrakes.airbrakes import AirbrakesContext
 
 
-class State:
+class State(ABC):
     """
+    Abstract Base class for the states of the airbrakes system. Each state will have an update
+    method that will be called every loop iteration and a next_state method that will be called
+    when the state is over.
+
     For Airbrakes, we will have 4 states:
     1. Stand By - when the rocket is on the rail on the ground
     2. Motor Burn - when the motor is burning and the rocket is accelerating
@@ -23,23 +30,25 @@ class State:
         # At the very beginning of each state, we retract the airbrakes
         self.context.set_airbrake_extension(0.0)
 
+    def get_name(self):
+        """
+        :return: The name of the state
+        """
+        return self.__class__.__name__
+
+    @abstractmethod
     def update(self):
         """
         Called every loop iteration. Uses the context to interact with the hardware and decides when to move to the
         next state.
         """
 
+    @abstractmethod
     def next_state(self):
         """
         We never expect/want to go back a state e.g. We're never going to go
         from Flight to Motor Burn, so this method just goes to the next state.
         """
-
-    def get_name(self):
-        """
-        :return: The name of the state
-        """
-        return self.__class__.__name__
 
 
 class StandByState(State):
@@ -49,9 +58,11 @@ class StandByState(State):
 
     __slots__ = ()
 
+    @override
     def update(self):
         pass
 
+    @override
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
@@ -63,9 +74,11 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
+    @override
     def update(self):
         pass
 
+    @override
     def next_state(self):
         self.context.state = FlightState(self.context)
 
@@ -77,9 +90,11 @@ class FlightState(State):
 
     __slots__ = ()
 
+    @override
     def update(self):
         pass
 
+    @override
     def next_state(self):
         self.context.state = FreeFallState(self.context)
 
@@ -91,9 +106,11 @@ class FreeFallState(State):
 
     __slots__ = ()
 
+    @override
     def update(self):
         pass
 
+    @override
     def next_state(self):
         # Explicitly do nothing, there is no next state
         pass

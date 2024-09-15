@@ -1,0 +1,86 @@
+"""Module which provides a high level interface to the air brakes system on the rocket."""
+
+from typing import TYPE_CHECKING
+
+from airbrakes.imu.data_processor import IMUDataProcessor
+from airbrakes.imu.imu import IMU, IMUDataPacket
+from airbrakes.imu.imu_data_packet import EstimatedDataPacket
+from airbrakes.logger import Logger
+from airbrakes.servo import Servo
+from airbrakes.state import StandByState, State
+
+if TYPE_CHECKING:
+    import collections
+
+
+class AirbrakesContext:
+    """
+    Manages the state machine for the rocket's airbrakes system, keeping track of the current state and communicating
+    with hardware like the servo and IMU. This class is what connects the state machine to the hardware.
+
+    Read more about the state machine pattern here: https://www.tutorialspoint.com/design_pattern/state_pattern.htm
+    """
+
+    __slots__ = (
+        "current_extension",
+        "data_processor",
+        "imu",
+        "logger",
+        "servo",
+        "shutdown_requested",
+        "state",
+    )
+
+    def __init__(self, logger: Logger, servo: Servo, imu: IMU):
+        self.logger: Logger = logger
+        self.servo: Servo = servo
+        self.imu: IMU = imu
+
+        self.state: State = StandByState(self)
+        self.shutdown_requested = False
+
+        self.data_processor = IMUDataProcessor([])
+
+        # Placeholder for the current airbrake extension until they are set
+        self.current_extension: float = 0.0
+
+    def update(self) -> None:
+        """
+        Called every loop iteration from the main process. Depending on the current state, it will
+        do different things. It is what controls the airbrakes and chooses when to move to the next
+        state.
+        """
+        # Gets the current extension and IMU data, the states will use these values
+        self.current_extension = self.servo.current_extension
+
+        # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
+        # *may* not be the most recent data. But we want continous data for state, apogee,
+        # and logging purposes, so we don't need to worry about that, as long as we're not too
+        # behind on processing
+        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
+
+        # Update the processed data with the new data packets. We only care about EstimatedDataPackets
+        self.data_processor.update_data(
+            [data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)]
+        )
+        # Logs the current state, extension, and IMU data
+        # TODO: Compute state(s) for given IMU data
+        self.logger.log(self.state.get_name(), self.current_extension, data_packets.copy())
+
+        self.state.update()
+
+    def set_airbrake_extension(self, extension: float) -> None:
+        """
+        Sets the airbrake extension via the servo. It will be called by the states.
+        :param extension: the extension of the airbrakes, between 0 and 1
+        """
+        self.servo.set_extension(extension)
+
+    def shutdown(self) -> None:
+        """
+        Handles shutting down the airbrakes. This will cause the main loop to break.
+        """
+        self.set_airbrake_extension(0.0)
+        self.imu.stop()
+        self.logger.stop()
+        self.shutdown_requested = True
