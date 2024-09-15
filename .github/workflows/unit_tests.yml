@@ -2,12 +2,11 @@ name: Unit Tests
 
 on:
   pull_request:
-    paths:
-        - airbrakes/**
-        - tests/**
+    branches:
+      - '**'  # Matches all branch names
   push:
     branches:
-      - master
+      - '**'  # Match any branch
 
 jobs:
   pytest:
