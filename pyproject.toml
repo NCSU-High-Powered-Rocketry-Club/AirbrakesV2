@@ -15,6 +15,9 @@ dev = [
     "ruff",
 ]
 
+[tool.setuptools]
+packages = ["airbrakes"]
+
 
 # RUFF:
 [tool.ruff]
