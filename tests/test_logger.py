@@ -40,12 +40,9 @@ class TestLogger:
 
         # Test if all attributes are created correctly
         assert isinstance(logger._log_queue, multiprocessing.queues.Queue)
-        # Test if it's a multiprocessing.Value object:
-        assert isinstance(logger._running, multiprocessing.sharedctypes.Synchronized)
         assert isinstance(logger._log_process, multiprocessing.Process)
 
         # Test that the process is not running
-        assert not logger._running.value
         assert not logger.is_running
         assert not logger._log_process.is_alive()
 
@@ -72,12 +69,10 @@ class TestLogger:
 
     def test_logging_loop_start_stop(self, logger):
         logger.start()
-        assert logger._running.value
-        assert logger._log_process.is_alive()
+        assert logger.is_running
 
         logger.stop()
-        assert not logger._running.value
-        assert not logger._log_process.is_alive()
+        assert not logger.is_running
         assert logger._log_process.exitcode == 0
 
     def test_logging_loop_add_to_queue(self, logger):
