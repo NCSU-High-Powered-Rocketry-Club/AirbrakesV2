@@ -99,11 +99,13 @@ class IMU:
                                 # These specific data points are matrix's rather than doubles
                                 case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
                                     matrix = data_point.as_Matrix()
-                                    # Converts the [4x1] matrix to a tuple
-                                    # TODO: maybe we should just make these be stored in the data
-                                    # packet with individual attributes
+                                    # Converts the [4x1] matrix to the X, Y, Z, and W of the quaternion
                                     quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
-                                    setattr(imu_data_packet, channel, quaternion_tuple)
+                                    # Sets the X, Y, Z, and W of the quaternion to the data packet object
+                                    setattr(imu_data_packet, f"{channel}X", quaternion_tuple[0])
+                                    setattr(imu_data_packet, f"{channel}Y", quaternion_tuple[1])
+                                    setattr(imu_data_packet, f"{channel}Z", quaternion_tuple[2])
+                                    setattr(imu_data_packet, f"{channel}W", quaternion_tuple[3])
                                 case _:
                                     # Because the attribute names in our data packet classes are the same as the channel
                                     # names, we can just set the attribute to the value of the data point.
@@ -112,7 +114,7 @@ class IMU:
                 # Put the latest data into the shared queue
                 self._data_queue.put(imu_data_packet)
 
-    def get_imu_data_packet(self) -> IMUDataPacket | EstimatedDataPacket:
+    def get_imu_data_packet(self) -> IMUDataPacket:
         """
         Gets the last available data packet from the IMU.
 
@@ -124,7 +126,7 @@ class IMU:
         """
         return self._data_queue.get()
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket | EstimatedDataPacket]:
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """Returns all available data packets from the IMU.
 
         :return: A deque containing the specified number of data packets

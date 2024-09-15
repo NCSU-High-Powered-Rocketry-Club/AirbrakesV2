@@ -30,6 +30,12 @@ class State(ABC):
         # At the very beginning of each state, we retract the airbrakes
         self.context.set_airbrake_extension(0.0)
 
+    def get_name(self):
+        """
+        :return: The name of the state
+        """
+        return self.__class__.__name__
+
     @abstractmethod
     def update(self):
         """
@@ -43,12 +49,6 @@ class State(ABC):
         We never expect/want to go back a state e.g. We're never going to go
         from Flight to Motor Burn, so this method just goes to the next state.
         """
-
-    def get_name(self):
-        """
-        :return: The name of the state
-        """
-        return self.__class__.__name__
 
 
 class StandByState(State):
