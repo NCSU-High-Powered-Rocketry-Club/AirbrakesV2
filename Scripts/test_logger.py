@@ -1,3 +1,5 @@
+"""Module for testing how the logger module runs."""
+
 import time
 from collections import deque
 
