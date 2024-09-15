@@ -22,7 +22,11 @@ class Logger:
         log_dir (:class:`pathlib.Path`): The directory where the log files will be.
     """
 
-    __slots__ = ("_log_process", "_log_queue", "_running", "_stop_signal", "log_path")
+    __slots__ = ("_log_process", "_log_queue", "log_path")
+
+    # The signal to stop the logging process, this will be put in the queue to stop the process
+    # see stop() and _logging_loop() for more details.
+    _STOP_SIGNAL = "STOP"
 
     def __init__(self, log_dir: Path):
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -40,21 +44,15 @@ class Logger:
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
         # the back and pop from front, meaning that things will be logged in the order they were
         # added
-        self._log_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
-        self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
+        self._log_queue: multiprocessing.Queue[dict[str, str] | str] = multiprocessing.Queue()
 
         # Start the logging process
         self._log_process = multiprocessing.Process(target=self._logging_loop)
-
-        # The signal to stop the logging process, this will be put in the queue to stop the process
-        # see stop() and _logging_loop() for more details.
-        self._stop_signal = "STOP"
 
     def start(self):
         """
         Starts the logging process. This is called before the main while loop starts.
         """
-        self._running.value = True
         self._log_process.start()
 
     @property
@@ -62,7 +60,7 @@ class Logger:
         """
         Returns whether the logging process is running.
         """
-        return self._running.value
+        return self._log_process.is_alive()
 
     def _logging_loop(self):
         """
@@ -71,11 +69,11 @@ class Logger:
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
-            while self._running.value:
+            while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 message_fields = self._log_queue.get()
-                if message_fields == self._stop_signal:
+                if message_fields == self._STOP_SIGNAL:
                     break
                 writer.writerow(message_fields)
 
@@ -98,7 +96,6 @@ class Logger:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
-        self._running.value = False
+        self._log_queue.put(self._STOP_SIGNAL)  # Put the stop signal in the queue
         # Waits for the process to finish before stopping it
-        self._log_queue.put(self._stop_signal)  # Put the stop signal in the queue
         self._log_process.join()
