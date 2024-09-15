@@ -1,6 +1,6 @@
 """
-Make sure you are in the root directory of the project, not inside Scripts, and run the following command:
-`python -m Scripts.test_servo`
+Make sure you are in the root directory of the project, not inside scripts, and run the following command:
+`python -m scripts.test_servo`
 For the pi, you will have to use python3
 """
 
