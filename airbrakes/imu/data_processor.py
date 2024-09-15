@@ -6,14 +6,13 @@ from collections.abc import Sequence
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket
 
 
-class ProcessedIMUData:
-    """Performs high level calculations on the data packets received from the IMU. Includes
-    calculation the rolling averages of acceleration, maximum altitude so far, etc, from the set of
+class IMUDataProcessor:
+    """
+    Performs high level calculations on the data packets received from the IMU. Includes
+    calculation the rolling averages of acceleration, maximum altitude so far, etc., from the set of
     data points.
 
-    Args:
-        data_points (Sequence[EstimatedDataPacket]): A list of EstimatedDataPacket objects
-            to process.
+    :param data_points: A sequence of EstimatedDataPacket objects to process.
     """
 
     __slots__ = ("_avg_accel", "_avg_accel_mag", "_max_altitude", "data_points")
@@ -24,17 +23,31 @@ class ProcessedIMUData:
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
 
+    def __str__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"avg_acceleration={self.avg_acceleration}, "
+            f"avg_acceleration_mag={self.avg_acceleration_mag}, "
+            f"max_altitude={self.max_altitude})"
+        )
+
     def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
-        """Updates the data points to process. This will recalculate the averages and maximum
-        altitude."""
+        """
+        Updates the data points to process. This will recalculate the averages and maximum
+        altitude.
+        :param data_points: A sequence of EstimatedDataPacket objects to process.
+        """
         self.data_points = data_points
-        a_x, a_y, a_z = self.compute_averages()
+        a_x, a_y, a_z = self._compute_averages()
         self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (self._avg_accel[0]**2 + self._avg_accel[1]**2 + self._avg_accel[2]**2) ** 0.5
+        self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
         self._max_altitude = max(*(data_point.estPressureAlt for data_point in self.data_points), self._max_altitude)
 
-    def compute_averages(self) -> tuple[float, float, float]:
-        """Calculates the average acceleration and acceleration magnitude of the data points."""
+    def _compute_averages(self) -> tuple[float, float, float]:
+        """
+        Calculates the average acceleration and acceleration magnitude of the data points.
+        :return: A tuple of the average acceleration in the x, y, and z directions.
+        """
         # calculate the average acceleration in the x, y, and z directions
         # TODO: Test what these accel values actually look like
         x_accel = stats.fmean(data_point.estCompensatedAccelX for data_point in self.data_points)
@@ -45,31 +58,28 @@ class ProcessedIMUData:
 
     @property
     def avg_acceleration_z(self) -> float:
-        """Returns the average acceleration in the z direction of the data points, in m/s^2."""
+        """
+        Returns the average acceleration in the z direction of the data points, in m/s^2.
+        """
         return self._avg_accel[-1]
 
     @property
     def avg_acceleration(self) -> tuple[float, float, float]:
-        """Returns the averaged acceleration as a vector of the data points, in m/s^2."""
+        """
+        Returns the averaged acceleration as a vector of the data points, in m/s^2.
+        """
         return self._avg_accel
 
     @property
     def avg_acceleration_mag(self) -> float:
-        """Returns the magnitude of the acceleration vector of the data points, in m/s^2."""
+        """
+        Returns the magnitude of the acceleration vector of the data points, in m/s^2.
+        """
         return self._avg_accel_mag
 
     @property
     def max_altitude(self) -> float:
-        """Returns the highest altitude attained by the rocket for the entire flight so far,
-        in meters.
+        """
+        Returns the highest altitude attained by the rocket for the entire flight so far, in meters.
         """
         return self._max_altitude
-
-    def __str__(self) -> str:
-        """Returns a string representation of the ProcessedIMUData object."""
-        return (
-            f"{self.__class__.__name__}("
-            f"avg_acceleration={self.avg_acceleration}, "
-            f"avg_acceleration_mag={self.avg_acceleration_mag}, "
-            f"max_altitude={self.max_altitude})"
-        )
