@@ -18,8 +18,7 @@ class Logger:
     It uses the Python logging module to append the airbrake's current state, extension, and IMU data to our logs in
     real time.
 
-    Args:
-        log_dir (:class:`pathlib.Path`): The directory where the log files will be.
+    :param log_dir: The directory where the log files will be.
     """
 
     __slots__ = ("_log_process", "_log_queue", "log_path")
@@ -43,7 +42,8 @@ class Logger:
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
         # the back and pop from front, meaning that things will be logged in the order they were
-        # added
+        # added.
+        # Signals (like stop) are sent as strings, but data is sent as dictionaries
         self._log_queue: multiprocessing.Queue[dict[str, str] | str] = multiprocessing.Queue()
 
         # Start the logging process
@@ -54,13 +54,6 @@ class Logger:
         Starts the logging process. This is called before the main while loop starts.
         """
         self._log_process.start()
-
-    @property
-    def is_running(self) -> bool:
-        """
-        Returns whether the logging process is running.
-        """
-        return self._log_process.is_alive()
 
     def _logging_loop(self):
         """
@@ -73,6 +66,7 @@ class Logger:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 message_fields = self._log_queue.get()
+                # If the message is the stop signal, break out of the loop
                 if message_fields == self._STOP_SIGNAL:
                     break
                 writer.writerow(message_fields)

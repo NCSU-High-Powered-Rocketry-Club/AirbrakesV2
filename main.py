@@ -1,17 +1,15 @@
 """The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object and run the main
 loop."""
 
-from pathlib import Path
-
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
+from airbrakes.constants import FREQUENCY, LOGS_PATH, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
 from airbrakes.imu.imu import IMU
 from airbrakes.logger import Logger
 from airbrakes.servo import Servo
 
 
 def main():
-    logger = Logger(Path("logs"))
+    logger = Logger(LOGS_PATH)
     servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
     imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
