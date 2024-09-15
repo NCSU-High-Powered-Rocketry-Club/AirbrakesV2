@@ -69,8 +69,8 @@ class Logger:
         # Loop through all the IMU data packets
         for imu_data in imu_data_list:
             # Formats the log message as a CSV line
-            message_dict = {"state": state, "extension": extension, "timestamp": imu_data.timestamp}
-            message_dict.update({key: getattr(imu_data, key) for key in imu_data.__slots__})
+            message_dict = {"state": state, "extension": extension}
+            message_dict.update({key: getattr(imu_data, key) for key in imu_data.__struct_fields__})
             # Put the message in the queue
             self._log_queue.put(message_dict)
 

@@ -43,9 +43,9 @@ LOGS_PATH = Path("logs")
 CSV_HEADERS = [
     "state",
     "extension",
-    *list(IMUDataPacket.__slots__),
-    *list(RawDataPacket.__slots__),
-    *list(EstimatedDataPacket.__slots__),
+    *list(IMUDataPacket.__struct_fields__),
+    *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
+    *list(EstimatedDataPacket.__struct_fields__)[1:],
 ]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process
