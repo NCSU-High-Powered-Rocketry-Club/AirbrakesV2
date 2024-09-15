@@ -30,8 +30,8 @@ class ProcessedIMUData:
         self.data_points = data_points
         a_x, a_y, a_z = self.compute_averages()
         self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (self._avg_accel**2 + self._avg_accel**2 + self._avg_accel**2) ** 0.5
-        self._max_altitude = max(*(data_point.altitude for data_point in self.data_points), self._max_altitude)
+        self._avg_accel_mag = (self._avg_accel[0]**2 + self._avg_accel[1]**2 + self._avg_accel[2]**2) ** 0.5
+        self._max_altitude = max(*(data_point.estPressureAlt for data_point in self.data_points), self._max_altitude)
 
     def compute_averages(self) -> tuple[float, float, float]:
         """Calculates the average acceleration and acceleration magnitude of the data points."""
