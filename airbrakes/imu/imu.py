@@ -23,21 +23,34 @@ class IMU:
     RAW_DESCRIPTOR_SET = 128
 
     __slots__ = (
-        "data_fetch_process",
-        "data_queue",
-        "running",
+        "_data_fetch_process",
+        "_data_queue",
+        "_running",
     )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
         # Shared Queue which contains the latest data from the IMU
-        self.data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
-        self.running = multiprocessing.Value("b", True)  # Makes a boolean value that is shared between processes
+        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
+        self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
-        self.data_fetch_process = multiprocessing.Process(
+        self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop, args=(port, frequency, upside_down)
         )
-        self.data_fetch_process.start()
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the process fetching data from the IMU is running.
+        """
+        return self._running.value
+
+    def start(self):
+        """
+        Starts the process fetching data from the IMU.
+        """
+        self._running.value = True
+        self._data_fetch_process.start()
 
     def _fetch_data_loop(self, port: str, frequency: int, _: bool):
         """
@@ -48,7 +61,7 @@ class IMU:
         node = mscl.InertialNode(connection)
         timeout = int(1000 / frequency)
 
-        while self.running.value:
+        while self._running.value:
             # Get the latest data packets from the IMU, with the help of `getDataPackets`.
             # `getDataPackets` accepts a timeout in milliseconds.
             # During IMU configuration (outside of this code), we set the sampling rate of the IMU
@@ -99,7 +112,7 @@ class IMU:
                                     setattr(imu_data_packet, channel, data_point.as_float())
 
                 # Put the latest data into the shared queue
-                self.data_queue.put(imu_data_packet)
+                self._data_queue.put(imu_data_packet)
 
     def get_imu_data_packet(self) -> IMUDataPacket:
         """
@@ -111,7 +124,7 @@ class IMU:
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is
             not available, it will be None.
         """
-        return self.data_queue.get()
+        return self._data_queue.get()
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """Returns all available data packets from the IMU.
@@ -121,7 +134,7 @@ class IMU:
 
         data_packets = collections.deque()
 
-        while not self.data_queue.empty():
+        while not self._data_queue.empty():
             data_packet = self.get_imu_data_packet()
             data_packets.append(data_packet)
 
@@ -131,6 +144,6 @@ class IMU:
         """
         Stops the process fetching data from the IMU. This should be called when the program is shutting down.
         """
-        self.running.value = False
+        self._running.value = False
         # Waits for the process to finish before stopping it
-        self.data_fetch_process.join()
+        self._data_fetch_process.join()
