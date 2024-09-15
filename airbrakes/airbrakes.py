@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.imu.data_processor import ProcessedIMUData
+from airbrakes.imu.data_processor import IMUDataProcessor
 from airbrakes.imu.imu import IMU, IMUDataPacket
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket
 from airbrakes.logger import Logger
@@ -23,9 +23,9 @@ class AirbrakesContext:
 
     __slots__ = (
         "current_extension",
+        "data_processor",
         "imu",
         "logger",
-        "processed_data",
         "servo",
         "shutdown_requested",
         "state",
@@ -39,7 +39,7 @@ class AirbrakesContext:
         self.state: State = StandByState(self)
         self.shutdown_requested = False
 
-        self.processed_data: ProcessedIMUData = ProcessedIMUData([])
+        self.data_processor = IMUDataProcessor([])
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0
@@ -67,8 +67,8 @@ class AirbrakesContext:
         data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        self.processed_data.update(
-            data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)
+        self.data_processor.update_data(
+            [data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)]
         )
         # Logs the current state, extension, and IMU data
         # TODO: Compute state(s) for given IMU data

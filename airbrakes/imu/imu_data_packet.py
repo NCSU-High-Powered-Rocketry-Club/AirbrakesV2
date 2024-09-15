@@ -85,7 +85,10 @@ class EstimatedDataPacket(IMUDataPacket):
         "estAngularRateX",
         "estAngularRateY",
         "estAngularRateZ",
-        "estAttitudeUncertQuaternion",
+        "estAttitudeUncertQuaternionW",
+        "estAttitudeUncertQuaternionX",
+        "estAttitudeUncertQuaternionY",
+        "estAttitudeUncertQuaternionZ",
         "estCompensatedAccelX",
         "estCompensatedAccelY",
         "estCompensatedAccelZ",
@@ -94,7 +97,10 @@ class EstimatedDataPacket(IMUDataPacket):
         "estFilterGpsTimeWeekNum",  # Week number
         "estFilterState",
         "estFilterStatusFlags",
-        "estOrientQuaternion",
+        "estOrientQuaternionW",
+        "estOrientQuaternionX",
+        "estOrientQuaternionY",
+        "estOrientQuaternionZ",
         "estPressureAlt",
     )
 
@@ -103,12 +109,18 @@ class EstimatedDataPacket(IMUDataPacket):
         timestamp: int,
         estFilterGpsTimeTow: float | None = None,
         estFilterGpsTimeWeekNum: int | None = None,
-        estOrientQuaternion: tuple[float, float, float, float] | None = None,
+        estOrientQuaternionW: float | None = None,
+        estOrientQuaternionX: float | None = None,
+        estOrientQuaternionY: float | None = None,
+        estOrientQuaternionZ: float | None = None,
         estPressureAlt: float | None = None,
         estFilterState: int | None = None,
         estFilterDynamicsMode: int | None = None,
         estFilterStatusFlags: int | None = None,
-        estAttitudeUncertQuaternion: tuple[float, float, float, float] | None = None,
+        estAttitudeUncertQuaternionX: float | None = None,
+        estAttitudeUncertQuaternionY: float | None = None,
+        estAttitudeUncertQuaternionZ: float | None = None,
+        estAttitudeUncertQuaternionW: float | None = None,
         estAngularRateX: float | None = None,
         estAngularRateY: float | None = None,
         estAngularRateZ: float | None = None,
@@ -120,12 +132,18 @@ class EstimatedDataPacket(IMUDataPacket):
 
         self.estFilterGpsTimeTow = estFilterGpsTimeTow
         self.estFilterGpsTimeWeekNum = estFilterGpsTimeWeekNum
-        self.estOrientQuaternion = estOrientQuaternion
+        self.estOrientQuaternionW = estOrientQuaternionW
+        self.estOrientQuaternionX = estOrientQuaternionX
+        self.estOrientQuaternionY = estOrientQuaternionY
+        self.estOrientQuaternionZ = estOrientQuaternionZ
         self.estPressureAlt = estPressureAlt
         self.estFilterState = estFilterState
         self.estFilterDynamicsMode = estFilterDynamicsMode
         self.estFilterStatusFlags = estFilterStatusFlags
-        self.estAttitudeUncertQuaternion = estAttitudeUncertQuaternion
+        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionW
+        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionX
+        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionY
+        self.estAttitudeUncertQuaternionX = estAttitudeUncertQuaternionZ
         self.estAngularRateX = estAngularRateX
         self.estAngularRateY = estAngularRateY
         self.estAngularRateZ = estAngularRateZ
