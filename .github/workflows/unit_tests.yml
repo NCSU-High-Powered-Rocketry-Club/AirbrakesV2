@@ -3,10 +3,10 @@ name: Unit Tests
 on:
   pull_request:
     branches:
-      - '**'  # Matches all branch names
+      - '**'  # Matches all branch names, for PRs
   push:
     branches:
-      - '**'  # Match any branch
+      - 'main'  # Run tests on main branch
 
 jobs:
   pytest:
