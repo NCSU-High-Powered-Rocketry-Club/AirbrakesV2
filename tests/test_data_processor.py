@@ -68,14 +68,16 @@ class TestIMUDataProcessor:
 
     def test_update_data(self, data_processor):
         d = data_processor
-        d.update_data([
-            EstimatedDataPacket(
-                1, estCompensatedAccelX=1, estCompensatedAccelY=2, estCompensatedAccelZ=3, estPressureAlt=20
-            ),
-            EstimatedDataPacket(
-                2, estCompensatedAccelX=2, estCompensatedAccelY=3, estCompensatedAccelZ=4, estPressureAlt=30
-            ),
-        ])
+        d.update_data(
+            [
+                EstimatedDataPacket(
+                    1, estCompensatedAccelX=1, estCompensatedAccelY=2, estCompensatedAccelZ=3, estPressureAlt=20
+                ),
+                EstimatedDataPacket(
+                    2, estCompensatedAccelX=2, estCompensatedAccelY=3, estCompensatedAccelZ=4, estPressureAlt=30
+                ),
+            ]
+        )
         assert d._avg_accel == (1.5, 2.5, 3.5) == d.avg_acceleration
         assert d._avg_accel_mag == math.sqrt(1.5**2 + 2.5**2 + 3.5**2) == d.avg_acceleration_mag
         assert d.avg_acceleration_z == 3.5
@@ -87,10 +89,12 @@ class TestIMUDataProcessor:
         altitudes = simulate_altitude_sine_wave(n_points=1000)
         # run update_data every 10 packets, to simulate actual data processing in real time:
         for i in range(0, len(altitudes), 10):
-            d.update_data([
-                EstimatedDataPacket(
-                    i, estCompensatedAccelX=1, estCompensatedAccelY=2, estCompensatedAccelZ=3, estPressureAlt=alt
-                )
-                for alt in altitudes[i : i + 10]
-            ])
+            d.update_data(
+                [
+                    EstimatedDataPacket(
+                        i, estCompensatedAccelX=1, estCompensatedAccelY=2, estCompensatedAccelZ=3, estPressureAlt=alt
+                    )
+                    for alt in altitudes[i : i + 10]
+                ]
+            )
         assert d.max_altitude == max(altitudes)

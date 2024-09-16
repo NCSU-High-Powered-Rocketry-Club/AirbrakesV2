@@ -1,7 +1,7 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
 from abc import ABC, abstractmethod
-from typing import override, TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext

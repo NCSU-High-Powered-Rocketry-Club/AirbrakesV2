@@ -10,8 +10,7 @@ class Servo:
 
     __slots__ = ("current_extension", "max_extension", "min_extension", "servo")
 
-    def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float, 
-                 pin_factory=None):
+    def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float, pin_factory=None):
         self.min_extension = min_extension
         self.max_extension = max_extension
         self.current_extension = 0.0

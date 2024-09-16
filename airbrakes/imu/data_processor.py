@@ -15,7 +15,7 @@ class IMUDataProcessor:
     :param data_points: A sequence of EstimatedDataPacket objects to process.
     """
 
-    __slots__ = ("_avg_accel", "_avg_accel_mag", "_max_altitude", "_data_points")
+    __slots__ = ("_avg_accel", "_avg_accel_mag", "_data_points", "_max_altitude")
 
     def __init__(self, data_points: Sequence[EstimatedDataPacket]):
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)

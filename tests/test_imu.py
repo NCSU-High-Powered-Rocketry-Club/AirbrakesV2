@@ -3,15 +3,9 @@ import multiprocessing.sharedctypes
 import time
 from collections import deque
 
-import pytest
-
 from airbrakes.constants import FREQUENCY, PORT, UPSIDE_DOWN
 from airbrakes.imu.imu import IMU
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-
-
-
-
 
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz

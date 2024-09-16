@@ -14,7 +14,6 @@ from tests.conftest import LOG_PATH
 class TestLogger:
     """Tests the Logger() class in logger.py"""
 
-
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def clear_directory(self):
         """Clear the tests/logs directory after running each test."""
