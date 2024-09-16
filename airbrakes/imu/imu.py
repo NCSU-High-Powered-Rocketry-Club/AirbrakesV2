@@ -92,26 +92,24 @@ class IMU:
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                        # Makes a dictionary of attributes to set on the imu_data_packet
-                        data_to_set = {}
-
-                        # Special handling for quaternions
-                        if channel in ("estAttitudeUncertQuaternion", "estOrientQuaternion"):
-                            matrix = data_point.as_Matrix()
-                            quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
-                            data_to_set.update({
-                                f"{channel}X": quaternion_tuple[0],
-                                f"{channel}Y": quaternion_tuple[1],
-                                f"{channel}Z": quaternion_tuple[2],
-                                f"{channel}W": quaternion_tuple[3],
-                            })
-                        else:
-                            # General case, add the attribute to the dictionary
-                            data_to_set[channel] = data_point.as_float()
-
-                        # Update the attributes of the imu_data_packet in one call, this is much faster than setting
-                        # each attribute individually
-                        imu_data_packet.__dict__.update(data_to_set)
+                        # Check if the imu_data_packet has an attribute with the name of the channel
+                        if hasattr(imu_data_packet, channel):
+                            # First checks if the data point needs special handling, if not, just set the attribute
+                            match channel:
+                                # These specific data points are matrix's rather than doubles
+                                case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
+                                    matrix = data_point.as_Matrix()
+                                    # Converts the [4x1] matrix to the X, Y, Z, and W of the quaternion
+                                    quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
+                                    # Sets the X, Y, Z, and W of the quaternion to the data packet object
+                                    setattr(imu_data_packet, f"{channel}X", quaternion_tuple[0])
+                                    setattr(imu_data_packet, f"{channel}Y", quaternion_tuple[1])
+                                    setattr(imu_data_packet, f"{channel}Z", quaternion_tuple[2])
+                                    setattr(imu_data_packet, f"{channel}W", quaternion_tuple[3])
+                                case _:
+                                    # Because the attribute names in our data packet classes are the same as the channel
+                                    # names, we can just set the attribute to the value of the data point.
+                                    setattr(imu_data_packet, channel, data_point.as_float())
 
                 # Put the latest data into the shared queue
                 self._data_queue.put(imu_data_packet)
