@@ -1,9 +1,10 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
 from abc import ABC, abstractmethod
-from typing import override
+from typing import override, TYPE_CHECKING
 
-from airbrakes.airbrakes import AirbrakesContext
+if TYPE_CHECKING:
+    from airbrakes.airbrakes import AirbrakesContext
 
 
 class State(ABC):
@@ -22,7 +23,7 @@ class State(ABC):
 
     __slots__ = ("context",)
 
-    def __init__(self, context: AirbrakesContext):
+    def __init__(self, context: "AirbrakesContext"):
         """
         :param context: The state context object that will be used to interact with the electronics
         """

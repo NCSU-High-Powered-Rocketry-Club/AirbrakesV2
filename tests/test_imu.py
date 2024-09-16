@@ -10,9 +10,7 @@ from airbrakes.imu.imu import IMU
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 
-@pytest.fixture
-def imu():
-    return IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+
 
 
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
@@ -21,6 +19,11 @@ EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 class TestIMU:
     """Class to test the IMU class in imu.py"""
+
+    def test_slots(self, imu):
+        inst = imu
+        for attr in inst.__slots__:
+            assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, imu):
         assert isinstance(imu._data_queue, multiprocessing.queues.Queue)

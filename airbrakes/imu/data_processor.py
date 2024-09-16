@@ -15,13 +15,18 @@ class IMUDataProcessor:
     :param data_points: A sequence of EstimatedDataPacket objects to process.
     """
 
-    __slots__ = ("_avg_accel", "_avg_accel_mag", "_max_altitude", "data_points")
+    __slots__ = ("_avg_accel", "_avg_accel_mag", "_max_altitude", "_data_points")
 
     def __init__(self, data_points: Sequence[EstimatedDataPacket]):
-        self.data_points: Sequence[EstimatedDataPacket] = data_points
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
+        self._data_points: Sequence[EstimatedDataPacket]
+
+        if data_points:  # actually update the data on init
+            self.update_data(data_points)
+        else:
+            self._data_points: Sequence[EstimatedDataPacket] = data_points
 
     def __str__(self) -> str:
         return (
@@ -37,11 +42,13 @@ class IMUDataProcessor:
         altitude.
         :param data_points: A sequence of EstimatedDataPacket objects to process.
         """
-        self.data_points = data_points
+        # if not data_points:
+        #     raise ValueError("Data packets must be non-empty!")
+        self._data_points = data_points
         a_x, a_y, a_z = self._compute_averages()
         self._avg_accel = (a_x, a_y, a_z)
         self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
-        self._max_altitude = max(*(data_point.estPressureAlt for data_point in self.data_points), self._max_altitude)
+        self._max_altitude = max(*(data_point.estPressureAlt for data_point in self._data_points), self._max_altitude)
 
     def _compute_averages(self) -> tuple[float, float, float]:
         """
@@ -50,9 +57,9 @@ class IMUDataProcessor:
         """
         # calculate the average acceleration in the x, y, and z directions
         # TODO: Test what these accel values actually look like
-        x_accel = stats.fmean(data_point.estCompensatedAccelX for data_point in self.data_points)
-        y_accel = stats.fmean(data_point.estCompensatedAccelY for data_point in self.data_points)
-        z_accel = stats.fmean(data_point.estCompensatedAccelZ for data_point in self.data_points)
+        x_accel = stats.fmean(data_point.estCompensatedAccelX for data_point in self._data_points)
+        y_accel = stats.fmean(data_point.estCompensatedAccelY for data_point in self._data_points)
+        z_accel = stats.fmean(data_point.estCompensatedAccelZ for data_point in self._data_points)
         # TODO: Calculate avg velocity if that's also available
         return x_accel, y_accel, z_accel
 
