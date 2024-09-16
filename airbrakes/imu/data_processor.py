@@ -42,8 +42,8 @@ class IMUDataProcessor:
         altitude.
         :param data_points: A sequence of EstimatedDataPacket objects to process.
         """
-        # if not data_points:
-        #     raise ValueError("Data packets must be non-empty!")
+        if not data_points:  # Data packets may not be EstimatedDataPacket in the beginning
+            return
         self._data_points = data_points
         a_x, a_y, a_z = self._compute_averages()
         self._avg_accel = (a_x, a_y, a_z)
