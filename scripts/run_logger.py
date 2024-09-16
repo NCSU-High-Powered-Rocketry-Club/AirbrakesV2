@@ -3,13 +3,14 @@
 import time
 from collections import deque
 
+from airbrakes.constants import LOGS_PATH
 from airbrakes.imu.imu_data_packet import RawDataPacket
 from airbrakes.logger import Logger
 
 
 def main():
     # Initialize the logger
-    logger = Logger()
+    logger = Logger(LOGS_PATH)
 
     # Log for 5 seconds
     start_time = time.time()

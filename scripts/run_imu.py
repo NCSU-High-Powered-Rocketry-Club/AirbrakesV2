@@ -10,4 +10,4 @@ from airbrakes.imu.imu import IMU
 imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
 while True:
-    print(imu.get_imu_data_packet())
+    print(imu.get_imu_data_packet())  # noqa: T201

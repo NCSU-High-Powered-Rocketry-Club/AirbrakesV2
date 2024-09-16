@@ -9,6 +9,6 @@ from airbrakes.servo import Servo
 
 servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
 
-print("Type (1) to deploy and (0) to retract the airbrakes.")
+print("Type (1) to deploy and (0) to retract the airbrakes.")  # noqa: T201
 while True:
     servo.set_extension(float(input()))
