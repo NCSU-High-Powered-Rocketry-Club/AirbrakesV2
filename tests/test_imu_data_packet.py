@@ -1,9 +1,11 @@
 import pytest
+
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, RawDataPacket
 
 
 class TestEstimatedDataPacket:
     """Tests the EstimatedDataPacket class"""
+
     def test_estimated_data_packet_initialization(self):
         packet = EstimatedDataPacket(
             timestamp=123456789,
@@ -26,7 +28,7 @@ class TestEstimatedDataPacket:
             estAngularRateZ=0.7,
             estCompensatedAccelX=9.81,
             estCompensatedAccelY=0.0,
-            estCompensatedAccelZ=-9.81
+            estCompensatedAccelZ=-9.81,
         )
 
         assert packet.timestamp == 123456789
@@ -80,13 +82,13 @@ class TestEstimatedDataPacket:
         with pytest.raises(TypeError):
             EstimatedDataPacket()
 
-
     def test_wrong_type_does_not_raise_exception(self):
         EstimatedDataPacket(timestamp="12345.6789", estFilterGpsTimeTow=object())
 
 
 class TestRawDataPacket:
     """Tests the RawDataPacket class"""
+
     def test_raw_data_packet_initialization(self):
         packet = RawDataPacket(
             timestamp=123456789,
@@ -98,7 +100,7 @@ class TestRawDataPacket:
             scaledAccelZ=3.0,
             scaledGyroX=4.0,
             scaledGyroY=5.0,
-            scaledGyroZ=6.0
+            scaledGyroZ=6.0,
         )
 
         assert packet.timestamp == 123456789

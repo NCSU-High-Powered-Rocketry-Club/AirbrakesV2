@@ -7,8 +7,11 @@ import warnings
 try:
     import mscl
 except ImportError:
-    warnings.warn("Could not import MSCL, IMU will not work. Please see installation instructions"
-                  "here: https://github.com/LORD-MicroStrain/MSCL/tree/master", stacklevel=2)
+    warnings.warn(
+        "Could not import MSCL, IMU will not work. Please see installation instructions"
+        "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
+        stacklevel=2,
+    )
 
 from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, RAW_DESCRIPTOR_SET
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket

@@ -1,12 +1,13 @@
-import multiprocessing.sharedctypes
-import pytest
 import multiprocessing
-
+import multiprocessing.sharedctypes
+import time
 from collections import deque
+
+import pytest
+
+from airbrakes.constants import FREQUENCY, PORT, UPSIDE_DOWN
 from airbrakes.imu.imu import IMU
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-from airbrakes.constants import PORT, FREQUENCY, UPSIDE_DOWN
-import time
 
 
 @pytest.fixture
@@ -14,12 +15,13 @@ def imu():
     return IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
 
 
-RAW_DATA_PACKET_SAMPLING_RATE = 1/1000  # 1kHz
-EST_DATA_PACKET_SAMPLING_RATE = 1/500  # 500Hz
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 
 class TestIMU:
     """Class to test the IMU class in imu.py"""
+
     def test_init(self, imu):
         assert isinstance(imu._data_queue, multiprocessing.queues.Queue)
         # Test that _running is a shared boolean multiprocessing.Value:
@@ -46,6 +48,7 @@ class TestIMU:
 
     def test_imu_stop(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
+
         def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
             """Monkeypatched method for testing."""
 

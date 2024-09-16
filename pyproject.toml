@@ -34,5 +34,5 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
           "D100", "D101", "D300", "D418", "D419", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"Scripts/run_*.py" = ["T20"]
-"tests/*.py" = ["T20", "S101", "D100"]
+"scripts/run_*.py" = ["T20"]
+"tests/*.py" = ["T20", "S101", "D100", "ARG001"]
