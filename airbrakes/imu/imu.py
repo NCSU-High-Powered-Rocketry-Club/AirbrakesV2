@@ -5,6 +5,7 @@ import multiprocessing
 
 import mscl
 
+from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, RAW_DESCRIPTOR_SET
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 
@@ -18,9 +19,6 @@ class IMU:
 
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     """
-
-    ESTIMATED_DESCRIPTOR_SET = 130
-    RAW_DESCRIPTOR_SET = 128
 
     __slots__ = (
         "_data_fetch_process",
@@ -79,11 +77,13 @@ class IMU:
                 timestamp = packet.collectedTimestamp().nanoseconds()
 
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
-                imu_data_packet = (
-                    EstimatedDataPacket(timestamp)
-                    if packet.descriptorSet() == self.ESTIMATED_DESCRIPTOR_SET
-                    else RawDataPacket(timestamp)
-                )
+                if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
+                    imu_data_packet = EstimatedDataPacket(timestamp)
+                elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+                    imu_data_packet = RawDataPacket(timestamp)
+                else:
+                    # This is an unknown packet, so we skip it
+                    continue
 
                 # Each of these packets has multiple data points
                 for data_point in packet.data():

@@ -25,6 +25,10 @@ PORT = "/dev/ttyACM0"
 # The frequency in Hz that the IMU will be polled at
 FREQUENCY = 100  # TODO: Remove this since we don't/can't control the frequency from the code.
 
+# The "IDs" of the data packets that the IMU sends
+ESTIMATED_DESCRIPTOR_SET = 130
+RAW_DESCRIPTOR_SET = 128
+
 # -------------------------------------------------------
 # Orientation Configuration
 # -------------------------------------------------------
