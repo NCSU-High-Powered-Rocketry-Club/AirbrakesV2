@@ -36,7 +36,7 @@ class IMU:
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
         # Shared Queue which contains the latest data from the IMU
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue()
+        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(maxsize=100000)
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
@@ -101,19 +101,18 @@ class IMU:
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
                         # Check if the imu_data_packet has an attribute with the name of the channel
-                        if hasattr(imu_data_packet, channel):
+                        if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
                             # First checks if the data point needs special handling, if not, just set the attribute
                             match channel:
                                 # These specific data points are matrix's rather than doubles
                                 case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
                                     matrix = data_point.as_Matrix()
                                     # Converts the [4x1] matrix to the X, Y, Z, and W of the quaternion
-                                    quaternion_tuple = tuple(matrix[i, 0] for i in range(matrix.rows()))
                                     # Sets the X, Y, Z, and W of the quaternion to the data packet object
-                                    setattr(imu_data_packet, f"{channel}X", quaternion_tuple[0])
-                                    setattr(imu_data_packet, f"{channel}Y", quaternion_tuple[1])
-                                    setattr(imu_data_packet, f"{channel}Z", quaternion_tuple[2])
-                                    setattr(imu_data_packet, f"{channel}W", quaternion_tuple[3])
+                                    setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 0))
+                                    setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 1))
+                                    setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 2))
+                                    setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 3))
                                 case _:
                                     # Because the attribute names in our data packet classes are the same as the channel
                                     # names, we can just set the attribute to the value of the data point.
