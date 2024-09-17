@@ -37,7 +37,7 @@ class IMUDataProcessor:
         altitude.
         :param data_points: A sequence of EstimatedDataPacket objects to process.
         """
-        self.data_points = data_points
+        self._data_points = data_points
         a_x, a_y, a_z = self._compute_averages()
         self._avg_accel = (a_x, a_y, a_z)
         self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
