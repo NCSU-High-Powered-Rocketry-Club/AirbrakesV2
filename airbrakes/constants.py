@@ -12,8 +12,8 @@ from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, Ra
 SERVO_PIN = 12
 
 # The minimum and maximum position of the servo, its range is -1 to 1
-MIN_EXTENSION = -0.0999  # -.079
-MAX_EXTENSION = 0.2605
+MIN_EXTENSION = -0.10
+MAX_EXTENSION = 0.3  # Todo: adjust max extension further
 
 # -------------------------------------------------------
 # IMU Configuration
