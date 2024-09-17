@@ -66,6 +66,10 @@ class AirbrakesContext:
         # behind on processing
         data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
+        # This should never happen, but if it does, we want to not error out and wait for packets
+        if not data_packets:
+            return
+
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update_data(
             [data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)]
