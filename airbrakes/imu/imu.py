@@ -13,7 +13,7 @@ except ImportError:
         stacklevel=2,
     )
 
-from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, RAW_DESCRIPTOR_SET, MAX_QUEUE_SIZE
+from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 
