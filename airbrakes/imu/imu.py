@@ -13,7 +13,7 @@ except ImportError:
         stacklevel=2,
     )
 
-from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, RAW_DESCRIPTOR_SET
+from airbrakes.constants import ESTIMATED_DESCRIPTOR_SET, RAW_DESCRIPTOR_SET, MAX_QUEUE_SIZE
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 
@@ -35,8 +35,10 @@ class IMU:
     )
 
     def __init__(self, port: str, frequency: int, upside_down: bool):
-        # Shared Queue which contains the latest data from the IMU
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(maxsize=100000)
+        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
+        # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
+        # it's being logged.
+        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(MAX_QUEUE_SIZE)
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
@@ -100,7 +102,6 @@ class IMU:
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                        # Check if the imu_data_packet has an attribute with the name of the channel
                         if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
                             # First checks if the data point needs special handling, if not, just set the attribute
                             match channel:
