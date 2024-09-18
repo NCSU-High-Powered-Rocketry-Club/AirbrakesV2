@@ -24,6 +24,7 @@ packages = ["airbrakes"]
 [tool.ruff]
 line-length = 120
 show-fixes = true
+exclude = ["scripts"]
 
 [tool.ruff.lint]
 preview = true
@@ -35,5 +36,4 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
           "D100", "D101", "D300", "D418", "D419", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/run_*.py" = ["T20"]
 "tests/*.py" = ["T20", "S101", "D100", "ARG001"]
