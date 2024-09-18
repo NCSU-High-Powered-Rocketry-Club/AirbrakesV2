@@ -102,13 +102,14 @@ class IMU:
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
                         # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
+                        # Check if the channel name is one we want to save
                         if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
                             # First checks if the data point needs special handling, if not, just set the attribute
                             match channel:
                                 # These specific data points are matrix's rather than doubles
                                 case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
+                                    # This makes a 4x1 matrix from the data point with the data as [[x], [y], [z], [w]]
                                     matrix = data_point.as_Matrix()
-                                    # Converts the [4x1] matrix to the X, Y, Z, and W of the quaternion
                                     # Sets the X, Y, Z, and W of the quaternion to the data packet object
                                     setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 0))
                                     setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 1))
