@@ -73,4 +73,4 @@ logger = Logger(Path("test_logs/"))
 logger.start()
 
 while True:
-    print(imu.get_imu_data_packet())  # noqa: T201
+    print(imu.get_imu_data_packet())

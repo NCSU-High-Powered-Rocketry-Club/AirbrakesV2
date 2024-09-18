@@ -10,14 +10,17 @@ class Servo:
 
     __slots__ = ("current_extension", "max_extension", "min_extension", "servo")
 
-    def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float):
+    def __init__(self, gpio_pin_number: int, min_extension: float, max_extension: float, pin_factory=None):
         self.min_extension = min_extension
         self.max_extension = max_extension
         self.current_extension = 0.0
 
         # Sets up the servo with the specified GPIO pin number
         # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
-        gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
+        if pin_factory is None:
+            gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
+        else:
+            gpiozero.Device.pin_factory = pin_factory
         self.servo = gpiozero.Servo(gpio_pin_number)
 
     def set_extension(self, extension: float):

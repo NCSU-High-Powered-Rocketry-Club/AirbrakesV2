@@ -29,6 +29,9 @@ FREQUENCY = 100  # TODO: Remove this since we don't/can't control the frequency 
 ESTIMATED_DESCRIPTOR_SET = 130
 RAW_DESCRIPTOR_SET = 128
 
+# The maximum size of the data queue for the packets, so we don't run into memory issues
+MAX_QUEUE_SIZE = 100000
+
 # -------------------------------------------------------
 # Orientation Configuration
 # -------------------------------------------------------

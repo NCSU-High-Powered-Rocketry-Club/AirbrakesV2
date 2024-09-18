@@ -4,7 +4,8 @@ description = "Logic for airbrakes as a part of the NASA Student Launch Competit
 requires-python = ">=3.10"
 version = "0.1.0"
 dependencies = [
-    "gpiozero",  # Run sudo pigpiod before running the program
+    "gpiozero",
+    "pigpio",  # Run sudo pigpiod before running the program
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
@@ -31,8 +32,8 @@ explicit-preview-rules = true  # TODO: Drop this when RUF022 and RUF023 are out 
 ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PERF203", "ISC001"]
 select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET", "RSE",
           "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "RUF022",
-          "RUF023", "Q", "INP", "W", "YTT", "DTZ", "ARG", "T20", "FURB", "DOC", "TRY", 
+          "RUF023", "Q", "INP", "W", "YTT", "DTZ", "ARG", "T20", "FURB", "DOC",
           "D100", "D101", "D300", "D418", "D419", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["T20", "S101", "D100"]
+"tests/*.py" = ["T20", "S101", "D100", "ARG001"]

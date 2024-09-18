@@ -2,32 +2,30 @@ import csv
 import multiprocessing
 import multiprocessing.sharedctypes
 import time
-from pathlib import Path
 
 import pytest
 
 from airbrakes.constants import CSV_HEADERS
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.logger import Logger
-
-
-@pytest.fixture
-def logger():
-    return Logger(TestLogger.LOG_PATH)
+from tests.conftest import LOG_PATH
 
 
 class TestLogger:
     """Tests the Logger() class in logger.py"""
-
-    LOG_PATH = Path("tests/logs")
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def clear_directory(self):
         """Clear the tests/logs directory after running each test."""
         yield  # This is where the test runs
         # Test run is over, now clean up
-        for log in self.LOG_PATH.glob("log_*.csv"):
+        for log in LOG_PATH.glob("log_*.csv"):
             log.unlink()
+
+    def test_slots(self, logger):
+        inst = logger
+        for attr in inst.__slots__:
+            assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, logger):
         # Test if "logs" directory was created
@@ -44,18 +42,18 @@ class TestLogger:
 
     def test_init_sets_log_path_correctly(self):
         # assert no files exist:
-        assert not list(self.LOG_PATH.glob("log_*.csv"))
-        logger = Logger(self.LOG_PATH)
-        expected_log_path = self.LOG_PATH / "log_1.csv"
+        assert not list(LOG_PATH.glob("log_*.csv"))
+        logger = Logger(LOG_PATH)
+        expected_log_path = LOG_PATH / "log_1.csv"
         assert expected_log_path.exists()
         assert logger.log_path == expected_log_path
-        logger_2 = Logger(self.LOG_PATH)
-        expected_log_path_2 = self.LOG_PATH / "log_2.csv"
+        logger_2 = Logger(LOG_PATH)
+        expected_log_path_2 = LOG_PATH / "log_2.csv"
         assert expected_log_path_2.exists()
         assert logger_2.log_path == expected_log_path_2
 
         # Test only 2 csv files exist:
-        assert set(self.LOG_PATH.glob("log_*.csv")) == {expected_log_path, expected_log_path_2}
+        assert set(LOG_PATH.glob("log_*.csv")) == {expected_log_path, expected_log_path_2}
 
     def test_init_log_file_has_correct_headers(self, logger):
         with logger.log_path.open() as f:
