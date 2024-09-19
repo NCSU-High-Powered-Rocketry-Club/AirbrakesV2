@@ -12,15 +12,13 @@ def main():
     # Initialize the logger
     logger = Logger(LOGS_PATH)
 
-    # Log for 5 seconds
+    # Log for 5 seconds, and automatically stops logging
     start_time = time.time()
     while time.time() - start_time < 5:
         # Create fake IMU data
-        imu_data_list = deque([RawDataPacket(int(time.time()), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)])
-        logger.log("TEST_STATE", 0.5, imu_data_list)
-
-    # Stop the logger after 5 seconds
-    logger.stop()
+        with logger:
+            imu_data_list = deque([RawDataPacket(int(time.time()), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)])
+            logger.log("TEST_STATE", 0.5, imu_data_list)
 
 
 if __name__ == "__main__":

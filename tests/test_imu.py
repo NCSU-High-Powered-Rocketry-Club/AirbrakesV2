@@ -3,6 +3,8 @@ import multiprocessing.sharedctypes
 import time
 from collections import deque
 
+import pytest
+
 from airbrakes.constants import FREQUENCY, PORT, UPSIDE_DOWN
 from airbrakes.imu.imu import IMU
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
@@ -56,6 +58,49 @@ class TestIMU:
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
+
+    def test_imu_context_manager_no_exception(self, monkeypatch):
+        """Tests whether the IMU context manager works correctly."""
+        values = multiprocessing.Queue()
+
+        def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
+            """Monkeypatched method for testing."""
+            values.put((port, frequency, upside_down))
+
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        with IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN) as imu:
+            assert imu._running.value
+            assert imu.is_running
+            assert imu._data_fetch_process.is_alive()
+            raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
+
+        assert not imu._running.value
+        assert not imu.is_running
+        assert not imu._data_fetch_process.is_alive()
+        assert values.qsize() == 1
+        assert values.get() == (PORT, FREQUENCY, UPSIDE_DOWN)
+
+    def test_imu_context_manager_with_exception(self, monkeypatch):
+        """Tests whether the IMU context manager propogates unknown exceptions."""
+        values = multiprocessing.Queue()
+
+        def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
+            """Monkeypatched method for testing."""
+            values.put((port, frequency, upside_down))
+            raise ValueError("some error")
+
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        with (
+            pytest.raises(ValueError, match="some error") as excinfo,
+            IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN) as imu,
+        ):
+            imu._fetch_data_loop(PORT, FREQUENCY, UPSIDE_DOWN)
+        assert not imu._running.value
+        assert not imu.is_running
+        assert not imu._data_fetch_process.is_alive()
+        assert values.qsize() == 2
+        assert values.get() == (PORT, FREQUENCY, UPSIDE_DOWN)
+        assert "some error" in str(excinfo.value)
 
     def test_data_packets_fetch(self, monkeypatch):
         """Tests whether the data fetching loop actually adds data to the queue."""

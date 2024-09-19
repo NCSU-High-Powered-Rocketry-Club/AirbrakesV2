@@ -2,13 +2,14 @@
 
 import collections
 import multiprocessing
+import signal
 import warnings
 
 try:
     import mscl
 except ImportError:
     warnings.warn(
-        "Could not import MSCL, IMU will not work. Please see installation instructions"
+        "Could not import MSCL, IMU will not work. Please see installation instructions "
         "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
         stacklevel=2,
     )
@@ -43,8 +44,20 @@ class IMU:
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency, upside_down)
+            target=self._fetch_data_loop, args=(port, frequency, upside_down), name="IMU Data Fetch Process"
         )
+
+    def __enter__(self):
+        """This is what is run when the context manager is entered, i.e. a `with` statement."""
+        self.start()
+        return self
+
+    def __exit__(self, _, exc_val: object, __):
+        """This is what is run when the context manager is exited, i.e. when the `with` block ends."""
+        # If a KeyboardInterrupt was raised, we want to stop the IMU cleanly, and not raise
+        # the exception again
+        self.stop()
+        return isinstance(exc_val, KeyboardInterrupt)  # Suppress propogation only for Ctrl+C
 
     @property
     def is_running(self) -> bool:
@@ -64,6 +77,8 @@ class IMU:
         """
         This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
         """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)

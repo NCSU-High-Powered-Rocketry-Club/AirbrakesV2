@@ -69,6 +69,45 @@ class TestLogger:
         assert not logger.is_running
         assert logger._log_process.exitcode == 0
 
+    def test_logger_context_manager_no_exception(self, monkeypatch):
+        """Tests whether the Logger context manager works correctly."""
+        values = multiprocessing.Queue()
+
+        def _logging_loop(self):
+            """Monkeypatched method for testing."""
+            values.put("test")
+
+        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
+
+        with Logger(LOG_PATH) as logger:
+            assert logger.is_running
+            raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
+
+        assert not logger.is_running
+        assert not logger._log_process.is_alive()
+        assert values.qsize() == 1
+        assert values.get() == "test"
+
+    def test_logger_context_manager_with_exception(self, monkeypatch):
+        """Tests whether the Logger context manager propogates unknown exceptions."""
+        values = multiprocessing.Queue()
+
+        def _logging_loop(self):
+            """Monkeypatched method for testing."""
+            values.put("test")
+            raise ValueError("some error")
+
+        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
+
+        with pytest.raises(ValueError, match="some error") as excinfo, Logger(LOG_PATH) as logger:
+            logger._logging_loop()
+
+        assert not logger.is_running
+        assert not logger._log_process.is_alive()
+        assert values.qsize() == 2
+        assert values.get() == "test"
+        assert "some error" in str(excinfo.value)
+
     def test_logging_loop_add_to_queue(self, logger):
         test_log = {"state": "state", "extension": "0.0", "timestamp": "4"}
         logger._log_queue.put(test_log)

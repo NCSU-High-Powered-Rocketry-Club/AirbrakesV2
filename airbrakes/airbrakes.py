@@ -44,6 +44,18 @@ class AirbrakesContext:
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0
 
+    def __enter__(self):
+        """This is what is run when the context manager is entered, i.e. a `with` statement."""
+        self.start()
+        return self
+
+    def __exit__(self, _, exc_val: object, __):
+        """This is what is run when the context manager is exited, i.e. when the `with` block ends."""
+        # If a KeyboardInterrupt was raised, we want to stop the airbrakes cleanly, and not raise
+        # the exception again
+        self.stop()
+        return isinstance(exc_val, KeyboardInterrupt)  # Suppress propogation only for Ctrl+C
+
     def start(self) -> None:
         """
         Starts the IMU and logger processes. This is called before the main while loop starts.

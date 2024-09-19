@@ -3,6 +3,7 @@
 import collections
 import csv
 import multiprocessing
+import signal
 from pathlib import Path
 
 from airbrakes.constants import CSV_HEADERS, STOP_SIGNAL
@@ -45,6 +46,18 @@ class Logger:
         # Start the logging process
         self._log_process = multiprocessing.Process(target=self._logging_loop, name="Logger")
 
+    def __enter__(self):
+        """This is what is run when the context manager is entered, i.e. a `with` statement."""
+        self.start()
+        return self
+
+    def __exit__(self, _, exc_val: object, __):
+        """This is what is run when the context manager is exited, i.e. when the `with` block ends."""
+        # If a KeyboardInterrupt was raised, we want to stop the logger cleanly, and not raise
+        # the exception again
+        self.stop()
+        return isinstance(exc_val, KeyboardInterrupt)  # Suppress propogation only for Ctrl+C
+
     @property
     def is_running(self) -> bool:
         """
@@ -85,6 +98,8 @@ class Logger:
         """
         The loop that saves data to the logs. It runs in parallel with the main loop.
         """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)

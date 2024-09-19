@@ -14,17 +14,10 @@ def main():
     imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 
     # The context that will manage the airbrakes state machine
-    airbrakes = AirbrakesContext(logger, servo, imu)
-
-    # Start the IMU and logger processes:
-    airbrakes.start()
-
-    # This is the main loop that will run until the stop method on the airbrakes is called
-    while not airbrakes.shutdown_requested:
-        airbrakes.update()
-
-    # Shutdown the IMU and logger processes:
-    airbrakes.stop()
+    with AirbrakesContext(logger, servo, imu) as airbrakes:
+        # This is the main loop that will run until we press Ctrl+C
+        while not airbrakes.shutdown_requested:
+            airbrakes.update()
 
 
 if __name__ == "__main__":
