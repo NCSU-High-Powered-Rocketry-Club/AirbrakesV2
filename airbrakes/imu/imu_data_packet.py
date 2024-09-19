@@ -10,18 +10,15 @@ class IMUDataPacket(msgspec.Struct):
     they're going to be in camelCase.
     """
 
-    timestamp: int
+    timestamp: int  # in nanoseconds
 
 
 class RawDataPacket(IMUDataPacket):
     """
     Represents a raw data packet from the IMU. These values are exactly what the IMU read, without any processing.
-    It contains a timestamp and the raw values of the acceleration, gyroscope, and GPS correlation data.
+    It contains a timestamp and the raw values of the acceleration, and gyroscope data.
     """
 
-    gpsCorrelTimestampFlags: int | None = None
-    gpsCorrelTimestampTow: float | None = None  # Time of week
-    gpsCorrelTimestampWeekNum: float | None = None  # Week number
     scaledAccelX: float | None = None
     scaledAccelY: float | None = None
     scaledAccelZ: float | None = None
@@ -37,16 +34,11 @@ class EstimatedDataPacket(IMUDataPacket):
     estimated values of the relevant data points.
     """
 
-    estFilterGpsTimeTow: float | None = None  # Time of week
-    estFilterGpsTimeWeekNum: int | None = None  # Week number
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
     estOrientQuaternionW: float | None = None
     estPressureAlt: float | None = None
-    estFilterState: int | None = None
-    estFilterDynamicsMode: int | None = None
-    estFilterStatusFlags: int | None = None
     estAttitudeUncertQuaternionX: float | None = None
     estAttitudeUncertQuaternionY: float | None = None
     estAttitudeUncertQuaternionZ: float | None = None
@@ -57,3 +49,6 @@ class EstimatedDataPacket(IMUDataPacket):
     estCompensatedAccelX: float | None = None
     estCompensatedAccelY: float | None = None
     estCompensatedAccelZ: float | None = None
+    estLinearAccelX: float | None = None
+    estLinearAccelY: float | None = None
+    estLinearAccelZ: float | None = None
