@@ -28,7 +28,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -W ignore -m pip install --upgrade pip
-          python -W ignore -m pip install .[dev]
+          python -W ignore -m pip install .
+          python -W ignore -m pip install .[dev]          
 
       - name: Test with pytest
         run: |
