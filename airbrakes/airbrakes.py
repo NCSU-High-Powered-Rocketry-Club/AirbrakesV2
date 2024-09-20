@@ -2,11 +2,11 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.imu.data_processor import IMUDataProcessor
-from airbrakes.imu.imu import IMU, IMUDataPacket
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket
-from airbrakes.logger import Logger
-from airbrakes.servo import Servo
+from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.imu import IMU, IMUDataPacket
+from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandByState, State
 
 if TYPE_CHECKING:
