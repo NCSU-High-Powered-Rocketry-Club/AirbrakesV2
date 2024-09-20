@@ -5,8 +5,8 @@ import csv
 import multiprocessing
 from pathlib import Path
 
-from airbrakes.constants import CSV_HEADERS, STOP_SIGNAL
-from airbrakes.imu.imu_data_packet import IMUDataPacket
+from airbrakes.data_handling.imu_data_packet import IMUDataPacket
+from constants import CSV_HEADERS, STOP_SIGNAL
 
 
 class Logger:

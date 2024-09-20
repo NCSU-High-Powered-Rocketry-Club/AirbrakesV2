@@ -6,6 +6,7 @@ version = "0.1.0"
 dependencies = [
     "gpiozero",
     "pigpio",  # Run sudo pigpiod before running the program
+    "msgspec",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]

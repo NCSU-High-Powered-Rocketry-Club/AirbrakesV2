@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-from airbrakes.constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
-from airbrakes.imu.imu import IMU
-from airbrakes.logger import Logger
-from airbrakes.servo import Servo
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.imu import IMU
+from airbrakes.hardware.servo import Servo
+from constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
 
 LOG_PATH = Path("tests/logs")
 
