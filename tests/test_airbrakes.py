@@ -1,7 +1,7 @@
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.imu.data_processor import IMUDataProcessor
+from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
 
 
