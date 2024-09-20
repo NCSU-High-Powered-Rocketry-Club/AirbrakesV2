@@ -1,11 +1,12 @@
 import csv
 import multiprocessing
 import multiprocessing.sharedctypes
+import signal
 import time
 
 import pytest
 
-from airbrakes.constants import CSV_HEADERS
+from airbrakes.constants import CSV_HEADERS, STOP_SIGNAL
 from airbrakes.imu.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.logger import Logger
 from tests.conftest import LOG_PATH
@@ -69,24 +70,33 @@ class TestLogger:
         assert not logger.is_running
         assert logger._log_process.exitcode == 0
 
-    def test_logger_context_manager_no_exception(self, monkeypatch):
-        """Tests whether the Logger context manager works correctly."""
+    def test_logger_ctrl_c_handling(self, monkeypatch):
+        """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
         values = multiprocessing.Queue()
 
         def _logging_loop(self):
             """Monkeypatched method for testing."""
-            values.put("test")
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            while True:
+                a = self._log_queue.get()
+                if a == STOP_SIGNAL:
+                    break
+            values.put("clean exit")
 
         monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
 
-        with Logger(LOG_PATH) as logger:
-            assert logger.is_running
+        logger = Logger(LOG_PATH)
+        logger.start()
+        assert logger.is_running
+        try:
             raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
+        except KeyboardInterrupt:
+            logger.stop()
 
         assert not logger.is_running
         assert not logger._log_process.is_alive()
         assert values.qsize() == 1
-        assert values.get() == "test"
+        assert values.get() == "clean exit"
 
     def test_logger_context_manager_with_exception(self, monkeypatch):
         """Tests whether the Logger context manager propogates unknown exceptions."""
@@ -94,18 +104,23 @@ class TestLogger:
 
         def _logging_loop(self):
             """Monkeypatched method for testing."""
-            values.put("test")
-            raise ValueError("some error")
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            while True:
+                values.put("error in loop")
+                raise ValueError("some error")
 
         monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
 
-        with pytest.raises(ValueError, match="some error") as excinfo, Logger(LOG_PATH) as logger:
+        logger = Logger(LOG_PATH)
+        logger.start()
+        with pytest.raises(ValueError, match="some error") as excinfo:
             logger._logging_loop()
 
+        logger.stop()
         assert not logger.is_running
         assert not logger._log_process.is_alive()
         assert values.qsize() == 2
-        assert values.get() == "test"
+        assert values.get() == "error in loop"
         assert "some error" in str(excinfo.value)
 
     def test_logging_loop_add_to_queue(self, logger):

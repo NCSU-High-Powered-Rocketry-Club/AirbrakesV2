@@ -47,18 +47,6 @@ class IMU:
             target=self._fetch_data_loop, args=(port, frequency, upside_down), name="IMU Data Fetch Process"
         )
 
-    def __enter__(self):
-        """This is what is run when the context manager is entered, i.e. a `with` statement."""
-        self.start()
-        return self
-
-    def __exit__(self, _, exc_val: object, __):
-        """This is what is run when the context manager is exited, i.e. when the `with` block ends."""
-        # If a KeyboardInterrupt was raised, we want to stop the IMU cleanly, and not raise
-        # the exception again
-        self.stop()
-        return isinstance(exc_val, KeyboardInterrupt)  # Suppress propogation only for Ctrl+C
-
     @property
     def is_running(self) -> bool:
         """

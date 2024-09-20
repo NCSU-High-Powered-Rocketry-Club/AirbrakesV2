@@ -57,39 +57,34 @@ class TestAirbrakesContext:
         assert airbrakes.servo.current_extension == -0.0999  # set to "0"
         assert airbrakes.shutdown_requested
 
-    def test_context_manager(self, airbrakes):
-        with airbrakes as ab:
-            assert airbrakes.imu.is_running
-            assert airbrakes.logger.is_running
-            assert ab is airbrakes
-        assert not airbrakes.imu.is_running
-        assert not airbrakes.logger.is_running
-        assert not airbrakes.imu._running.value
-        assert not airbrakes.imu._data_fetch_process.is_alive()
-        assert not airbrakes.logger._log_process.is_alive()
+    def test_airbrakes_ctrl_c_clean_exit(self, airbrakes):
+        """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
+        airbrakes.start()
 
-    def test_airbrakes_context_manager_clean_exit(self, airbrakes):
-        """Tests whether the Airbrakes context manager works correctly."""
-
-        with airbrakes:
-            time.sleep(0.01)
+        try:
             raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
+        except KeyboardInterrupt:
+            airbrakes.stop()
 
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert airbrakes.shutdown_requested
 
-    def test_airbrakes_context_manager_exception(self, airbrakes):
-        """Tests whether the Airbrakes context manager propogates unknown exceptions."""
+    def test_airbrakes_ctrl_c_exception(self, airbrakes):
+        """Tests whether the AirbrakesContext handles unknown exceptions."""
 
-        with pytest.raises(ValueError, match="some error") as exc_info, airbrakes:
-            raise ValueError("some error")
+        airbrakes.start()
+        try:
+            raise ValueError("some error in main loop")
+        except (KeyboardInterrupt, ValueError):
+            pass
+        finally:
+            airbrakes.stop()
 
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert airbrakes.shutdown_requested
-        assert "some error" in str(exc_info.value)
 
     def test_airbrakes_update(self, monkeypatch):
         """Tests whether the Airbrakes update method works correctly."""
-        # TODO: Implement this test
+        # TODO: Implement this test after we get the state and apogee detection working

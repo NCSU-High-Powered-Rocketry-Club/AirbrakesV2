@@ -1,5 +1,6 @@
 import multiprocessing
 import multiprocessing.sharedctypes
+import signal
 import time
 from collections import deque
 
@@ -59,20 +60,29 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
 
-    def test_imu_context_manager_no_exception(self, monkeypatch):
-        """Tests whether the IMU context manager works correctly."""
-        values = multiprocessing.Queue()
+    def test_imu_ctrl_c_handling(self, monkeypatch):
+        """Tests whether the IMU's stop() handles Ctrl+C fine."""
+        values = multiprocessing.Queue(100000)
 
         def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
             """Monkeypatched method for testing."""
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            while self._running.value:
+                continue
             values.put((port, frequency, upside_down))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        with IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN) as imu:
-            assert imu._running.value
-            assert imu.is_running
-            assert imu._data_fetch_process.is_alive()
-            raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
+        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu.start()
+        assert imu._running.value
+        assert imu.is_running
+        assert imu._data_fetch_process.is_alive()
+        time.sleep(0.001)  # Give the process time to start and simulate the actual loop
+        # send a KeyboardInterrupt to test if the process stops cleanly
+        try:
+            raise KeyboardInterrupt
+        except KeyboardInterrupt:
+            imu.stop()
 
         assert not imu._running.value
         assert not imu.is_running
@@ -80,8 +90,8 @@ class TestIMU:
         assert values.qsize() == 1
         assert values.get() == (PORT, FREQUENCY, UPSIDE_DOWN)
 
-    def test_imu_context_manager_with_exception(self, monkeypatch):
-        """Tests whether the IMU context manager propogates unknown exceptions."""
+    def test_imu_fetch_loop_exception(self, monkeypatch):
+        """Tests whether the IMU's _fetch_loop propogates unknown exceptions."""
         values = multiprocessing.Queue()
 
         def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
@@ -90,11 +100,11 @@ class TestIMU:
             raise ValueError("some error")
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        with (
-            pytest.raises(ValueError, match="some error") as excinfo,
-            IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN) as imu,
-        ):
+        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu.start()
+        with pytest.raises(ValueError, match="some error") as excinfo:
             imu._fetch_data_loop(PORT, FREQUENCY, UPSIDE_DOWN)
+        imu.stop()
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()

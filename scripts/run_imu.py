@@ -15,6 +15,13 @@ from airbrakes.imu.imu_data_packet import EstimatedDataPacket, RawDataPacket
 imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 logger = Logger(Path("test_logs/"))
 
-with imu, logger:
+try:
+    imu.start()
+    logger.start()
     while True:
         print(imu.get_imu_data_packet())
+except KeyboardInterrupt:  # Stop running IMU and logger if the user presses Ctrl+C
+    pass
+finally:
+    imu.stop()
+    logger.stop()
