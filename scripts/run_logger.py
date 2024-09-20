@@ -3,14 +3,14 @@
 import time
 from collections import deque
 
-from constants import LOGS_PATH
+from constants import TEST_LOGS_PATH
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.data_handling.logger import Logger
 
 
 def main():
     # Initialize the logger
-    logger = Logger(LOGS_PATH)
+    logger = Logger(TEST_LOGS_PATH)
 
     # Log for 5 seconds
     start_time = time.time()

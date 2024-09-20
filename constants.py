@@ -45,6 +45,7 @@ UPSIDE_DOWN = True  # TODO: Currently not factored in the implementation should 
 
 # The path of the folder to hold the log files in
 LOGS_PATH = Path("logs")
+TEST_LOGS_PATH = Path("test_logs")
 
 # The headers for the CSV file
 CSV_HEADERS = [

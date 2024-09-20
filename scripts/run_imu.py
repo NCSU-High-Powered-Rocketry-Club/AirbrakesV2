@@ -4,7 +4,7 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import FREQUENCY, PORT, UPSIDE_DOWN
+from constants import FREQUENCY, PORT, UPSIDE_DOWN, TEST_LOGS_PATH
 from airbrakes.hardware.imu import IMU
 from airbrakes.data_handling.logger import Logger
 from pathlib import Path
@@ -67,7 +67,7 @@ from pathlib import Path
 imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
 imu.start()
 
-logger = Logger(Path("test_logs/"))
+logger = Logger(TEST_LOGS_PATH)
 logger.start()
 
 while True:
