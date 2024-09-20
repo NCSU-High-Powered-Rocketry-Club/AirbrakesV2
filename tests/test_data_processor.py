@@ -3,8 +3,8 @@ import random
 
 import pytest
 
-from airbrakes.imu.data_processor import IMUDataProcessor
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 
 
 def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20):

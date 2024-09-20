@@ -3,9 +3,9 @@
 import time
 from collections import deque
 
-from airbrakes.constants import LOGS_PATH
-from airbrakes.imu.imu_data_packet import RawDataPacket
-from airbrakes.logger import Logger
+from constants import LOGS_PATH
+from airbrakes.data_handling.imu_data_packet import RawDataPacket
+from airbrakes.data_handling.logger import Logger
 
 
 def main():

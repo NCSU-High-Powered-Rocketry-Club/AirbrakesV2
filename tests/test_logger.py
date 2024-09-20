@@ -5,9 +5,9 @@ import time
 
 import pytest
 
-from airbrakes.constants import CSV_HEADERS
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.logger import Logger
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.logger import Logger
+from constants import CSV_HEADERS
 from tests.conftest import LOG_PATH
 
 

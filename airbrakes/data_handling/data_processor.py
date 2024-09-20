@@ -3,7 +3,7 @@
 import statistics as stats
 from collections.abc import Sequence
 
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 
 
 class IMUDataProcessor:

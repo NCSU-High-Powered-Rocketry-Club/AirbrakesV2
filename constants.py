@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 # -------------------------------------------------------
 # Servo Configuration
