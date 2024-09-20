@@ -53,14 +53,14 @@ class IMU:
         """
         return self._running.value
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the process fetching data from the IMU.
         """
         self._running.value = True
         self._data_fetch_process.start()
 
-    def _fetch_data_loop(self, port: str, frequency: int, _: bool):
+    def _fetch_data_loop(self, port: str, frequency: int, _: bool) -> None:
         """
         This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
         """
@@ -123,7 +123,7 @@ class IMU:
                 # Put the latest data into the shared queue
                 self._data_queue.put(imu_data_packet)
 
-    def get_imu_data_packet(self) -> IMUDataPacket:
+    def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
         Gets the last available data packet from the IMU.
 
@@ -149,7 +149,7 @@ class IMU:
 
         return data_packets
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Stops the process fetching data from the IMU. This should be called when the program is shutting down.
         """
