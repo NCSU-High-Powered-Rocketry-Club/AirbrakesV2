@@ -17,7 +17,7 @@ class IMUDataProcessor:
 
     __slots__ = ("_avg_accel", "_avg_accel_mag", "_data_points", "_max_altitude", "upside_down")
 
-    def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool):
+    def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool = False):
         self.upside_down = upside_down
 
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
