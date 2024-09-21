@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 # -------------------------------------------------------
 # Servo Configuration
@@ -12,8 +12,8 @@ from airbrakes.imu.imu_data_packet import EstimatedDataPacket, IMUDataPacket, Ra
 SERVO_PIN = 12
 
 # The minimum and maximum position of the servo, its range is -1 to 1
-MIN_EXTENSION = -1
-MAX_EXTENSION = 1
+MIN_EXTENSION = -0.0999  # -.079
+MAX_EXTENSION = 0.2605
 
 # -------------------------------------------------------
 # IMU Configuration
@@ -45,6 +45,7 @@ UPSIDE_DOWN = True  # TODO: Currently not factored in the implementation should 
 
 # The path of the folder to hold the log files in
 LOGS_PATH = Path("logs")
+TEST_LOGS_PATH = Path("test_logs")
 
 # The headers for the CSV file
 CSV_HEADERS = [
