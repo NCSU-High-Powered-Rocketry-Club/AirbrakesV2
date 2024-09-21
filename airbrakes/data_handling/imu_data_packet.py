@@ -50,7 +50,7 @@ class EstimatedDataPacket(IMUDataPacket):
     # estCompensatedAccel units are in m/s^2, including gravity
     estCompensatedAccelX: float | None = None
     estCompensatedAccelY: float | None = None
-    estCompensatedAccelZ: float | None = None  # this will be ~9.81 m/s^2 when the IMU is at rest
+    estCompensatedAccelZ: float | None = None  # this will be ~-9.81 m/s^2 when the IMU is at rest
     # estLinearAccel units are in m/s^2, excluding gravity
     estLinearAccelX: float | None = None
     estLinearAccelY: float | None = None
