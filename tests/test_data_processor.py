@@ -94,7 +94,7 @@ class TestIMUDataProcessor:
                     EstimatedDataPacket(
                         i, estCompensatedAccelX=1, estCompensatedAccelY=2, estCompensatedAccelZ=3, estPressureAlt=alt
                     )
-                    for alt in altitudes[i : i + 10]
+                    for alt in altitudes[i: i + 10]
                 ]
             )
         assert d.max_altitude == max(altitudes)

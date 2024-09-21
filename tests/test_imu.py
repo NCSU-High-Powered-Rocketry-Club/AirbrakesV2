@@ -34,7 +34,7 @@ class TestIMU:
             values.put((port, frequency, upside_down))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         assert imu._running.value
         assert imu.is_running
@@ -50,7 +50,7 @@ class TestIMU:
             """Monkeypatched method for testing."""
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         imu.stop()
         assert not imu._running.value
@@ -87,7 +87,7 @@ class TestIMU:
                 time.sleep(0.001)
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         time.sleep(0.3)
         imu.stop()

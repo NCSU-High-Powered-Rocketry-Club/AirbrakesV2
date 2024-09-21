@@ -20,7 +20,7 @@ def logger():
 
 @pytest.fixture
 def imu():
-    return IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+    return IMU(port=PORT, frequency=FREQUENCY)
 
 
 @pytest.fixture
