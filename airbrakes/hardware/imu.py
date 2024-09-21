@@ -28,6 +28,7 @@ class IMU:
     because the IMU constantly polls data and can be slow, so it's better to run it in parallel.
 
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
+    Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
     __slots__ = (
@@ -40,7 +41,7 @@ class IMU:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
-        :param frequency: the frequency in Hz that the IMU will be polled at
+        :param frequency: the frequency that the IMU is set to poll at (this can be checked in SensorConnect)
         """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
@@ -104,7 +105,7 @@ class IMU:
         """
         The loop that fetches data from the IMU. It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
-        :param frequency: the frequency in Hz that the IMU will be polled at
+        :param frequency: the frequency that the IMU is set to poll at
         """
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
