@@ -1,3 +1,5 @@
+"""Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
+
 import csv
 import time
 from pathlib import Path

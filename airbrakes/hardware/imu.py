@@ -4,9 +4,6 @@ import collections
 import multiprocessing
 import warnings
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
-
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing mscl is annoying
 # and we really just have it installed on the pi
 try:
