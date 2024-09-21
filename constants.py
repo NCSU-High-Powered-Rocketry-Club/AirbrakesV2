@@ -37,7 +37,7 @@ MAX_QUEUE_SIZE = 100000
 # -------------------------------------------------------
 
 # Should be checked before launch
-UPSIDE_DOWN = True  # TODO: Currently not factored in the implementation should be added to DataProcessor
+UPSIDE_DOWN = False
 
 # -------------------------------------------------------
 # Logging Configuration
