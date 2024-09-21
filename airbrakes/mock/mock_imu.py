@@ -4,7 +4,7 @@ import csv
 import time
 from pathlib import Path
 
-from airbrakes.data_handling.imu_data_packet import RawDataPacket, EstimatedDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 
 
