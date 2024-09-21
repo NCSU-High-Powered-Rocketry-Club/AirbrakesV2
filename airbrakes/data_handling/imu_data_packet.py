@@ -19,9 +19,10 @@ class RawDataPacket(IMUDataPacket):
     It contains a timestamp and the raw values of the acceleration, and gyroscope data.
     """
 
+    # scaledAccel units are in "g" (9.81 m/s^2)
     scaledAccelX: float | None = None
     scaledAccelY: float | None = None
-    scaledAccelZ: float | None = None
+    scaledAccelZ: float | None = None  # this will be ~-1.0g when the IMU is at rest
     scaledGyroX: float | None = None
     scaledGyroY: float | None = None
     scaledGyroZ: float | None = None
@@ -46,9 +47,11 @@ class EstimatedDataPacket(IMUDataPacket):
     estAngularRateX: float | None = None
     estAngularRateY: float | None = None
     estAngularRateZ: float | None = None
+    # estCompensatedAccel units are in m/s^2, including gravity
     estCompensatedAccelX: float | None = None
     estCompensatedAccelY: float | None = None
-    estCompensatedAccelZ: float | None = None
+    estCompensatedAccelZ: float | None = None  # this will be ~9.81 m/s^2 when the IMU is at rest
+    # estLinearAccel units are in m/s^2, excluding gravity
     estLinearAccelX: float | None = None
     estLinearAccelY: float | None = None
-    estLinearAccelZ: float | None = None
+    estLinearAccelZ: float | None = None  # this will be ~0 m/s^2 when the IMU is at rest
