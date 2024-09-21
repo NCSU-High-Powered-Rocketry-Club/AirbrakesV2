@@ -244,7 +244,7 @@ class MockIMU(AbstractIMU):
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: Path to the CSV file containing IMU data.
-        :param frequency: Frequency in Hz for how often to fetch data.
+        :param frequency: Frequency in Hz for how often to fetch data.l
         """
         # Calculate the interval between readings based on frequency
         # TODO: reading takes a little bit of time, so we should probably subtract a few milliseconds from the interval
@@ -257,6 +257,8 @@ class MockIMU(AbstractIMU):
                 # Check if the process should stop
                 if not self._running.value:
                     break
+
+                imu_data_packet = None
 
                 # Create the data packet based on the row
                 if row.get("scaledAccelX") is not None:
