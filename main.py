@@ -1,5 +1,6 @@
 """The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object and run the main
 loop."""
+
 import sys
 
 from airbrakes.airbrakes import AirbrakesContext
