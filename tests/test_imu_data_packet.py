@@ -49,7 +49,6 @@ class TestEstimatedDataPacket:
         assert packet.estLinearAccelY == 0.0
         assert packet.estLinearAccelZ == 0.0
 
-
     def test_estimated_data_packet_defaults(self):
         packet = EstimatedDataPacket(timestamp=123456789)
 
