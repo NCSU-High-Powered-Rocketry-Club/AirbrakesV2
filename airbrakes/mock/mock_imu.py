@@ -1,53 +1,44 @@
-class MockIMU:
+import csv
+import time
+from pathlib import Path
+
+from airbrakes.data_handling.imu_data_packet import RawDataPacket, EstimatedDataPacket
+from airbrakes.hardware.imu import IMU
+
+
+class MockIMU(IMU):
     """
     A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware and returns data read
     from a previous log file.
     """
 
-    __slots__ = ("log_file_path",)
+    def __init__(self, log_file_name: str, frequency: int):
+        """
+        Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
+        :param log_file_name: The name of the log file to read data from.
+        :param frequency: The frequency in Hz to read data from the log file.
+        """
+        super().__init__(log_file_name, frequency)
 
-    def __init__(self, log_file_path: Path, frequency: int):
-        super().__init__(frequency)
-        self.log_file_path = log_file_path
-
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(MAX_QUEUE_SIZE)
-        self._running = multiprocessing.Value("b", False)
-
-        # Starts the process that fetches data from the IMU
-        self._data_fetch_process = multiprocessing.Process(
-            target=self._read_data_loop, args=(self.log_file_path, self.frequency, self.upside_down)
-        )
-
-    @property
-    def is_running(self) -> bool:
-        return super().is_running
-
-    def start(self) -> None:
-        pass
-
-    def stop(self) -> None:
-        pass
-
-    def get_imu_data_packet(self) -> IMUDataPacket | None:
-        pass
-
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        pass
-
-    def _read_data_loop(self, log_file_path: Path, frequency: int) -> None:
+    def _fetch_data_loop(self, log_file_name: str, frequency: int) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_path: Path to the CSV file containing IMU data.
-        :param frequency: Frequency in Hz for how often to fetch data.l
+        :param log_file_name: the name of the log file to read data from located in logs/
+        :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
         # Calculate the interval between readings based on frequency
         # TODO: reading takes a little bit of time, so we should probably subtract a few milliseconds from the interval
         interval = 1.0 / frequency
 
+        # Makes the path to the log file in an os-independent way
+        log_file_path = Path("logs") / log_file_name
+
         with log_file_path.open(newline="") as csvfile:
             reader = csv.DictReader(csvfile)
 
             for row in reader:
+                row: dict[str, str]
+
                 # Check if the process should stop
                 if not self._running.value:
                     break

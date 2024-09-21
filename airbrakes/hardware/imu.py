@@ -37,6 +37,11 @@ class IMU:
     )
 
     def __init__(self, port: str, frequency: int):
+        """
+        Initializes the object that interacts with the physical IMU connected to the pi.
+        :param port: the port that the IMU is connected to
+        :param frequency: the frequency in Hz that the IMU will be polled at
+        """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
