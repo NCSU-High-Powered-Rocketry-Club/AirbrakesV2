@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
+from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -16,6 +17,11 @@ LOG_PATH = Path("tests/logs")
 @pytest.fixture
 def logger():
     return Logger(LOG_PATH)
+
+
+@pytest.fixture
+def data_processor():
+    return IMUDataProcessor([])
 
 
 @pytest.fixture
