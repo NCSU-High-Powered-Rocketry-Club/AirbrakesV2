@@ -5,6 +5,14 @@ from pathlib import Path
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 # -------------------------------------------------------
+# Main
+# -------------------------------------------------------
+
+# These are used for simulations
+MOCK_ARGUMENT = "mock"
+SIMULATION_LOG_NAME = "PLACEHOLDER.csv"  # This should be logged in the logs folder
+
+# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 

@@ -1,18 +1,30 @@
 """The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object and run the main
 loop."""
+import sys
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from constants import FREQUENCY, LOGS_PATH, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
+from airbrakes.mock.mock_imu import MockIMU
+from constants import (
+    FREQUENCY,
+    LOGS_PATH,
+    MAX_EXTENSION,
+    MIN_EXTENSION,
+    MOCK_ARGUMENT,
+    PORT,
+    SERVO_PIN,
+    SIMULATION_LOG_NAME,
+    UPSIDE_DOWN,
+)
 
 
-def main():
+def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
-    imu = IMU(PORT, FREQUENCY)
+    imu = IMU(PORT, FREQUENCY) if not is_simulation else MockIMU(SIMULATION_LOG_NAME, FREQUENCY)
     logger = Logger(LOGS_PATH)
     data_processor = IMUDataProcessor([], UPSIDE_DOWN)
 
@@ -31,4 +43,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # If the mock argument is passed in, then run the simulation: python main.py mock
+    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:])
