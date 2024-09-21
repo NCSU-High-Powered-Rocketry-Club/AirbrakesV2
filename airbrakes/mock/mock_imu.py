@@ -29,7 +29,7 @@ class MockIMU(IMU):
         :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
         # Calculate the interval between readings based on frequency
-        # TODO: reading takes a little bit of time, so we should probably subtract a few milliseconds from the interval
+        # This is slightly inaccurate because reading will take a little bit of time
         interval = 1.0 / frequency
 
         # Makes the path to the log file in an os-independent way
@@ -38,6 +38,7 @@ class MockIMU(IMU):
         with log_file_path.open(newline="") as csvfile:
             reader = csv.DictReader(csvfile)
 
+            # Reads each row as a dictionary
             for row in reader:
                 row: dict[str, str]
 
@@ -61,6 +62,9 @@ class MockIMU(IMU):
                     imu_data_packet.estCompensatedAccelX = float(row.get("estCompensatedAccelX"))
                     imu_data_packet.estCompensatedAccelY = float(row.get("estCompensatedAccelY"))
                     imu_data_packet.estCompensatedAccelZ = float(row.get("estCompensatedAccelZ"))
+                    imu_data_packet.estLinearAccelX = float(row.get("estLinearAccelX"))
+                    imu_data_packet.estLinearAccelY = float(row.get("estLinearAccelY"))
+                    imu_data_packet.estLinearAccelZ = float(row.get("estLinearAccelZ"))
                     imu_data_packet.estAngularRateX = float(row.get("estAngularRateX"))
                     imu_data_packet.estAngularRateY = float(row.get("estAngularRateY"))
                     imu_data_packet.estAngularRateZ = float(row.get("estAngularRateZ"))
