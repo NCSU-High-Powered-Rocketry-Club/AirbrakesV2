@@ -50,9 +50,7 @@ class IMU:
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
-        self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency)
-        )
+        self._data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop, args=(port, frequency))
 
     @property
     def is_running(self) -> bool:
