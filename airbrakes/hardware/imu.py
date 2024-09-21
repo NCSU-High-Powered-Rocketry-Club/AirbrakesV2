@@ -18,6 +18,9 @@ except ImportError:
         stacklevel=2,
     )
 
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
+
 
 class IMU:
     """
