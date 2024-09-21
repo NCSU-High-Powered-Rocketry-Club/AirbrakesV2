@@ -9,16 +9,11 @@ class TestEstimatedDataPacket:
     def test_estimated_data_packet_initialization(self):
         packet = EstimatedDataPacket(
             timestamp=123456789,
-            estFilterGpsTimeTow=1234.56,
-            estFilterGpsTimeWeekNum=42,
             estOrientQuaternionX=0.1,
             estOrientQuaternionY=0.2,
             estOrientQuaternionZ=0.3,
             estOrientQuaternionW=0.4,
             estPressureAlt=1013.25,
-            estFilterState=1,
-            estFilterDynamicsMode=2,
-            estFilterStatusFlags=3,
             estAttitudeUncertQuaternionX=0.01,
             estAttitudeUncertQuaternionY=0.02,
             estAttitudeUncertQuaternionZ=0.03,
@@ -29,19 +24,17 @@ class TestEstimatedDataPacket:
             estCompensatedAccelX=9.81,
             estCompensatedAccelY=0.0,
             estCompensatedAccelZ=-9.81,
+            estLinearAccelX=0.0,
+            estLinearAccelY=0.0,
+            estLinearAccelZ=0.0,
         )
 
         assert packet.timestamp == 123456789
-        assert packet.estFilterGpsTimeTow == 1234.56
-        assert packet.estFilterGpsTimeWeekNum == 42
         assert packet.estOrientQuaternionX == 0.1
         assert packet.estOrientQuaternionY == 0.2
         assert packet.estOrientQuaternionZ == 0.3
         assert packet.estOrientQuaternionW == 0.4
         assert packet.estPressureAlt == 1013.25
-        assert packet.estFilterState == 1
-        assert packet.estFilterDynamicsMode == 2
-        assert packet.estFilterStatusFlags == 3
         assert packet.estAttitudeUncertQuaternionX == 0.01
         assert packet.estAttitudeUncertQuaternionY == 0.02
         assert packet.estAttitudeUncertQuaternionZ == 0.03
@@ -52,21 +45,19 @@ class TestEstimatedDataPacket:
         assert packet.estCompensatedAccelX == 9.81
         assert packet.estCompensatedAccelY == 0.0
         assert packet.estCompensatedAccelZ == -9.81
+        assert packet.estLinearAccelX == 0.0
+        assert packet.estLinearAccelY == 0.0
+        assert packet.estLinearAccelZ == 0.0
 
     def test_estimated_data_packet_defaults(self):
         packet = EstimatedDataPacket(timestamp=123456789)
 
         assert packet.timestamp == 123456789
-        assert packet.estFilterGpsTimeTow is None
-        assert packet.estFilterGpsTimeWeekNum is None
         assert packet.estOrientQuaternionX is None
         assert packet.estOrientQuaternionY is None
         assert packet.estOrientQuaternionZ is None
         assert packet.estOrientQuaternionW is None
         assert packet.estPressureAlt is None
-        assert packet.estFilterState is None
-        assert packet.estFilterDynamicsMode is None
-        assert packet.estFilterStatusFlags is None
         assert packet.estAttitudeUncertQuaternionX is None
         assert packet.estAttitudeUncertQuaternionY is None
         assert packet.estAttitudeUncertQuaternionZ is None
@@ -77,13 +68,16 @@ class TestEstimatedDataPacket:
         assert packet.estCompensatedAccelX is None
         assert packet.estCompensatedAccelY is None
         assert packet.estCompensatedAccelZ is None
+        assert packet.estLinearAccelX is None
+        assert packet.estLinearAccelY is None
+        assert packet.estLinearAccelZ is None
 
     def test_required_fields(self):
         with pytest.raises(TypeError):
             EstimatedDataPacket()
 
     def test_wrong_type_does_not_raise_exception(self):
-        EstimatedDataPacket(timestamp="12345.6789", estFilterGpsTimeTow=object())
+        EstimatedDataPacket(timestamp="12345.6789", estAngularRateX=object())
 
 
 class TestRawDataPacket:
@@ -92,9 +86,6 @@ class TestRawDataPacket:
     def test_raw_data_packet_initialization(self):
         packet = RawDataPacket(
             timestamp=123456789,
-            gpsCorrelTimestampFlags=1,
-            gpsCorrelTimestampTow=1234.56,
-            gpsCorrelTimestampWeekNum=42,
             scaledAccelX=1.0,
             scaledAccelY=2.0,
             scaledAccelZ=3.0,
@@ -104,9 +95,6 @@ class TestRawDataPacket:
         )
 
         assert packet.timestamp == 123456789
-        assert packet.gpsCorrelTimestampFlags == 1
-        assert packet.gpsCorrelTimestampTow == 1234.56
-        assert packet.gpsCorrelTimestampWeekNum == 42
         assert packet.scaledAccelX == 1.0
         assert packet.scaledAccelY == 2.0
         assert packet.scaledAccelZ == 3.0
@@ -118,9 +106,6 @@ class TestRawDataPacket:
         packet = RawDataPacket(timestamp=123456789)
 
         assert packet.timestamp == 123456789
-        assert packet.gpsCorrelTimestampFlags is None
-        assert packet.gpsCorrelTimestampTow is None
-        assert packet.gpsCorrelTimestampWeekNum is None
         assert packet.scaledAccelX is None
         assert packet.scaledAccelY is None
         assert packet.scaledAccelZ is None
@@ -133,4 +118,4 @@ class TestRawDataPacket:
             RawDataPacket()
 
     def test_wrong_type_does_not_raise_exception(self):
-        RawDataPacket(timestamp="12345.6789", gpsCorrelTimestampTow=object())
+        RawDataPacket(timestamp="12345.6789", scaledAccelX=object())
