@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
-from constants import FREQUENCY, PORT, UPSIDE_DOWN
+from constants import FREQUENCY, PORT
 
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
@@ -32,28 +32,28 @@ class TestIMU:
         """Tests whether the IMU process starts correctly with the passed arguments."""
         values = multiprocessing.Queue()
 
-        def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
+        def _fetch_data_loop(self, port: str, frequency: int):
             """Monkeypatched method for testing."""
-            values.put((port, frequency, upside_down))
+            values.put((port, frequency))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
         time.sleep(0.01)  # Give the process time to start and put the values
         assert values.qsize() == 1
-        assert values.get() == (PORT, FREQUENCY, UPSIDE_DOWN)
+        assert values.get() == (PORT, FREQUENCY)
 
     def test_imu_stop(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
 
-        def _fetch_data_loop(self, port: str, frequency: int, upside_down: bool):
+        def _fetch_data_loop(self, port: str, frequency: int):
             """Monkeypatched method for testing."""
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         imu.stop()
         assert not imu._running.value
@@ -142,7 +142,7 @@ class TestIMU:
                 time.sleep(0.001)
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+        imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
         time.sleep(0.3)
         imu.stop()

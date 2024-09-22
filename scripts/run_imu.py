@@ -4,12 +4,12 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import FREQUENCY, PORT, UPSIDE_DOWN, TEST_LOGS_PATH
+from constants import FREQUENCY, PORT, TEST_LOGS_PATH
 from airbrakes.hardware.imu import IMU
 from airbrakes.data_handling.logger import Logger
 
 
-imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
+imu = IMU(PORT, FREQUENCY)
 logger = Logger(TEST_LOGS_PATH)
 
 try:

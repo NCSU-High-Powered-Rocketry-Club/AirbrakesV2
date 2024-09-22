@@ -1,7 +1,7 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -59,11 +59,9 @@ class StandByState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         pass
 
-    @override
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
@@ -75,11 +73,9 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         pass
 
-    @override
     def next_state(self):
         self.context.state = FlightState(self.context)
 
@@ -91,11 +87,9 @@ class FlightState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         pass
 
-    @override
     def next_state(self):
         self.context.state = FreeFallState(self.context)
 
@@ -107,11 +101,9 @@ class FreeFallState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         pass
 
-    @override
     def next_state(self):
         # Explicitly do nothing, there is no next state
         pass

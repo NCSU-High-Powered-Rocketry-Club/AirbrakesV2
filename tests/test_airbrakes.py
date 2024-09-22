@@ -6,8 +6,8 @@ from airbrakes.state import StandByState
 
 
 @pytest.fixture
-def airbrakes(imu, logger, servo):
-    return AirbrakesContext(logger, servo, imu)
+def airbrakes(imu, logger, servo, data_processor):
+    return AirbrakesContext(logger, servo, imu, data_processor)
 
 
 @pytest.mark.filterwarnings("ignore:To reduce servo jitter")  # ignore warning about servo jitter
@@ -19,11 +19,12 @@ class TestAirbrakesContext:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, airbrakes, logger, imu, servo):
+    def test_init(self, airbrakes, logger, imu, servo, data_processor):
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
         assert airbrakes.current_extension == 0.0
+        assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandByState)
         assert not airbrakes.shutdown_requested

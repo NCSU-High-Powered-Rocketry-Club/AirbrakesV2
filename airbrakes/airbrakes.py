@@ -31,15 +31,14 @@ class AirbrakesContext:
         "state",
     )
 
-    def __init__(self, logger: Logger, servo: Servo, imu: IMU):
-        self.logger: Logger = logger
-        self.servo: Servo = servo
-        self.imu: IMU = imu
+    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor):
+        self.servo = servo
+        self.imu = imu
+        self.logger = logger
+        self.data_processor = data_processor
 
         self.state: State = StandByState(self)
         self.shutdown_requested = False
-
-        self.data_processor = IMUDataProcessor([])
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0
