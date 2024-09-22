@@ -59,3 +59,22 @@ CSV_HEADERS = [
 # The signal to stop the logging process, this will be put in the queue to stop the process
 # see stop() and _logging_loop() for more details.
 STOP_SIGNAL = "STOP"
+
+# -------------------------------------------------------
+# State Machine Configuration
+# -------------------------------------------------------
+
+# Arbitrarily set values for transition between states:
+
+# Standby to MotorBurn:
+TAKEOFF_SPEED = 4  # m/s
+TAKEOFF_HEIGHT = 1  # m
+
+# MotorBurn to Coasting:
+# Acceleration inside this range will be considered as the motor burnout acceleration
+ACCELERATION_AT_MOTOR_BURNOUT = [0, 6]  # m/s^2  (only gravity should be acting on the rocket)
+HIGH_SPEED_AT_MOTOR_BURNOUT = 60  # m/s
+
+# Coasting to Landing:
+
+APOGEE_SPEED = [0, 10]

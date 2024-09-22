@@ -3,6 +3,14 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, override
 
+from constants import (
+    ACCELERATION_AT_MOTOR_BURNOUT,
+    APOGEE_SPEED,
+    HIGH_SPEED_AT_MOTOR_BURNOUT,
+    TAKEOFF_HEIGHT,
+    TAKEOFF_SPEED,
+)
+
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 
@@ -61,7 +69,26 @@ class StandByState(State):
 
     @override
     def update(self):
-        pass
+        """
+        Checks if the rocket has launched, based on our speed and altitude.
+        """
+        # We need to check if the rocket has launched, if it has, we move to the next state.
+        # For that we can check:
+        # 1) Speed - If the speed of the rocket is above a threshold, the rocket has
+        # launched.
+        # 2) Altitude - If the altitude is above a threshold, the rocket has launched.
+        # Ideally we would directly communicate with the motor, but we don't have that capability.
+
+        data = self.context.data_processor
+
+        if data.current_speed > TAKEOFF_SPEED and data.current_altitude > TAKEOFF_HEIGHT:
+            self.next_state()
+            return
+
+        # In case our altitude didn't update in time, just check the speed:
+        if data.current_speed > TAKEOFF_SPEED + 1:
+            self.next_state()
+            return
 
     @override
     def next_state(self):
@@ -77,7 +104,25 @@ class MotorBurnState(State):
 
     @override
     def update(self):
-        pass
+        """Checks to see if the acceleration has dropped to zero, indicating the motor has
+        burned out."""
+
+        data = self.context.data_processor
+
+        # If the acceleration has dropped close to zero, the motor has burned out,
+        # this has been checked with actual previous flight data (previous_flight_accel_data.png).
+        if (
+            ACCELERATION_AT_MOTOR_BURNOUT[0] <= data.avg_acceleration_mag <= ACCELERATION_AT_MOTOR_BURNOUT[1]
+            # as an added check, make sure our speed is still "high":
+            and data.current_speed >= HIGH_SPEED_AT_MOTOR_BURNOUT
+        ):
+            self.next_state()
+            return
+
+        # fallback condition: if our speed has started to decrease, we have motor burnout:
+        if data.current_speed < data.max_speed:
+            self.next_state()
+            return
 
     @override
     def next_state(self):
@@ -93,7 +138,19 @@ class FlightState(State):
 
     @override
     def update(self):
-        pass
+        """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
+
+        data = self.context.data_processor
+
+        # If our speed is close to zero, we have reached apogee.
+        if APOGEE_SPEED[0] <= data.current_speed <= APOGEE_SPEED[1]:
+            self.next_state()
+            return
+
+        # fallback condition: if our altitude has started to decrease, we have reached apogee:
+        if data.current_altitude < data.max_altitude:
+            self.next_state()
+            return
 
     @override
     def next_state(self):
@@ -109,7 +166,7 @@ class FreeFallState(State):
 
     @override
     def update(self):
-        pass
+        """Nothing to check, we just wait for the rocket to land."""
 
     @override
     def next_state(self):
