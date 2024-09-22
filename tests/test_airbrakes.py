@@ -7,7 +7,7 @@ from airbrakes.state import StandByState
 
 @pytest.fixture
 def airbrakes(imu, logger, servo, data_processor):
-    return AirbrakesContext(logger, servo, imu, data_processor)
+    return AirbrakesContext(servo, imu, logger, data_processor)
 
 
 @pytest.mark.filterwarnings("ignore:To reduce servo jitter")  # ignore warning about servo jitter
@@ -32,11 +32,13 @@ class TestAirbrakesContext:
     def test_set_extension(self, airbrakes):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         airbrakes.set_airbrake_extension(0.5)
-        # TODO: airbrakes.current_extension must be set to 0.5 !!
+        assert airbrakes.current_extension == 0.5
         assert airbrakes.servo.current_extension == 0.0803
         airbrakes.set_airbrake_extension(0.0)
+        assert airbrakes.current_extension == 0.0
         assert airbrakes.servo.current_extension == -0.0999
         airbrakes.set_airbrake_extension(1.0)
+        assert airbrakes.current_extension == 1.0
         assert airbrakes.servo.current_extension == 0.2605
 
     def test_start(self, airbrakes):
