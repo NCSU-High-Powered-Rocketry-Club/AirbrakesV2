@@ -1,11 +1,11 @@
 """The mocked main file which can be run locally. To run this, make sure you're not inside scripts,
-and run the following command: `python -m scripts.test_imu`"""
+and run the following command: `python -m scripts.run_main_local`"""
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.constants import FREQUENCY, LOGS_PATH, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
-from airbrakes.imu.imu import IMU
-from airbrakes.logger import Logger
-from airbrakes.servo import Servo
+from constants import FREQUENCY, LOGS_PATH, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
+from airbrakes.hardware.imu import IMU
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.servo import Servo
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
