@@ -26,9 +26,10 @@ class IMUDataProcessor:
         "_previous_velocity",
         "_speed",
         "_zeroed_altitude",
+        "upside_down",
     )
 
-    def __init__(self, data_points: Sequence[EstimatedDataPacket]):
+    def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool = False):
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
@@ -37,6 +38,7 @@ class IMUDataProcessor:
         self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._zeroed_altitude: float = None
         self._current_altitude: float = None
+        self.upside_down = upside_down
         self._data_points: Sequence[EstimatedDataPacket]
 
         if data_points:  # actually update the data on init

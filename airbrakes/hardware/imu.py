@@ -5,6 +5,8 @@ import multiprocessing
 import signal
 import warnings
 
+# Try to import the MSCL library, if it fails, warn the user, this is necessary because installing mscl is annoying
+# and we really just have it installed on the pi
 try:
     import mscl
 except ImportError:
@@ -27,6 +29,7 @@ class IMU:
     because the IMU constantly polls data and can be slow, so it's better to run it in parallel.
 
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
+    Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
     __slots__ = (
@@ -35,7 +38,12 @@ class IMU:
         "_running",
     )
 
-    def __init__(self, port: str, frequency: int, upside_down: bool):
+    def __init__(self, port: str, frequency: int):
+        """
+        Initializes the object that interacts with the physical IMU connected to the pi.
+        :param port: the port that the IMU is connected to
+        :param frequency: the frequency that the IMU is set to poll at (this can be checked in SensorConnect)
+        """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
@@ -44,26 +52,61 @@ class IMU:
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency, upside_down), name="IMU Data Fetch Process"
+            target=self._fetch_data_loop, args=(port, frequency), name="IMU Data Fetch Process"
         )
 
     @property
     def is_running(self) -> bool:
         """
         Returns whether the process fetching data from the IMU is running.
+        :return: True if the process is running, False otherwise
         """
         return self._running.value
 
-    def start(self):
+    def start(self) -> None:
         """
-        Starts the process fetching data from the IMU.
+        Starts the process separate from the main process for fetching data from the IMU.
         """
         self._running.value = True
         self._data_fetch_process.start()
 
-    def _fetch_data_loop(self, port: str, frequency: int, _: bool):
+    def stop(self) -> None:
         """
-        This is the loop that fetches data from the IMU. It runs in parallel with the main loop.
+        Stops the process separate from the main process for fetching data from the IMU.
+        """
+        self._running.value = False
+        # Waits for the process to finish before stopping it
+        self._data_fetch_process.join()
+
+    def get_imu_data_packet(self) -> IMUDataPacket | None:
+        """
+        Gets the last available data packet from the IMU.
+        Note: If `get_imu_data_packet` is called slower than the frequency set, the data will not
+        be the latest, but the first in the queue.
+        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not available, it will
+        be None.
+        """
+        return self._data_queue.get()
+
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
+        """
+        Returns all available data packets from the IMU.
+        :return: A deque containing the specified number of data packets
+        """
+        # We use a deque because it's faster than a list for popping from the left
+        data_packets = collections.deque()
+        # While there is data in the queue, get the data packet and add it to the dequeue which we return
+        while not self._data_queue.empty():
+            data_packet = self.get_imu_data_packet()
+            data_packets.append(data_packet)
+
+        return data_packets
+
+    def _fetch_data_loop(self, port: str, frequency: int) -> None:
+        """
+        The loop that fetches data from the IMU. It runs in parallel with the main loop.
+        :param port: the port that the IMU is connected to
+        :param frequency: the frequency that the IMU is set to poll at
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -125,37 +168,3 @@ class IMU:
 
                 # Put the latest data into the shared queue
                 self._data_queue.put(imu_data_packet)
-
-    def get_imu_data_packet(self) -> IMUDataPacket:
-        """
-        Gets the last available data packet from the IMU.
-
-        Note: If `get_imu_data_packet` is called slower than the frequency set, the data will not
-        be the latest, but the first in the queue.
-
-        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is
-            not available, it will be None.
-        """
-        return self._data_queue.get()
-
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        """Returns all available data packets from the IMU.
-
-        :return: A deque containing the specified number of data packets
-        """
-
-        data_packets = collections.deque()
-
-        while not self._data_queue.empty():
-            data_packet = self.get_imu_data_packet()
-            data_packets.append(data_packet)
-
-        return data_packets
-
-    def stop(self):
-        """
-        Stops the process fetching data from the IMU. This should be called when the program is shutting down.
-        """
-        self._running.value = False
-        # Waits for the process to finish before stopping it
-        self._data_fetch_process.join()

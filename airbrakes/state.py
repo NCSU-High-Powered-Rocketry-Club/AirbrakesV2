@@ -1,7 +1,7 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 
 from constants import (
     ACCELERATION_AT_MOTOR_BURNOUT,
@@ -68,7 +68,6 @@ class StandByState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         """
         Checks if the rocket has launched, based on our speed and altitude.
@@ -91,7 +90,6 @@ class StandByState(State):
             self.next_state()
             return
 
-    @override
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
@@ -103,7 +101,6 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
         burned out."""
@@ -125,7 +122,6 @@ class MotorBurnState(State):
             self.next_state()
             return
 
-    @override
     def next_state(self):
         self.context.state = FlightState(self.context)
 
@@ -137,7 +133,6 @@ class FlightState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
@@ -153,7 +148,6 @@ class FlightState(State):
             self.next_state()
             return
 
-    @override
     def next_state(self):
         self.context.state = FreeFallState(self.context)
 
@@ -165,11 +159,9 @@ class FreeFallState(State):
 
     __slots__ = ()
 
-    @override
     def update(self):
         """Nothing to check, we just wait for the rocket to land."""
 
-    @override
     def next_state(self):
         # Explicitly do nothing, there is no next state
         pass

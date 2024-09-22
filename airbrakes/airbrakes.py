@@ -31,15 +31,14 @@ class AirbrakesContext:
         "state",
     )
 
-    def __init__(self, logger: Logger, servo: Servo, imu: IMU):
-        self.logger: Logger = logger
-        self.servo: Servo = servo
-        self.imu: IMU = imu
+    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor):
+        self.servo = servo
+        self.imu = imu
+        self.logger = logger
+        self.data_processor = data_processor
 
         self.state: State = StandByState(self)
         self.shutdown_requested = False
-
-        self.data_processor = IMUDataProcessor([])
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0
@@ -57,9 +56,6 @@ class AirbrakesContext:
         do different things. It is what controls the airbrakes and chooses when to move to the next
         state.
         """
-        # Gets the current extension and IMU data, the states will use these values
-        self.current_extension = self.servo.current_extension
-
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
@@ -87,6 +83,7 @@ class AirbrakesContext:
         :param extension: the extension of the airbrakes, between 0 and 1
         """
         self.servo.set_extension(extension)
+        self.current_extension = extension
 
     def stop(self) -> None:
         """

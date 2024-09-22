@@ -13,11 +13,12 @@ class TestAirbrakesContext:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, airbrakes, logger, imu, servo):
+    def test_init(self, airbrakes, logger, imu, servo, data_processor):
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
         assert airbrakes.current_extension == 0.0
+        assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandByState)
         assert not airbrakes.shutdown_requested
@@ -25,11 +26,13 @@ class TestAirbrakesContext:
     def test_set_extension(self, airbrakes):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         airbrakes.set_airbrake_extension(0.5)
-        # TODO: airbrakes.current_extension must be set to 0.5 !!
+        assert airbrakes.current_extension == 0.5
         assert airbrakes.servo.current_extension == 0.0803
         airbrakes.set_airbrake_extension(0.0)
+        assert airbrakes.current_extension == 0.0
         assert airbrakes.servo.current_extension == -0.0999
         airbrakes.set_airbrake_extension(1.0)
+        assert airbrakes.current_extension == 1.0
         assert airbrakes.servo.current_extension == 0.2605
 
     def test_start(self, airbrakes):

@@ -59,6 +59,7 @@ class TestIMUDataProcessor:
         assert d._data_points == []
         assert d._speed == 0.0
         assert d._max_speed == 0.0
+        assert d.upside_down is False
 
         d = data_processor
         assert d._avg_accel == (1.5, 2.5, 3.5)
@@ -70,6 +71,7 @@ class TestIMUDataProcessor:
         assert d._speed == math.sqrt(1**2 + 2**2 + 3**2)
         assert d._max_speed == d._speed
         assert d._previous_velocity == (1, 2, 3)
+        assert d.upside_down is False
 
     def test_str(self, data_processor):
         data_processor._avg_accel = tuple(float(i) for i in data_processor.avg_acceleration)

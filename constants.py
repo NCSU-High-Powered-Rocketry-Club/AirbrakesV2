@@ -5,6 +5,14 @@ from pathlib import Path
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
 # -------------------------------------------------------
+# Main
+# -------------------------------------------------------
+
+# These are used for simulations
+MOCK_ARGUMENT = "mock"
+SIMULATION_LOG_NAME = "PLACEHOLDER.csv"  # This should be logged in the logs folder
+
+# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 
@@ -37,7 +45,7 @@ MAX_QUEUE_SIZE = 100000
 # -------------------------------------------------------
 
 # Should be checked before launch
-UPSIDE_DOWN = True  # TODO: Currently not factored in the implementation should be added to DataProcessor
+UPSIDE_DOWN = False
 
 # -------------------------------------------------------
 # Logging Configuration
