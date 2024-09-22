@@ -2,11 +2,11 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.imu.data_processor import IMUDataProcessor
-from airbrakes.imu.imu import IMU, IMUDataPacket
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket
-from airbrakes.logger import Logger
-from airbrakes.servo import Servo
+from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.imu import IMU, IMUDataPacket
+from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandByState, State
 
 if TYPE_CHECKING:
@@ -31,15 +31,14 @@ class AirbrakesContext:
         "state",
     )
 
-    def __init__(self, logger: Logger, servo: Servo, imu: IMU):
-        self.logger: Logger = logger
-        self.servo: Servo = servo
-        self.imu: IMU = imu
+    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor):
+        self.servo = servo
+        self.imu = imu
+        self.logger = logger
+        self.data_processor = data_processor
 
         self.state: State = StandByState(self)
         self.shutdown_requested = False
-
-        self.data_processor = IMUDataProcessor([])
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: float = 0.0

@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-from airbrakes.constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
-from airbrakes.imu.imu import IMU
-from airbrakes.logger import Logger
-from airbrakes.servo import Servo
+from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.imu import IMU
+from airbrakes.hardware.servo import Servo
+from constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 
@@ -19,8 +20,13 @@ def logger():
 
 
 @pytest.fixture
+def data_processor():
+    return IMUDataProcessor([])
+
+
+@pytest.fixture
 def imu():
-    return IMU(port=PORT, frequency=FREQUENCY, upside_down=UPSIDE_DOWN)
+    return IMU(port=PORT, frequency=FREQUENCY)
 
 
 @pytest.fixture

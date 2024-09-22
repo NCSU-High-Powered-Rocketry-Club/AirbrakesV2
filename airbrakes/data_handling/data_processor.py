@@ -3,7 +3,7 @@
 import statistics as stats
 from collections.abc import Sequence
 
-from airbrakes.imu.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 
 
 class IMUDataProcessor:
@@ -15,9 +15,11 @@ class IMUDataProcessor:
     :param data_points: A sequence of EstimatedDataPacket objects to process.
     """
 
-    __slots__ = ("_avg_accel", "_avg_accel_mag", "_data_points", "_max_altitude")
+    __slots__ = ("_avg_accel", "_avg_accel_mag", "_data_points", "_max_altitude", "upside_down")
 
-    def __init__(self, data_points: Sequence[EstimatedDataPacket]):
+    def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool = False):
+        self.upside_down = upside_down
+
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
