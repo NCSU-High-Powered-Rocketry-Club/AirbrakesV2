@@ -79,8 +79,7 @@ class AirbrakesContext:
         self.state.update()
 
         # Logs the current state, extension, and IMU data
-        # TODO: Compute state(s) for given IMU data
-        self.logger.log(self.state.get_name(), self.current_extension, data_packets)
+        self.logger.log(self.state.name, self.current_extension, data_packets)
 
     def set_airbrake_extension(self, extension: float) -> None:
         """

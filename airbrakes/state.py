@@ -39,7 +39,8 @@ class State(ABC):
         # At the very beginning of each state, we retract the airbrakes
         self.context.set_airbrake_extension(0.0)
 
-    def get_name(self):
+    @property
+    def name(self):
         """
         :return: The name of the state
         """
@@ -81,12 +82,12 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.current_speed > TAKEOFF_SPEED and data.current_altitude > TAKEOFF_HEIGHT:
+        if data.speed > TAKEOFF_SPEED and data.current_altitude > TAKEOFF_HEIGHT:
             self.next_state()
             return
 
         # In case our altitude didn't update in time, just check the speed:
-        if data.current_speed > TAKEOFF_SPEED + 1:
+        if data.speed > TAKEOFF_SPEED + 1:
             self.next_state()
             return
 
@@ -114,13 +115,13 @@ class MotorBurnState(State):
         if (
             ACCELERATION_AT_MOTOR_BURNOUT[0] <= data.avg_acceleration_mag <= ACCELERATION_AT_MOTOR_BURNOUT[1]
             # as an added check, make sure our speed is still "high":
-            and data.current_speed >= HIGH_SPEED_AT_MOTOR_BURNOUT
+            and data.speed >= HIGH_SPEED_AT_MOTOR_BURNOUT
         ):
             self.next_state()
             return
 
         # fallback condition: if our speed has started to decrease, we have motor burnout:
-        if data.current_speed < data.max_speed:
+        if data.speed < data.max_speed:
             self.next_state()
             return
 
@@ -131,7 +132,7 @@ class MotorBurnState(State):
 
 class FlightState(State):
     """
-    When the motor has burned out and the rocket is coasting.
+    When the motor has burned out and the rocket is coasting to apogee.
     """
 
     __slots__ = ()
@@ -143,7 +144,7 @@ class FlightState(State):
         data = self.context.data_processor
 
         # If our speed is close to zero, we have reached apogee.
-        if APOGEE_SPEED[0] <= data.current_speed <= APOGEE_SPEED[1]:
+        if APOGEE_SPEED[0] <= data.speed <= APOGEE_SPEED[1]:
             self.next_state()
             return
 

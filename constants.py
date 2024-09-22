@@ -67,14 +67,21 @@ STOP_SIGNAL = "STOP"
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-TAKEOFF_SPEED = 4  # m/s
-TAKEOFF_HEIGHT = 1  # m
+TAKEOFF_SPEED = 4.0  # m/s
+TAKEOFF_HEIGHT = 2.0  # m
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration
-ACCELERATION_AT_MOTOR_BURNOUT = [0, 6]  # m/s^2  (only gravity should be acting on the rocket)
-HIGH_SPEED_AT_MOTOR_BURNOUT = 60  # m/s
+ACCELERATION_AT_MOTOR_BURNOUT = [0.0, 6.0]  # m/s^2  (only gravity should be acting on the rocket)
+HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
 
 # Coasting to Landing:
 
-APOGEE_SPEED = [0, 10]
+APOGEE_SPEED = [0, 10.0]  # m/s
+
+# -------------------------------------------------------
+# Apogee Prediction Configuration
+# -------------------------------------------------------
+
+# The altitude at which the rocket is expected to reach apogee, without the airbrakes
+TARGET_ALTITUDE = 1554  # m (5,100 ft)

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
+from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -26,3 +27,8 @@ def imu():
 @pytest.fixture
 def servo():
     return Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+
+
+@pytest.fixture
+def airbrakes(imu, logger, servo):
+    return AirbrakesContext(logger, servo, imu)

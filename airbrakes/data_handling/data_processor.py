@@ -49,7 +49,10 @@ class IMUDataProcessor:
             f"{self.__class__.__name__}("
             f"avg_acceleration={self.avg_acceleration}, "
             f"avg_acceleration_mag={self.avg_acceleration_mag}, "
-            f"max_altitude={self.max_altitude})"
+            f"max_altitude={self.max_altitude}, "
+            f"current_altitude={self.current_altitude}, "
+            f"speed={self.speed}, "
+            f"max_speed={self.max_speed})"
         )
 
     @property
@@ -109,6 +112,8 @@ class IMUDataProcessor:
         # First assign the data points
         self._data_points = data_points
 
+        # We use linearAcceleration because we don't want gravity to affect our calculations for
+        # speed.
         # Next, assign variables for linear acceleration, since we don't want to recalculate them
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
@@ -126,12 +131,22 @@ class IMUDataProcessor:
 
         # Zero the altitude only once, during the first update:
         if self._zeroed_altitude is None:
-            self._zeroed_altitude = self._calculate_zeroed_altitude()
+            self._zeroed_altitude = self._calculate_zeroed_altitude(estPressureAlt)
 
         self._current_altitude = self._calculate_current_altitude(estPressureAlt)
-        self._max_altitude = max(self._current_altitude, self._max_altitude)
+        self._max_altitude = self._calculate_max_altitude(estPressureAlt)
 
-    def _calculate_zeroed_altitude(self) -> float:
+    def _calculate_max_altitude(self, pressure_alt: list[float]) -> float:
+        """
+        Calculates the maximum altitude (zeroed out) of the rocket based on the pressure
+        altitude during the flight.
+
+        :return: The maximum altitude of the rocket in meters.
+        """
+        zeroed_alts = np.array(pressure_alt) - self._zeroed_altitude
+        return max(*zeroed_alts, self._max_altitude)
+
+    def _calculate_zeroed_altitude(self, pressure_alt: list[float]) -> float:
         """
         Calculates the zeroed altitude of the rocket based on the pressure altitude during startup.
         Takes the average of the data points.
@@ -139,17 +154,17 @@ class IMUDataProcessor:
         :return: The altitude of the rocket in meters, which will be used to zero the altitude.
         """
         # Get the initial altitude of the rocket during startup, by averaging the altitude data points
-        return np.mean(data_point.estPressureAlt for data_point in self._data_points)
+        return np.mean(pressure_alt)
 
     def _calculate_current_altitude(self, alt_list: list[float]) -> float:
         """
-        Calculates the current altitude, zeroed out altitude by averaging the altitude data points.
+        Calculates the current altitude, by zeroing out the latest altitude data point.
 
         :param alt_list: A list of the altitude data points.
         """
         # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
         # landed at a height below from where it launched from, but that doesn't concern us.
-        return np.mean(alt_list) - self._zeroed_altitude
+        return alt_list[-1] - self._zeroed_altitude
 
     def _compute_averages(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> tuple[float, float, float]:
         """
@@ -172,6 +187,9 @@ class IMUDataProcessor:
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
         """
+        # We need at least two data points to calculate the speed:
+        if len(self._data_points) < 2:
+            return 0.0
 
         # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
         # does not update fast enough to give us a good estimate of the speed.
