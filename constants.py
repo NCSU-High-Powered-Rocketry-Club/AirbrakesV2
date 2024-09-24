@@ -10,7 +10,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 
 # These are used for simulations
 MOCK_ARGUMENT = "mock"
-SIMULATION_LOG_NAME = "PLACEHOLDER.csv"  # This should be logged in the logs folder
+SIMULATION_LOG_NAME = "2023-12-16_17_11_35_mergedLORDlog.csv"  # This should be logged in the logs folder
 
 # -------------------------------------------------------
 # Servo Configuration
