@@ -124,7 +124,9 @@ class TestMotorBurnState:
         ],
         ids=["at_launchpad", "faulty_speed", "decreasing_speed", "still_burning", "threshold"],
     )
-    def test_update(self, motor_burn_state, avg_acceleration_mag, current_speed, max_speed, expected_state, airbrakes_ext):
+    def test_update(
+        self, motor_burn_state, avg_acceleration_mag, current_speed, max_speed, expected_state, airbrakes_ext
+    ):
         motor_burn_state.context.data_processor._avg_accel_mag = avg_acceleration_mag
         motor_burn_state.context.data_processor._speed = current_speed
         motor_burn_state.context.data_processor._max_speed = max_speed
