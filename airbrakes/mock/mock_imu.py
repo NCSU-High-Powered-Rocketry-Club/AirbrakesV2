@@ -6,6 +6,7 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
+from airbrakes.utils import convert_to_float, convert_to_nanoseconds
 
 
 class MockIMU(IMU):
@@ -49,33 +50,37 @@ class MockIMU(IMU):
 
                 # Create the data packet based on the row
                 if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
-                    imu_data_packet = RawDataPacket(self._convert_to_nanoseconds(row["timestamp"]))
-                    imu_data_packet.scaledAccelX = self._convert_to_float(row.get("scaledAccelX"))
-                    imu_data_packet.scaledAccelY = self._convert_to_float(row.get("scaledAccelY"))
-                    imu_data_packet.scaledAccelZ = self._convert_to_float(row.get("scaledAccelZ"))
-                    imu_data_packet.scaledGyroX = self._convert_to_float(row.get("scaledGyroX"))
-                    imu_data_packet.scaledGyroY = self._convert_to_float(row.get("scaledGyroY"))
-                    imu_data_packet.scaledAccelZ = self._convert_to_float(row.get("scaledGyroZ"))
+                    imu_data_packet = RawDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet.scaledAccelX = convert_to_float(row.get("scaledAccelX"))
+                    imu_data_packet.scaledAccelY = convert_to_float(row.get("scaledAccelY"))
+                    imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledAccelZ"))
+                    imu_data_packet.scaledGyroX = convert_to_float(row.get("scaledGyroX"))
+                    imu_data_packet.scaledGyroY = convert_to_float(row.get("scaledGyroY"))
+                    imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledGyroZ"))
                 elif row.get("estLinearAccelX") is not None and row.get("estLinearAccelX") != "":
-                    imu_data_packet = EstimatedDataPacket(self._convert_to_nanoseconds(row["timestamp"]))
-                    imu_data_packet.estCompensatedAccelX = self._convert_to_float(row.get("estCompensatedAccelX", 0.0))
-                    imu_data_packet.estCompensatedAccelY = self._convert_to_float(row.get("estCompensatedAccelY", 0.0))
-                    imu_data_packet.estCompensatedAccelZ = self._convert_to_float(row.get("estCompensatedAccelZ", 0.0))
-                    imu_data_packet.estLinearAccelX = self._convert_to_float(row.get("estLinearAccelX"))
-                    imu_data_packet.estLinearAccelY = self._convert_to_float(row.get("estLinearAccelY"))
-                    imu_data_packet.estLinearAccelZ = self._convert_to_float(row.get("estLinearAccelZ"))
-                    imu_data_packet.estAngularRateX = self._convert_to_float(row.get("estAngularRateX"))
-                    imu_data_packet.estAngularRateY = self._convert_to_float(row.get("estAngularRateY"))
-                    imu_data_packet.estAngularRateZ = self._convert_to_float(row.get("estAngularRateZ"))
-                    imu_data_packet.estOrientQuaternionW = self._convert_to_float(row.get("estOrientQuaternionW"))
-                    imu_data_packet.estOrientQuaternionX = self._convert_to_float(row.get("estOrientQuaternionX"))
-                    imu_data_packet.estOrientQuaternionY = self._convert_to_float(row.get("estOrientQuaternionY"))
-                    imu_data_packet.estOrientQuaternionZ = self._convert_to_float(row.get("estOrientQuaternionZ"))
-                    imu_data_packet.estPressureAlt = self._convert_to_float(row.get("estPressureAlt"))
-                    imu_data_packet.estAttitudeUncertQuaternionW = self._convert_to_float(row.get("estAttitudeUncertQuaternionW"))
-                    imu_data_packet.estAttitudeUncertQuaternionX = self._convert_to_float(row.get("estAttitudeUncertQuaternionX"))
-                    imu_data_packet.estAttitudeUncertQuaternionY = self._convert_to_float(row.get("estAttitudeUncertQuaternionY"))
-                    imu_data_packet.estAttitudeUncertQuaternionZ = self._convert_to_float(row.get("estAttitudeUncertQuaternionZ"))
+                    imu_data_packet = EstimatedDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet.estCompensatedAccelX = convert_to_float(row.get("estCompensatedAccelX", 0.0))
+                    imu_data_packet.estCompensatedAccelY = convert_to_float(row.get("estCompensatedAccelY", 0.0))
+                    imu_data_packet.estCompensatedAccelZ = convert_to_float(row.get("estCompensatedAccelZ", 0.0))
+                    imu_data_packet.estLinearAccelX = convert_to_float(row.get("estLinearAccelX"))
+                    imu_data_packet.estLinearAccelY = convert_to_float(row.get("estLinearAccelY"))
+                    imu_data_packet.estLinearAccelZ = convert_to_float(row.get("estLinearAccelZ"))
+                    imu_data_packet.estAngularRateX = convert_to_float(row.get("estAngularRateX"))
+                    imu_data_packet.estAngularRateY = convert_to_float(row.get("estAngularRateY"))
+                    imu_data_packet.estAngularRateZ = convert_to_float(row.get("estAngularRateZ"))
+                    imu_data_packet.estOrientQuaternionW = convert_to_float(row.get("estOrientQuaternionW"))
+                    imu_data_packet.estOrientQuaternionX = convert_to_float(row.get("estOrientQuaternionX"))
+                    imu_data_packet.estOrientQuaternionY = convert_to_float(row.get("estOrientQuaternionY"))
+                    imu_data_packet.estOrientQuaternionZ = convert_to_float(row.get("estOrientQuaternionZ"))
+                    imu_data_packet.estPressureAlt = convert_to_float(row.get("estPressureAlt"))
+                    imu_data_packet.estAttitudeUncertQuaternionW = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionW"))
+                    imu_data_packet.estAttitudeUncertQuaternionX = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionX"))
+                    imu_data_packet.estAttitudeUncertQuaternionY = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionY"))
+                    imu_data_packet.estAttitudeUncertQuaternionZ = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionZ"))
 
                 if imu_data_packet is None:
                     continue
@@ -88,22 +93,4 @@ class MockIMU(IMU):
                 # Sleep 1 ms after every raw data packet, but don't sleep after an estimated data packet
                 if isinstance(imu_data_packet, RawDataPacket):
                     # Simulate polling interval
-                    time.sleep(max(0, 0.001 - (end_time - start_time)))
-
-    def _convert_to_nanoseconds(self, value) -> int:
-        if isinstance(value, float):
-            # Convert seconds to nanoseconds
-            nanoseconds = value * 1e9
-            return int(nanoseconds)  # Convert to integer if needed
-        else:
-            return value  # Assume that it is in nanoseconds
-
-
-    def _convert_to_float(self, value) -> float | None:
-        try:
-            float_value = float(value)  # Attempt to convert to float
-            return float_value  
-        except (ValueError, TypeError):
-            return None  # Return None if the conversion fails
-
-
+                    time.sleep(max(0.0, 0.001 - (end_time - start_time)))
