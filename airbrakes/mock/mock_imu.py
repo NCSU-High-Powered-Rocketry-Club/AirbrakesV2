@@ -23,7 +23,7 @@ class MockIMU(IMU):
         """
         super().__init__(log_file_name, frequency)
 
-    def _fetch_data_loop(self, log_file_name: str, frequency: int) -> None:
+    def _fetch_data_loop(self, log_file_name: str, _: int) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_name: the name of the log file to read data from located in logs/
@@ -74,13 +74,17 @@ class MockIMU(IMU):
                     imu_data_packet.estOrientQuaternionZ = convert_to_float(row.get("estOrientQuaternionZ"))
                     imu_data_packet.estPressureAlt = convert_to_float(row.get("estPressureAlt"))
                     imu_data_packet.estAttitudeUncertQuaternionW = convert_to_float(
-                        row.get("estAttitudeUncertQuaternionW"))
+                        row.get("estAttitudeUncertQuaternionW")
+                    )
                     imu_data_packet.estAttitudeUncertQuaternionX = convert_to_float(
-                        row.get("estAttitudeUncertQuaternionX"))
+                        row.get("estAttitudeUncertQuaternionX")
+                    )
                     imu_data_packet.estAttitudeUncertQuaternionY = convert_to_float(
-                        row.get("estAttitudeUncertQuaternionY"))
+                        row.get("estAttitudeUncertQuaternionY")
+                    )
                     imu_data_packet.estAttitudeUncertQuaternionZ = convert_to_float(
-                        row.get("estAttitudeUncertQuaternionZ"))
+                        row.get("estAttitudeUncertQuaternionZ")
+                    )
 
                 if imu_data_packet is None:
                     continue
