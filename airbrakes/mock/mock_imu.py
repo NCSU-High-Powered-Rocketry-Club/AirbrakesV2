@@ -6,6 +6,7 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
+from airbrakes.utils import convert_to_float, convert_to_nanoseconds
 
 
 class MockIMU(IMU):
@@ -22,15 +23,12 @@ class MockIMU(IMU):
         """
         super().__init__(log_file_name, frequency)
 
-    def _fetch_data_loop(self, log_file_name: str, frequency: int) -> None:
+    def _fetch_data_loop(self, log_file_name: str, _: int) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_name: the name of the log file to read data from located in logs/
         :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
-        # Calculate the interval between readings based on frequency
-        # This is slightly inaccurate because reading will take a little bit of time
-        interval = 1.0 / frequency
 
         # Makes the path to the log file in an os-independent way
         log_file_path = Path("logs") / log_file_name
@@ -42,6 +40,8 @@ class MockIMU(IMU):
             for row in reader:
                 row: dict[str, str]
 
+                start_time = time.time()
+
                 # Check if the process should stop
                 if not self._running.value:
                     break
@@ -49,34 +49,42 @@ class MockIMU(IMU):
                 imu_data_packet = None
 
                 # Create the data packet based on the row
-                if row.get("scaledAccelX") is not None:
-                    imu_data_packet = RawDataPacket(int(row["timestamp"]))
-                    imu_data_packet.scaledAccelX = float(row.get("scaledAccelX"))
-                    imu_data_packet.scaledAccelY = float(row.get("scaledAccelY"))
-                    imu_data_packet.scaledAccelZ = float(row.get("scaledAccelZ"))
-                    imu_data_packet.scaledGyroX = float(row.get("scaledGyroX"))
-                    imu_data_packet.scaledGyroY = float(row.get("scaledGyroY"))
-                    imu_data_packet.scaledAccelZ = float(row.get("scaledGyroZ"))
-                elif row.get("estCompensatedAccelX") is not None:
-                    imu_data_packet = EstimatedDataPacket(int(row["timestamp"]))
-                    imu_data_packet.estCompensatedAccelX = float(row.get("estCompensatedAccelX"))
-                    imu_data_packet.estCompensatedAccelY = float(row.get("estCompensatedAccelY"))
-                    imu_data_packet.estCompensatedAccelZ = float(row.get("estCompensatedAccelZ"))
-                    imu_data_packet.estLinearAccelX = float(row.get("estLinearAccelX"))
-                    imu_data_packet.estLinearAccelY = float(row.get("estLinearAccelY"))
-                    imu_data_packet.estLinearAccelZ = float(row.get("estLinearAccelZ"))
-                    imu_data_packet.estAngularRateX = float(row.get("estAngularRateX"))
-                    imu_data_packet.estAngularRateY = float(row.get("estAngularRateY"))
-                    imu_data_packet.estAngularRateZ = float(row.get("estAngularRateZ"))
-                    imu_data_packet.estOrientQuaternionW = float(row.get("estOrientQuaternionW"))
-                    imu_data_packet.estOrientQuaternionX = float(row.get("estOrientQuaternionX"))
-                    imu_data_packet.estOrientQuaternionY = float(row.get("estOrientQuaternionY"))
-                    imu_data_packet.estOrientQuaternionZ = float(row.get("estOrientQuaternionZ"))
-                    imu_data_packet.estPressureAlt = float(row.get("estPressureAlt"))
-                    imu_data_packet.estAttitudeUncertQuaternionW = float(row.get("estAttitudeUncertQuaternionW"))
-                    imu_data_packet.estAttitudeUncertQuaternionX = float(row.get("estAttitudeUncertQuaternionX"))
-                    imu_data_packet.estAttitudeUncertQuaternionY = float(row.get("estAttitudeUncertQuaternionY"))
-                    imu_data_packet.estAttitudeUncertQuaternionZ = float(row.get("estAttitudeUncertQuaternionZ"))
+                if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
+                    imu_data_packet = RawDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet.scaledAccelX = convert_to_float(row.get("scaledAccelX"))
+                    imu_data_packet.scaledAccelY = convert_to_float(row.get("scaledAccelY"))
+                    imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledAccelZ"))
+                    imu_data_packet.scaledGyroX = convert_to_float(row.get("scaledGyroX"))
+                    imu_data_packet.scaledGyroY = convert_to_float(row.get("scaledGyroY"))
+                    imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledGyroZ"))
+                elif row.get("estLinearAccelX") is not None and row.get("estLinearAccelX") != "":
+                    imu_data_packet = EstimatedDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet.estCompensatedAccelX = convert_to_float(row.get("estCompensatedAccelX", 0.0))
+                    imu_data_packet.estCompensatedAccelY = convert_to_float(row.get("estCompensatedAccelY", 0.0))
+                    imu_data_packet.estCompensatedAccelZ = convert_to_float(row.get("estCompensatedAccelZ", 0.0))
+                    imu_data_packet.estLinearAccelX = convert_to_float(row.get("estLinearAccelX"))
+                    imu_data_packet.estLinearAccelY = convert_to_float(row.get("estLinearAccelY"))
+                    imu_data_packet.estLinearAccelZ = convert_to_float(row.get("estLinearAccelZ"))
+                    imu_data_packet.estAngularRateX = convert_to_float(row.get("estAngularRateX"))
+                    imu_data_packet.estAngularRateY = convert_to_float(row.get("estAngularRateY"))
+                    imu_data_packet.estAngularRateZ = convert_to_float(row.get("estAngularRateZ"))
+                    imu_data_packet.estOrientQuaternionW = convert_to_float(row.get("estOrientQuaternionW"))
+                    imu_data_packet.estOrientQuaternionX = convert_to_float(row.get("estOrientQuaternionX"))
+                    imu_data_packet.estOrientQuaternionY = convert_to_float(row.get("estOrientQuaternionY"))
+                    imu_data_packet.estOrientQuaternionZ = convert_to_float(row.get("estOrientQuaternionZ"))
+                    imu_data_packet.estPressureAlt = convert_to_float(row.get("estPressureAlt"))
+                    imu_data_packet.estAttitudeUncertQuaternionW = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionW")
+                    )
+                    imu_data_packet.estAttitudeUncertQuaternionX = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionX")
+                    )
+                    imu_data_packet.estAttitudeUncertQuaternionY = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionY")
+                    )
+                    imu_data_packet.estAttitudeUncertQuaternionZ = convert_to_float(
+                        row.get("estAttitudeUncertQuaternionZ")
+                    )
 
                 if imu_data_packet is None:
                     continue
@@ -84,5 +92,9 @@ class MockIMU(IMU):
                 # Put the packet in the queue
                 self._data_queue.put(imu_data_packet)
 
-                # Simulate polling interval
-                time.sleep(interval)
+                end_time = time.time()
+
+                # Sleep 1 ms after every raw data packet, but don't sleep after an estimated data packet
+                if isinstance(imu_data_packet, RawDataPacket):
+                    # Simulate polling interval
+                    time.sleep(max(0.0, 0.001 - (end_time - start_time)))
