@@ -2,6 +2,7 @@
 
 import collections
 import multiprocessing
+import signal
 import warnings
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing mscl is annoying
@@ -10,7 +11,7 @@ try:
     import mscl
 except ImportError:
     warnings.warn(
-        "Could not import MSCL, IMU will not work. Please see installation instructions"
+        "Could not import MSCL, IMU will not work. Please see installation instructions "
         "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
         stacklevel=2,
     )
@@ -50,7 +51,9 @@ class IMU:
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
-        self._data_fetch_process = multiprocessing.Process(target=self._fetch_data_loop, args=(port, frequency))
+        self._data_fetch_process = multiprocessing.Process(
+            target=self._fetch_data_loop, args=(port, frequency), name="IMU Data Fetch Process"
+        )
 
     @property
     def is_running(self) -> bool:
@@ -105,6 +108,8 @@ class IMU:
         :param port: the port that the IMU is connected to
         :param frequency: the frequency that the IMU is set to poll at
         """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)

@@ -56,9 +56,6 @@ class AirbrakesContext:
         do different things. It is what controls the airbrakes and chooses when to move to the next
         state.
         """
-        # Gets the current extension and IMU data, the states will use these values
-        self.current_extension = self.servo.current_extension
-
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
@@ -85,6 +82,7 @@ class AirbrakesContext:
         :param extension: the extension of the airbrakes, between 0 and 1
         """
         self.servo.set_extension(extension)
+        self.current_extension = extension
 
     def stop(self) -> None:
         """

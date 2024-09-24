@@ -32,15 +32,15 @@ def main(is_simulation: bool) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
 
-    # Start the IMU and logger processes:
-    airbrakes.start()
-
-    # This is the main loop that will run until the stop method on the airbrakes is called
-    while not airbrakes.shutdown_requested:
-        airbrakes.update()
-
-    # Shutdown the IMU and logger processes:
-    airbrakes.stop()
+    try:
+        airbrakes.start()  # Start the IMU and logger processes
+        # This is the main loop that will run until we press Ctrl+C
+        while not airbrakes.shutdown_requested:
+            airbrakes.update()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        airbrakes.stop()  # Stop the IMU and logger processes
 
 
 if __name__ == "__main__":

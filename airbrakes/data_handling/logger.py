@@ -3,6 +3,7 @@
 import collections
 import csv
 import multiprocessing
+import signal
 from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import IMUDataPacket
@@ -85,6 +86,8 @@ class Logger:
         """
         The loop that saves data to the logs. It runs in parallel with the main loop.
         """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
