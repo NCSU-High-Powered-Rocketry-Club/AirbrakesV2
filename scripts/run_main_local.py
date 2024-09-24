@@ -3,6 +3,7 @@ and run the following command: `python -m scripts.run_main_local`"""
 
 from airbrakes.airbrakes import AirbrakesContext
 from constants import FREQUENCY, LOGS_PATH, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN, UPSIDE_DOWN
+from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.hardware.imu import IMU
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.servo import Servo
@@ -13,10 +14,12 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 def main():
     logger = Logger(LOGS_PATH)
     servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
-    imu = IMU(PORT, FREQUENCY, UPSIDE_DOWN)
+    imu = IMU(PORT, FREQUENCY)
+    data_processor = IMUDataProcessor([], UPSIDE_DOWN)
+
 
     # The context that will manage the airbrakes state machine
-    airbrakes = AirbrakesContext(logger, servo, imu)
+    airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
     try:
         airbrakes.start()  # Start the IMU and logger processes
         # This is the main loop that will run until we press Ctrl+C
