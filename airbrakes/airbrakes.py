@@ -71,7 +71,7 @@ class AirbrakesContext:
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update_data(
-            [data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)]
+            [data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)]
         )
         # Logs the current state, extension, and IMU data
         # TODO: Compute state(s) for given IMU data

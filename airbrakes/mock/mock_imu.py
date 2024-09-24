@@ -28,9 +28,6 @@ class MockIMU(IMU):
         :param log_file_name: the name of the log file to read data from located in logs/
         :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
-        # Calculate the interval between readings based on frequency
-        # This is slightly inaccurate because reading will take a little bit of time
-        interval = 1.0 / frequency
 
         # Makes the path to the log file in an os-independent way
         log_file_path = Path("logs") / log_file_name
@@ -42,6 +39,8 @@ class MockIMU(IMU):
             for row in reader:
                 row: dict[str, str]
 
+                start_time = time.time()
+
                 # Check if the process should stop
                 if not self._running.value:
                     break
@@ -49,7 +48,7 @@ class MockIMU(IMU):
                 imu_data_packet = None
 
                 # Create the data packet based on the row
-                if row.get("scaledAccelX") is not None:
+                if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
                     imu_data_packet = RawDataPacket(self._convert_to_nanoseconds(row["timestamp"]))
                     imu_data_packet.scaledAccelX = self._convert_to_float(row.get("scaledAccelX"))
                     imu_data_packet.scaledAccelY = self._convert_to_float(row.get("scaledAccelY"))
@@ -57,11 +56,11 @@ class MockIMU(IMU):
                     imu_data_packet.scaledGyroX = self._convert_to_float(row.get("scaledGyroX"))
                     imu_data_packet.scaledGyroY = self._convert_to_float(row.get("scaledGyroY"))
                     imu_data_packet.scaledAccelZ = self._convert_to_float(row.get("scaledGyroZ"))
-                elif row.get("estCompensatedAccelX") is not None:
+                elif row.get("estLinearAccelX") is not None and row.get("estLinearAccelX") != "":
                     imu_data_packet = EstimatedDataPacket(self._convert_to_nanoseconds(row["timestamp"]))
-                    imu_data_packet.estCompensatedAccelX = self._convert_to_float(row.get("estCompensatedAccelX"))
-                    imu_data_packet.estCompensatedAccelY = self._convert_to_float(row.get("estCompensatedAccelY"))
-                    imu_data_packet.estCompensatedAccelZ = self._convert_to_float(row.get("estCompensatedAccelZ"))
+                    imu_data_packet.estCompensatedAccelX = self._convert_to_float(row.get("estCompensatedAccelX", 0.0))
+                    imu_data_packet.estCompensatedAccelY = self._convert_to_float(row.get("estCompensatedAccelY", 0.0))
+                    imu_data_packet.estCompensatedAccelZ = self._convert_to_float(row.get("estCompensatedAccelZ", 0.0))
                     imu_data_packet.estLinearAccelX = self._convert_to_float(row.get("estLinearAccelX"))
                     imu_data_packet.estLinearAccelY = self._convert_to_float(row.get("estLinearAccelY"))
                     imu_data_packet.estLinearAccelZ = self._convert_to_float(row.get("estLinearAccelZ"))
@@ -84,8 +83,12 @@ class MockIMU(IMU):
                 # Put the packet in the queue
                 self._data_queue.put(imu_data_packet)
 
-                # Simulate polling interval
-                time.sleep(interval)
+                end_time = time.time()
+
+                # Sleep 1 ms after every raw data packet, but don't sleep after an estimated data packet
+                if isinstance(imu_data_packet, RawDataPacket):
+                    # Simulate polling interval
+                    time.sleep(max(0, 0.001 - (end_time - start_time)))
 
     def _convert_to_nanoseconds(self, value) -> int:
         if isinstance(value, float):
@@ -100,7 +103,7 @@ class MockIMU(IMU):
         try:
             float_value = float(value)  # Attempt to convert to float
             return float_value  
-        except ValueError:
+        except (ValueError, TypeError):
             return None  # Return None if the conversion fails
 
 
