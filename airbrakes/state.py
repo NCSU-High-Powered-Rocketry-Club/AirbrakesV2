@@ -123,6 +123,8 @@ class MotorBurnState(State):
 
     def next_state(self):
         self.context.state = FlightState(self.context)
+        # Deploy the airbrakes as soon as we enter the Flight state
+        self.context.set_airbrake_extension(1.0)
 
 
 class FlightState(State):

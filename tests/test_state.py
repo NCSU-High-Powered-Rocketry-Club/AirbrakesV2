@@ -114,23 +114,25 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("avg_acceleration_mag", "current_speed", "max_speed", "expected_state"),
+        ("avg_acceleration_mag", "current_speed", "max_speed", "expected_state", "airbrakes_ext"),
         [
-            (0.0, 0.0, 0.0, MotorBurnState),
-            (0.0, 100.0, 100.0, FlightState),
-            (5.0, 50.0, 54.0, FlightState),
-            (7.0, 89.0, 89.0, MotorBurnState),
-            (6.0, 60.0, 60.0, FlightState),
+            (0.0, 0.0, 0.0, MotorBurnState, 0.0),
+            (0.0, 100.0, 100.0, FlightState, 1.0),
+            (5.0, 50.0, 54.0, FlightState, 1.0),
+            (7.0, 89.0, 89.0, MotorBurnState, 0.0),
+            (6.0, 60.0, 60.0, FlightState, 1.0),
         ],
         ids=["at_launchpad", "faulty_speed", "decreasing_speed", "still_burning", "threshold"],
     )
-    def test_update(self, motor_burn_state, avg_acceleration_mag, current_speed, max_speed, expected_state):
+    def test_update(
+        self, motor_burn_state, avg_acceleration_mag, current_speed, max_speed, expected_state, airbrakes_ext
+    ):
         motor_burn_state.context.data_processor._avg_accel_mag = avg_acceleration_mag
         motor_burn_state.context.data_processor._speed = current_speed
         motor_burn_state.context.data_processor._max_speed = max_speed
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.current_extension == 0.0
+        assert motor_burn_state.context.current_extension == airbrakes_ext
 
 
 class TestFlightState:
