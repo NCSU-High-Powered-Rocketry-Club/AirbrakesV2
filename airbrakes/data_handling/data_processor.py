@@ -189,15 +189,16 @@ class IMUDataProcessor:
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
         """
+        previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
         # We need at least two data points to calculate the speed:
         if len(self._data_points) < 2:
-            return 0.0
+            return np.sqrt(previous_vel_x**2 + previous_vel_y**2 + previous_vel_z**2)
 
         # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
         # does not update fast enough to give us a good estimate of the speed.
 
         # calculate the time differences between each data point
-        time_diff = np.diff([data_point.timestamp for data_point in self._data_points])
+        time_diff = np.diff([data_point.timestamp for data_point in self._data_points]) * 10e-9
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
