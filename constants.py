@@ -76,10 +76,10 @@ STOP_SIGNAL = "STOP"
 
 # Standby to MotorBurn:
 ACCLERATION_NOISE_THRESHOLD = 0.1  # m/s^2
-
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
 TAKEOFF_ACCELERATION = 10  # m/s^2
+TAKEOFF_SPEED = 10  # m/s
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration

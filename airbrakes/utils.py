@@ -17,16 +17,16 @@ def convert_to_float(value) -> float | None:
     except (ValueError, TypeError):
         return None  # Return None if the conversion fails
 
+
 def deadband(input_value, threshold) -> float:
     """
     Returns 0 if the input_value is within the deadband threshold.
     Otherwise, returns the input_value adjusted by the threshold.
-    
+
     :param input_value: The value to apply the deadband to.
     :param threshold: The deadband threshold.
     :return: Adjusted input_value or 0 if within the deadband.
     """
     if abs(input_value) < threshold:
         return 0.0
-    else:
-        return input_value
+    return input_value

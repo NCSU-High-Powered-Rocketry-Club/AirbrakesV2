@@ -1,15 +1,11 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-from abc import ABC, abstractmethod
 import time
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from airbrakes.airbrakes import AirbrakesContext
 from constants import (
-    ACCELERATION_AT_MOTOR_BURNOUT,
-    APOGEE_SPEED,
     DISTANCE_FROM_APOGEE,
-    HIGH_SPEED_AT_MOTOR_BURNOUT,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
@@ -98,9 +94,9 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ()
+    __slots__ = ("start_time",)
 
-    def __init__(self, context: AirbrakesContext):
+    def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
         self.start_time = time.time()
 
@@ -115,12 +111,11 @@ class MotorBurnState(State):
         if data.speed < data.max_speed:
             self.next_state()
             return
-        
+
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if self.start_time - time.time() > MOTOR_BURN_TIME:
+        if time.time() - self.start_time > MOTOR_BURN_TIME:
             self.next_state()
             return
-        
 
     def next_state(self):
         self.context.state = FlightState(self.context)
@@ -140,7 +135,7 @@ class FlightState(State):
 
         data = self.context.data_processor
 
-        # fallback condition: if our altitude has started to decrease, we have reached apogee:
+        # if our altitude has started to decrease, we have reached apogee:
         if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()
             return

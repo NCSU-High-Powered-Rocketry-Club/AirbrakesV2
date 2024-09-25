@@ -1,3 +1,4 @@
+import time
 from abc import ABC
 
 import pytest
@@ -82,12 +83,12 @@ class TestStandByState:
         ("current_speed", "current_altitude", "expected_state"),
         [
             (0.0, 0.0, StandByState),
-            (0.0, 100.0, StandByState),
+            (0.0, 100.0, MotorBurnState),
             (5.0, 0.3, StandByState),
-            (5.0, 3, MotorBurnState),
-            (6.0, 1, MotorBurnState),
+            (11, 7, MotorBurnState),
+            (20, 15, MotorBurnState),
         ],
-        ids=["at_launchpad", "faulty_altitude", "slow_alt_update", "optimal_condition", "high_speed"],
+        ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
     )
     def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
         stand_by_state.context.data_processor._speed = current_speed
@@ -114,22 +115,19 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("avg_acceleration_mag", "current_speed", "max_speed", "expected_state", "airbrakes_ext"),
+        ("current_speed", "max_speed", "expected_state", "burn_time", "airbrakes_ext"),
         [
-            (0.0, 0.0, 0.0, MotorBurnState, 0.0),
-            (0.0, 100.0, 100.0, FlightState, 1.0),
-            (5.0, 50.0, 54.0, FlightState, 1.0),
-            (7.0, 89.0, 89.0, MotorBurnState, 0.0),
-            (6.0, 60.0, 60.0, FlightState, 1.0),
+            (0.0, 0.0, MotorBurnState, 0.0, 0.0),
+            (100.0, 100.0, MotorBurnState, 0.00, 0.0),
+            (50.0, 54.0, FlightState, 0.00, 1.0),
+            (60.0, 60.0, FlightState, 2.4, 1.0),
         ],
-        ids=["at_launchpad", "faulty_speed", "decreasing_speed", "still_burning", "threshold"],
+        ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
     )
-    def test_update(
-        self, motor_burn_state, avg_acceleration_mag, current_speed, max_speed, expected_state, airbrakes_ext
-    ):
-        motor_burn_state.context.data_processor._avg_accel_mag = avg_acceleration_mag
+    def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time, airbrakes_ext):
         motor_burn_state.context.data_processor._speed = current_speed
         motor_burn_state.context.data_processor._max_speed = max_speed
+        time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == airbrakes_ext
@@ -152,17 +150,15 @@ class TestFlightState:
         assert flight_state.name == "FlightState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "current_altitude", "max_altitude", "expected_state"),
+        ("current_altitude", "max_altitude", "expected_state"),
         [
-            (20.0, 100.0, 100.0, FlightState),
-            (10.0, 100.0, 100.0, FreeFallState),
-            (13.0, 90.0, 100.0, FreeFallState),
-            (5.0, 80.0, 90.0, FreeFallState),
+            (200.0, 200.0, FlightState),
+            (100.0, 150.0, FlightState),
+            (100.0, 400.0, FreeFallState),
         ],
-        ids=["climbing", "threshold", "high_speed_but_falling", "low_speed_fall"],
+        ids=["climbing", "just_descent", "apogee_threshold"],
     )
-    def test_update(self, flight_state, current_speed, current_altitude, max_altitude, expected_state):
-        flight_state.context.data_processor._speed = current_speed
+    def test_update(self, flight_state, current_altitude, max_altitude, expected_state):
         flight_state.context.data_processor._current_altitude = current_altitude
         flight_state.context.data_processor._max_altitude = max_altitude
         flight_state.update()

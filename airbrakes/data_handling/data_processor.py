@@ -122,9 +122,15 @@ class IMUDataProcessor:
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
         # If the absolute value of acceleration is less than 0.1, set it to 0
-        estLinearAccelX = [deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
-        estLinearAccelY = [deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
-        estLinearAccelZ = [deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
+        estLinearAccelX = [
+            deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
+        ]
+        estLinearAccelY = [
+            deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
+        ]
+        estLinearAccelZ = [
+            deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
+        ]
 
         estPressureAlt = [data_point.estPressureAlt for data_point in self._data_points]
 
