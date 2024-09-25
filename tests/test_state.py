@@ -3,7 +3,7 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.state import FlightState, FreeFallState, MotorBurnState, StandByState, State
+from airbrakes.state import FlightState, FreeFallState, LandedState, MotorBurnState, StandByState, State
 
 
 @pytest.fixture
@@ -44,6 +44,13 @@ def free_fall_state(airbrakes):
     f = FreeFallState(airbrakes)
     f.context.state = f
     return f
+
+
+@pytest.fixture
+def landed_state(airbrakes):
+    ls = LandedState(airbrakes)
+    ls.context.state = ls
+    return ls
 
 
 class TestState:
@@ -181,3 +188,35 @@ class TestFreeFallState:
 
     def test_name(self, free_fall_state):
         assert free_fall_state.name == "FreeFallState"
+
+    @pytest.mark.parametrize(
+        ("current_altitude", "expected_state"),
+        [
+            (50.0, FreeFallState),
+            (19.0, FreeFallState),
+            (10.0, LandedState),
+        ],
+        ids=["falling", "almost_landed", "landed"],
+    )
+    def test_update(self, free_fall_state, current_altitude, expected_state):
+        free_fall_state.context.data_processor._current_altitude = current_altitude
+        free_fall_state.update()
+        assert isinstance(free_fall_state.context.state, expected_state)
+        assert free_fall_state.context.current_extension == 0.0
+
+
+class TestLandedState:
+    """Tests the LandedState class"""
+
+    def test_slots(self, landed_state):
+        inst = landed_state
+        for attr in inst.__slots__:
+            assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
+
+    def test_init(self, landed_state, airbrakes):
+        assert landed_state.context == airbrakes
+        assert landed_state.context.current_extension == 0.0
+        assert issubclass(landed_state.__class__, State)
+
+    def test_name(self, landed_state):
+        assert landed_state.name == "LandedState"

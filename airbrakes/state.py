@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from constants import (
     DISTANCE_FROM_APOGEE,
+    GROUND_ALTITIUDE,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
@@ -141,6 +142,7 @@ class FlightState(State):
             return
 
     def next_state(self):
+        # This also retracts the airbrakes:
         self.context.state = FreeFallState(self.context)
 
 
@@ -152,7 +154,28 @@ class FreeFallState(State):
     __slots__ = ()
 
     def update(self):
-        """Nothing to check, we just wait for the rocket to land."""
+        """Check if the rocket has landed, based on our altitude."""
+
+        data = self.context.data_processor
+
+        # If our altitude is 0, we have landed:
+        if data.current_altitude <= GROUND_ALTITIUDE:
+            self.next_state()
+
+    def next_state(self):
+        # Explicitly do nothing, there is no next state
+        self.context.state = LandedState(self.context)
+
+
+class LandedState(State):
+    """
+    When the rocket has landed.
+    """
+
+    __slots__ = ()
+
+    def update(self):
+        """Nothing to check, we just wait for the rocket to be recovered."""
 
     def next_state(self):
         # Explicitly do nothing, there is no next state
