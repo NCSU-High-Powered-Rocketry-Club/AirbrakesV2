@@ -1,13 +1,7 @@
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
-
-
-@pytest.fixture
-def airbrakes(imu, logger, servo, data_processor):
-    return AirbrakesContext(servo, imu, logger, data_processor)
 
 
 @pytest.mark.filterwarnings("ignore:To reduce servo jitter")  # ignore warning about servo jitter
@@ -88,4 +82,4 @@ class TestAirbrakesContext:
 
     def test_airbrakes_update(self, monkeypatch):
         """Tests whether the Airbrakes update method works correctly."""
-        # TODO: Implement this test after we get the state and apogee detection working
+        # TODO: Implement this test after we get the apogee detection working

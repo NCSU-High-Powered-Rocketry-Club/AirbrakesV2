@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
+from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
@@ -16,6 +17,9 @@ LOG_PATH = Path("tests/logs")
 
 @pytest.fixture
 def logger():
+    """Clear the tests/logs directory before making a new Logger."""
+    for log in LOG_PATH.glob("log_*.csv"):
+        log.unlink()
     return Logger(LOG_PATH)
 
 
@@ -32,3 +36,8 @@ def imu():
 @pytest.fixture
 def servo():
     return Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+
+
+@pytest.fixture
+def airbrakes(imu, logger, servo, data_processor):
+    return AirbrakesContext(servo, imu, logger, data_processor)

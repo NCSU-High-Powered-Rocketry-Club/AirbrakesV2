@@ -7,6 +7,7 @@ dependencies = [
     "gpiozero",
     "pigpio",  # Run sudo pigpiod before running the program
     "msgspec",
+    "numpy",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
@@ -37,7 +38,7 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
           "D100", "D101", "D300", "D418", "D419", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["T20", "S101", "D100", "ARG001"]
+"tests/*.py" = ["T20", "S101", "D100", "ARG001", "RUF012"]
 
 
 [tool.pytest.ini_options]

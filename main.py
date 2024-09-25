@@ -3,6 +3,8 @@ loop."""
 
 import sys
 
+from gpiozero.pins.mock import MockFactory, MockPWMPin
+
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
@@ -24,8 +26,13 @@ from constants import (
 
 def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
-    servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
-    imu = IMU(PORT, FREQUENCY) if not is_simulation else MockIMU(SIMULATION_LOG_NAME, FREQUENCY)
+    if is_simulation:
+        imu = MockIMU(SIMULATION_LOG_NAME, FREQUENCY)
+        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+    else:
+        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
+        imu = IMU(PORT, FREQUENCY)
+
     logger = Logger(LOGS_PATH)
     data_processor = IMUDataProcessor([], UPSIDE_DOWN)
 
