@@ -39,7 +39,7 @@ class IMUDataProcessor:
         self._max_speed: float = 0.0
         self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._zeroed_altitude: float = None
-        self._current_altitude: float = None
+        self._current_altitude: float = 0.0
         self.upside_down = upside_down
         self._data_points: Sequence[EstimatedDataPacket]
 

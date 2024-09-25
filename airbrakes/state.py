@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.airbrakes import AirbrakesContext
 from constants import (
     ACCELERATION_AT_MOTOR_BURNOUT,
     APOGEE_SPEED,
@@ -98,9 +97,9 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ()
+    __slots__ = ("start_time",)
 
-    def __init__(self, context: AirbrakesContext):
+    def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
         self.start_time = time.time()
 

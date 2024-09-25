@@ -1,13 +1,15 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
 
+import inspect
+
+
 def convert_to_nanoseconds(value: float) -> int:
     """Converts seconds to nanoseconds, if `value` is in float."""
-    if isinstance(value, float):
-        # Convert seconds to nanoseconds
-        nanoseconds = value * 1e9
-        return int(nanoseconds)  # Convert to integer if needed
-    return value  # Assume that it is in nanoseconds
+    try:
+        return int(float(value) * 10e9)
+    except (ValueError, TypeError):
+        return None 
 
 
 def convert_to_float(value) -> float | None:
@@ -30,3 +32,16 @@ def deadband(input_value, threshold) -> float:
         return 0.0
     else:
         return input_value
+
+
+def get_imu_data_processor_public_properties() -> list:
+
+    fields = [
+        "avg_acceleration",
+        "avg_acceleration_mag",
+        "max_altitude",
+        "current_altitude",
+        "speed",
+        "max_speed",
+    ]
+    return fields

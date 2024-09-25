@@ -4,9 +4,8 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
-from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.utils import get_imu_data_processor_public_properties
 
-import inspect
 # -------------------------------------------------------
 # Main
 # -------------------------------------------------------
@@ -66,7 +65,7 @@ CSV_HEADERS = [
     *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
     *list(EstimatedDataPacket.__struct_fields__)[1:],
     # Only add fields that are public properties of the IMUDataProcessor:
-    *[field_name for field_name, _ in inspect.getmembers(IMUDataProcessor, lambda o: isinstance(o, property))]
+    *get_imu_data_processor_public_properties()
 ]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process
@@ -80,11 +79,11 @@ STOP_SIGNAL = "STOP"
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-ACCLERATION_NOISE_THRESHOLD = 0.1  # m/s^2
+ACCLERATION_NOISE_THRESHOLD = 0.3  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_ACCELERATION = 10  # m/s^2
+TAKEOFF_SPEED = 10  # m/s
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration
