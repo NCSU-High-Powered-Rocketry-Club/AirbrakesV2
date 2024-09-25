@@ -4,6 +4,9 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 
+from airbrakes.data_handling.data_processor import IMUDataProcessor
+
+import inspect
 # -------------------------------------------------------
 # Main
 # -------------------------------------------------------
@@ -62,6 +65,8 @@ CSV_HEADERS = [
     *list(IMUDataPacket.__struct_fields__),
     *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
     *list(EstimatedDataPacket.__struct_fields__)[1:],
+    # Only add fields that are public properties of the IMUDataProcessor:
+    *[field_name for field_name, _ in inspect.getmembers(IMUDataProcessor, lambda o: isinstance(o, property))]
 ]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process

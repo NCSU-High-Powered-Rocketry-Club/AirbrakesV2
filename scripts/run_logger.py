@@ -3,6 +3,7 @@
 import time
 from collections import deque
 
+from airbrakes.data_handling.data_processor import IMUDataProcessor
 from constants import TEST_LOGS_PATH
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.data_handling.logger import Logger
@@ -11,6 +12,7 @@ from airbrakes.data_handling.logger import Logger
 def main():
     # Initialize the logger
     logger = Logger(TEST_LOGS_PATH)
+    data_processor = IMUDataProcessor([], False)
 
     # Log for 5 seconds, and automatically stops logging
     start_time = time.time()
@@ -19,7 +21,7 @@ def main():
         while time.time() - start_time < 5:
             # Create fake IMU data
             imu_data_list = deque([RawDataPacket(int(time.time()), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)])
-            logger.log("TEST_STATE", 0.5, imu_data_list)
+            logger.log("TEST_STATE", 0.5, imu_data_list, data_processor)
     except KeyboardInterrupt:  # Stop logging if the user presses Ctrl+C
         pass
     finally:
