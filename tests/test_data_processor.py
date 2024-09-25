@@ -54,7 +54,7 @@ class TestIMUDataProcessor:
         assert d._avg_accel_mag == 0.0
         assert d._max_altitude == 0.0
         assert d._previous_velocity == (0.0, 0.0, 0.0)
-        assert d._zeroed_altitude is None
+        assert d._initial_altitude is None
         assert d._current_altitude is None
         assert d._data_points == []
         assert d._speed == 0.0
@@ -66,7 +66,7 @@ class TestIMUDataProcessor:
         assert d._avg_accel_mag == math.sqrt(1.5**2 + 2.5**2 + 3.5**2)
         assert d._max_altitude == 0.5
         assert d._current_altitude == 0.5
-        assert d._zeroed_altitude == 20.5
+        assert d._initial_altitude == 20.5
         assert isinstance(d._speed, float)
         assert d._speed == math.sqrt(1**2 + 2**2 + 3**2)
         assert d._max_speed == d._speed
@@ -141,7 +141,7 @@ class TestIMUDataProcessor:
         assert d.avg_acceleration_z == 3.5
         assert d._max_altitude == 9.5 == d.max_altitude == d.current_altitude
         assert d._data_points == data_points
-        assert d._zeroed_altitude == 20.5
+        assert d._initial_altitude == 20.5
         assert d.speed == math.sqrt(2**2 + 4**2 + 6**2) == d.max_speed
 
     @pytest.mark.parametrize(
@@ -159,7 +159,7 @@ class TestIMUDataProcessor:
     def test_altitude_zeroing(self, data_processor, altitude_reading, current_altitude, max_altitude):
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
-        assert d._zeroed_altitude == 20.5
+        assert d._initial_altitude == 20.5
         assert d._current_altitude == 0.5
         assert d._max_altitude == 0.5
 
@@ -168,7 +168,7 @@ class TestIMUDataProcessor:
             for idx, alt in enumerate(altitude_reading)
         ]
         d.update_data(new_packets)
-        assert d._zeroed_altitude == 20.5
+        assert d._initial_altitude == 20.5
         assert d._current_altitude == d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude
 
@@ -184,4 +184,4 @@ class TestIMUDataProcessor:
                     for alt in altitudes[i : i + 10]
                 ]
             )
-        assert d.max_altitude + d._zeroed_altitude == max(altitudes)
+        assert d.max_altitude + d._initial_altitude == max(altitudes)

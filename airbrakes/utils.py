@@ -1,7 +1,7 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
 
-def convert_to_nanoseconds(value: float) -> int:
+def convert_to_nanoseconds(value) -> int:
     """Converts seconds to nanoseconds, if `value` is in float."""
     if isinstance(value, float):
         # Convert seconds to nanoseconds
