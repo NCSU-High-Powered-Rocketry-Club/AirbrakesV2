@@ -81,12 +81,8 @@ class StandByState(State):
 
         data = self.context.data_processor
 
+        # TODO: probably change to accel code from last year
         if data.speed > TAKEOFF_SPEED and data.current_altitude > TAKEOFF_HEIGHT:
-            self.next_state()
-            return
-
-        # In case our altitude didn't update in time, just check the speed:
-        if data.speed > TAKEOFF_SPEED + 1:
             self.next_state()
             return
 
@@ -118,9 +114,12 @@ class MotorBurnState(State):
             return
 
         # fallback condition: if our speed has started to decrease, we have motor burnout:
+        # TODO: accel sign flip
         if data.speed < data.max_speed:
             self.next_state()
             return
+
+        #  TODO: motor burn time 
 
     def next_state(self):
         self.context.state = FlightState(self.context)

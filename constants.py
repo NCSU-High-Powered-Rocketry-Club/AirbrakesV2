@@ -75,8 +75,8 @@ STOP_SIGNAL = "STOP"
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-TAKEOFF_SPEED = 4.0  # m/s
-TAKEOFF_HEIGHT = 2.0  # m
+# We will take the magnitude of
+TAKEOFF_ACCELERATION = 10  # m/s^2
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration
