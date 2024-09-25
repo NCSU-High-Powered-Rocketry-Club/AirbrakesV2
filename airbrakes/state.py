@@ -1,12 +1,16 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
 from abc import ABC, abstractmethod
+import time
 from typing import TYPE_CHECKING
 
+from airbrakes.airbrakes import AirbrakesContext
 from constants import (
     ACCELERATION_AT_MOTOR_BURNOUT,
     APOGEE_SPEED,
+    DISTANCE_FROM_APOGEE,
     HIGH_SPEED_AT_MOTOR_BURNOUT,
+    MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
 )
@@ -81,8 +85,7 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        # TODO: probably change to accel code from last year
-        if data.speed > TAKEOFF_SPEED and data.current_altitude > TAKEOFF_HEIGHT:
+        if data.speed > TAKEOFF_SPEED or data.current_altitude > TAKEOFF_HEIGHT:
             self.next_state()
             return
 
@@ -97,29 +100,27 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
+    def __init__(self, context: AirbrakesContext):
+        super().__init__(context)
+        self.start_time = time.time()
+
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
         burned out."""
 
         data = self.context.data_processor
 
-        # If the acceleration has dropped close to zero, the motor has burned out,
-        # this has been checked with actual previous flight data (previous_flight_accel_data.png).
-        if (
-            ACCELERATION_AT_MOTOR_BURNOUT[0] <= data.avg_acceleration_mag <= ACCELERATION_AT_MOTOR_BURNOUT[1]
-            # as an added check, make sure our speed is still "high":
-            and data.speed >= HIGH_SPEED_AT_MOTOR_BURNOUT
-        ):
-            self.next_state()
-            return
-
-        # fallback condition: if our speed has started to decrease, we have motor burnout:
-        # TODO: accel sign flip
+        # If our current speed is less than our max speed, that means we have stopped accelerating
+        # This is the same thing as checking if our accel sign has flipped
         if data.speed < data.max_speed:
             self.next_state()
             return
-
-        #  TODO: motor burn time 
+        
+        # Fallback: if our motor has burned for longer than its burn time, go to the next state
+        if self.start_time - time.time() > MOTOR_BURN_TIME:
+            self.next_state()
+            return
+        
 
     def next_state(self):
         self.context.state = FlightState(self.context)
@@ -139,13 +140,8 @@ class FlightState(State):
 
         data = self.context.data_processor
 
-        # If our speed is close to zero, we have reached apogee.
-        if APOGEE_SPEED[0] <= data.speed <= APOGEE_SPEED[1]:
-            self.next_state()
-            return
-
         # fallback condition: if our altitude has started to decrease, we have reached apogee:
-        if data.current_altitude < data.max_altitude:
+        if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()
             return
 

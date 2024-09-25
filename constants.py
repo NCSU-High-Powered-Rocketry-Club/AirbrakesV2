@@ -78,15 +78,20 @@ STOP_SIGNAL = "STOP"
 ACCLERATION_NOISE_THRESHOLD = 0.1  # m/s^2
 
 # We will take the magnitude of acceleration for this
+TAKEOFF_HEIGHT = 10  # meters
 TAKEOFF_ACCELERATION = 10  # m/s^2
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration
 ACCELERATION_AT_MOTOR_BURNOUT = [0.0, 6.0]  # m/s^2  (only gravity should be acting on the rocket)
 HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
+MOTOR_BURN_TIME = 2.3  # seconds
 
 # Coasting to Landing:
 
+# Basically we don't care about switching from flight to free fall state very quickly, so if the
+# current altitude is 250 meters less than our max, then we switch
+DISTANCE_FROM_APOGEE = 250  # meters
 APOGEE_SPEED = [0, 10.0]  # m/s
 
 # -------------------------------------------------------
