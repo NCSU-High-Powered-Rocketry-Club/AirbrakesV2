@@ -55,7 +55,7 @@ class TestIMUDataProcessor:
         assert d._max_altitude == 0.0
         assert d._previous_velocity == (0.0, 0.0, 0.0)
         assert d._zeroed_altitude is None
-        assert d._current_altitude is None
+        assert d._current_altitude == 0.0
         assert d._data_points == []
         assert d._speed == 0.0
         assert d._max_speed == 0.0
