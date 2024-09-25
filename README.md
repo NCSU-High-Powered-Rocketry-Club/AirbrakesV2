@@ -24,6 +24,7 @@ source venv/bin/activate
 ```pip install .[dev]```
 
 #### Install and start the pigpio daemon on the Raspberry Pi:
+*Every time the pi boots up, you must run this in order for the servo to work
 
 ```bash
 sudo pigpiod
