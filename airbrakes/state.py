@@ -1,14 +1,12 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-from abc import ABC, abstractmethod
 import time
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    ACCELERATION_AT_MOTOR_BURNOUT,
-    APOGEE_SPEED,
     DISTANCE_FROM_APOGEE,
-    HIGH_SPEED_AT_MOTOR_BURNOUT,
+    GROUND_ALTITIUDE,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
@@ -114,12 +112,11 @@ class MotorBurnState(State):
         if data.speed < data.max_speed:
             self.next_state()
             return
-        
+
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if self.start_time - time.time() > MOTOR_BURN_TIME:
+        if time.time() - self.start_time > MOTOR_BURN_TIME:
             self.next_state()
             return
-        
 
     def next_state(self):
         self.context.state = FlightState(self.context)
@@ -139,12 +136,13 @@ class FlightState(State):
 
         data = self.context.data_processor
 
-        # fallback condition: if our altitude has started to decrease, we have reached apogee:
+        # if our altitude has started to decrease, we have reached apogee:
         if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()
             return
 
     def next_state(self):
+        # This also retracts the airbrakes:
         self.context.state = FreeFallState(self.context)
 
 
@@ -156,7 +154,28 @@ class FreeFallState(State):
     __slots__ = ()
 
     def update(self):
-        """Nothing to check, we just wait for the rocket to land."""
+        """Check if the rocket has landed, based on our altitude."""
+
+        data = self.context.data_processor
+
+        # If our altitude is 0, we have landed:
+        if data.current_altitude <= GROUND_ALTITIUDE:
+            self.next_state()
+
+    def next_state(self):
+        # Explicitly do nothing, there is no next state
+        self.context.state = LandedState(self.context)
+
+
+class LandedState(State):
+    """
+    When the rocket has landed.
+    """
+
+    __slots__ = ()
+
+    def update(self):
+        """Nothing to check, we just wait for the rocket to be recovered."""
 
     def next_state(self):
         # Explicitly do nothing, there is no next state

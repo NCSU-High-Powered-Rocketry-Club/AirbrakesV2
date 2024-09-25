@@ -17,6 +17,9 @@ LOG_PATH = Path("tests/logs")
 
 @pytest.fixture
 def logger():
+    """Clear the tests/logs directory before making a new Logger."""
+    for log in LOG_PATH.glob("log_*.csv"):
+        log.unlink()
     return Logger(LOG_PATH)
 
 

@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-
 from airbrakes.utils import get_imu_data_processor_public_properties
 
 # -------------------------------------------------------
@@ -65,7 +64,7 @@ CSV_HEADERS = [
     *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
     *list(EstimatedDataPacket.__struct_fields__)[1:],
     # Only add fields that are public properties of the IMUDataProcessor:
-    *get_imu_data_processor_public_properties()
+    *get_imu_data_processor_public_properties(),
 ]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process
@@ -91,12 +90,16 @@ ACCELERATION_AT_MOTOR_BURNOUT = [0.0, 6.0]  # m/s^2  (only gravity should be act
 HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
 MOTOR_BURN_TIME = 2.3  # seconds
 
-# Coasting to Landing:
+# Coasting to Free fall:
 
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
 # current altitude is 250 meters less than our max, then we switch
 DISTANCE_FROM_APOGEE = 250  # meters
-APOGEE_SPEED = [0, 10.0]  # m/s
+
+# Free fall to Landing:
+
+# Consider the rocket to have landed if it is within 15 meters of the launch site height.
+GROUND_ALTITIUDE = 15.0  # meters
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration

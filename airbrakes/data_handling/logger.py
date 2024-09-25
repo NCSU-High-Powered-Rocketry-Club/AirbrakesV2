@@ -2,16 +2,15 @@
 
 import collections
 import csv
+import inspect
 import multiprocessing
 import signal
 from pathlib import Path
-import inspect
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import IMUDataPacket
 from airbrakes.utils import get_imu_data_processor_public_properties
 from constants import CSV_HEADERS, STOP_SIGNAL
-
 
 # Get public properties of IMUDataProcessor, which will be logged.
 _data_processor_properties = [
@@ -76,8 +75,13 @@ class Logger:
         # Waits for the process to finish before stopping it
         self._log_process.join()
 
-    def log(self, state: str, extension: float, imu_data_list: collections.deque[IMUDataPacket], 
-            data_processor: IMUDataProcessor) -> None:
+    def log(
+        self,
+        state: str,
+        extension: float,
+        imu_data_list: collections.deque[IMUDataPacket],
+        data_processor: IMUDataProcessor,
+    ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
         :param state: the current state of the airbrakes state machine
@@ -89,7 +93,9 @@ class Logger:
             # Formats the log message as a CSV line
             message_dict = {"state": state, "extension": extension}
             message_dict.update({key: getattr(imu_data, key) for key in imu_data.__struct_fields__})
-            message_dict.update({key: getattr(data_processor, key) for key in get_imu_data_processor_public_properties()})
+            message_dict.update(
+                {key: getattr(data_processor, key) for key in get_imu_data_processor_public_properties()}
+            )
             # Put the message in the queue
             self._log_queue.put(message_dict)
 
