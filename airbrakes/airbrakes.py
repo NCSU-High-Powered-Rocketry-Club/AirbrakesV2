@@ -69,7 +69,7 @@ class AirbrakesContext:
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         # TODO: Check how many data packets we are processing on average
         self.data_processor.update_data(
-            [data_packet for data_packet in data_packets if isinstance(data_packet, EstimatedDataPacket)]
+            [data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)]
         )
         # Update the state machine based on the latest processed data
         self.state.update()
