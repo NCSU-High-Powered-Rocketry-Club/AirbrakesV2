@@ -5,6 +5,8 @@ from collections.abc import Sequence
 import numpy as np
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.utils import deadband
+from constants import ACCLERATION_NOISE_THRESHOLD
 
 
 class IMUDataProcessor:
@@ -119,9 +121,11 @@ class IMUDataProcessor:
         # Next, assign variables for linear acceleration, since we don't want to recalculate them
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
-        estLinearAccelX = [data_point.estLinearAccelX for data_point in self._data_points]
-        estLinearAccelY = [data_point.estLinearAccelY for data_point in self._data_points]
-        estLinearAccelZ = [data_point.estLinearAccelZ for data_point in self._data_points]
+        # If the absolute value of acceleration is less than 0.1, set it to 0
+        estLinearAccelX = [deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
+        estLinearAccelY = [deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
+        estLinearAccelZ = [deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points]
+
         estPressureAlt = [data_point.estPressureAlt for data_point in self._data_points]
 
         a_x, a_y, a_z = self._compute_averages(estLinearAccelX, estLinearAccelY, estLinearAccelZ)

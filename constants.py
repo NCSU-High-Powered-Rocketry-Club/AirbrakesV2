@@ -75,7 +75,9 @@ STOP_SIGNAL = "STOP"
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-# We will take the magnitude of
+ACCLERATION_NOISE_THRESHOLD = 0.1  # m/s^2
+
+# We will take the magnitude of acceleration for this
 TAKEOFF_ACCELERATION = 10  # m/s^2
 
 # MotorBurn to Coasting:
