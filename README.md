@@ -88,7 +88,7 @@ However during development, you may want to run individual scripts to test compo
 To run a simulation, make sure to first specify the path to the csv file in `constants.py` and then run:
 ```python3 main.py mock```
 
-This will run the program with the mock data. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
+This will run the program with the mock data, with values of the simulation printed in real time. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
 
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.

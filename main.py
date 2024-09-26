@@ -30,6 +30,8 @@ MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
 def update_display(airbrakes):
     """Prints the values from the simulation in a pretty way."""
     # Print values with multiple print statements
+    # The <10 is used to align the values to the left with a width of 10
+    # The .2f is used to format the float to 2 decimal places
     print(f"State:                       {airbrakes.state.name:<10}")
     print(f"Current speed:               {airbrakes.data_processor.speed:<10.2f} m/s")
     print(f"Max speed so far:            {airbrakes.data_processor.max_speed:<10.2f} m/s")
