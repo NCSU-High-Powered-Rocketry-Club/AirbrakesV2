@@ -71,8 +71,6 @@ class AirbrakesContext:
             [data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)]
         )
 
-        print(processed_data_packets)
-
         # Update the state machine based on the latest processed data
         self.state.update()
 

@@ -37,11 +37,11 @@ class IMUDataProcessor:
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
-        self._speeds: list[float] = []
+        self._speeds: list[float] = [0.0]
         self._max_speed: float = 0.0
         self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._initial_altitude: float | None = None
-        self._current_altitudes: list[float] = []
+        self._current_altitudes: list[float] = [0.0]
         self.upside_down = upside_down
         self._last_data_point = EstimatedDataPacket(0.0)  # Placeholder for the last data point
 
@@ -93,14 +93,14 @@ class IMUDataProcessor:
         return self._max_altitude
 
     @property
-    def current_altitude(self) -> list[float]:
+    def current_altitude(self) -> float:
         """Returns the altitudes of the rocket (zeroed out) from the data points, in meters."""
-        return self._current_altitudes
+        return self._current_altitudes[-1]
 
     @property
-    def speeds(self) -> list[float]:
-        """The current speeds of the rocket in m/s. Calculated by integrating the linear acceleration."""
-        return self._speeds
+    def speed(self) -> float:
+        """The current speed of the rocket in m/s. Calculated by integrating the linear acceleration."""
+        return self._speeds[-1]
 
     @property
     def max_speed(self) -> float:
@@ -117,8 +117,10 @@ class IMUDataProcessor:
         """
 
         # If the data points are empty, we don't want to try to process anything
-        if not len(data_points) > 0:
+        if len(data_points) == 0:
             return []
+
+        self._data_points = data_points
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
@@ -143,7 +145,7 @@ class IMUDataProcessor:
         self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
 
         self._speeds = self._calculate_speeds(x_accel, y_accel, z_accel)
-        self._max_speed = max(self._speeds + [self._max_speed])
+        self._max_speed = max(list(self._speeds) + [self._max_speed])
 
         # Zero the altitude only once, during the first update:
         if self._initial_altitude is None:
@@ -177,7 +179,7 @@ class IMUDataProcessor:
         :return: The maximum altitude of the rocket in meters.
         """
         zeroed_alts = np.array(pressure_alt) - self._initial_altitude
-        return max(*zeroed_alts, self._max_altitude)
+        return max(list(zeroed_alts) + [self._max_altitude])
 
     def _calculate_current_altitudes(self, alt_list: list[float]) -> list[float]:
         """
@@ -212,8 +214,8 @@ class IMUDataProcessor:
         """
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
         # We need at least two data points to calculate the speed:
-        if len(self._data_points) < 2:
-            return np.sqrt(previous_vel_x ** 2 + previous_vel_y ** 2 + previous_vel_z ** 2)
+        if len(self._data_points) < 1:
+            return [0.0]
 
         # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
         # does not update fast enough to give us a good estimate of the speed.
@@ -233,6 +235,7 @@ class IMUDataProcessor:
         # The [:-1] is used to remove the last element of the list, since we have one less time
         # difference than we have acceleration values.
         velocity_x: np.array = previous_vel_x + np.cumsum(np.array(a_x) * time_diff)
+
         velocity_y: np.array = previous_vel_y + np.cumsum(np.array(a_y) * time_diff)
         velocity_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff)
 

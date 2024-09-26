@@ -51,7 +51,6 @@ def main(is_simulation: bool) -> None:
 
             if is_simulation:
                 update_display(airbrakes, sim_time_start)
-
     except KeyboardInterrupt:
         pass
     finally:
