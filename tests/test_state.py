@@ -3,7 +3,7 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.state import FlightState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def motor_burn_state(airbrakes):
 
 @pytest.fixture
 def flight_state(airbrakes):
-    f = FlightState(airbrakes)
+    f = CoastState(airbrakes)
     f.context.state = f
     return f
 
@@ -126,8 +126,8 @@ class TestMotorBurnState:
         [
             (0.0, 0.0, MotorBurnState, 0.0, 0.0),
             (100.0, 100.0, MotorBurnState, 0.00, 0.0),
-            (50.0, 54.0, FlightState, 0.00, 1.0),
-            (60.0, 60.0, FlightState, 2.4, 1.0),
+            (50.0, 54.0, CoastState, 0.00, 1.0),
+            (60.0, 60.0, CoastState, 2.4, 1.0),
         ],
         ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
     )
@@ -159,8 +159,8 @@ class TestFlightState:
     @pytest.mark.parametrize(
         ("current_altitude", "max_altitude", "expected_state"),
         [
-            (200.0, 200.0, FlightState),
-            (100.0, 150.0, FlightState),
+            (200.0, 200.0, CoastState),
+            (100.0, 150.0, CoastState),
             (100.0, 400.0, FreeFallState),
         ],
         ids=["climbing", "just_descent", "apogee_threshold"],

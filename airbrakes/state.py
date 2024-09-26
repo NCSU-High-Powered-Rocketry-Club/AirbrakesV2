@@ -119,14 +119,15 @@ class MotorBurnState(State):
             return
 
     def next_state(self):
-        self.context.state = FlightState(self.context)
+        self.context.state = CoastState(self.context)
         # Deploy the airbrakes as soon as we enter the Flight state
         self.context.set_airbrake_extension(1.0)
 
 
-class FlightState(State):
+class CoastState(State):
     """
-    When the motor has burned out and the rocket is coasting to apogee.
+    When the motor has burned out and the rocket is coasting to apogee. This is the state
+    we actually extend the airbrakes.
     """
 
     __slots__ = ()
@@ -163,7 +164,6 @@ class FreeFallState(State):
             self.next_state()
 
     def next_state(self):
-        # Explicitly do nothing, there is no next state
         self.context.state = LandedState(self.context)
 
 
