@@ -67,16 +67,17 @@ class AirbrakesContext:
             return
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        # TODO: Check how many data packets we are processing on average
-        self.data_processor.update_data(
+        processed_data_packets = self.data_processor.update_data(
             [data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)]
         )
+
+        print(processed_data_packets)
 
         # Update the state machine based on the latest processed data
         self.state.update()
 
         # Logs the current state, extension, and IMU data
-        self.logger.log(self.state.name, self.current_extension, data_packets, self.data_processor)
+        self.logger.log(self.state.name, self.current_extension, data_packets)
 
     def set_airbrake_extension(self, extension: float) -> None:
         """
