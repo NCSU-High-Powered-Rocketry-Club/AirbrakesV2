@@ -13,7 +13,7 @@ MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
 def convert_to_nanoseconds(value) -> int:
     """Converts seconds to nanoseconds, if `value` is in float."""
     try:
-        return int(float(value) * 10e9)
+        return int(float(value) * 1e9)
     except (ValueError, TypeError):
         return None
 
