@@ -199,6 +199,7 @@ class IMUDataProcessor:
         # does not update fast enough to give us a good estimate of the speed.
 
         # calculate the time differences between each data point
+        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         time_diff = np.diff([data_point.timestamp for data_point in self._data_points]) * 10e-9
 
         # We store the previous calculated velocity vectors, so that our speed
