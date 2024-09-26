@@ -1,6 +1,7 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import csv
+import signal
 import time
 from pathlib import Path
 
@@ -15,7 +16,9 @@ class MockIMU(IMU):
     from a previous log file.
     """
 
-    def __init__(self, log_file_name: str, frequency: int):
+    __slots__ = ()
+
+    def __init__(self, log_file_name: Path, frequency: int):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
         :param log_file_name: The name of the log file to read data from.
@@ -23,15 +26,13 @@ class MockIMU(IMU):
         """
         super().__init__(log_file_name, frequency)
 
-    def _fetch_data_loop(self, log_file_name: str, _: int) -> None:
+    def _fetch_data_loop(self, log_file_path: Path, _: int) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_name: the name of the log file to read data from located in logs/
         :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
-
-        # Makes the path to the log file in an os-independent way
-        log_file_path = Path("logs") / log_file_name
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignore the KeyboardInterrupt signal
 
         with log_file_path.open(newline="") as csvfile:
             reader = csv.DictReader(csvfile)

@@ -26,6 +26,7 @@ class IMUDataProcessor:
         "_initial_altitude",
         "_max_altitude",
         "_max_speed",
+        "_old_data_points",
         "_previous_velocity",
         "_speed",
         "upside_down",
@@ -43,6 +44,7 @@ class IMUDataProcessor:
         self.upside_down = upside_down
 
         self._data_points: Sequence[EstimatedDataPacket]
+        self._old_data_points = []
 
         if data_points:  # actually update the data on init
             self.update_data(data_points)
@@ -111,11 +113,13 @@ class IMUDataProcessor:
         :param data_points: A sequence of EstimatedDataPacket objects to process.
         """
 
-        if not data_points:  # Data packets may not be EstimatedDataPacket in the beginning
+        if len(data_points) + len(self._old_data_points) < 2:
+            self._old_data_points.extend(data_points)
             return
 
         # First assign the data points
-        self._data_points = data_points
+        self._data_points = self._old_data_points + list(data_points)
+        self._old_data_points = []  # Clear old data points after updating
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
@@ -140,6 +144,10 @@ class IMUDataProcessor:
         self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
 
         self._speed = self._calculate_speed(x_accel, y_accel, z_accel)
+
+        if self._speed != 0.0:
+            print(self._speed)
+
         self._max_speed = max(self._speed, self._max_speed)
 
         # Zero the altitude only once, during the first update:
@@ -200,7 +208,7 @@ class IMUDataProcessor:
 
         # calculate the time differences between each data point
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
-        time_diff = np.diff([data_point.timestamp for data_point in self._data_points]) * 10e-9
+        time_diff = np.diff([data_point.timestamp for data_point in self._data_points]) * 1e-9
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
@@ -209,9 +217,9 @@ class IMUDataProcessor:
         # We integrate each of the components of the acceleration to get the velocity
         # The [:-1] is used to remove the last element of the list, since we have one less time
         # difference than we have acceleration values.
-        velocity_x: np.array = previous_vel_x + np.cumsum(a_x[:-1] * time_diff)
-        velocity_y: np.array = previous_vel_y + np.cumsum(a_y[:-1] * time_diff)
-        velocity_z: np.array = previous_vel_z + np.cumsum(a_z[:-1] * time_diff)
+        velocity_x: np.array = previous_vel_x + np.cumsum(np.array(a_x) * time_diff[0])
+        velocity_y: np.array = previous_vel_y + np.cumsum(np.array(a_y) * time_diff[0])
+        velocity_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff[0])
 
         # Store the last calculated velocity vectors
         self._previous_velocity = (velocity_x[-1], velocity_y[-1], velocity_z[-1])

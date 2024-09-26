@@ -2,6 +2,7 @@
 loop."""
 
 import sys
+import time
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
@@ -11,6 +12,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.utils import update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -19,7 +21,7 @@ from constants import (
     MOCK_ARGUMENT,
     PORT,
     SERVO_PIN,
-    SIMULATION_LOG_NAME,
+    SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
 
@@ -27,8 +29,10 @@ from constants import (
 def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     if is_simulation:
-        imu = MockIMU(SIMULATION_LOG_NAME, FREQUENCY)
+        imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+        sim_time_start = time.time()
+        print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
         imu = IMU(PORT, FREQUENCY)
@@ -44,6 +48,10 @@ def main(is_simulation: bool) -> None:
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             airbrakes.update()
+
+            if is_simulation:
+                update_display(airbrakes, sim_time_start)
+
     except KeyboardInterrupt:
         pass
     finally:

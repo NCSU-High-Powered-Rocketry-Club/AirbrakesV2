@@ -1,10 +1,19 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
+import time
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from airbrakes.airbrakes import AirbrakesContext
+
+# ANSI escape code for cursor movement for printing simulation data:
+MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
+
 
 def convert_to_nanoseconds(value) -> int:
     """Converts seconds to nanoseconds, if `value` is in float."""
     try:
-        return int(float(value) * 10e9)
+        return int(float(value) * 1e9)
     except (ValueError, TypeError):
         return None
 
@@ -42,3 +51,24 @@ def get_imu_data_processor_public_properties() -> list:
         "speed",
         "max_speed",
     ]
+
+
+def update_display(airbrakes: "AirbrakesContext", start_time: float):
+    """Prints the values from the simulation in a pretty way.
+
+    :param airbrakes: The airbrakes context object.
+    :param start_time: The time the simulation started, in seconds from epoch.
+    """
+    # Print values with multiple print statements
+    # The <10 is used to align the values to the left with a width of 10
+    # The .2f is used to format the float to 2 decimal places
+    print(f"Time since sim start:        {time.time() - start_time:<10.2f} s")
+    print(f"State:                       {airbrakes.state.name:<10}")
+    print(f"Current speed:               {airbrakes.data_processor.speed:<10.2f} m/s")
+    print(f"Max speed so far:            {airbrakes.data_processor.max_speed:<10.2f} m/s")
+    print(f"Current altitude:            {airbrakes.data_processor.current_altitude:<10.2f} m")
+    print(f"Max altitude so far:         {airbrakes.data_processor.max_altitude:<10.2f} m")
+    print(f"Current airbrakes extension: {airbrakes.current_extension:<10}")
+
+    # Move the cursor up 7 lines to overwrite the previous output
+    print(MOVE_CURSOR_UP * 7, end="", flush=True)
