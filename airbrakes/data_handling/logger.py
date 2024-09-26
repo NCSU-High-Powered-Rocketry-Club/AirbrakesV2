@@ -91,7 +91,8 @@ class Logger:
         # Loop through all the IMU data packets
         for imu_data in imu_data_list:
             # Formats the log message as a CSV line
-            message_dict = {"state": state, "extension": extension}
+            # Only logs the first character of the state
+            message_dict = {"state": state[0], "extension": extension}
             message_dict.update({key: getattr(imu_data, key) for key in imu_data.__struct_fields__})
             message_dict.update(
                 {key: getattr(data_processor, key) for key in get_imu_data_processor_public_properties()}
