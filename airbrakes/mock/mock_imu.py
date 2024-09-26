@@ -1,6 +1,7 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import csv
+import signal
 import time
 from pathlib import Path
 
@@ -31,6 +32,7 @@ class MockIMU(IMU):
         :param log_file_name: the name of the log file to read data from located in logs/
         :param frequency: Frequency in Hz for how often to pretend to fetch data
         """
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignore the KeyboardInterrupt signal
 
         with log_file_path.open(newline="") as csvfile:
             reader = csv.DictReader(csvfile)

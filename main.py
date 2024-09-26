@@ -2,6 +2,7 @@
 loop."""
 
 import sys
+import time
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
@@ -11,6 +12,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.utils import update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -23,31 +25,13 @@ from constants import (
     UPSIDE_DOWN,
 )
 
-# ANSI escape code for cursor movement:
-MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
-
-
-def update_display(airbrakes):
-    """Prints the values from the simulation in a pretty way."""
-    # Print values with multiple print statements
-    # The <10 is used to align the values to the left with a width of 10
-    # The .2f is used to format the float to 2 decimal places
-    print(f"State:                       {airbrakes.state.name:<10}")
-    print(f"Current speed:               {airbrakes.data_processor.speed:<10.2f} m/s")
-    print(f"Max speed so far:            {airbrakes.data_processor.max_speed:<10.2f} m/s")
-    print(f"Current altitude:            {airbrakes.data_processor.current_altitude:<10.2f} m")
-    print(f"Max altitude so far:         {airbrakes.data_processor.max_altitude:<10.2f} m")
-    print(f"Current airbrakes extension: {airbrakes.current_extension:<10}")
-
-    # Move the cursor up 6 lines to overwrite the previous output
-    print(MOVE_CURSOR_UP * 6, end="", flush=True)
-
 
 def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+        sim_time_start = time.time()
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
@@ -66,7 +50,7 @@ def main(is_simulation: bool) -> None:
             airbrakes.update()
 
             if is_simulation:
-                update_display(airbrakes)
+                update_display(airbrakes, sim_time_start)
 
     except KeyboardInterrupt:
         pass
