@@ -6,8 +6,10 @@ import time
 
 import pytest
 
+from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logger import Logger
+from airbrakes.utils import get_imu_data_processor_public_properties
 from constants import CSV_HEADERS, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
@@ -157,8 +159,9 @@ class TestLogger:
     def test_log_method(self, logger, data_packet):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
-        logger.log(state="state", extension="0.1", imu_data_list=[data_packet])
-        time.sleep(0.05)  # Give the process time to log to file
+        data_processor = IMUDataProcessor([])
+        logger.log(state="state", extension="0.1", imu_data_list=[data_packet], data_processor=data_processor)
+        time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
@@ -177,4 +180,5 @@ class TestLogger:
                 "state": "state",
                 "extension": "0.1",
                 **{attr: getattr(data_packet, attr) for attr in data_packet.__struct_fields__},
+                **{attr: str(getattr(data_processor, attr)) for attr in get_imu_data_processor_public_properties()},
             }

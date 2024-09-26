@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.utils import get_imu_data_processor_public_properties
 
 # -------------------------------------------------------
 # Main
@@ -62,6 +63,8 @@ CSV_HEADERS = [
     *list(IMUDataPacket.__struct_fields__),
     *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
     *list(EstimatedDataPacket.__struct_fields__)[1:],
+    # Only add fields that are public properties of the IMUDataProcessor:
+    *get_imu_data_processor_public_properties(),
 ]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process
@@ -75,10 +78,10 @@ STOP_SIGNAL = "STOP"
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-ACCLERATION_NOISE_THRESHOLD = 0.1  # m/s^2
+ACCLERATION_NOISE_THRESHOLD = 0.3  # m/s^2
+
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_ACCELERATION = 10  # m/s^2
 TAKEOFF_SPEED = 10  # m/s
 
 # MotorBurn to Coasting:
@@ -92,7 +95,6 @@ MOTOR_BURN_TIME = 2.3  # seconds
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
 # current altitude is 250 meters less than our max, then we switch
 DISTANCE_FROM_APOGEE = 250  # meters
-
 
 # Free fall to Landing:
 
