@@ -19,16 +19,34 @@ from constants import (
     MOCK_ARGUMENT,
     PORT,
     SERVO_PIN,
-    SIMULATION_LOG_NAME,
+    SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
+
+# ANSI escape code for cursor movement:
+MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
+
+
+def update_display(airbrakes):
+    """Prints the values from the simulation in a pretty way."""
+    # Print values with multiple print statements
+    print(f"State:                       {airbrakes.state.name:<10}")
+    print(f"Current speed:               {airbrakes.data_processor.speed:<10.2f} m/s")
+    print(f"Max speed so far:            {airbrakes.data_processor.max_speed:<10.2f} m/s")
+    print(f"Current altitude:            {airbrakes.data_processor.current_altitude:<10.2f} m")
+    print(f"Max altitude so far:         {airbrakes.data_processor.max_altitude:<10.2f} m")
+    print(f"Current airbrakes extension: {airbrakes.current_extension:<10}")
+
+    # Move the cursor up 6 lines to overwrite the previous output
+    print(MOVE_CURSOR_UP * 6, end="", flush=True)
 
 
 def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     if is_simulation:
-        imu = MockIMU(SIMULATION_LOG_NAME, FREQUENCY)
+        imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+        print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
         imu = IMU(PORT, FREQUENCY)
@@ -44,6 +62,10 @@ def main(is_simulation: bool) -> None:
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             airbrakes.update()
+
+            if is_simulation:
+                update_display(airbrakes)
+
     except KeyboardInterrupt:
         pass
     finally:
