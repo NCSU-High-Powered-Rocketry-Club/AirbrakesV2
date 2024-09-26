@@ -8,9 +8,10 @@ import pytest
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.utils import get_imu_data_processor_public_properties
-from constants import CSV_HEADERS, STOP_SIGNAL
+from constants import STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
@@ -62,7 +63,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)  # Gets the first row, which are the headers
-            assert headers == CSV_HEADERS
+            assert headers == LoggedDataPacket.__struct_fields__
 
     def test_logging_loop_start_stop(self, logger):
         logger.start()
@@ -136,10 +137,10 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)
-            assert headers == CSV_HEADERS
+            assert headers == LoggedDataPacket.__struct_fields__
             row: list[str] = next(reader)
             # create dictionary from headers (field names) and row (values)
-            row_dict = dict(zip(CSV_HEADERS, row, strict=False))
+            row_dict = dict(zip(LoggedDataPacket.__struct_fields__, row, strict=False))
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row_dict.items() if v}
 
@@ -167,12 +168,12 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)
-            assert headers == CSV_HEADERS
+            assert headers == LoggedDataPacket.__struct_fields__
 
             # The row with the data packet:
             row: list[str] = next(reader)
             # create dictionary from headers (field names) and row (values)
-            row_dict = dict(zip(CSV_HEADERS, row, strict=False))
+            row_dict = dict(zip(LoggedDataPacket.__struct_fields__, row, strict=False))
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row_dict.items() if v}
 

@@ -75,7 +75,7 @@ class IMUDataProcessor:
         """
         Returns the averaged acceleration as a vector of the data points, in m/s^2.
         """
-        return self._avg_accel
+        return tuple(self._avg_accel)
 
     @property
     def avg_acceleration_mag(self) -> float:

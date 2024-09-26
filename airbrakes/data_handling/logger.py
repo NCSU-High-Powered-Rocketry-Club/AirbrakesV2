@@ -9,7 +9,7 @@ from pathlib import Path
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import CSV_HEADERS, STOP_SIGNAL
+from constants import STOP_SIGNAL
 
 # Get public properties of IMUDataProcessor, which will be logged.
 _data_processor_properties = [
@@ -41,7 +41,7 @@ class Logger:
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
         with self.log_path.open(mode="w", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
+            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
@@ -94,7 +94,7 @@ class Logger:
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
+            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.

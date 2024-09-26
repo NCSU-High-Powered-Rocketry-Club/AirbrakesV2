@@ -2,9 +2,6 @@
 
 from pathlib import Path
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-from airbrakes.utils import get_imu_data_processor_public_properties
-
 # -------------------------------------------------------
 # Main
 # -------------------------------------------------------
@@ -55,17 +52,6 @@ UPSIDE_DOWN = False
 # The path of the folder to hold the log files in
 LOGS_PATH = Path("logs")
 TEST_LOGS_PATH = Path("test_logs")
-
-# The headers for the CSV file
-CSV_HEADERS = [
-    "state",
-    "extension",
-    *list(IMUDataPacket.__struct_fields__),
-    *list(RawDataPacket.__struct_fields__)[1:],  # Skip the first field which is the timestamp
-    *list(EstimatedDataPacket.__struct_fields__)[1:],
-    # Only add fields that are public properties of the IMUDataProcessor:
-    *get_imu_data_processor_public_properties(),
-]
 
 # The signal to stop the logging process, this will be put in the queue to stop the process
 # see stop() and _logging_loop() for more details.
