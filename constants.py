@@ -21,8 +21,10 @@ SIMULATION_LOG_NAME = "2023-12-16_17_11_35_mergedLORDlog.csv"  # This should be 
 SERVO_PIN = 12
 
 # The minimum and maximum position of the servo, its range is -1 to 1
-MIN_EXTENSION = -0.0999  # -.079
+MIN_EXTENSION = -0.2 
+MIN_NOBUZZ = -.12
 MAX_EXTENSION = 0.2605
+MAX_NOBUZZ = .2
 
 # -------------------------------------------------------
 # IMU Configuration
