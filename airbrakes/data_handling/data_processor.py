@@ -145,9 +145,6 @@ class IMUDataProcessor:
 
         self._speed = self._calculate_speed(x_accel, y_accel, z_accel)
 
-        if self._speed != 0.0:
-            print(self._speed)
-
         self._max_speed = max(self._speed, self._max_speed)
 
         # Zero the altitude only once, during the first update:
