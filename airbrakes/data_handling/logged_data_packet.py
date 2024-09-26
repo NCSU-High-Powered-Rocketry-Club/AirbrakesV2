@@ -4,6 +4,7 @@ import msgspec
 
 from airbrakes.data_handling.imu_data_packet import IMUDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from constants import DATA_PACKET_DECIMAL_PLACES
 
 
 class LoggedDataPacket(msgspec.Struct):
@@ -59,7 +60,7 @@ class LoggedDataPacket(msgspec.Struct):
             if hasattr(self, key):
                 # Only logs the 8 decimal places as there is already so much noise in the data
                 if isinstance(value, float):
-                    value = round(value, 8)
+                    value = round(value, DATA_PACKET_DECIMAL_PLACES)
                 setattr(self, key, value)
             else:
                 raise AttributeError(f"{key} is not a valid attribute")

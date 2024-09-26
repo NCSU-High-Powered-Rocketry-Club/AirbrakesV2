@@ -71,6 +71,8 @@ CSV_HEADERS = [
 # see stop() and _logging_loop() for more details.
 STOP_SIGNAL = "STOP"
 
+DATA_PACKET_DECIMAL_PLACES = 8
+
 # -------------------------------------------------------
 # State Machine Configuration
 # -------------------------------------------------------
