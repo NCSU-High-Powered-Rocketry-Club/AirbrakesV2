@@ -87,6 +87,7 @@ class StandByState(State):
             return
 
     def next_state(self):
+        print("Rocket has launched" * 10)
         self.context.state = MotorBurnState(self.context)
 
 
@@ -119,6 +120,7 @@ class MotorBurnState(State):
             return
 
     def next_state(self):
+        print("Motor burnout detected" * 10)
         self.context.state = FlightState(self.context)
         # Deploy the airbrakes as soon as we enter the Flight state
         self.context.set_airbrake_extension(1.0)
@@ -142,6 +144,7 @@ class FlightState(State):
             return
 
     def next_state(self):
+        print("Apogee reached")
         # This also retracts the airbrakes:
         self.context.state = FreeFallState(self.context)
 

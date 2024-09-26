@@ -57,7 +57,7 @@ class AirbrakesContext:
         state.
         """
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
-        # *may* not be the most recent data. But we want continous data for state, apogee,
+        # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
         data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
@@ -71,6 +71,7 @@ class AirbrakesContext:
         self.data_processor.update_data(
             [data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)]
         )
+
         # Update the state machine based on the latest processed data
         self.state.update()
 
