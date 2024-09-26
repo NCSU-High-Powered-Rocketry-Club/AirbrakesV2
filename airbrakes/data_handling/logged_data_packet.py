@@ -2,7 +2,8 @@
 
 import msgspec
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import IMUDataPacket
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
 class LoggedDataPacket(msgspec.Struct):
@@ -49,3 +50,25 @@ class LoggedDataPacket(msgspec.Struct):
     current_altitude: float
     speed: float
     # Not logging maxes because they are easily found
+
+    def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
+        """
+        Sets the attributes of the data packet corresponding to the IMU data packet.
+        """
+        for key, value in imu_data_packet.__dict__.items():
+            if hasattr(self, key):
+                # Only logs the 8 decimal places as there is already so much noise in the data
+                if isinstance(value, float):
+                    value = round(value, 8)
+                setattr(self, key, value)
+            else:
+                raise AttributeError(f"{key} is not a valid attribute")
+
+    def set_processed_data_packet_attributes(self, processed_data_packet: ProcessedDataPacket) -> None:
+        """
+        Sets the attributes of the data packet corresponding to the processed data packet.
+        """
+        self.avg_acceleration_mag = processed_data_packet.avg_acceleration_mag
+        self.avg_acceleration = processed_data_packet.avg_acceleration
+        self.current_altitude = processed_data_packet.current_altitude
+        self.speed = processed_data_packet.speed
