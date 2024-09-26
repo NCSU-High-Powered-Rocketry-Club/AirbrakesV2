@@ -1,16 +1,14 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
-from typing import TYPE_CHECKING
+import collections
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandByState, State
-
-if TYPE_CHECKING:
-    import collections
 
 
 class AirbrakesContext:
@@ -74,8 +72,23 @@ class AirbrakesContext:
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        # Logs the current state, extension, and IMU data
-        self.logger.log(self.state.name, self.current_extension, data_packets)
+        logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
+
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
+        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
+        # data packet
+        i = 0
+        for data_packet in data_packets:
+            logged_data_packet = LoggedDataPacket(state=self.state.name[0], extension=self.current_extension,
+                                                  timestamp=data_packet.timestamp)
+            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            if isinstance(data_packet, EstimatedDataPacket):
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
+                i += 1
+            logged_data_packets.append(logged_data_packet)
+
+        # Logs the current state, extension, IMU data, and processed data
+        self.logger.log(logged_data_packets)
 
     def set_airbrake_extension(self, extension: float) -> None:
         """

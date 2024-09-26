@@ -16,6 +16,7 @@ class LoggedDataPacket(msgspec.Struct):
 
     state: str
     extension: float
+    timestamp: float
 
     # Raw Data Packet Fields
     scaledAccelX: float | None = None
@@ -26,7 +27,7 @@ class LoggedDataPacket(msgspec.Struct):
     scaledGyroZ: float | None = None
 
     # Estimated Data Packet Fields
-    stOrientQuaternionX: float | None = None
+    estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
     estOrientQuaternionW: float | None = None
@@ -46,18 +47,19 @@ class LoggedDataPacket(msgspec.Struct):
     estLinearAccelZ: float | None = None
 
     # Processed Data Packet Fields
-    avg_acceleration: tuple[float, float, float]
-    avg_acceleration_mag: float
-    current_altitude: float
-    speed: float
+    avg_acceleration: tuple[float, float, float] | None = None
+    avg_acceleration_mag: float | None = None
+    current_altitude: float | None = None
+    speed: float | None = None
     # Not logging maxes because they are easily found
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
         """
         Sets the attributes of the data packet corresponding to the IMU data packet.
         """
-        for key, value in imu_data_packet.__dict__.items():
+        for key in imu_data_packet.__struct_fields__:
             if hasattr(self, key):
+                value = getattr(imu_data_packet, key)
                 # Only logs the 8 decimal places as there is already so much noise in the data
                 if isinstance(value, float):
                     value = round(value, DATA_PACKET_DECIMAL_PLACES)
