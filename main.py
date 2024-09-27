@@ -16,8 +16,6 @@ from airbrakes.utils import update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
-    MAX_EXTENSION,
-    MIN_EXTENSION,
     MOCK_ARGUMENT,
     PORT,
     SERVO_PIN,
@@ -30,11 +28,11 @@ def main(is_simulation: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
-        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+        servo = Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         sim_time_start = time.time()
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
-        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
+        servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
 
     logger = Logger(LOGS_PATH)

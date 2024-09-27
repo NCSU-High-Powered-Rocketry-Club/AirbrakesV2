@@ -214,7 +214,7 @@ class IMUDataProcessor:
         """
         # We need at least two data points to calculate the speed:
         if len(self._data_points) < 1:
-            return [0.0]
+            return np.array([0.0])
 
         # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
         # does not update fast enough to give us a good estimate of the speed.
