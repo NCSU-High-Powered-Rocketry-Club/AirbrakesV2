@@ -10,6 +10,7 @@ from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandByState, State
+from constants import ServoExtension
 
 
 class AirbrakesContext:
@@ -110,19 +111,25 @@ class AirbrakesContext:
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(logged_data_packets)
 
-    def set_airbrake_extension(self, extension: float) -> None:
+    def extend_airbrakes(self) -> None:
         """
-        Sets the airbrake extension via the servo. It will be called by the states.
-        :param extension: the extension of the airbrakes, between 0 and 1
+        Extends the airbrakes to the maximum extension.
         """
-        self.servo.set_extension(extension)
-        self.current_extension = extension
+        self.servo.set_extended()
+        self.current_extension = ServoExtension.MAX_EXTENSION
+
+    def retract_airbrakes(self) -> None:
+        """
+        Retracts the airbrakes to the minimum extension.
+        """
+        self.servo.set_retracted()
+        self.current_extension = ServoExtension.MIN_EXTENSION
 
     def stop(self) -> None:
         """
         Handles shutting down the airbrakes. This will cause the main loop to break.
         """
-        self.set_airbrake_extension(0.0)
+        self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
         self.shutdown_requested = True

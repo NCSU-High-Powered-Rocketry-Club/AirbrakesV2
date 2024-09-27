@@ -38,7 +38,7 @@ class State(ABC):
         """
         self.context = context
         # At the very beginning of each state, we retract the airbrakes
-        self.context.set_airbrake_extension(0.0)
+        self.context.retract_airbrakes()
 
     @property
     def name(self):
@@ -143,7 +143,7 @@ class CoastState(State):
 
         # We extend the airbrakes after 1.5 seconds of coasting:
         if time.time() - self.start_time > 1.5:
-            self.context.set_airbrake_extension(1.0)
+            self.context.extend_airbrakes()
 
         data = self.context.data_processor
 
