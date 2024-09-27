@@ -19,7 +19,7 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
 # This is how long the servo approximately takes to move from one extreme to the other
-SERVO_DELAY = .3
+SERVO_DELAY = 1
 
 
 class ServoExtension(Enum):
@@ -29,8 +29,8 @@ class ServoExtension(Enum):
     but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -1.0
-    MAX_EXTENSION = 1.0
+    MIN_EXTENSION = -0.5
+    MAX_EXTENSION = 0.5
     MIN_NO_BUZZ = -0.12
     MAX_NO_BUZZ = 0.23
 

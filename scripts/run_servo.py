@@ -10,17 +10,17 @@ from airbrakes.hardware.servo import Servo
 servo = Servo(SERVO_PIN)
 
 print("0 for testing exending/retracting, 1 for testing positions")
-if input():
+if int(input()) == 0:
     while True:
-        print("0 for extending, 1 for retracting")
-        if input():
-            servo.set_extended()
-        else:
+        print("1 for extending, 0 for retracting")
+        if int(input()) == 0:
             servo.set_retracted()
+        else:
+            servo.set_extended()
 else:
     print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
     while True:
-        match input():
+        match int(input()):
             case 0:
                 servo._set_extension(ServoExtension.MIN_EXTENSION)
             case 1:
