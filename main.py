@@ -58,5 +58,4 @@ def main(is_simulation: bool, real_servo: bool) -> None:
 
 if __name__ == "__main__":
     # If the mock argument is passed in, then run the simulation: python main.py mock
-    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:],
-         len(sys.argv) > 1 and REAL_SERVO_ARGUMENT in sys.argv[1:])
+    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:], len(sys.argv) > 1 and REAL_SERVO_ARGUMENT in sys.argv[1:])

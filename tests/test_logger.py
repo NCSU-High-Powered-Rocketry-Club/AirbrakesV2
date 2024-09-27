@@ -9,12 +9,8 @@ import pytest
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
-<<<<<<< HEAD
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
-=======
-from constants import STOP_SIGNAL
->>>>>>> log-shortening
 from tests.conftest import LOG_PATH
 
 

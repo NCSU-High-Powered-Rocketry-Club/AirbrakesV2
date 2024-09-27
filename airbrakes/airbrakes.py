@@ -88,8 +88,9 @@ class AirbrakesContext:
         # data packet
         i = 0
         for data_packet in data_packets:
-            logged_data_packet = LoggedDataPacket(state=self.state.name[0], extension=self.current_extension,
-                                                  timestamp=data_packet.timestamp)
+            logged_data_packet = LoggedDataPacket(
+                state=self.state.name[0], extension=self.current_extension, timestamp=data_packet.timestamp
+            )
             logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])

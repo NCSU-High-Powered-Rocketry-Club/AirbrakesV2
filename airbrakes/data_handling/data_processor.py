@@ -216,7 +216,7 @@ class IMUDataProcessor:
         if len(self._data_points) < 1:
             return np.array([0.0])
 
-        # Prevent subtle bug in at init, when we only process one data packet, and the 
+        # Prevent subtle bug in at init, when we only process one data packet, and the
         # last_data_point is a dummy set in __init__.
         if self._last_data_point.timestamp == 0.0:
             return np.array([0.0] * len(self._data_points))
