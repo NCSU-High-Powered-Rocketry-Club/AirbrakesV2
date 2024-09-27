@@ -70,9 +70,6 @@ class AirbrakesContext:
         est_data_packets = [
             data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
         ]
-        raw_data_packets = [
-            data_packet for data_packet in data_packets.copy() if isinstance(data_packet, RawDataPacket)
-        ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update_data(est_data_packets)
@@ -89,24 +86,14 @@ class AirbrakesContext:
         # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
         # data packet
-        for packet in raw_data_packets + processed_data_packets:
-            is_processed_data_packet = isinstance(packet, ProcessedDataPacket)
-            imu_data_packet: IMUDataPacket = packet.estimated_data_packet if is_processed_data_packet else packet
-
-            # Prepare logged data packets:
-            # We will only log the first letter of the state name, hence the [0] (to reduce file size)
-            logged_data_packet = LoggedDataPacket(
-                state=self.state.name[0], extension=self.current_extension.value, timestamp=imu_data_packet.timestamp
-            )
-
-            # Sets attributes for both RawDataPackets and EstimatedDataPackets:
-            logged_data_packet.set_imu_data_packet_attributes(imu_data_packet)
-
-            # Prepare logged processed data packets:
-            if is_processed_data_packet:
-                logged_data_packet.set_processed_data_packet_attributes(packet)
-
-            logged_data_packets.append(logged_data_packet)
+        i = 0
+        for data_packet in data_packets:
+            logged_data_packet = LoggedDataPacket(state=self.state.name[0], extension=self.current_extension,
+                                                  timestamp=data_packet.timestamp)
+            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            if isinstance(data_packet, EstimatedDataPacket):
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
+                i += 1
 
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(logged_data_packets)
