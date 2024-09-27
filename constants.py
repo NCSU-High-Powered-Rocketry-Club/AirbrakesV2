@@ -8,7 +8,8 @@ from pathlib import Path
 # -------------------------------------------------------
 
 # These are used for simulations
-MOCK_ARGUMENT = "mock"
+MOCK_ARGUMENT = "m"
+REAL_SERVO_ARGUMENT = "rs"
 SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
 
@@ -96,7 +97,7 @@ MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn 
 
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
 # current altitude is 250 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 250  # meters
+DISTANCE_FROM_APOGEE = 100  # meters
 
 # Free fall to Landing:
 

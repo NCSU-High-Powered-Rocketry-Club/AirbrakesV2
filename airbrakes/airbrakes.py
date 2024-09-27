@@ -37,11 +37,11 @@ class AirbrakesContext:
         self.logger = logger
         self.data_processor = data_processor
 
+        # Placeholder for the current airbrake extension until they are set
+        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
+
         self.state: State = StandByState(self)
         self.shutdown_requested = False
-
-        # Placeholder for the current airbrake extension until they are set
-        self.current_extension: float = 0.0
 
     def start(self) -> None:
         """
@@ -96,7 +96,7 @@ class AirbrakesContext:
             # Prepare logged data packets:
             # We will only log the first letter of the state name, hence the [0] (to reduce file size)
             logged_data_packet = LoggedDataPacket(
-                state=self.state.name[0], extension=self.current_extension, timestamp=imu_data_packet.timestamp
+                state=self.state.name[0], extension=self.current_extension.value, timestamp=imu_data_packet.timestamp
             )
 
             # Sets attributes for both RawDataPackets and EstimatedDataPackets:

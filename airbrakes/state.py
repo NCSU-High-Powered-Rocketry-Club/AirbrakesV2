@@ -132,18 +132,20 @@ class CoastState(State):
     we actually extend the airbrakes.
     """
 
-    __slots__ = ("start_time",)
+    __slots__ = ("start_time", "airbrakes_extended")
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
         self.start_time = time.time()
+        self.airbrakes_extended = False
 
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
         # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > 1.5:
+        if time.time() - self.start_time > 1.5 and not self.airbrakes_extended:
             self.context.extend_airbrakes()
+            self.airbrakes_extended = True
 
         data = self.context.data_processor
 
