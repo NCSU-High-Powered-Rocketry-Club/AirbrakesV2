@@ -8,8 +8,8 @@ from pathlib import Path
 
 # These are used for simulations
 MOCK_ARGUMENT = "mock"
-# SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
-SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
+SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
+# SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
 
 # -------------------------------------------------------
 # Servo Configuration

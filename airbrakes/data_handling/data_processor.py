@@ -1,8 +1,10 @@
 """Module for processing IMU data on a higher level."""
 
+from collections import deque
 from collections.abc import Sequence
 
 import numpy as np
+import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
@@ -40,8 +42,8 @@ class IMUDataProcessor:
         self._speeds: list[float] = [0.0]
         self._max_speed: float = 0.0
         self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
-        self._initial_altitude: float | None = None
-        self._current_altitudes: list[float] = [0.0]
+        self._initial_altitude: np.float64 | None = None
+        self._current_altitudes: npt.NDArray[np.float64] = [0.0]
         self.upside_down = upside_down
         self._last_data_point = EstimatedDataPacket(0.0)  # Placeholder for the last data point
 
@@ -112,13 +114,11 @@ class IMUDataProcessor:
         Updates the data points to process. This will recompute all the averages and other
         information such as altitude, speed, etc.
         :param data_points: A sequence of EstimatedDataPacket objects to process
-
-        :return: A sequence of ProcessedDataPacket objects, this should be the same length of data_points
         """
 
         # If the data points are empty, we don't want to try to process anything
-        if len(data_points) == 0:
-            return []
+        if not data_points:
+            return
 
         self._data_points = data_points
 
@@ -128,24 +128,19 @@ class IMUDataProcessor:
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
         # If the absolute value of acceleration is less than 0.1, set it to 0
-        x_accel = [
-            deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
-        ]
-        y_accel = [
-            deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
-        ]
-        z_accel = [
-            deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD) for data_point in self._data_points
-        ]
-
-        pressure_altitudes = [data_point.estPressureAlt for data_point in self._data_points]
+        x_accel, y_accel, z_accel, pressure_altitudes = deque(), deque(), deque(), deque()
+        for data_point in self._data_points:
+            x_accel.append(deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD))
+            y_accel.append(deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD))
+            z_accel.append(deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD))
+            pressure_altitudes.append(data_point.estPressureAlt)
 
         a_x, a_y, a_z = self._compute_averages(x_accel, y_accel, z_accel)
         self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (self._avg_accel[0] ** 2 + self._avg_accel[1] ** 2 + self._avg_accel[2] ** 2) ** 0.5
+        self._avg_accel_mag = (a_x**2 + a_y**2 + a_z**2) ** 0.5
 
-        self._speeds = self._calculate_speeds(x_accel, y_accel, z_accel)
-        self._max_speed = max(list(self._speeds) + [self._max_speed])
+        self._speeds: np.array[np.float64] = self._calculate_speeds(x_accel, y_accel, z_accel)
+        self._max_speed = max(self._speeds.max(), self._max_speed)
 
         # Zero the altitude only once, during the first update:
         if self._initial_altitude is None:
@@ -157,7 +152,7 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
 
-    def get_processed_data(self) -> Sequence[ProcessedDataPacket]:
+    def get_processed_data(self) -> list[ProcessedDataPacket]:
         """
         Processes the data points and returns a list of ProcessedDataPacket objects. The length
         of the list should be the same as the length of list of the estimated data packets most
@@ -170,13 +165,16 @@ class IMUDataProcessor:
         return [
             ProcessedDataPacket(
                 avg_acceleration=self.avg_acceleration,
-                current_altitude=current_altitude,
+                current_altitude=current_alt,
                 speed=speed,
+                estimated_data_packet=est_data_packet,
             )
-            for current_altitude, speed in zip(self._current_altitudes, self._speeds, strict=False)
+            for current_alt, speed, est_data_packet in zip(
+                self._current_altitudes, self._speeds, self._data_points, strict=False
+            )
         ]
 
-    def _calculate_max_altitude(self, pressure_alt: list[float]) -> float:
+    def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:
         """
         Calculates the maximum altitude (zeroed out) of the rocket based on the pressure
         altitude during the flight.
@@ -184,17 +182,17 @@ class IMUDataProcessor:
         :return: The maximum altitude of the rocket in meters.
         """
         zeroed_alts = np.array(pressure_alt) - self._initial_altitude
-        return max(list(zeroed_alts) + [self._max_altitude])
+        return max(zeroed_alts.max(), self._max_altitude)
 
-    def _calculate_current_altitudes(self, alt_list: list[float]) -> list[float]:
+    def _calculate_current_altitudes(self, alt_list: Sequence[float]) -> npt.NDArray[np.float64]:
         """
-        Calculates the current altitudes, by zeroing out the latest altitude data point.
+        Calculates the current altitudes, by zeroing out the initial altitude.
 
         :param alt_list: A list of the altitude data points.
         """
         # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
         # landed at a height below from where it launched from, but that doesn't concern us.
-        return list(np.array(alt_list) - self._initial_altitude)
+        return np.array(alt_list) - self._initial_altitude
 
     def _compute_averages(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> tuple[float, float, float]:
         """
@@ -204,20 +202,16 @@ class IMUDataProcessor:
         :param a_y: A list of the accelerations in the y direction.
         :param a_z: A list of the accelerations in the z direction.
 
-        :return: A tuple of the average acceleration in the x, y, and z directions.
+        :return: A numpy array of the average acceleration in the x, y, and z directions.
         """
         # calculate the average acceleration in the x, y, and z directions
-        avg_x_accel = np.mean(a_x)
-        avg_y_accel = np.mean(a_y)
-        avg_z_accel = np.mean(a_z)
-        return avg_x_accel, avg_y_accel, avg_z_accel
+        return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
 
-    def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> list[float]:
+    def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
         """
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
         """
-        previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
         # We need at least two data points to calculate the speed:
         if len(self._data_points) < 1:
             return [0.0]
@@ -229,8 +223,7 @@ class IMUDataProcessor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        time_diff = np.diff(
-            [data_point.timestamp for data_point in [self._last_data_point] + list(self._data_points)]) * 1e-9
+        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
@@ -239,13 +232,12 @@ class IMUDataProcessor:
         # We integrate each of the components of the acceleration to get the velocity
         # The [:-1] is used to remove the last element of the list, since we have one less time
         # difference than we have acceleration values.
-        velocity_x: np.array = previous_vel_x + np.cumsum(np.array(a_x) * time_diff)
-
-        velocity_y: np.array = previous_vel_y + np.cumsum(np.array(a_y) * time_diff)
-        velocity_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff)
+        velocities_x: np.array = previous_vel_x + np.cumsum(np.array(a_x) * time_diff)
+        velocities_y: np.array = previous_vel_y + np.cumsum(np.array(a_y) * time_diff)
+        velocities_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff)
 
         # Store the last calculated velocity vectors
-        self._previous_velocity = (velocity_x[-1], velocity_y[-1], velocity_z[-1])
+        self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
 
         # All the speeds gotten as the magnitude of the velocity vector at each point
-        return np.sqrt(velocity_x ** 2 + velocity_y ** 2 + velocity_z ** 2)
+        return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)

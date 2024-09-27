@@ -80,9 +80,9 @@ class Logger:
         :param logged_data_packets: the list of IMU data packets to log
         """
         # Loop through all the IMU data packets
-        for logged_data_packets in logged_data_packets:
+        for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
-            message_dict = {key: getattr(logged_data_packets, key) for key in logged_data_packets.__struct_fields__}
+            message_dict = {key: getattr(logged_data_packet, key) for key in logged_data_packet.__struct_fields__}
             # Put the message in the queue
             self._log_queue.put(message_dict)
 

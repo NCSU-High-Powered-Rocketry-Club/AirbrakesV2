@@ -2,6 +2,8 @@
 
 import msgspec
 
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+
 
 class ProcessedDataPacket(msgspec.Struct):
     """
@@ -12,3 +14,4 @@ class ProcessedDataPacket(msgspec.Struct):
     avg_acceleration: tuple[float, float, float]
     current_altitude: float
     speed: float
+    estimated_data_packet: EstimatedDataPacket
