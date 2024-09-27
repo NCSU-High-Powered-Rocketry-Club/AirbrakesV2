@@ -16,7 +16,7 @@ class Servo:
     __slots__ = ("current_extension", "servo")
 
     def __init__(self, gpio_pin_number: int, pin_factory=None):
-        self.current_extension = 0.0
+        self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
         # Sets up the servo with the specified GPIO pin number
         # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
@@ -65,4 +65,5 @@ class Servo:
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
         # Sets the servo extension
-        self.servo.value = extension.value
+        self.current_extension = extension
+        self.servo.value = self.current_extension.value
