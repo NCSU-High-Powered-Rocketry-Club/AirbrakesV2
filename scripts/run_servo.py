@@ -4,11 +4,22 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import MAX_EXTENSION, MIN_EXTENSION, MIN_NO_BUZZ, MAX_NO_BUZZ, SERVO_PIN
+from constants import ServoExtension, SERVO_PIN
 from airbrakes.hardware.servo import Servo
 
-servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, MIN_NO_BUZZ, MAX_NO_BUZZ)
+servo = Servo(SERVO_PIN)
 
-print("Type (1) to deploy and (0) to retract the airbrakes. 2 is max nobuzz, 3 is min nobuzz and 4 is max nobuzz.")
+print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
 while True:
-    servo.set_extension(float(input()))
+    match input():
+        case 0:
+            servo.set_extension(ServoExtension.MIN_EXTENSION)
+        case 1:
+            servo.set_extension(ServoExtension.MIN_NO_BUZZ)
+        case 2:
+            servo.set_extension(ServoExtension.MAX_EXTENSION)
+        case 3:
+            servo.set_extension(ServoExtension.MAX_NO_BUZZ)
+        case _:
+            print("Invalid input")
+            continue

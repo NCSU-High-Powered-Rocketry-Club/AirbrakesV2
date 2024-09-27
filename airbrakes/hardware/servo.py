@@ -10,14 +10,9 @@ class Servo:
     A custom class that represents a servo motor, controlling the extension of the airbrakes.
     """
 
-    __slots__ = ("current_extension", "max_extension", "max_no_buzz", "min_extension", "min_no_buzz", "servo")
+    __slots__ = ("current_extension", "servo")
 
-    def __init__(self, gpio_pin_number: int, max_no_buzz: float, min_extension: float, max_extension: float,
-                 min_no_buzz: float, pin_factory=None):
-        self.min_extension = min_extension
-        self.max_extension = max_extension
-        self.min_no_buzz = min_no_buzz
-        self.max_no_buzz = max_no_buzz
+    def __init__(self, gpio_pin_number: int, pin_factory=None):
         self.current_extension = 0.0
 
         # Sets up the servo with the specified GPIO pin number
