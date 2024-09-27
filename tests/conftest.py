@@ -10,7 +10,7 @@ from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from constants import FREQUENCY, MAX_EXTENSION, MIN_EXTENSION, PORT, SERVO_PIN
+from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 
@@ -35,7 +35,7 @@ def imu():
 
 @pytest.fixture
 def servo():
-    return Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
+    return Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
 
 
 @pytest.fixture
