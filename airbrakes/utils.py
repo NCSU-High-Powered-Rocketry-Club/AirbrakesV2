@@ -39,20 +39,6 @@ def deadband(input_value, threshold) -> float:
     return input_value
 
 
-def get_imu_data_processor_public_properties() -> list:
-    """Returns the public properties of the IMUDataProcessor class."""
-    # We have to manually list the properties because of cyclic imports :(
-
-    return [
-        "avg_acceleration",
-        "avg_acceleration_mag",
-        "max_altitude",
-        "current_altitude",
-        "speed",
-        "max_speed",
-    ]
-
-
 def update_display(airbrakes: "AirbrakesContext", start_time: float):
     """Prints the values from the simulation in a pretty way.
 

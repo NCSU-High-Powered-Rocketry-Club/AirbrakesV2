@@ -8,7 +8,8 @@ from pathlib import Path
 # -------------------------------------------------------
 
 # These are used for simulations
-MOCK_ARGUMENT = "mock"
+MOCK_ARGUMENT = "m"
+REAL_SERVO_ARGUMENT = "rs"
 SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
 
@@ -18,6 +19,8 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
+# This is how long the servo approximately takes to move from one extreme to the other
+SERVO_DELAY = 1
 
 
 class ServoExtension(Enum):
@@ -27,8 +30,8 @@ class ServoExtension(Enum):
     but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -1.0
-    MAX_EXTENSION = 1.0
+    MIN_EXTENSION = -0.5
+    MAX_EXTENSION = 0.5
     MIN_NO_BUZZ = -0.12
     MAX_NO_BUZZ = 0.23
 
@@ -87,7 +90,7 @@ ACCLERATION_NOISE_THRESHOLD = 0.3  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_SPEED = 10  # m/s
+TAKEOFF_SPEED = 2  # m/s  # TODO: Change this back!
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration
@@ -99,7 +102,7 @@ MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn 
 
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
 # current altitude is 250 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 250  # meters
+DISTANCE_FROM_APOGEE = 100  # meters
 
 # Free fall to Landing:
 

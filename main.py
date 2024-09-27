@@ -16,25 +16,24 @@ from airbrakes.utils import update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
-    MAX_EXTENSION,
-    MIN_EXTENSION,
     MOCK_ARGUMENT,
     PORT,
+    REAL_SERVO_ARGUMENT,
     SERVO_PIN,
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
 
 
-def main(is_simulation: bool) -> None:
+def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
+    sim_time_start = time.time()
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
-        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION, pin_factory=MockFactory(pin_class=MockPWMPin))
-        sim_time_start = time.time()
+        servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
-        servo = Servo(SERVO_PIN, MIN_EXTENSION, MAX_EXTENSION)
+        servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
 
     logger = Logger(LOGS_PATH)
@@ -49,8 +48,8 @@ def main(is_simulation: bool) -> None:
         while not airbrakes.shutdown_requested:
             airbrakes.update()
 
-            if is_simulation:
-                update_display(airbrakes, sim_time_start)
+            # if is_simulation:
+            update_display(airbrakes, sim_time_start)
     except KeyboardInterrupt:
         pass
     finally:
@@ -59,4 +58,5 @@ def main(is_simulation: bool) -> None:
 
 if __name__ == "__main__":
     # If the mock argument is passed in, then run the simulation: python main.py mock
-    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:])
+    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:],
+         len(sys.argv) > 1 and REAL_SERVO_ARGUMENT in sys.argv[1:])
