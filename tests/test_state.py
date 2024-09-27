@@ -4,6 +4,7 @@ from abc import ABC
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from constants import SERVO_DELAY, ServoExtension
 
 
 @pytest.fixture
@@ -63,7 +64,9 @@ class TestState:
 
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
-        assert state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -80,7 +83,9 @@ class TestStandByState:
 
     def test_init(self, stand_by_state, airbrakes):
         assert stand_by_state.context == airbrakes
-        assert stand_by_state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
@@ -102,8 +107,6 @@ class TestStandByState:
         stand_by_state.context.data_processor._current_altitude = current_altitude
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
-        assert stand_by_state.context.current_extension == 0.0
-
 
 class TestMotorBurnState:
     """Tests the MotorBurnState class"""
@@ -115,7 +118,9 @@ class TestMotorBurnState:
 
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
-        assert motor_burn_state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
 
     def test_name(self, motor_burn_state):

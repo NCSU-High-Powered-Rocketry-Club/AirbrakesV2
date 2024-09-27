@@ -34,6 +34,7 @@ class TestIMU:
 
         def _fetch_data_loop(self, port: str, frequency: int):
             """Monkeypatched method for testing."""
+            print(port, frequency)
             values.put((port, frequency))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
