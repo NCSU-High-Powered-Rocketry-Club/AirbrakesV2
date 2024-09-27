@@ -85,7 +85,7 @@ ACCLERATION_NOISE_THRESHOLD = 0.3  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_SPEED = 10  # m/s
+TAKEOFF_SPEED = 2  # m/s  # TODO: Change this back!
 
 # MotorBurn to Coasting:
 # Acceleration inside this range will be considered as the motor burnout acceleration

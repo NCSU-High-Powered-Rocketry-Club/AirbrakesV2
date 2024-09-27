@@ -95,6 +95,7 @@ class AirbrakesContext:
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
                 i += 1
 
+            logged_data_packets.append(logged_data_packet)
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(logged_data_packets)
 

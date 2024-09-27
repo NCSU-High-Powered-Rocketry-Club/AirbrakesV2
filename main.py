@@ -27,10 +27,10 @@ from constants import (
 
 def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
+    sim_time_start = time.time()
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        sim_time_start = time.time()
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN)
@@ -48,8 +48,8 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         while not airbrakes.shutdown_requested:
             airbrakes.update()
 
-            if is_simulation:
-                update_display(airbrakes, sim_time_start)
+            # if is_simulation:
+            update_display(airbrakes, sim_time_start)
     except KeyboardInterrupt:
         pass
     finally:
