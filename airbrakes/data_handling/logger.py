@@ -22,7 +22,7 @@ class Logger:
     :param log_dir: The directory where the log files will be.
     """
 
-    __slots__ = ("_log_process", "_log_queue", "log_path", "_log_counter", "_log_buffer")
+    __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
 
     def __init__(self, log_dir: Path):
         log_dir.mkdir(parents=True, exist_ok=True)

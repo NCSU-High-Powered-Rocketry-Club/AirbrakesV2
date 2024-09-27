@@ -6,12 +6,11 @@ import time
 
 import pytest
 
-from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
-from airbrakes.utils import get_imu_data_processor_public_properties
-from constants import STOP_SIGNAL, LOG_CAPACITY_AT_STANDBY
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from constants import LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
@@ -63,7 +62,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)  # Gets the first row, which are the headers
-            assert headers == LoggedDataPacket.__struct_fields__
+            assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
     def test_logging_loop_start_stop(self, logger):
         logger.start()
@@ -137,7 +136,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)
-            assert headers == LoggedDataPacket.__struct_fields__
+            assert tuple(headers) == LoggedDataPacket.__struct_fields__
             row: list[str] = next(reader)
             # create dictionary from headers (field names) and row (values)
             row_dict = dict(zip(LoggedDataPacket.__struct_fields__, row, strict=False))
@@ -151,24 +150,23 @@ class TestLogger:
     @pytest.mark.parametrize(
         "data_packet",
         [
-            # Initialize RawDataPacket and EstimatedDataPacket with all dummy values
-            RawDataPacket(*("2" for _ in range(len(RawDataPacket.__struct_fields__)))),
-            EstimatedDataPacket(*("3" for _ in range(len(EstimatedDataPacket.__struct_fields__)))),
+            LoggedDataPacket(*("1" for _ in range(len(LoggedDataPacket.__struct_fields__)))),
         ],
-        ids=["RawDataPacket", "EstimatedDataPacket"],
+        ids=[
+            "RawDataPacket",
+        ],
     )
     def test_log_method(self, logger, data_packet):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
-        data_processor = IMUDataProcessor([])
-        logger.log(state="state", extension="0.1", imu_data_list=[data_packet], data_processor=data_processor)
+        logger.log([data_packet])
         time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.reader(f)
             headers = next(reader)
-            assert headers == LoggedDataPacket.__struct_fields__
+            assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
             # The row with the data packet:
             row: list[str] = next(reader)
@@ -177,11 +175,15 @@ class TestLogger:
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row_dict.items() if v}
 
+            processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
+            processed_data_packet_fields.remove("estimated_data_packet")
+
             assert row_dict == {
-                "state": "state",
-                "extension": "0.1",
-                **{attr: getattr(data_packet, attr) for attr in data_packet.__struct_fields__},
-                **{attr: str(getattr(data_processor, attr)) for attr in get_imu_data_processor_public_properties()},
+                "state": "1",
+                "extension": "1",
+                **{attr: getattr(data_packet, attr) for attr in RawDataPacket.__struct_fields__},
+                **{attr: str(getattr(data_packet, attr)) for attr in EstimatedDataPacket.__struct_fields__},
+                **{attr: str(getattr(data_packet, attr)) for attr in processed_data_packet_fields},
             }
 
     def test_log_buffer_exceeded_standby(self, logger):
@@ -194,7 +196,7 @@ class TestLogger:
             extension=0.0,
             timestamp=0.0,
         )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+10)]
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 10)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(log_packets)
 
@@ -220,7 +222,7 @@ class TestLogger:
             extension=0.0,
             timestamp=0.0,
         )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+10)]
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 10)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(log_packets)
         time.sleep(0.1)  # Give the process time to log to file
@@ -267,7 +269,7 @@ class TestLogger:
             extension=0.0,
             timestamp=0.0,
         )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+100)]
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 100)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
         logger.log(log_packets)
         time.sleep(0.1)
@@ -283,4 +285,3 @@ class TestLogger:
             # First row is headers
             assert count + 1 == LOG_CAPACITY_AT_STANDBY
             assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
-
