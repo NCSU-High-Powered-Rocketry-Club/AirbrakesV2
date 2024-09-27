@@ -124,8 +124,6 @@ class MotorBurnState(State):
 
     def next_state(self):
         self.context.state = CoastState(self.context)
-        # Deploy the airbrakes as soon as we enter the Flight state
-        self.context.set_airbrake_extension(1.0)
 
 
 class CoastState(State):
@@ -134,10 +132,18 @@ class CoastState(State):
     we actually extend the airbrakes.
     """
 
-    __slots__ = ()
+    __slots__ = ("start_time",)
+
+    def __init__(self, context: "AirbrakesContext"):
+        super().__init__(context)
+        self.start_time = time.time()
 
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
+
+        # We extend the airbrakes after 1.5 seconds of coasting:
+        if time.time() - self.start_time > 1.5:
+            self.context.set_airbrake_extension(1.0)
 
         data = self.context.data_processor
 
