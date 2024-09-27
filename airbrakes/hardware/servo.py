@@ -1,4 +1,5 @@
 """Module which contains the Servo class, representing a servo motor that controls the extension of the airbrakes."""
+
 import threading
 import time
 

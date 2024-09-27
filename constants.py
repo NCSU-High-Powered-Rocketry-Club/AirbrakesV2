@@ -1,4 +1,5 @@
 """Contains the constants used in the airbrakes module"""
+
 from enum import Enum
 from pathlib import Path
 
@@ -27,6 +28,7 @@ class ServoExtension(Enum):
     This is to ensure that the servo will move fast enough and with enough power to actually make it to the position,
     but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
     """
+
     MIN_EXTENSION = -1.0
     MAX_EXTENSION = 1.0
     MIN_NO_BUZZ = -0.12
