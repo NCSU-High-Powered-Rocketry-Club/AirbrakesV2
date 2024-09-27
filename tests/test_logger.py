@@ -11,7 +11,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawData
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.utils import get_imu_data_processor_public_properties
-from constants import STOP_SIGNAL
+from constants import STOP_SIGNAL, LOG_CAPACITY_AT_STANDBY
 from tests.conftest import LOG_PATH
 
 
@@ -183,3 +183,104 @@ class TestLogger:
                 **{attr: getattr(data_packet, attr) for attr in data_packet.__struct_fields__},
                 **{attr: str(getattr(data_processor, attr)) for attr in get_imu_data_processor_public_properties()},
             }
+
+    def test_log_buffer_exceeded_standby(self, logger):
+        """Tests whether the log buffer works correctly for the Standby and Landed state."""
+
+        # Test if the buffer works correctly
+        logger.start()
+        log_packet = LoggedDataPacket(
+            state="S",
+            extension=0.0,
+            timestamp=0.0,
+        )
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+10)]
+        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
+        logger.log(log_packets)
+
+        time.sleep(0.1)  # Give the process time to log to file
+        assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
+        logger.stop()  # We must stop because otherwise the values are not flushed to the file
+
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            count = 0
+            for idx, _ in enumerate(reader):
+                count = idx
+
+            # First row is headers
+            assert count + 1 == LOG_CAPACITY_AT_STANDBY
+            assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
+
+    def test_log_buffer_reset_after_standby(self, logger):
+        """Tests if the buffer is logged after Standby state and the counter is reset."""
+        logger.start()
+        log_packet = LoggedDataPacket(
+            state="S",
+            extension=0.0,
+            timestamp=0.0,
+        )
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+10)]
+        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
+        logger.log(log_packets)
+        time.sleep(0.1)  # Give the process time to log to file
+        assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
+
+        log_packets = [
+            LoggedDataPacket(
+                state="M",
+                extension=0.0,
+                timestamp=0.0,
+            )
+            for _ in range(8)
+        ]
+
+        # Let's test that switching to MotorBurn will log those packets:
+
+        logger.log(log_packets)
+
+        logger.stop()
+
+        # Read the file and check if we have LOG_BUFFER_SIZE + 10
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            count = 0
+            prev_state_vals = []  # store the log buffer values
+            next_state_vals = []  # get the next state values
+            for idx, val in enumerate(reader):
+                count = idx
+                if idx + 1 > LOG_CAPACITY_AT_STANDBY:
+                    state = val["state"]
+                    if state == "S":
+                        prev_state_vals.append(True)
+                    if state == "M":
+                        next_state_vals.append(True)
+            # First row is headers
+            assert count + 1 == LOG_CAPACITY_AT_STANDBY + 10 + 8
+            assert len(prev_state_vals) == 10
+            assert len(next_state_vals) == 8
+
+    def test_log_buffer_reset_after_landed(self, logger):
+        logger.start()
+        log_packet = LoggedDataPacket(
+            state="L",
+            extension=0.0,
+            timestamp=0.0,
+        )
+        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY+100)]
+        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
+        logger.log(log_packets)
+        time.sleep(0.1)
+        logger.stop()
+
+        # Read the file and check if we have LOG_BUFFER_SIZE packets
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            count = 0
+            for idx, _ in enumerate(reader):
+                count = idx
+
+            # First row is headers
+            assert count + 1 == LOG_CAPACITY_AT_STANDBY
+            assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
+

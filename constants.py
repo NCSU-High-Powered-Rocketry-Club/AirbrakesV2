@@ -71,6 +71,11 @@ STOP_SIGNAL = "STOP"
 
 DATA_PACKET_DECIMAL_PLACES = 8
 
+# Don't log more than x packets for StandbyState and LandedState
+LOG_CAPACITY_AT_STANDBY = 15000
+# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
+LOG_BUFFER_SIZE = 1000
+
 # -------------------------------------------------------
 # State Machine Configuration
 # -------------------------------------------------------
