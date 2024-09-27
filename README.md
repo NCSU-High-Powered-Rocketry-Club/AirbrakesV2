@@ -5,7 +5,18 @@
 This project controls the extension of airbrakes using a servo motor. It includes modules for logging data and managing the servo motor.
 
 ### Installation
-Clone the repository:
+
+#### Install uv:
+
+[uv](https://docs.astral.sh/uv/getting-started/installation/) is a python and project manager, which makes handling different python versions and virtual enviornments easier.
+
+`curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+This project uses Python 3.12. Using an older version may not work since we use newer language features:
+
+`uv python install 3.12`
+
+#### Clone the repository:
 
 ```
 git clone https://github.com/yourusername/AirbrakesV2.git
@@ -15,16 +26,16 @@ cd AirbrakesV2
 #### Set up a virtual environment:
 
 ```
-python3 -m venv venv
-source venv/bin/activate
+uv venv
+source .venv/bin/activate
 ```
 
 #### Install the required dependencies:
 
-```pip install .[dev]```
+```uv pip install .[dev]```
 
 #### Install and start the pigpio daemon on the Raspberry Pi:
-*Every time the pi boots up, you must run this in order for the servo to work
+*Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`.
 
 ```bash
 sudo pigpiod
@@ -34,7 +45,7 @@ sudo pigpiod
 
 https://github.com/LORD-MicroStrain/MSCL
 
-(scroll down and click on the Python 3 link for armhf (raspbian))
+(scroll down and click on the Python 3 link for arm64, and then follow [this](https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md#python-1) guide.)
 
 ### Project Structure
 
