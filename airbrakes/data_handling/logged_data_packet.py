@@ -48,7 +48,6 @@ class LoggedDataPacket(msgspec.Struct):
 
     # Processed Data Packet Fields
     avg_acceleration: tuple[float, float, float] | None = None
-    avg_acceleration_mag: float | None = None
     current_altitude: float | None = None
     speed: float | None = None
     # Not logging maxes because they are easily found

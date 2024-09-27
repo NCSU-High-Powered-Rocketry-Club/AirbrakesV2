@@ -8,7 +8,8 @@ from pathlib import Path
 
 # These are used for simulations
 MOCK_ARGUMENT = "mock"
-SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
+# SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
+SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
 
 # -------------------------------------------------------
 # Servo Configuration
@@ -76,7 +77,7 @@ TAKEOFF_SPEED = 10  # m/s
 # Acceleration inside this range will be considered as the motor burnout acceleration
 ACCELERATION_AT_MOTOR_BURNOUT = [0.0, 6.0]  # m/s^2  (only gravity should be acting on the rocket)
 HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
-MOTOR_BURN_TIME = 2.3  # seconds
+MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 
 # Coasting to Free fall:
 

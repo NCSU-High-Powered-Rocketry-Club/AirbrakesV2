@@ -82,7 +82,11 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.speed > TAKEOFF_SPEED or data.current_altitude > TAKEOFF_HEIGHT:
+        if data.speed > TAKEOFF_SPEED:
+            self.next_state()
+            return
+
+        if data.current_altitude > TAKEOFF_HEIGHT:
             self.next_state()
             return
 
