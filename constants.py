@@ -19,10 +19,12 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 SERVO_PIN = 12
 
 # The minimum and maximum position of the servo, its range is -1 to 1
-MIN_EXTENSION = -0.2 
-MIN_NOBUZZ = -.12
-MAX_EXTENSION = 0.2605
-MAX_NOBUZZ = .2
+# For us, when retracting the airbrakes, we first tell the servo to go to the minimum position, then
+# the actual position that it is in (and same for maximum).
+MIN_EXTENSION = -1.0
+MIN_NO_BUZZ = -.12
+MAX_EXTENSION = 1.0
+MAX_NO_BUZZ = 0.23
 
 # -------------------------------------------------------
 # IMU Configuration
