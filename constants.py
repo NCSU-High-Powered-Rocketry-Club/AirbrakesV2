@@ -1,5 +1,5 @@
 """Contains the constants used in the airbrakes module"""
-
+from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
@@ -18,13 +18,17 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
 
-# The minimum and maximum position of the servo, its range is -1 to 1
-# For us, when retracting the airbrakes, we first tell the servo to go to the minimum position, then
-# the actual position that it is in (and same for maximum).
-MIN_EXTENSION = -1.0
-MIN_NO_BUZZ = -.12
-MAX_EXTENSION = 1.0
-MAX_NO_BUZZ = 0.23
+
+class ServoExtension(Enum):
+    """
+    Enum that represents the extension of the servo motor. First we set it to an extreme, then to the actual position.
+    This is to ensure that the servo will move fast enough and with enough power to actually make it to the position,
+    but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
+    """
+    MIN_EXTENSION = -1.0
+    MAX_EXTENSION = 1.0
+    MIN_NO_BUZZ = -0.12
+    MAX_NO_BUZZ = 0.23
 
 # -------------------------------------------------------
 # IMU Configuration

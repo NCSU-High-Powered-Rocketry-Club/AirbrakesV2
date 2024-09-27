@@ -2,6 +2,8 @@
 
 import gpiozero
 
+from constants import ServoExtension
+
 
 class Servo:
     """
@@ -27,27 +29,11 @@ class Servo:
 
         self.servo = gpiozero.Servo(gpio_pin_number)
 
+    def set_extension(self, extension: ServoExtension):
+        """
+        Sets the extension of the servo.
+        :param extension: The extension of the servo, there are 4 possible values, see constants.
+        """
 
-def set_extension(self, extension: float):
-    """
-    Sets the extension of the servo.
-    :param extension: The extension of the servo, where 0 is min_extension, 1 is max_extension, and 2 is min_nobuzz.
-    """
-
-    if extension == 0:
-        self.current_extension = self.min_extension
-    elif extension == 1:
-        self.current_extension = self.max_extension
-    elif extension == 2:
-        self.current_extension = self.min_no_buzz
-    elif extension == 3:
-        self.current_extension = self.max_no_buzz
-
-    else:
-        # Clamps the extension value to be within the specified range
-        extension = min(1.0, max(0.0, extension))
-        # Converts the extension from 0 to 1 to the actual extension range
-        self.current_extension = extension * (self.max_extension - self.min_extension) + self.min_extension
-
-    # Sets the servo extension
-    self.servo.value = self.current_extension
+        # Sets the servo extension
+        self.servo.value = extension.value
