@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 
-imu_data = pd.read_csv(Path('scripts/imu_data/2023_launch_data.csv'))
+imu_data = pd.read_csv(Path('logs/log_16.csv'))
 # Filtering relevant columns for computation
-fields = ['time', 'estLinearAccelX', 'estLinearAccelY', 'estLinearAccelZ', "estimated_altitude"]
+fields = ['timestamp', "speed", 'estPressureAlt']
 imu_data_filtered = imu_data[fields].dropna()
 
 # Convert timestamps from nanoseconds to seconds
@@ -25,15 +25,15 @@ imu_data_filtered = imu_data[fields].dropna()
 
 
 # Compute velocity by differentiating estPressureAlt with respect to time
-time_diff = np.diff(imu_data_filtered['time'])
+time_diff = np.diff(imu_data_filtered['timestamp'])
 # position_diff = np.diff(imu_data_filtered['estPressureAlt'])
 
 # Velocity from pressure altitude differentiation
 # velocity_from_alt = position_diff / time_diff
 
 # Get acceleration magnitude
-acceleration_magnitude = np.sqrt(imu_data_filtered['estLinearAccelX']**2 + imu_data_filtered['estLinearAccelY']**2 + imu_data_filtered['estLinearAccelZ']**2)
-print(acceleration_magnitude)
+# acceleration_magnitude = np.sqrt(imu_data_filtered['estLinearAccelX']**2 + imu_data_filtered['estLinearAccelY']**2 + imu_data_filtered['estLinearAccelZ']**2)
+# print(acceleration_magnitude)
 
 
 # Get velocity vector by integrating each component of acceleration
@@ -45,16 +45,16 @@ print(velocity_from_accel_component)
 
 
 # Plotting the results
-plt.figure(figsize=(12, 6))
-plt.subplot(3, 1, 1)
-plt.plot(imu_data_filtered["time"], acceleration_magnitude, label='Acceleration Magnitude')
-plt.title('Acceleration Magnitude')
-plt.xlabel('Time (seconds)')
-plt.ylabel('Linear accel Mag (m/s^2)')
-plt.grid(True)
+# plt.figure(figsize=(12, 6))
+# plt.subplot(3, 1, 1)
+# plt.plot(imu_data_filtered["time"], acceleration_magnitude, label='Acceleration Magnitude')
+# plt.title('Acceleration Magnitude')
+# plt.xlabel('Time (seconds)')
+# plt.ylabel('Linear accel Mag (m/s^2)')
+# plt.grid(True)
 
 plt.subplot(3, 1, 2)
-plt.plot(imu_data_filtered['time'][:-1], velocity_from_accel_component, label='Speed from estLinearAccel', color='r')
+plt.plot(imu_data_filtered['timestamp'][:-1], velocity_from_accel_component, label='Speed from estLinearAccel', color='r')
 plt.xlabel('Time (seconds)')
 plt.ylabel('Velocity (m/s)')
 plt.title('Speed from Linear Accel')
@@ -62,7 +62,7 @@ plt.grid(True)
 
 # plot altitude
 plt.subplot(3, 1, 3)
-plt.plot(imu_data_filtered['time'], imu_data_filtered['estimated_altitude'], label='Estimated Altitude')
+plt.plot(imu_data_filtered['timestamp'], imu_data_filtered['estimated_altitude'], label='Estimated Altitude')
 plt.xlabel('Time (seconds)')
 plt.ylabel('Altitude (m)')
 plt.title('Pressure Altitude')

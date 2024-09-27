@@ -107,7 +107,7 @@ class IMUDataProcessor:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return self._max_speed
 
-    def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> Sequence[ProcessedDataPacket]:
+    def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all the averages and other
         information such as altitude, speed, etc.
@@ -157,16 +157,21 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
 
+    def get_processed_data(self) -> Sequence[ProcessedDataPacket]:
+        """
+        Processes the data points and returns a list of ProcessedDataPacket objects. The length
+        of the list should be the same as the length of list of the estimated data packets most
+        recently passed in by update_data()
+
+        :return: A list of ProcessedDataPacket objects.
+        """
         # The lengths of speeds, current altitudes, and data points should be the same, so it
         # makes a ProcessedDataPacket for EstimatedDataPacket
         return [
             ProcessedDataPacket(
                 avg_acceleration=self.avg_acceleration,
-                avg_acceleration_mag=self.avg_acceleration_mag,
-                max_altitude=self.max_altitude,
                 current_altitude=current_altitude,
                 speed=speed,
-                max_speed=self.max_speed,
             )
             for current_altitude, speed in zip(self._current_altitudes, self._speeds, strict=False)
         ]

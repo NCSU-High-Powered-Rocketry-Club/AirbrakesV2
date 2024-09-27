@@ -71,7 +71,6 @@ class LoggedDataPacket(msgspec.Struct):
         """
         Sets the attributes of the data packet corresponding to the processed data packet.
         """
-        self.avg_acceleration_mag = processed_data_packet.avg_acceleration_mag
         self.avg_acceleration = processed_data_packet.avg_acceleration
         self.current_altitude = processed_data_packet.current_altitude
         self.speed = processed_data_packet.speed
