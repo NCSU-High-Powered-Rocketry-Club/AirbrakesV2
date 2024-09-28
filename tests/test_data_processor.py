@@ -44,9 +44,10 @@ class TestIMUDataProcessor:
         EstimatedDataPacket(2, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
     ]
 
-    def test_slots(self, data_processor):
-        inst = data_processor
+    def test_slots(self):
+        inst = IMUDataProcessor([])
         for attr in inst.__slots__:
+            print(attr, getattr(inst, attr, "err"))
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
@@ -56,9 +57,11 @@ class TestIMUDataProcessor:
         assert d._max_altitude == 0.0
         assert d._previous_velocity == (0.0, 0.0, 0.0)
         assert d._initial_altitude is None
-        assert d._current_altitude == 0.0
+        assert isinstance(d._current_altitudes, list)
+        assert d._current_altitudes == [0.0]
         assert d._data_points == []
-        assert d._speed == 0.0
+        assert isinstance(d._speeds, list)
+        assert d._speeds == [0.0]
         assert d._max_speed == 0.0
         assert d.upside_down is False
 
@@ -66,9 +69,11 @@ class TestIMUDataProcessor:
         assert d._avg_accel == (1.5, 2.5, 3.5)
         assert d._avg_accel_mag == np.sqrt(1.5**2 + 2.5**2 + 3.5**2)
         assert d._max_altitude == 0.5
-        assert d._current_altitude == 0.5
+        assert d.current_altitude == 0.5
+        print(d._current_altitudes)
+        assert list(d._current_altitudes) == [-0.5, 0.5]
         assert d._initial_altitude == 20.5
-        assert isinstance(d._speed, float)
+        assert isinstance(d.speed, float)
         # Speed calculation is broken and will be worked on the next branch
         # assert d._speed == pytest.approx(np.sqrt(1**2 + 2**2 + 3**2))
         # assert d._max_speed == d._speed
@@ -137,8 +142,8 @@ class TestIMUDataProcessor:
     def test_update_data(self, data_processor):
         d = data_processor
         data_points = [
-            EstimatedDataPacket(1, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
-            EstimatedDataPacket(2, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
+            EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
+            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
         ]
         d.update_data(data_points)
         assert d._avg_accel == (1.5, 2.5, 3.5) == d.avg_acceleration
@@ -148,6 +153,47 @@ class TestIMUDataProcessor:
         assert d._data_points == data_points
         assert d._initial_altitude == 20.5
         assert d.speed == pytest.approx(np.sqrt(2**2 + 4**2 + 6**2)) == d.max_speed
+
+    def test_calculate_speeds_no_data(self):
+        """Test that speeds are not handled when there are no data points."""
+        d = IMUDataProcessor([])
+        speeds = d._calculate_speeds([], [], [])
+        assert speeds == [0.0], "Speeds should return [0.0] when no data points are present."
+
+    def test_previous_velocity_retained(self, data_processor):
+        """Test that previous velocity is retained correctly between updates."""
+        # Initial data packet
+        x_accel = [1, 2, 3]
+        y_accel = [0, 0, 0]
+        z_accel = [0, 0, 0]
+
+        packets = [
+            EstimatedDataPacket(
+                1.0 * 1e9,
+                estLinearAccelX=x_accel[0],
+                estLinearAccelY=y_accel[0],
+                estLinearAccelZ=z_accel[0],
+                estPressureAlt=0,
+            ),
+            EstimatedDataPacket(
+                2.0 * 1e9,
+                estLinearAccelX=x_accel[1],
+                estLinearAccelY=y_accel[1],
+                estLinearAccelZ=z_accel[1],
+                estPressureAlt=0,
+            ),
+        ]
+        data_processor.update_data(packets)
+        first_vel = data_processor._previous_velocity
+
+        # Additional data packet
+        new_packets = [
+            EstimatedDataPacket(3.0, estLinearAccelX=3, estLinearAccelY=0, estLinearAccelZ=0, estPressureAlt=0),
+        ]
+        data_processor.update_data(new_packets)
+        second_vel = data_processor._previous_velocity
+
+        assert second_vel[0] > first_vel[0], "Previous velocity should be updated after each data update."
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
@@ -165,7 +211,8 @@ class TestIMUDataProcessor:
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
         assert d._initial_altitude == 20.5
-        assert d._current_altitude == 0.5
+        assert d.current_altitude == 0.5
+        assert d._current_altitudes[-1] == 0.5
         assert d._max_altitude == 0.5
 
         new_packets = [
@@ -174,7 +221,7 @@ class TestIMUDataProcessor:
         ]
         d.update_data(new_packets)
         assert d._initial_altitude == 20.5
-        assert d._current_altitude == d.current_altitude == current_altitude
+        assert d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude
 
     def test_max_altitude(self, data_processor):

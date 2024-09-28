@@ -95,3 +95,7 @@ fabric.properties
 .__pycache__
 
 logs/
+
+build/
+AirbrakesV2.egg-info/
+.venv/

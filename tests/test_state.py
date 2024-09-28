@@ -3,7 +3,8 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.state import FlightState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from constants import SERVO_DELAY, ServoExtension
 
 
 @pytest.fixture
@@ -34,7 +35,7 @@ def motor_burn_state(airbrakes):
 
 @pytest.fixture
 def flight_state(airbrakes):
-    f = FlightState(airbrakes)
+    f = CoastState(airbrakes)
     f.context.state = f
     return f
 
@@ -63,7 +64,9 @@ class TestState:
 
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
-        assert state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -80,7 +83,9 @@ class TestStandByState:
 
     def test_init(self, stand_by_state, airbrakes):
         assert stand_by_state.context == airbrakes
-        assert stand_by_state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
@@ -102,7 +107,6 @@ class TestStandByState:
         stand_by_state.context.data_processor._current_altitude = current_altitude
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
-        assert stand_by_state.context.current_extension == 0.0
 
 
 class TestMotorBurnState:
@@ -115,7 +119,9 @@ class TestMotorBurnState:
 
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
-        assert motor_burn_state.context.current_extension == 0.0
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
 
     def test_name(self, motor_burn_state):
@@ -126,8 +132,8 @@ class TestMotorBurnState:
         [
             (0.0, 0.0, MotorBurnState, 0.0, 0.0),
             (100.0, 100.0, MotorBurnState, 0.00, 0.0),
-            (50.0, 54.0, FlightState, 0.00, 1.0),
-            (60.0, 60.0, FlightState, 2.4, 1.0),
+            (50.0, 54.0, CoastState, 0.00, 1.0),
+            (60.0, 60.0, CoastState, 2.4, 1.0),
         ],
         ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
     )
@@ -159,8 +165,8 @@ class TestFlightState:
     @pytest.mark.parametrize(
         ("current_altitude", "max_altitude", "expected_state"),
         [
-            (200.0, 200.0, FlightState),
-            (100.0, 150.0, FlightState),
+            (200.0, 200.0, CoastState),
+            (100.0, 150.0, CoastState),
             (100.0, 400.0, FreeFallState),
         ],
         ids=["climbing", "just_descent", "apogee_threshold"],

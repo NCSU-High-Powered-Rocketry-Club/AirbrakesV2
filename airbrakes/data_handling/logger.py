@@ -2,20 +2,12 @@
 
 import collections
 import csv
-import inspect
 import multiprocessing
 import signal
 from pathlib import Path
 
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import IMUDataPacket
-from airbrakes.utils import get_imu_data_processor_public_properties
-from constants import CSV_HEADERS, STOP_SIGNAL
-
-# Get public properties of IMUDataProcessor, which will be logged.
-_data_processor_properties = [
-    field_name for field_name, _ in inspect.getmembers(IMUDataProcessor, lambda o: isinstance(o, property))
-]
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
 
 
 class Logger:
@@ -30,7 +22,7 @@ class Logger:
     :param log_dir: The directory where the log files will be.
     """
 
-    __slots__ = ("_log_process", "_log_queue", "log_path")
+    __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
 
     def __init__(self, log_dir: Path):
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -39,10 +31,14 @@ class Logger:
         existing_logs = list(log_dir.glob("log_*.csv"))
         max_suffix = max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
 
+        # Buffer for StandbyState and LandedState
+        self._log_counter = 0
+        self._log_buffer = collections.deque(maxlen=LOG_BUFFER_SIZE)
+
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
         with self.log_path.open(mode="w", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
+            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
@@ -75,27 +71,32 @@ class Logger:
         # Waits for the process to finish before stopping it
         self._log_process.join()
 
-    def log(
-        self,
-        state: str,
-        extension: float,
-        imu_data_list: collections.deque[IMUDataPacket],
-        data_processor: IMUDataProcessor,
-    ) -> None:
+    def log(self, logged_data_packets: collections.deque[LoggedDataPacket]) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-        :param state: the current state of the airbrakes state machine
-        :param extension: the current extension of the airbrakes
-        :param imu_data_list: the current list of IMU data packets to log
+        :param logged_data_packets: the list of IMU data packets to log
         """
         # Loop through all the IMU data packets
-        for imu_data in imu_data_list:
+        for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
-            message_dict = {"state": state, "extension": extension}
-            message_dict.update({key: getattr(imu_data, key) for key in imu_data.__struct_fields__})
-            message_dict.update(
-                {key: getattr(data_processor, key) for key in get_imu_data_processor_public_properties()}
-            )
+            message_dict = {key: getattr(logged_data_packet, key) for key in logged_data_packet.__struct_fields__}
+
+            if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
+                if self._log_counter < LOG_CAPACITY_AT_STANDBY:
+                    # add the count:
+                    self._log_counter += 1
+                else:
+                    self._log_buffer.append(message_dict)
+                    continue
+            else:
+                if self._log_buffer:
+                    # Log the buffer before logging the new message
+                    for buffered_message in self._log_buffer:
+                        self._log_queue.put(buffered_message)
+                    self._log_buffer.clear()
+
+                self._log_counter = 0  # Reset the counter for other states
+
             # Put the message in the queue
             self._log_queue.put(message_dict)
 
@@ -107,7 +108,7 @@ class Logger:
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=CSV_HEADERS)
+            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.

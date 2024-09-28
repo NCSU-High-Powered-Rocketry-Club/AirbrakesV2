@@ -1,7 +1,10 @@
+import time
+
 import pytest
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
+from constants import SERVO_DELAY, ServoExtension
 
 
 @pytest.mark.filterwarnings("ignore:To reduce servo jitter")  # ignore warning about servo jitter
@@ -25,15 +28,14 @@ class TestAirbrakesContext:
 
     def test_set_extension(self, airbrakes):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
-        airbrakes.set_airbrake_extension(0.5)
-        assert airbrakes.current_extension == 0.5
-        assert airbrakes.servo.current_extension == 0.0803
-        airbrakes.set_airbrake_extension(0.0)
-        assert airbrakes.current_extension == 0.0
-        assert airbrakes.servo.current_extension == -0.0999
-        airbrakes.set_airbrake_extension(1.0)
-        assert airbrakes.current_extension == 1.0
-        assert airbrakes.servo.current_extension == 0.2605
+        airbrakes.extend_airbrakes()
+        assert airbrakes.servo.current_extension == ServoExtension.MAX_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MAX_NO_BUZZ
+        airbrakes.retract_airbrakes()
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_start(self, airbrakes):
         airbrakes.start()
@@ -49,7 +51,7 @@ class TestAirbrakesContext:
         assert not airbrakes.imu._running.value
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
-        assert airbrakes.servo.current_extension == -0.0999  # set to "0"
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ  # set to "0"
         assert airbrakes.shutdown_requested
 
     def test_airbrakes_ctrl_c_clean_exit(self, airbrakes):

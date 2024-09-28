@@ -38,7 +38,7 @@ class State(ABC):
         """
         self.context = context
         # At the very beginning of each state, we retract the airbrakes
-        self.context.set_airbrake_extension(0.0)
+        self.context.retract_airbrakes()
 
     @property
     def name(self):
@@ -82,7 +82,11 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.speed > TAKEOFF_SPEED or data.current_altitude > TAKEOFF_HEIGHT:
+        if data.speed > TAKEOFF_SPEED:
+            self.next_state()
+            return
+
+        if data.current_altitude > TAKEOFF_HEIGHT:
             self.next_state()
             return
 
@@ -119,20 +123,29 @@ class MotorBurnState(State):
             return
 
     def next_state(self):
-        self.context.state = FlightState(self.context)
-        # Deploy the airbrakes as soon as we enter the Flight state
-        self.context.set_airbrake_extension(1.0)
+        self.context.state = CoastState(self.context)
 
 
-class FlightState(State):
+class CoastState(State):
     """
-    When the motor has burned out and the rocket is coasting to apogee.
+    When the motor has burned out and the rocket is coasting to apogee. This is the state
+    we actually extend the airbrakes.
     """
 
-    __slots__ = ()
+    __slots__ = ("airbrakes_extended", "start_time")
+
+    def __init__(self, context: "AirbrakesContext"):
+        super().__init__(context)
+        self.start_time = time.time()
+        self.airbrakes_extended = False
 
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
+
+        # We extend the airbrakes after 1.5 seconds of coasting:
+        if time.time() - self.start_time > 1.5 and not self.airbrakes_extended:
+            self.context.extend_airbrakes()
+            self.airbrakes_extended = True
 
         data = self.context.data_processor
 
@@ -163,7 +176,6 @@ class FreeFallState(State):
             self.next_state()
 
     def next_state(self):
-        # Explicitly do nothing, there is no next state
         self.context.state = LandedState(self.context)
 
 
