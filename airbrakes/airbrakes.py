@@ -1,16 +1,19 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
 import collections
+from typing import TYPE_CHECKING
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandByState, State
 from constants import ServoExtension
+
+if TYPE_CHECKING:
+    from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
 class AirbrakesContext:
@@ -88,8 +91,9 @@ class AirbrakesContext:
         # data packet
         i = 0
         for data_packet in data_packets:
-            logged_data_packet = LoggedDataPacket(state=self.state.name[0], extension=self.current_extension,
-                                                  timestamp=data_packet.timestamp)
+            logged_data_packet = LoggedDataPacket(
+                state=self.state.name[0], extension=self.current_extension, timestamp=data_packet.timestamp
+            )
             logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])

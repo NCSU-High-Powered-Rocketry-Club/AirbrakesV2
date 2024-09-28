@@ -108,6 +108,7 @@ class TestStandByState:
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
 
+
 class TestMotorBurnState:
     """Tests the MotorBurnState class"""
 
