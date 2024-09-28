@@ -20,7 +20,7 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
 # This is how long the servo approximately takes to move from one extreme to the other
-SERVO_DELAY = 1
+SERVO_DELAY = .3
 
 
 class ServoExtension(Enum):
@@ -32,11 +32,12 @@ class ServoExtension(Enum):
 
     MIN_EXTENSION = -0.5
     MAX_EXTENSION = 0.5
-    MIN_NO_BUZZ = -0.12
-    MAX_NO_BUZZ = 0.23
+    MIN_NO_BUZZ = -0.05
+    MAX_NO_BUZZ = 0.278
 
 
 # -------------------------------------------------------
+# IMU Configuration
 # IMU Configuration
 # -------------------------------------------------------
 
