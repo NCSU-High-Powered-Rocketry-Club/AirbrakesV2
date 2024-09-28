@@ -20,7 +20,7 @@ SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
 SERVO_PIN = 12
 # This is how long the servo approximately takes to move from one extreme to the other
-SERVO_DELAY = .3
+SERVO_DELAY = 0.3
 
 
 class ServoExtension(Enum):
@@ -87,7 +87,7 @@ LOG_BUFFER_SIZE = 5000
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-ACCELERATION_NOISE_THRESHOLD = 0.35   # m/s^2
+ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
