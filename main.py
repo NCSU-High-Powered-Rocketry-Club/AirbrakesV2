@@ -48,8 +48,8 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         while not airbrakes.shutdown_requested:
             airbrakes.update()
 
-            # if is_simulation:
-            update_display(airbrakes, sim_time_start)
+            if is_simulation:
+                update_display(airbrakes, sim_time_start)
     except KeyboardInterrupt:
         pass
     finally:
