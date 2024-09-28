@@ -76,9 +76,9 @@ STOP_SIGNAL = "STOP"
 DATA_PACKET_DECIMAL_PLACES = 8
 
 # Don't log more than x packets for StandbyState and LandedState
-LOG_CAPACITY_AT_STANDBY = 15000
+LOG_CAPACITY_AT_STANDBY = 5000
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
-LOG_BUFFER_SIZE = 1000
+LOG_BUFFER_SIZE = 5000
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -87,7 +87,7 @@ LOG_BUFFER_SIZE = 1000
 # Arbitrarily set values for transition between states:
 
 # Standby to MotorBurn:
-ACCLERATION_NOISE_THRESHOLD = 0.3  # m/s^2
+ACCELERATION_NOISE_THRESHOLD = 0.35   # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters

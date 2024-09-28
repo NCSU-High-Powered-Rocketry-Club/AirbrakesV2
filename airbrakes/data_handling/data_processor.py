@@ -9,7 +9,7 @@ import numpy.typing as npt
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from airbrakes.utils import deadband
-from constants import ACCLERATION_NOISE_THRESHOLD
+from constants import ACCELERATION_NOISE_THRESHOLD
 
 
 class IMUDataProcessor:
@@ -130,9 +130,9 @@ class IMUDataProcessor:
         # If the absolute value of acceleration is less than 0.1, set it to 0
         x_accel, y_accel, z_accel, pressure_altitudes = deque(), deque(), deque(), deque()
         for data_point in self._data_points:
-            x_accel.append(deadband(data_point.estLinearAccelX, ACCLERATION_NOISE_THRESHOLD))
-            y_accel.append(deadband(data_point.estLinearAccelY, ACCLERATION_NOISE_THRESHOLD))
-            z_accel.append(deadband(data_point.estLinearAccelZ, ACCLERATION_NOISE_THRESHOLD))
+            x_accel.append(deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD))
+            y_accel.append(deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD))
+            z_accel.append(deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD))
             pressure_altitudes.append(data_point.estPressureAlt)
 
         a_x, a_y, a_z = self._compute_averages(x_accel, y_accel, z_accel)
