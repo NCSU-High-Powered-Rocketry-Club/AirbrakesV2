@@ -97,9 +97,15 @@ However during development, you may want to run individual scripts to test compo
 ```python3 -m scripts.run_servo```
 
 To run a simulation, make sure to first specify the path to the csv file in `constants.py` and then run:
-```python3 main.py mock```
+```python3 main.py m```
 
 This will run the program with the mock data, with values of the simulation printed in real time. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
 
+If you want to connect to the servo so you can see extension in realtime, run
+```python3 main.py m rs```
+
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+### License
+This project is licensed under the MIT License. You are free to copy, distribute, and modify the software, provided that the original license notice is included in all copies or substantial portions of the software. See LICENSE for more.
