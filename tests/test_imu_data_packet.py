@@ -14,10 +14,10 @@ class TestEstimatedDataPacket:
             estOrientQuaternionZ=0.3,
             estOrientQuaternionW=0.4,
             estPressureAlt=1013.25,
+            estAttitudeUncertQuaternionW=0.04,
             estAttitudeUncertQuaternionX=0.01,
             estAttitudeUncertQuaternionY=0.02,
             estAttitudeUncertQuaternionZ=0.03,
-            estAttitudeUncertQuaternionW=0.04,
             estAngularRateX=0.5,
             estAngularRateY=0.6,
             estAngularRateZ=0.7,
@@ -30,15 +30,15 @@ class TestEstimatedDataPacket:
         )
 
         assert packet.timestamp == 123456789
+        assert packet.estOrientQuaternionW == 0.4
         assert packet.estOrientQuaternionX == 0.1
         assert packet.estOrientQuaternionY == 0.2
         assert packet.estOrientQuaternionZ == 0.3
-        assert packet.estOrientQuaternionW == 0.4
         assert packet.estPressureAlt == 1013.25
+        assert packet.estAttitudeUncertQuaternionW == 0.04
         assert packet.estAttitudeUncertQuaternionX == 0.01
         assert packet.estAttitudeUncertQuaternionY == 0.02
         assert packet.estAttitudeUncertQuaternionZ == 0.03
-        assert packet.estAttitudeUncertQuaternionW == 0.04
         assert packet.estAngularRateX == 0.5
         assert packet.estAngularRateY == 0.6
         assert packet.estAngularRateZ == 0.7
@@ -53,15 +53,15 @@ class TestEstimatedDataPacket:
         packet = EstimatedDataPacket(timestamp=123456789)
 
         assert packet.timestamp == 123456789
+        assert packet.estOrientQuaternionW is None
         assert packet.estOrientQuaternionX is None
         assert packet.estOrientQuaternionY is None
         assert packet.estOrientQuaternionZ is None
-        assert packet.estOrientQuaternionW is None
         assert packet.estPressureAlt is None
+        assert packet.estAttitudeUncertQuaternionW is None
         assert packet.estAttitudeUncertQuaternionX is None
         assert packet.estAttitudeUncertQuaternionY is None
         assert packet.estAttitudeUncertQuaternionZ is None
-        assert packet.estAttitudeUncertQuaternionW is None
         assert packet.estAngularRateX is None
         assert packet.estAngularRateY is None
         assert packet.estAngularRateZ is None

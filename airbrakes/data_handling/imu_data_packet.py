@@ -35,15 +35,15 @@ class EstimatedDataPacket(IMUDataPacket):
     estimated values of the relevant data points.
     """
 
+    estOrientQuaternionW: float | None = None
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
-    estOrientQuaternionW: float | None = None
     estPressureAlt: float | None = None
+    estAttitudeUncertQuaternionW: float | None = None
     estAttitudeUncertQuaternionX: float | None = None
     estAttitudeUncertQuaternionY: float | None = None
     estAttitudeUncertQuaternionZ: float | None = None
-    estAttitudeUncertQuaternionW: float | None = None
     estAngularRateX: float | None = None
     estAngularRateY: float | None = None
     estAngularRateZ: float | None = None

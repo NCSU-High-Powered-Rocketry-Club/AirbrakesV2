@@ -27,15 +27,15 @@ class LoggedDataPacket(msgspec.Struct):
     scaledGyroZ: float | None = None
 
     # Estimated Data Packet Fields
+    estOrientQuaternionW: float | None = None
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
-    estOrientQuaternionW: float | None = None
     estPressureAlt: float | None = None
+    estAttitudeUncertQuaternionW: float | None = None
     estAttitudeUncertQuaternionX: float | None = None
     estAttitudeUncertQuaternionY: float | None = None
     estAttitudeUncertQuaternionZ: float | None = None
-    estAttitudeUncertQuaternionW: float | None = None
     estAngularRateX: float | None = None
     estAngularRateY: float | None = None
     estAngularRateZ: float | None = None
