@@ -154,13 +154,13 @@ class IMU:
                             match channel:
                                 # These specific data points are matrix's rather than doubles
                                 case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
-                                    # This makes a 4x1 matrix from the data point with the data as [[x], [y], [z], [w]]
+                                    # This makes a 4x1 matrix from the data point with the data as [[w], [x], [y], [z]]
                                     matrix = data_point.as_Matrix()
-                                    # Sets the X, Y, Z, and W of the quaternion to the data packet object
-                                    setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 0))
-                                    setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 1))
-                                    setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 2))
-                                    setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 3))
+                                    # Sets the W, X, Y, and Z of the quaternion to the data packet object
+                                    setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
+                                    setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
+                                    setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
+                                    setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
                                 case _:
                                     # Because the attribute names in our data packet classes are the same as the channel
                                     # names, we can just set the attribute to the value of the data point.
