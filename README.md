@@ -103,3 +103,6 @@ This will run the program with the mock data, with values of the simulation prin
 
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+### License
+This project is licensed under the MIT License. You are free to copy, distribute, and modify the software, provided that the original license notice is included in all copies or substantial portions of the software. See LICENSE for more.
