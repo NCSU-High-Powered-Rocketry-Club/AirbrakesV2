@@ -34,6 +34,10 @@ class RawDataPacket(IMUDataPacket):
     deltaThetaX: float | None = None
     deltaThetaY: float | None = None
     deltaThetaZ: float | None = None
+    # mag units are in gauss, they can be used in addition to the accelerometer to determine orientation
+    stabilizedMagX: float | None = None
+    stabilizedMagY: float | None = None
+    stabilizedMagZ: float | None = None
 
 
 class EstimatedDataPacket(IMUDataPacket):
