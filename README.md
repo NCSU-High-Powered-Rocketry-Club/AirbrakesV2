@@ -1,5 +1,4 @@
-# AirbrakesV2 🚀
-
+# Air BrakesV2 🚀
 
 ## Overview
 This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-25) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
@@ -8,8 +7,14 @@ https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
 _A video of our air brakes extending and retracting_
 
-## Design
-As per the finite state machine design pattern, we have a context class which kinda links everything together. Every loop, the context first gets data from the IMU, then processes the data in the Data Processor (gets speed, averages, maxes, etc.), then updates the current state with the current data. Now, depending on what the state says to do, the context sets the servo extension (so if we need to slow down the rocket, it would extend them). Finally, we log all of the data from the imu, data processor, servo, and states.
+### Design
+As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
+
+1. **Gets data from the IMU**
+2. **Processes the data** in the Data Processor (calculates speed, averages, maximums, etc.)
+3. **Updates the current state** with the processed data
+4. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
+5. **Logs all data** from the IMU, Data Processor, Servo, and States
 ```mermaid
 flowchart TD
     A[Main Loop] --> B[Airbrakes Context]
@@ -21,7 +26,6 @@ flowchart TD
 ```
 
 ### Launch Data
-<img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
 This is our interest launch flight data, altitude over time. The different colors of the line are different states the rocket goes through:
 1. Stand By - when the rocket is on the rail on the ground
@@ -30,21 +34,25 @@ This is our interest launch flight data, altitude over time. The different color
 4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air brakes will be
 retracted
 5. Landed - when the rocket has landed on the ground
+<img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
 ### File Structure
 
+We have put great care into keeping the file structure of this project organized and concise. Try to be intentional with where placing new files or directories.
 ```
 AirbrakesV2/
 ├── airbrakes/
 |   ├── hardware/
 │   │   ├── [files related to the connection of the pi with hardware ...]
+|   ├── mock/
+│   │   ├── [files related to the connection of mock (or simulated) hardware ...]
 |   ├── data_handling/
 │   │   ├── [files related to the processing of data ...]
 │   ├── [files which control the airbrakes at a high level ...]
 ├── tests/  [used for testing all the code]
 │   ├── ...
 ├── logs/  [log files made by the logger]
-│   ├── log_1.csv
+│   ├── ...
 ├── scripts/  [small files to test individual components like the servo]
 │   ├── ...
 ├── main.py [main file used to run on the rocket]
