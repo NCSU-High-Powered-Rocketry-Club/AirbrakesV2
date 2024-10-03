@@ -132,7 +132,7 @@ cd AirbrakesV2/
 ```
 
 ### Install and start the pigpio daemon on the Raspberry Pi:
-_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
+_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using [`htop`](https://htop.dev/)._
 
 ```bash
 sudo pigpiod
