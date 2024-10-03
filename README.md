@@ -38,7 +38,7 @@ retracted
 
 ### File Structure
 
-We have put great care into keeping the file structure of this project organized and concise. Try to be intentional with where placing new files or directories.
+We have put great effort into keeping the file structure of this project organized and concise. Try to be intentional on where you place new files or directories.
 ```
 AirbrakesV2/
 ├── airbrakes/
