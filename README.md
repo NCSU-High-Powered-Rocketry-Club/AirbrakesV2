@@ -80,7 +80,7 @@ python -m venv .venv
 # For Linux
 source .venv/bin/activate
 # For Windows
-venv\Scripts\activate
+.\.venv\Scripts\activate
 ```
 
 ### Install the required dependencies:
