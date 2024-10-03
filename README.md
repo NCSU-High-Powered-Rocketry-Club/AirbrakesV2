@@ -50,7 +50,7 @@ cd AirbrakesV2
 
 #### Set up a virtual environment:
 
-```
+```bash
 python -m venv .venv
 
 # For Linux
@@ -61,7 +61,9 @@ venv\Scripts\activate
 
 #### Install the required dependencies:
 
-```pip install .[dev]```
+```bash
+pip install .[dev]
+```
 _There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
 ## Local Usage
@@ -70,14 +72,16 @@ _There are libraries that only fully work when running on the Pi (gpiozero, mscl
 Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it is flying through a previous launch.
 
 To run a mock launch, make sure to first specify the path to the CSV file for the previous launch's data in `constants.py` and then run:
-```python3 main.py m```
-
+```bassh
+python3 main.py m
+```
 ### Running Tests
 Our CI pipeline uses [pytest](https://pytest.org) to run tests. You can run the tests locally to ensure that your changes are working as expected.
 
 To run the tests, run this command from the project root directory:
-```pytest```
-
+```bash
+pytest
+```
 If you make a change to the code, please make sure to update or add the necessary tests.
 
 ### Running the Linter
@@ -85,24 +89,28 @@ If you make a change to the code, please make sure to update or add the necessar
 Our CI also tries to maintain code quality by running a linter. We use [Ruff](https://docs.astral.sh/ruff/).
 
 To run the linter, and fix any issues it finds, run:
-```ruff check . --fix --unsafe-fixes```
-
+```bash
+ruff check . --fix --unsafe-fixes
+```
 To format the code, run:
-```ruff format .```
-
+```bash
+ruff format .
+```
 To run the main program, simply run:
-```python3 main.py```
+```bash
+python3 main.py
+```
 
 However during development, you may want to run individual scripts to test components. For example, to test the servo, run:
-```python3 -m scripts.run_servo```
-
-
+```bash
+python3 -m scripts.run_servo
+```
 
 This will run the program with the mock data, with values of the simulation printed in real time. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
 
 ## Pi Usage
 
-#### Install and start the pigpio daemon on the Raspberry Pi:
+### Install and start the pigpio daemon on the Raspberry Pi:
 _Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
 
 ```bash
@@ -111,7 +119,9 @@ sudo pigpiod
 
 ### Running Mock Launches
 If you want to connect to the servo so you can see the air brakes extension in realtime, run
-```python3 main.py m rs```
+```bash
+python3 main.py m rs
+```
 
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
