@@ -39,27 +39,19 @@ AirbrakesV2/
 
 ## Local Setup
 
-#### Install uv:
-
-[uv](https://docs.astral.sh/uv/getting-started/installation/) is a Python and project manager, which makes handling different Python versions and virtual environments easier.
-
-`curl -LsSf https://astral.sh/uv/install.sh | sh`
-
-This project uses Python 3.12. Using an older version may not work since we use newer language features:
-
-`uv python install 3.12`
+**This project uses Python 3.12. Using an older version may not work since we use newer language features**
 
 #### Clone the repository:
 
 ```
-git clone https://github.com/yourusername/AirbrakesV2.git
+git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 cd AirbrakesV2
 ```
 
 #### Set up a virtual environment:
 
 ```
-uv venv
+python -m venv .venv
 
 # For Linux
 source .venv/bin/activate
@@ -69,10 +61,16 @@ venv\Scripts\activate
 
 #### Install the required dependencies:
 
-```uv pip install .[dev]```
+```pip install .[dev]```
 _There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
 ## Local Usage
+
+### Running Mock Launches
+Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it is flying through a previous launch.
+
+To run a mock launch, make sure to first specify the path to the CSV file for the previous launch's data in `constants.py` and then run:
+```python3 main.py m```
 
 ### Running Tests
 Our CI pipeline uses [pytest](https://pytest.org) to run tests. You can run the tests locally to ensure that your changes are working as expected.
@@ -98,13 +96,9 @@ To run the main program, simply run:
 However during development, you may want to run individual scripts to test components. For example, to test the servo, run:
 ```python3 -m scripts.run_servo```
 
-To run a simulation, make sure to first specify the path to the csv file in `constants.py` and then run:
-```python3 main.py m```
+
 
 This will run the program with the mock data, with values of the simulation printed in real time. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
-
-If you want to connect to the servo so you can see extension in realtime, run
-```python3 main.py m rs```
 
 ## Pi Usage
 
@@ -114,6 +108,10 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 ```bash
 sudo pigpiod
 ```
+
+### Running Mock Launches
+If you want to connect to the servo so you can see the air brakes extension in realtime, run
+```python3 main.py m rs```
 
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
