@@ -4,6 +4,11 @@
 ## Overview
 This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
+
+<img alt="graph" src="https://github.com/user-attachments/assets/5fc952a5-4a64-453e-8db3-0ff0040b0c2e" width="70%">
+
+_This is our interest launch flight data, altitude over time. The different colors of the line are different states the rocket goes through._
+
 ### Installation
 
 #### Install uv:
