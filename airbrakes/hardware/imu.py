@@ -143,7 +143,7 @@ class IMU:
 
                 # Each of these packets has multiple data points
                 for data_point in packet.data():
-                    data_point: mscl.MipDataPoint
+                    data_point: mscl.MipDataPointd
                     if data_point.valid():
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names

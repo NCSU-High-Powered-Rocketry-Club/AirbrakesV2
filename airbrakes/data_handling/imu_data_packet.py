@@ -67,3 +67,5 @@ class EstimatedDataPacket(IMUDataPacket):
     estGravityVectorX: float | None = None
     estGravityVectorY: float | None = None
     estGravityVectorZ: float | None = None
+    # Lets us know if any of the data is invalid for the packets
+    estFilterStatusFlags: float | None = None
