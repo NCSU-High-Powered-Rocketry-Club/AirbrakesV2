@@ -144,27 +144,32 @@ class IMU:
                 # Each of these packets has multiple data points
                 for data_point in packet.data():
                     data_point: mscl.MipDataPoint
-                    if data_point.valid():
-                        channel = data_point.channelName()
-                        # This cpp file was the only place I was able to find all the channel names
-                        # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                        # Check if the channel name is one we want to save
-                        if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
-                            # First checks if the data point needs special handling, if not, just set the attribute
-                            match channel:
-                                # These specific data points are matrix's rather than doubles
-                                case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
-                                    # This makes a 4x1 matrix from the data point with the data as [[w], [x], [y], [z]]
-                                    matrix = data_point.as_Matrix()
-                                    # Sets the W, X, Y, and Z of the quaternion to the data packet object
-                                    setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
-                                    setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
-                                    setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
-                                    setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
-                                case _:
-                                    # Because the attribute names in our data packet classes are the same as the channel
-                                    # names, we can just set the attribute to the value of the data point.
-                                    setattr(imu_data_packet, channel, data_point.as_float())
+                    channel: str = data_point.channelName()
+                    # This cpp file was the only place I was able to find all the channel names
+                    # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
+                    # Check if the channel name is one we want to save
+                    if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
+                        # First checks if the data point needs special handling, if not, just set the attribute
+                        match channel:
+                            # These specific data points are matrix's rather than doubles
+                            case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
+                                # This makes a 4x1 matrix from the data point with the data as [[w], [x], [y], [z]]
+                                matrix = data_point.as_Matrix()
+                                # Sets the W, X, Y, and Z of the quaternion to the data packet object
+                                setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
+                                setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
+                                setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
+                                setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
+                            case _:
+                                # Because the attribute names in our data packet classes are the same as the channel
+                                # names, we can just set the attribute to the value of the data point.
+                                setattr(imu_data_packet, channel, data_point.as_float())
+
+                        # If the data point is invalid, add it to the invalid fields list:
+                        if not data_point.valid():
+                            if imu_data_packet.invalid_fields is None:
+                                imu_data_packet.invalid_fields = []
+                            imu_data_packet.invalid_fields.append(channel)
 
                 # Put the latest data into the shared queue
                 self._data_queue.put(imu_data_packet)
