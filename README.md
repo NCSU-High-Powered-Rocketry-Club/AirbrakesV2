@@ -2,7 +2,7 @@
 
 
 ## Overview
-This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
+This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-25) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
 
 <img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
@@ -69,10 +69,10 @@ _There are libraries that only fully work when running on the Pi (gpiozero, mscl
 ## Local Usage
 
 ### Running Mock Launches
-Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it is flying through a previous launch.
+Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
 
 To run a mock launch, make sure to first specify the path to the CSV file for the previous launch's data in `constants.py` and then run:
-```bassh
+```bash
 python3 main.py m
 ```
 ### Running Tests
@@ -96,19 +96,16 @@ To format the code, run:
 ```bash
 ruff format .
 ```
-To run the main program, simply run:
-```bash
-python3 main.py
-```
-
-However during development, you may want to run individual scripts to test components. For example, to test the servo, run:
-```bash
-python3 -m scripts.run_servo
-```
-
-This will run the program with the mock data, with values of the simulation printed in real time. You many need to adjust `mock_imu.py` according to the data structure of the csv file.
 
 ## Pi Usage
+
+### Connecting to the Pi (SSH)
+In order to connect to the Pi, you need first to set up a mobile hotspot with the name `HPRC`, password `tacholycos`, and `2.4 GHz` band. Next, turn on the Pi and it will automatically connect to your hotspot. Once it's connected, find the Pi's IP Address, and in your terminal run:
+```bash
+ssh pi@[IP.ADDRESS]
+# Its password is raspberry
+cd AirbrakesV2/
+```
 
 ### Install and start the pigpio daemon on the Raspberry Pi:
 _Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
@@ -117,14 +114,21 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 sudo pigpiod
 ```
 
+### Running Test Scripts
+During development, you may want to run individual scripts to test components. For example, to test the servo, run:
+```bash
+# Make sure you are in the root directory,
+python3 -m scripts.run_servo
+```
+
 ### Running Mock Launches
 If you want to connect to the servo so you can see the air brakes extension in realtime, run
 ```bash
 python3 main.py m rs
 ```
 
-### Contributing
+#### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-### License
+#### License
 This project is licensed under the MIT License. You are free to copy, distribute, and modify the software, provided that the original license notice is included in all copies or substantial portions of the software. See LICENSE for more.
