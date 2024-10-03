@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
+    AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITIUDE,
     MOTOR_BURN_TIME,
@@ -143,7 +144,7 @@ class CoastState(State):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
         # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > 1.5 and not self.airbrakes_extended:
+        if time.time() - self.start_time > AIRBRAKES_AFTER_COASTING and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
 

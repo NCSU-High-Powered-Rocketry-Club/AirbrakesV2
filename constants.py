@@ -100,6 +100,7 @@ HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
 MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 
 # Coasting to Free fall:
+AIRBRAKES_AFTER_COASTING = 1.5  # seconds  (time to wait while coasting before extending the airbrakes)
 
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
 # current altitude is 250 meters less than our max, then we switch

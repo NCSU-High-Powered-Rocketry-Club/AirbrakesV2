@@ -188,7 +188,13 @@ class TestIMUDataProcessor:
 
         # Additional data packet
         new_packets = [
-            EstimatedDataPacket(3.0, estLinearAccelX=3, estLinearAccelY=0, estLinearAccelZ=0, estPressureAlt=0),
+            EstimatedDataPacket(
+                3.0 * 1e9,
+                estLinearAccelX=x_accel[2],
+                estLinearAccelY=y_accel[2],
+                estLinearAccelZ=z_accel[2],
+                estPressureAlt=0,
+            ),
         ]
         data_processor.update_data(new_packets)
         second_vel = data_processor._previous_velocity
