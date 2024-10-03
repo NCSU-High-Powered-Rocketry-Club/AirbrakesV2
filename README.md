@@ -4,6 +4,9 @@
 ## Overview
 This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-25) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
+https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
+
+_A video of our air brakes extending and retracting_
 
 <img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
@@ -41,14 +44,14 @@ AirbrakesV2/
 
 **This project uses Python 3.12. Using an older version may not work since we use newer language features**
 
-#### Clone the repository:
+### Clone the repository:
 
 ```
 git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 cd AirbrakesV2
 ```
 
-#### Set up a virtual environment:
+### Set up a virtual environment:
 
 ```bash
 python -m venv .venv
@@ -59,7 +62,7 @@ source .venv/bin/activate
 venv\Scripts\activate
 ```
 
-#### Install the required dependencies:
+### Install the required dependencies:
 
 ```bash
 pip install .[dev]
@@ -127,8 +130,8 @@ If you want to connect to the servo so you can see the air brakes extension in r
 python3 main.py m rs
 ```
 
-#### Contributing
+## Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
-#### License
+## License
 This project is licensed under the MIT License. You are free to copy, distribute, and modify the software, provided that the original license notice is included in all copies or substantial portions of the software. See LICENSE for more.
