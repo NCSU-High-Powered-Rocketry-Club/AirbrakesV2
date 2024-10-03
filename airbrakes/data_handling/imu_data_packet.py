@@ -30,14 +30,10 @@ class RawDataPacket(IMUDataPacket):
     deltaVelX: float | None = None
     deltaVelY: float | None = None
     deltaVelZ: float | None = None
-    # TODO: check if these exist
+    # in radians
     deltaThetaX: float | None = None
     deltaThetaY: float | None = None
     deltaThetaZ: float | None = None
-    # mag units are in gauss, they can be used in addition to the accelerometer to determine orientation
-    stabilizedMagX: float | None = None
-    stabilizedMagY: float | None = None
-    stabilizedMagZ: float | None = None
 
 
 class EstimatedDataPacket(IMUDataPacket):
