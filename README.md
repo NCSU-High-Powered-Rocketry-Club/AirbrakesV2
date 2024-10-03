@@ -15,11 +15,11 @@ This is our interest launch flight data, altitude over time. The different color
 retracted
 5. Landed - when the rocket has landed on the ground
 
-### Installation
+## Setup
 
 #### Install uv:
 
-[uv](https://docs.astral.sh/uv/getting-started/installation/) is a python and project manager, which makes handling different python versions and virtual enviornments easier.
+[uv](https://docs.astral.sh/uv/getting-started/installation/) is a Python and project manager, which makes handling different Python versions and virtual environments easier.
 
 `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
@@ -44,9 +44,11 @@ source .venv/bin/activate
 #### Install the required dependencies:
 
 ```uv pip install .[dev]```
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+
 
 #### Install and start the pigpio daemon on the Raspberry Pi:
-*Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`.
+_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
 
 ```bash
 sudo pigpiod
