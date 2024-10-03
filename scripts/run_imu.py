@@ -16,7 +16,7 @@ try:
     imu.start()
     logger.start()
     while True:
-        print(imu.get_imu_data_packet())
+        imu.get_imu_data_packet()
 except KeyboardInterrupt:  # Stop running IMU and logger if the user presses Ctrl+C
     pass
 finally:
