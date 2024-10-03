@@ -2,7 +2,7 @@
 
 
 ## Overview
-This project controls the extension of airbrakes using a servo motor. It includes modules for logging data and managing the servo motor.
+This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. The code follows the finite state machine design pattern, using the AirbrakesContext to manage interactions between the states, hardware, logging, and data processing. 
 
 ### Installation
 
