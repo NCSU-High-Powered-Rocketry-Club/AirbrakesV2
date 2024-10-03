@@ -15,7 +15,29 @@ This is our interest launch flight data, altitude over time. The different color
 retracted
 5. Landed - when the rocket has landed on the ground
 
-## Setup
+### Project Structure
+
+```
+AirbrakesV2/
+├── airbrakes/
+|   ├── hardware/
+│   │   ├── [files related to the connection of the pi with hardware ...]
+|   ├── data_handling/
+│   │   ├── [files related to the processing of data ...]
+│   ├── [files which control the airbrakes at a high level ...]
+├── tests/  [used for testing all the code]
+│   ├── ...
+├── logs/  [log files made by the logger]
+│   ├── log_1.csv
+├── scripts/  [small files to test individual components like the servo]
+│   ├── ...
+├── main.py [main file used to run on the rocket]
+├── constants.py [file for constants used in the project]
+├── pyproject.toml [configuration file for the project]
+├── README.md
+```
+
+## Local Setup
 
 #### Install uv:
 
@@ -38,7 +60,11 @@ cd AirbrakesV2
 
 ```
 uv venv
+
+# For Linux
 source .venv/bin/activate
+# For Windows
+venv\Scripts\activate
 ```
 
 #### Install the required dependencies:
@@ -46,42 +72,7 @@ source .venv/bin/activate
 ```uv pip install .[dev]```
 _There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
-
-#### Install and start the pigpio daemon on the Raspberry Pi:
-_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
-
-```bash
-sudo pigpiod
-```
-
-#### Install the mscl library to communicate with the IMU:
-
-https://github.com/LORD-MicroStrain/MSCL
-
-(scroll down and click on the Python 3 link for arm64, and then follow [this](https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md#python-1) guide.)
-
-### Project Structure
-
-
-```
-AirbrakesV2/
-├── airbrakes/
-|   ├── hardware/
-│   │   ├── [files related to the connection of the pi with hardware ...]
-|   ├── data_handling/
-│   │   ├── [files related to the processing of data ...]
-│   ├── [files which control the airbrakes at a high level ...]
-├── tests/  [used for testing all the code]
-│   ├── ...
-├── logs/  [log files made by the logger]
-│   ├── log_1.csv
-├── scripts/  [small files to test individual components like the servo]
-│   ├── ...
-├── main.py [main file used to run on the rocket]
-├── constants.py [file for constants used in the project]
-├── pyproject.toml [configuration file for the project]
-├── README.md
-```
+## Local Usage
 
 ### Running Tests
 Our CI pipeline uses [pytest](https://pytest.org) to run tests. You can run the tests locally to ensure that your changes are working as expected.
@@ -101,8 +92,6 @@ To run the linter, and fix any issues it finds, run:
 To format the code, run:
 ```ruff format .```
 
-
-### Usage
 To run the main program, simply run:
 ```python3 main.py```
 
@@ -116,6 +105,15 @@ This will run the program with the mock data, with values of the simulation prin
 
 If you want to connect to the servo so you can see extension in realtime, run
 ```python3 main.py m rs```
+
+## Pi Usage
+
+#### Install and start the pigpio daemon on the Raspberry Pi:
+_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using `htop`._
+
+```bash
+sudo pigpiod
+```
 
 ### Contributing
 Feel free to submit issues or pull requests. For major changes, please open an issue first to discuss what you would like to change.
