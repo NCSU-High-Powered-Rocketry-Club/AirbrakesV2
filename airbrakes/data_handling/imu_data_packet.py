@@ -26,6 +26,12 @@ class RawDataPacket(IMUDataPacket):
     scaledGyroX: float | None = None
     scaledGyroY: float | None = None
     scaledGyroZ: float | None = None
+    deltaVelX: float | None = None
+    deltaVelY: float | None = None
+    deltaVelZ: float | None = None
+    deltaThetaX: float | None = None
+    deltaThetaY: float | None = None
+    deltaThetaZ: float | None = None
 
 
 class EstimatedDataPacket(IMUDataPacket):
@@ -55,3 +61,7 @@ class EstimatedDataPacket(IMUDataPacket):
     estLinearAccelX: float | None = None
     estLinearAccelY: float | None = None
     estLinearAccelZ: float | None = None  # this will be ~0 m/s^2 when the IMU is at rest
+    # estGravityVector units are in gs
+    estGravityVectorX: float | None = None
+    estGravityVectorY: float | None = None
+    estGravityVectorZ: float | None = None
