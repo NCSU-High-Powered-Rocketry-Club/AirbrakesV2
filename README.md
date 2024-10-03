@@ -8,6 +8,19 @@ https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
 _A video of our air brakes extending and retracting_
 
+## Design
+As per the finite state machine design pattern, we have a context class which kinda links everything together. Every loop, the context first gets data from the IMU, then processes the data in the Data Processor (gets speed, averages, maxes, etc.), then updates the current state with the current data. Now, depending on what the state says to do, the context sets the servo extension (so if we need to slow down the rocket, it would extend them). Finally, we log all of the data from the imu, data processor, servo, and states.
+```mermaid
+flowchart TD
+    A[Main Loop] --> B[Airbrakes Context]
+    B --> C[IMU - Get Data] --> B
+    B --> D[Data Processor - Process Data] --> B
+    B --> F[Update Current State] --> B
+    B --> G[Servo - Control Air Brakes] --> B
+    B --> E[Logger - Log Data]
+```
+
+### Launch Data
 <img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
 This is our interest launch flight data, altitude over time. The different colors of the line are different states the rocket goes through:
@@ -18,7 +31,7 @@ This is our interest launch flight data, altitude over time. The different color
 retracted
 5. Landed - when the rocket has landed on the ground
 
-### Project Structure
+### File Structure
 
 ```
 AirbrakesV2/
