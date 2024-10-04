@@ -41,9 +41,10 @@ class IMUDataProcessor:
         self._max_altitude: float = 0.0
         self._speeds: list[float] = [0.0]
         self._max_speed: float = 0.0
-        self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self._previous_velocity: tuple[np.float64, np.float64, np.float64] = (
+            np.float64(0.0), np.float64(0.0), np.float64(0.0))
         self._initial_altitude: np.float64 | None = None
-        self._current_altitudes: npt.NDArray[np.float64] = [0.0]
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
         self._last_data_point = EstimatedDataPacket(0.0)  # Placeholder for the last data point
 
@@ -137,7 +138,7 @@ class IMUDataProcessor:
 
         a_x, a_y, a_z = self._compute_averages(x_accel, y_accel, z_accel)
         self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (a_x**2 + a_y**2 + a_z**2) ** 0.5
+        self._avg_accel_mag = (a_x ** 2 + a_y ** 2 + a_z ** 2) ** 0.5
 
         self._speeds: np.array[np.float64] = self._calculate_speeds(x_accel, y_accel, z_accel)
         self._max_speed = max(self._speeds.max(), self._max_speed)
@@ -245,4 +246,4 @@ class IMUDataProcessor:
         self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
 
         # All the speeds gotten as the magnitude of the velocity vector at each point
-        return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)
+        return np.sqrt(velocities_x ** 2 + velocities_y ** 2 + velocities_z ** 2)
