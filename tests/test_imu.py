@@ -10,8 +10,6 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 from airbrakes.hardware.imu import IMU
 from constants import FREQUENCY, PORT
 
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 
 class TestIMU:
@@ -113,37 +111,10 @@ class TestIMU:
         assert values.get() == (PORT, FREQUENCY)
         assert "some error" in str(excinfo.value)
 
-    def test_data_packets_fetch(self, monkeypatch):
+    def test_data_packets_fetch(self, random_data_mock_imu):
         """Tests whether the data fetching loop actually adds data to the queue."""
 
-        def _fetch_data_loop(self, *_, **__):
-            """Monkeypatched method for testing.
-            We can't simulate the actual IMU without the hardware.
-            So we simulate the data fetching loop at the correct sampling rate instead.
-            """
-            next_estimated_packet_time = time.time()
-            next_raw_packet_time = time.time()
-
-            while self._running.value:
-                current_time = time.time()
-                # Generate dummy packets, 1 EstimatedDataPacket every 500Hz, and 1 RawDataPacket
-                # every 1000Hz
-                # sleep for the time it would take to get the next packet
-                if current_time >= next_estimated_packet_time:
-                    estimated_packet = EstimatedDataPacket(timestamp=123456789)
-                    self._data_queue.put(estimated_packet)
-                    next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE
-
-                if current_time >= next_raw_packet_time:
-                    raw_packet = RawDataPacket(timestamp=987654321)
-                    self._data_queue.put(raw_packet)
-                    next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE
-
-                # Sleep a little to prevent busy-waiting
-                time.sleep(0.001)
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = random_data_mock_imu
         imu.start()
         time.sleep(0.3)
         imu.stop()

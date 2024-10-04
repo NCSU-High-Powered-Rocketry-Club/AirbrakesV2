@@ -41,11 +41,11 @@ class IMUDataProcessor:
         self._max_altitude: float = 0.0
         self._speeds: list[float] = [0.0]
         self._max_speed: float = 0.0
-        self._previous_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0)
+        self._previous_velocity: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
         self._initial_altitude: np.float64 | None = None
-        self._current_altitudes: npt.NDArray[np.float64] = [0.0]
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
-        self._last_data_point = EstimatedDataPacket(0.0)  # Placeholder for the last data point
+        self._last_data_point: EstimatedDataPacket | None = None
 
         self._data_points: Sequence[EstimatedDataPacket]
 
@@ -127,7 +127,7 @@ class IMUDataProcessor:
         # Next, assign variables for linear acceleration, since we don't want to recalculate them
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
-        # If the absolute value of acceleration is less than 0.1, set it to 0
+        # If the absolute value of acceleration is less than our threshold, set it to 0
         x_accel, y_accel, z_accel, pressure_altitudes = deque(), deque(), deque(), deque()
         for data_point in self._data_points:
             x_accel.append(deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD))
@@ -213,13 +213,19 @@ class IMUDataProcessor:
         Integrates the linear acceleration to get the speed.
         """
         # We need at least two data points to calculate the speed:
-        if len(self._data_points) < 1:
+        if not self._data_points:  # We use the last_data_point, hence even a single data point works.
             return np.array([0.0])
 
-        # Prevent subtle bug in at init, when we only process one data packet, and the
-        # last_data_point is a dummy set in __init__.
-        if self._last_data_point.timestamp == 0.0:
+        # Deliberately discard all our data packets for speed calc if we don't have a
+        # last_data_point. This will only happen during startup. It does not make sense to
+        # set last_data_point as the first element of data_points during initialization, as we will
+        # then have one less data point to calculate the time difference between the last data point
+        # leading to get_processed_data to have a different length than the data_points.
+        if self._last_data_point is None:
             return np.array([0.0] * len(self._data_points))
+
+        # At this point, our last_data_point is guaranteed to be an EstimatedDataPacket.
+        self._last_data_point: EstimatedDataPacket
 
         # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
         # does not update fast enough to give us a good estimate of the speed.

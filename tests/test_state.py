@@ -1,6 +1,7 @@
 import time
 from abc import ABC
 
+import numpy as np
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
@@ -103,8 +104,8 @@ class TestStandByState:
         ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
     )
     def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
-        stand_by_state.context.data_processor._speeds.append(current_speed)
-        stand_by_state.context.data_processor._current_altitudes.append(current_altitude)
+        stand_by_state.context.data_processor._speeds = [current_speed]
+        stand_by_state.context.data_processor._current_altitudes = [current_altitude]
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
 
@@ -143,7 +144,7 @@ class TestMotorBurnState:
         ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
     )
     def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
-        motor_burn_state.context.data_processor._speeds.append(current_speed)
+        motor_burn_state.context.data_processor._speeds = [current_speed]
         motor_burn_state.context.data_processor._max_speed = max_speed
         time.sleep(burn_time)
         motor_burn_state.update()
@@ -178,7 +179,7 @@ class TestCoastState:
         ids=["climbing", "just_descent", "airbrakes_long_coast", "apogee_threshold"],
     )
     def test_update(self, coast_state, current_altitude, max_altitude, expected_state, coast_time, airbrakes_ext):
-        coast_state.context.data_processor._current_altitudes.append(current_altitude)
+        coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         time.sleep(coast_time)
         coast_state.update()
@@ -212,7 +213,7 @@ class TestFreeFallState:
         ids=["falling", "almost_landed", "landed"],
     )
     def test_update(self, free_fall_state, current_altitude, expected_state):
-        free_fall_state.context.data_processor._current_altitudes.append(current_altitude)
+        free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
