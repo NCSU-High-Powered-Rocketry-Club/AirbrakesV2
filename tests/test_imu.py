@@ -139,3 +139,8 @@ class TestIMU:
 
         # Practically the ratio may not be exactly 1:2
         assert raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
+
+    @pytest.mark.skip(reason="Need to install mscl in the CI and ideally auto-build locally.")
+    def test_imu_data_loop(self):
+        # Mock the MSCL library and related methods/classes to test the IMU data loop completely:
+        pass
