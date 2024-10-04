@@ -5,6 +5,8 @@ import signal
 import time
 from pathlib import Path
 
+import numpy as np
+
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.utils import convert_to_float, convert_to_nanoseconds
@@ -51,7 +53,7 @@ class MockIMU(IMU):
 
                 # Create the data packet based on the row
                 if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
-                    imu_data_packet = RawDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet = RawDataPacket(row["timestamp"])
                     imu_data_packet.scaledAccelX = convert_to_float(row.get("scaledAccelX"))
                     imu_data_packet.scaledAccelY = convert_to_float(row.get("scaledAccelY"))
                     imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledAccelZ"))
@@ -59,7 +61,7 @@ class MockIMU(IMU):
                     imu_data_packet.scaledGyroY = convert_to_float(row.get("scaledGyroY"))
                     imu_data_packet.scaledAccelZ = convert_to_float(row.get("scaledGyroZ"))
                 elif row.get("estLinearAccelX") is not None and row.get("estLinearAccelX") != "":
-                    imu_data_packet = EstimatedDataPacket(convert_to_nanoseconds(row["timestamp"]))
+                    imu_data_packet = EstimatedDataPacket(row["timestamp"])
                     imu_data_packet.estCompensatedAccelX = convert_to_float(row.get("estCompensatedAccelX", 0.0))
                     imu_data_packet.estCompensatedAccelY = convert_to_float(row.get("estCompensatedAccelY", 0.0))
                     imu_data_packet.estCompensatedAccelZ = convert_to_float(row.get("estCompensatedAccelZ", 0.0))
