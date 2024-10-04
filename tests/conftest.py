@@ -62,7 +62,7 @@ def mock_imu():
 class PytestMockIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
 
-    def _fetch_data_loop(self, port: str, frequency: int) -> None:
+    def _fetch_data_loop(self, _: str, __: int) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
         next_estimated_packet_time = time.time()
         next_raw_packet_time = time.time()
