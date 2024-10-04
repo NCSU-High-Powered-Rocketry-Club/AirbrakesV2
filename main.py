@@ -29,7 +29,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
     sim_time_start = time.time()
     if is_simulation:
-        imu = MockIMU(SIMULATION_LOG_PATH, FREQUENCY)
+        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:

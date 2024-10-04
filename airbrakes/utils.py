@@ -10,12 +10,17 @@ if TYPE_CHECKING:
 MOVE_CURSOR_UP = "\033[F"  # Move the cursor one line up
 
 
-def convert_to_nanoseconds(value: str | int) -> int:
-    """Converts seconds to nanoseconds, if `value` is in float."""
+def convert_to_nanoseconds(timestamp_str: str) -> int | None:
+    """Converts seconds to nanoseconds, if it isn't already in nanoseconds."""
     try:
-        return int(float(value) * 1e9)
-    except (ValueError, TypeError):
-        return None
+        # check if value is already in nanoseconds:
+        return int(timestamp_str)
+    except ValueError:
+        try:
+            timestamp_float = float(timestamp_str)
+            return int(timestamp_float * 1e9)  # return the value in nanoseconds
+        except ValueError:
+            return None
 
 
 def convert_to_float(value: str | int) -> float | None:

@@ -1,12 +1,34 @@
+import pytest
+
 from airbrakes.utils import convert_to_float, convert_to_nanoseconds, deadband
 
 
-def test_convert_to_nanoseconds():
-    assert convert_to_nanoseconds(1) == 1_000_000_000
-    assert convert_to_nanoseconds(0.5) == 500_000_000
-    assert convert_to_nanoseconds("2") == 2_000_000_000
-    assert convert_to_nanoseconds("invalid") is None
-    assert convert_to_nanoseconds(None) is None
+@pytest.mark.parametrize(
+    ("input_value", "expected"),
+    [
+        ("1", 1),
+        ("0.5", 500_000_000),
+        ("invalid", None),
+    ],
+    ids=["string_int_input", "string_float_input", "invalid"],
+)
+def test_convert_to_nanoseconds_correct_inputs(input_value, expected):
+    assert convert_to_nanoseconds(input_value) == expected
+
+
+@pytest.mark.parametrize(
+    ("input_value", "expected"),
+    [
+        (1, 1),
+        (0.5, 0),
+    ],
+    ids=[
+        "int_input",
+        "float_input",
+    ],
+)
+def test_convert_to_nanoseconds_wrong_inputs(input_value, expected):
+    assert convert_to_nanoseconds(input_value) == expected
 
 
 def test_convert_to_float():
