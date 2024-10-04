@@ -1,7 +1,6 @@
 import time
 from abc import ABC
 
-import numpy as np
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State

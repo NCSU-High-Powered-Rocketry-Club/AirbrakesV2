@@ -1,21 +1,19 @@
 """Module where fixtures are shared between all test files."""
 
+import time
 from pathlib import Path
 
 import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
-import time
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import RawDataPacket, EstimatedDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from constants import FREQUENCY, PORT, SERVO_PIN
-
 from airbrakes.mock.mock_imu import MockIMU
-
+from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
@@ -63,6 +61,7 @@ def mock_imu():
 
 class PytestMockIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
+
     def _fetch_data_loop(self, port: str, frequency: int) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
         next_estimated_packet_time = time.time()
@@ -74,12 +73,12 @@ class PytestMockIMU(IMU):
             # every 1000Hz
             # sleep for the time it would take to get the next packet
             if current_time >= next_estimated_packet_time:
-                estimated_packet = EstimatedDataPacket(timestamp=current_time*1e9)
+                estimated_packet = EstimatedDataPacket(timestamp=current_time * 1e9)
                 self._data_queue.put(estimated_packet)
                 next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE
 
             if current_time >= next_raw_packet_time:
-                raw_packet = RawDataPacket(timestamp=current_time*1e9)
+                raw_packet = RawDataPacket(timestamp=current_time * 1e9)
                 self._data_queue.put(raw_packet)
                 next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE
 

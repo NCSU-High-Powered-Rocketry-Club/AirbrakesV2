@@ -40,8 +40,8 @@ class TestIMUDataProcessor:
     """Tests the IMUDataProcessor class"""
 
     packets = [
-        EstimatedDataPacket(1*1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
-        EstimatedDataPacket(2*1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
+        EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
     ]
 
     def test_slots(self):
@@ -106,8 +106,12 @@ class TestIMUDataProcessor:
 
         d.update_data(
             [
-                EstimatedDataPacket(3*1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=22),
-                EstimatedDataPacket(4*1e9, estLinearAccelX=4, estLinearAccelY=5, estLinearAccelZ=6, estPressureAlt=23),
+                EstimatedDataPacket(
+                    3 * 1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=22
+                ),
+                EstimatedDataPacket(
+                    4 * 1e9, estLinearAccelX=4, estLinearAccelY=5, estLinearAccelZ=6, estPressureAlt=23
+                ),
             ]
         )
         # we use pytest.approx() because of floating point errors
@@ -118,9 +122,15 @@ class TestIMUDataProcessor:
 
         d.update_data(
             [
-                EstimatedDataPacket(5*1e9, estLinearAccelX=5, estLinearAccelY=6, estLinearAccelZ=7, estPressureAlt=24),
-                EstimatedDataPacket(6*1e9, estLinearAccelX=6, estLinearAccelY=7, estLinearAccelZ=8, estPressureAlt=25),
-                EstimatedDataPacket(7*1e9, estLinearAccelX=7, estLinearAccelY=8, estLinearAccelZ=9, estPressureAlt=26),
+                EstimatedDataPacket(
+                    5 * 1e9, estLinearAccelX=5, estLinearAccelY=6, estLinearAccelZ=7, estPressureAlt=24
+                ),
+                EstimatedDataPacket(
+                    6 * 1e9, estLinearAccelX=6, estLinearAccelY=7, estLinearAccelZ=8, estPressureAlt=25
+                ),
+                EstimatedDataPacket(
+                    7 * 1e9, estLinearAccelX=7, estLinearAccelY=8, estLinearAccelZ=9, estPressureAlt=26
+                ),
             ]
         )
         assert d._previous_velocity == pytest.approx((25.0, 30.0, 35.0))
@@ -130,10 +140,18 @@ class TestIMUDataProcessor:
 
         d.update_data(
             [
-                EstimatedDataPacket(8*1e9, estLinearAccelX=2, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=27),
-                EstimatedDataPacket(9*1e9, estLinearAccelX=1, estLinearAccelY=-2, estLinearAccelZ=-1, estPressureAlt=28),
-                EstimatedDataPacket(10*1e9, estLinearAccelX=-1, estLinearAccelY=-4, estLinearAccelZ=-5, estPressureAlt=29),
-                EstimatedDataPacket(11*1e9, estLinearAccelX=-1, estLinearAccelY=-1, estLinearAccelZ=-1, estPressureAlt=30),
+                EstimatedDataPacket(
+                    8 * 1e9, estLinearAccelX=2, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=27
+                ),
+                EstimatedDataPacket(
+                    9 * 1e9, estLinearAccelX=1, estLinearAccelY=-2, estLinearAccelZ=-1, estPressureAlt=28
+                ),
+                EstimatedDataPacket(
+                    10 * 1e9, estLinearAccelX=-1, estLinearAccelY=-4, estLinearAccelZ=-5, estPressureAlt=29
+                ),
+                EstimatedDataPacket(
+                    11 * 1e9, estLinearAccelX=-1, estLinearAccelY=-1, estLinearAccelZ=-1, estPressureAlt=30
+                ),
             ]
         )
 

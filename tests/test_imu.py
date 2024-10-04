@@ -11,7 +11,6 @@ from airbrakes.hardware.imu import IMU
 from constants import FREQUENCY, PORT
 
 
-
 class TestIMU:
     """Class to test the IMU class in imu.py"""
 
