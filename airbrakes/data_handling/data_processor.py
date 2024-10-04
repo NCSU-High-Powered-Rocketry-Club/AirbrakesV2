@@ -233,12 +233,6 @@ class IMUDataProcessor:
         # previous loop, and the first data point from the current loop
         time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
-        # TODO: Debug info, remove later
-        # if time_diff > 0.5:
-        #     print(f"Time difference between data points is too high: {time_diff}")
-        #     print([self._last_data_point, *self._data_points])
-        #     print(self._last_data_point.timestamp)
-
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
