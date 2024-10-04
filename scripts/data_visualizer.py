@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 
-imu_data = pd.read_csv(Path('scripts/imu_data/InterestLaunch-9-28 (No Airbrakes Deployed).csv'))
+imu_data = pd.read_csv(Path('scripts/logs/log_2.csv'))
 # Filtering relevant columns for computation
 fields = ['timestamp', "speed", 'current_altitude', "estLinearAccelX", "estLinearAccelY", "estLinearAccelZ",]
 imu_data_filtered = imu_data[fields].dropna()
@@ -82,4 +82,4 @@ plt.grid(True)
 
 
 plt.tight_layout()
-plt.savefig("scripts/plots/interest_launch_data.png")
+plt.savefig("scripts/plots/our_flight_data.png")

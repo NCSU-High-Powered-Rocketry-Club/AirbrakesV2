@@ -28,6 +28,12 @@ class LoggedDataPacket(msgspec.Struct):
     scaledGyroX: float | None = None
     scaledGyroY: float | None = None
     scaledGyroZ: float | None = None
+    deltaVelX: float | None = None
+    deltaVelY: float | None = None
+    deltaVelZ: float | None = None
+    deltaThetaX: float | None = None
+    deltaThetaY: float | None = None
+    deltaThetaZ: float | None = None
 
     # Estimated Data Packet Fields
     estOrientQuaternionW: float | None = None
@@ -48,6 +54,9 @@ class LoggedDataPacket(msgspec.Struct):
     estLinearAccelX: float | None = None
     estLinearAccelY: float | None = None
     estLinearAccelZ: float | None = None
+    estGravityVectorX: float | None = None
+    estGravityVectorY: float | None = None
+    estGravityVectorZ: float | None = None
 
     # Processed Data Packet Fields
     avg_acceleration: tuple[float, float, float] | None = None
