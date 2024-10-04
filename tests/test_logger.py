@@ -176,7 +176,6 @@ class TestLogger:
             row_dict = {k: v for k, v in row_dict.items() if v}
 
             processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
-            processed_data_packet_fields.remove("estimated_data_packet")
 
             assert row_dict == {
                 "state": "1",
