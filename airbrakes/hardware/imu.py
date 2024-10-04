@@ -23,7 +23,7 @@ from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_S
 class IMU:
     """
     Represents the IMU on the rocket. It's used to get the current acceleration of the rocket. This is used to interact
-    with the data collected by the Parker-LORD 3DMCX5-AR.
+    with the data collected by the Parker-LORD 3DMCX5-AR (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
 
     It uses multiprocessing rather than threading to truly run in parallel with the main loop. We're doing this is
     because the IMU constantly polls data and can be slow, so it's better to run it in parallel.
@@ -143,7 +143,7 @@ class IMU:
 
                 # Each of these packets has multiple data points
                 for data_point in packet.data():
-                    data_point: mscl.MipDataPoint
+                    data_point: mscl.MipDataPointd
                     if data_point.valid():
                         channel = data_point.channelName()
                         # This cpp file was the only place I was able to find all the channel names
