@@ -167,11 +167,8 @@ class IMUDataProcessor:
                 avg_acceleration=self.avg_acceleration,
                 current_altitude=current_alt,
                 speed=speed,
-                estimated_data_packet=est_data_packet,
             )
-            for current_alt, speed, est_data_packet in zip(
-                self._current_altitudes, self._speeds, self._data_points, strict=False
-            )
+            for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
         ]
 
     def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:

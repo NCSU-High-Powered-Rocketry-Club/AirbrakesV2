@@ -16,7 +16,10 @@ class LoggedDataPacket(msgspec.Struct):
 
     state: str
     extension: float
+
+    # IMU Data Packet Fields
     timestamp: float
+    invalid_fields: list[str] | None = None
 
     # Raw Data Packet Fields
     scaledAccelX: float | None = None
@@ -63,7 +66,8 @@ class LoggedDataPacket(msgspec.Struct):
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
         """
-        Sets the attributes of the data packet corresponding to the IMU data packet.
+        Sets the attributes of the data packet corresponding to the IMU data packet. Performs
+        some processing to round the float values to 8 decimal places.
         """
         for key in imu_data_packet.__struct_fields__:
             if hasattr(self, key):

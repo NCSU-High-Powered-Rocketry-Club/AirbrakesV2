@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
@@ -89,6 +91,7 @@ class TestAirbrakesContext:
         4. Test whether the logger logs the correct data (with correct number and order of packets)
         """
         calls = []
+        asserts = []
 
         def update_data(self, est_data_packets):
             # monkeypatched method of IMUDataProcessor
@@ -106,6 +109,10 @@ class TestAirbrakesContext:
         def log(self, logged_data_packets):
             # monkeypatched method of Logger
             calls.append("log called")
+            asserts.append(len(logged_data_packets) > 10)
+            asserts.append(logged_data_packets[0].state == "S")
+            asserts.append(logged_data_packets[0].extension == ServoExtension.MIN_EXTENSION.value)
+            asserts.append(logged_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
 
         mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor)
         mocked_airbrakes.start()
@@ -125,5 +132,6 @@ class TestAirbrakesContext:
 
         assert len(calls) == 3
         assert calls == ["update_data called", "state update called", "log called"]
+        assert all(asserts)
 
         mocked_airbrakes.stop()

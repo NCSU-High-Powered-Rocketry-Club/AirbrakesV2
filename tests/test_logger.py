@@ -60,9 +60,9 @@ class TestLogger:
 
     def test_init_log_file_has_correct_headers(self, logger):
         with logger.log_path.open() as f:
-            reader = csv.reader(f)
-            headers = next(reader)  # Gets the first row, which are the headers
-            assert tuple(headers) == LoggedDataPacket.__struct_fields__
+            reader = csv.DictReader(f)
+            keys = reader.fieldnames
+            assert tuple(keys) == LoggedDataPacket.__struct_fields__
 
     def test_logging_loop_start_stop(self, logger):
         logger.start()
@@ -100,11 +100,11 @@ class TestLogger:
         assert values.qsize() == 1
         assert values.get() == "clean exit"
 
-    def test_logger_context_manager_with_exception(self, monkeypatch):
-        """Tests whether the Logger context manager propogates unknown exceptions."""
+    def test_logger_loop_exception_raised(self, monkeypatch):
+        """Tests whether the Logger loop properly propogates unknown exceptions."""
         values = multiprocessing.Queue()
 
-        def _logging_loop(self):
+        def _logging_loop(_):
             """Monkeypatched method for testing."""
             signal.signal(signal.SIGINT, signal.SIG_IGN)
             while True:
@@ -126,22 +126,21 @@ class TestLogger:
         assert "some error" in str(excinfo.value)
 
     def test_logging_loop_add_to_queue(self, logger):
-        test_log = {"state": "state", "extension": "0.0", "timestamp": "4"}
+        test_log = {"state": "state", "extension": "0.0", "timestamp": "4", "invalid_fields": "[]"}
         logger._log_queue.put(test_log)
         assert logger._log_queue.qsize() == 1
         logger.start()
-        time.sleep(0.05)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
-            reader = csv.reader(f)
-            headers = next(reader)
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
-            row: list[str] = next(reader)
-            # create dictionary from headers (field names) and row (values)
-            row_dict = dict(zip(LoggedDataPacket.__struct_fields__, row, strict=False))
-            # Only fetch non-empty values:
-            row_dict = {k: v for k, v in row_dict.items() if v}
+            for row in reader:
+                row: dict[str]
+                # Only fetch non-empty values:
+                row_dict = {k: v for k, v in row.items() if v}
 
             assert row_dict == test_log
 
@@ -150,7 +149,9 @@ class TestLogger:
     @pytest.mark.parametrize(
         "data_packet",
         [
-            LoggedDataPacket(*("1" for _ in range(len(LoggedDataPacket.__struct_fields__)))),
+            LoggedDataPacket(
+                **{k: "1" for k in LoggedDataPacket.__struct_fields__},
+            ),
         ],
         ids=[
             "RawDataPacket",
@@ -159,25 +160,29 @@ class TestLogger:
     def test_log_method(self, logger, data_packet):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
+
+        # make `invalid_fields` a list for accurate comparison:
+        data_packet.invalid_fields = ["something_invalid"]
+
         logger.log([data_packet])
         time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
+
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
-            reader = csv.reader(f)
-            headers = next(reader)
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
             # The row with the data packet:
-            row: list[str] = next(reader)
-            # create dictionary from headers (field names) and row (values)
-            row_dict = dict(zip(LoggedDataPacket.__struct_fields__, row, strict=False))
-            # Only fetch non-empty values:
-            row_dict = {k: v for k, v in row_dict.items() if v}
+            for row in reader:
+                row: dict[str]
+                # Only fetch non-empty values:
+                row_dict = {k: v for k, v in row.items() if v}
 
             processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
-            processed_data_packet_fields.remove("estimated_data_packet")
 
+            assert len(row_dict) > 10  # Random check to make sure we aren't missing any fields
             assert row_dict == {
                 "state": "1",
                 "extension": "1",

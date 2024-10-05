@@ -50,7 +50,7 @@ def airbrakes(imu, logger, servo, data_processor):
 
 @pytest.fixture
 def random_data_mock_imu():
-    return PytestMockIMU(port=PORT, frequency=FREQUENCY)
+    return RandomDataIMU(port=PORT, frequency=FREQUENCY)
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def mock_imu():
     return MockIMU(log_file_name=Path("scripts/imu_data/interest_launch_data"), frequency=FREQUENCY)
 
 
-class PytestMockIMU(IMU):
+class RandomDataIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
 
     def _fetch_data_loop(self, _: str, __: int) -> None:

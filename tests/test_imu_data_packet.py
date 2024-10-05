@@ -27,9 +27,11 @@ class TestEstimatedDataPacket:
             estLinearAccelX=0.0,
             estLinearAccelY=0.0,
             estLinearAccelZ=0.0,
+            invalid_fields=["estOrientQuaternion"],
         )
 
         assert packet.timestamp == 123456789
+        assert packet.invalid_fields == ["estOrientQuaternion"]
         assert packet.estOrientQuaternionW == 0.4
         assert packet.estOrientQuaternionX == 0.1
         assert packet.estOrientQuaternionY == 0.2
@@ -53,6 +55,7 @@ class TestEstimatedDataPacket:
         packet = EstimatedDataPacket(timestamp=123456789)
 
         assert packet.timestamp == 123456789
+        assert packet.invalid_fields is None
         assert packet.estOrientQuaternionW is None
         assert packet.estOrientQuaternionX is None
         assert packet.estOrientQuaternionY is None
@@ -86,6 +89,7 @@ class TestRawDataPacket:
     def test_raw_data_packet_initialization(self):
         packet = RawDataPacket(
             timestamp=123456789,
+            invalid_fields=["scaledAccelX"],
             scaledAccelX=1.0,
             scaledAccelY=2.0,
             scaledAccelZ=3.0,
@@ -95,6 +99,7 @@ class TestRawDataPacket:
         )
 
         assert packet.timestamp == 123456789
+        assert packet.invalid_fields == ["scaledAccelX"]
         assert packet.scaledAccelX == 1.0
         assert packet.scaledAccelY == 2.0
         assert packet.scaledAccelZ == 3.0
@@ -106,6 +111,7 @@ class TestRawDataPacket:
         packet = RawDataPacket(timestamp=123456789)
 
         assert packet.timestamp == 123456789
+        assert packet.invalid_fields is None
         assert packet.scaledAccelX is None
         assert packet.scaledAccelY is None
         assert packet.scaledAccelZ is None
