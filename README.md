@@ -57,10 +57,87 @@ AirbrakesV2/
 │   ├── ...
 ├── main.py [main file used to run on the rocket]
 ├── constants.py [file for constants used in the project]
-├── pyproject.toml [configuration file for the project]
+├── pyproject.toml [confipip install mkdocs-mermaid2-pluginguration file for the project]
 ├── README.md
 ```
 
+### System Architecture Flowchart
+```mermaid
+%%{init: {'theme': 'dark'}}%%
+flowchart TD
+
+    %% Define styles for different shapes
+    classDef circular fill:#44007e,stroke:#fff,stroke-width:2px,rx:50%,ry:50%;  %% Ovals for classes
+    classDef bubble fill:#164b6c,stroke:#fff,stroke-width:2px,rx:10px,ry:10px; %% Bubbles for methods
+    classDef outputSquare fill:#044728,stroke:#fff,stroke-width:2px; %% Squares for outputs
+    classDef textStyle fill:none,color:#fff,font-weight:bold,font-size:16px; %% Text style for bold white text
+
+    %% Main structure with main.py at the top
+    subgraph mainFlow[Main Flow]
+      direction TB
+      mainpy((main.py)):::circular --> Airbrakes((Airbrakes Context)):::circular
+     
+    end
+    Airbrakes --> Update[update]:::bubble
+    %% IMU Data Packet Flow
+    IMUDataPacket --> Update
+    
+    %% States as individual nodes
+    State((State)):::circular
+    Flightstate((Flight)):::circular
+    Standbystate((Standby)):::circular
+    FreefallState((Freefall)):::circular
+    LandedState((Landed)):::circular
+    MotorBurnState((Motor Burn)):::circular
+
+    %% Connections between States and Airbrakes
+    State((State)):::circular --> Airbrakes:::circular
+    State --> Update
+    
+    Flightstate((Flight)):::circular --> State
+    Standbystate((Standby)):::circular --> State
+    FreefallState((Freefall)):::circular --> State
+    LandedState((Landed)):::circular --> State
+    MotorBurnState((Motor Burn)):::circular --> State
+    
+    %% Connections with Labels
+    Airbrakes ---|Child Process| Logger((Logger)):::circular
+    Airbrakes ---|Child Process| IMU((IMU)):::circular
+    IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
+
+    %% IMU Data Processing
+    IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
+    IMUDataProcessor --> ProcessedData[(Processed Data Packet)]:::outputSquare
+    IMUDataProcessor --> Speed[(Speed)]:::outputSquare
+    IMUDataProcessor --> Attitude[(Attitude)]:::outputSquare
+    IMUDataProcessor --> AvgAccel[(Avg Acceleration)]:::outputSquare
+    
+    Speed --> ProcessedData
+    Attitude --> ProcessedData
+    AvgAccel --> ProcessedData
+    
+    ProcessedData --> Update
+
+    %% Logging Mechanism
+    Logger --> LogFunction[log]:::bubble
+    Update --> LogData[(Logged Data Packet)]:::outputSquare
+    LogData --> LogFunction
+
+    %% Airbrake Control Methods with Parentheses Displayed
+    Update --> ExtendAirbrakes[extend_airbrakes]:::bubble
+    Update --> RetractAirbrakes[retract_airbrakes]:::bubble
+
+    %% Servo Connections
+    Servo((Servo)):::circular --> RetractAirbrakes
+    Servo --> ExtendAirbrakes
+    Servo --> Airbrakes
+
+```
+| Type    | Color    | Examples                                                                                                         |
+|---------|----------|------------------------------------------------------------------------------------------------------------------|
+| Classes | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e`  | main.py, Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Flight, Standby, Freefall, Landed, Motor Burn |
+| Methods |  ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c`  | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
+| Outputs |  ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728`   | IMU Data Packet, Processed Data Packet, Logged Data Packet                                                      |
 ## Local Setup
 
 **This project uses Python 3.12. Using an older version may not work since we use newer language features**
