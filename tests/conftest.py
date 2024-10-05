@@ -16,6 +16,11 @@ from airbrakes.mock.mock_imu import MockIMU
 from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
+LAUNCH_DATA = [
+    Path("scripts/imu_data/winter_2023_launch_data.csv"),
+    Path("scripts/imu_data/InterestLaunch-9-28 (No Airbrakes Deployed).csv"),
+]
+LAUNCH_DATA_IDS = ["winter launch", "InterestLaunch-9-28"]
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
@@ -53,10 +58,10 @@ def random_data_mock_imu():
     return RandomDataIMU(port=PORT, frequency=FREQUENCY)
 
 
-@pytest.fixture
-def mock_imu():
-    # TODO: Change this to use the actual data file
-    return MockIMU(log_file_name=Path("scripts/imu_data/interest_launch_data"), frequency=FREQUENCY)
+@pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
+def mock_imu(request):
+    """Fixture that returns a MockIMU object with the specified log file."""
+    return MockIMU(log_file_path=request.param, real_time_simulation=False)
 
 
 class RandomDataIMU(IMU):
