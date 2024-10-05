@@ -34,7 +34,7 @@ class TestIntegration:
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
-        # values being StateInformation, which will note the min and max speed, altitude, and extension of the airbrakes.
+        # values being StateInformation, which will note information about that state.
         # Example:
         # {
         # "StandByState": StateInformation(min_speed=0.0, max_speed=0.0,
@@ -102,14 +102,12 @@ class TestIntegration:
         assert states_dict["StandByState"].max_altitude <= TAKEOFF_HEIGHT
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["StandByState"].extensions)
 
-
         assert states_dict["MotorBurnState"].min_speed >= TAKEOFF_SPEED
         assert states_dict["MotorBurnState"].max_speed <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert states_dict["MotorBurnState"].min_altitude >= -2.5  # detecting takeoff from speed data
         assert states_dict["MotorBurnState"].max_altitude >= TAKEOFF_HEIGHT
         assert states_dict["MotorBurnState"].max_altitude <= 500.0  # Our motor burn time isn't usually that long
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["MotorBurnState"].extensions)
-
 
         # TODO: Fix our current speed (kalman filter). Currently tests with broken speed values:
         # our coasting speed be fractionally higher than motor burn speed due to data processing time
@@ -123,7 +121,6 @@ class TestIntegration:
         # specially on subscale flights, where coast phase is very short anyway.
         # assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
 
-
         assert states_dict["FreeFallState"].min_speed >= 7.0  # speed might be less than gravity (parachutes)
         assert states_dict["FreeFallState"].max_speed <= 300.0  # high error for now
         # max altitude should be less than coasting altitude minus some error
@@ -132,12 +129,10 @@ class TestIntegration:
             >= DISTANCE_FROM_APOGEE - 10
         )
 
-
         assert (
             states_dict["FreeFallState"].min_altitude <= GROUND_ALTITIUDE + 10.0
         )  # free fall should be close to ground
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["FreeFallState"].extensions)
-
 
         # TODO: update after fixing speed calculations:
         # assert states_dict["LandedState"].min_speed == 0.0
