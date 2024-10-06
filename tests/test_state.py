@@ -7,10 +7,10 @@ from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnSta
 from constants import (
     AIRBRAKES_AFTER_COASTING,
     GROUND_ALTITIUDE,
+    MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     SERVO_DELAY,
     ServoExtension,
-    MAX_SPEED_THRESHOLD,
 )
 
 
