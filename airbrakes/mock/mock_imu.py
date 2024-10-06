@@ -1,13 +1,12 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import csv
+import multiprocessing
 import signal
 import time
 from pathlib import Path
 
-import numpy as np
-
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.utils import convert_to_float, convert_to_nanoseconds
 
@@ -28,6 +27,13 @@ class MockIMU(IMU):
             speed, e.g. for using it in the CI.
         """
         super().__init__(log_file_path, real_time_simulation)
+
+        # Limit how big the queue gets when doing an integration test, because we read the file
+        # much faster than update(), sometimes resulting thousands of data packets in the queue,
+        # which will obviously mess up data processing calculations. We limit it to 15 packets, which
+        # is more realistic for a real flight.
+        if not real_time_simulation:
+            self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(15)
 
     def _fetch_data_loop(self, log_file_path: Path, real_time_simulation: bool) -> None:
         """
