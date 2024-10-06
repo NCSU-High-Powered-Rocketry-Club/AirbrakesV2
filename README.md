@@ -131,7 +131,6 @@ AirbrakesV2/
 ├── pyproject.toml [configuration file for the project]
 ├── README.md
 ```
-                                                  |
 ## Local Setup
 
 **This project uses Python 3.12. Using an older version may not work since we use newer language features**
