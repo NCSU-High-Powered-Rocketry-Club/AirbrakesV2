@@ -5,8 +5,10 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
+    AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITIUDE,
+    MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
@@ -113,7 +115,9 @@ class MotorBurnState(State):
 
         # If our current speed is less than our max speed, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
-        if data.speed < data.max_speed:
+        # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
+        # speed
+        if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
             self.next_state()
             return
 
@@ -143,7 +147,7 @@ class CoastState(State):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
         # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > 1.5 and not self.airbrakes_extended:
+        if time.time() - self.start_time > AIRBRAKES_AFTER_COASTING and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
 

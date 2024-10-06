@@ -2,12 +2,12 @@ import time
 
 import pytest
 
+from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
 from constants import SERVO_DELAY, ServoExtension
 
 
-@pytest.mark.filterwarnings("ignore:To reduce servo jitter")  # ignore warning about servo jitter
 class TestAirbrakesContext:
     """Tests the AirbrakesContext class"""
 
@@ -20,7 +20,7 @@ class TestAirbrakesContext:
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
-        assert airbrakes.current_extension == 0.0
+        assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION
         assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandByState)
@@ -30,11 +30,11 @@ class TestAirbrakesContext:
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         airbrakes.extend_airbrakes()
         assert airbrakes.servo.current_extension == ServoExtension.MAX_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MAX_NO_BUZZ
         airbrakes.retract_airbrakes()
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_start(self, airbrakes):
@@ -51,7 +51,7 @@ class TestAirbrakesContext:
         assert not airbrakes.imu._running.value
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ  # set to "0"
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert airbrakes.shutdown_requested
 
     def test_airbrakes_ctrl_c_clean_exit(self, airbrakes):
@@ -82,6 +82,56 @@ class TestAirbrakesContext:
         assert not airbrakes.logger.is_running
         assert airbrakes.shutdown_requested
 
-    def test_airbrakes_update(self, monkeypatch):
-        """Tests whether the Airbrakes update method works correctly."""
-        # TODO: Implement this test after we get the apogee detection working
+    def test_airbrakes_update(self, monkeypatch, random_data_mock_imu, servo, logger, data_processor):
+        """Tests whether the Airbrakes update method works correctly by calling the relevant methods.
+
+        1. Mock fetching of data packets
+        2. Test whether the data processor gets only estimated data packets
+        3. Test whether the state machine is updated
+        4. Test whether the logger logs the correct data (with correct number and order of packets)
+        """
+        calls = []
+        asserts = []
+
+        def update_data(self, est_data_packets):
+            # monkeypatched method of IMUDataProcessor
+            calls.append("update_data called")
+            # Length of these lists must be equal to the number of estimated data packets for
+            # get_processed_data() to work correctly
+            self._current_altitudes = [0.0] * len(est_data_packets)
+            self._speeds = [0.0] * len(est_data_packets)
+            self._data_points = est_data_packets
+
+        def state(self):
+            # monkeypatched method of State
+            calls.append("state update called")
+
+        def log(self, logged_data_packets):
+            # monkeypatched method of Logger
+            calls.append("log called")
+            asserts.append(len(logged_data_packets) > 10)
+            asserts.append(logged_data_packets[0].state == "S")
+            asserts.append(logged_data_packets[0].extension == ServoExtension.MIN_EXTENSION.value)
+            asserts.append(logged_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
+
+        mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor)
+        mocked_airbrakes.start()
+
+        time.sleep(0.01)  # Sleep a bit so that the IMU queue is being filled
+
+        assert mocked_airbrakes.imu._data_queue.qsize() > 0
+        assert mocked_airbrakes.state.name == "StandByState"
+        assert mocked_airbrakes.data_processor._last_data_point is None
+
+        monkeypatch.setattr(data_processor.__class__, "update_data", update_data)
+        monkeypatch.setattr(mocked_airbrakes.state.__class__, "update", state)
+        monkeypatch.setattr(logger.__class__, "log", log)
+
+        # Let's call .update() and check if stuff was called and/or changed:
+        mocked_airbrakes.update()
+
+        assert len(calls) == 3
+        assert calls == ["update_data called", "state update called", "log called"]
+        assert all(asserts)
+
+        mocked_airbrakes.stop()

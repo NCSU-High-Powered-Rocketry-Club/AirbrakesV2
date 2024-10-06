@@ -181,7 +181,6 @@ class TestLogger:
                 row_dict = {k: v for k, v in row.items() if v}
 
             processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
-            processed_data_packet_fields.remove("estimated_data_packet")
 
             assert len(row_dict) > 10  # Random check to make sure we aren't missing any fields
             assert row_dict == {

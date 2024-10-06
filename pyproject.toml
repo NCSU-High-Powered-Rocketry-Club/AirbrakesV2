@@ -44,4 +44,8 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 
 [tool.pytest.ini_options]
-filterwarnings = "ignore:This process:DeprecationWarning"  # ignore warning about fork()
+filterwarnings = [
+    "ignore:This process:DeprecationWarning",  # ignore warning about fork()
+    "ignore:To reduce servo jitter",  # ignore warning about pigpio
+    "ignore:Could not import MSCL",  # ignore warning about MSCL being not installed
+]

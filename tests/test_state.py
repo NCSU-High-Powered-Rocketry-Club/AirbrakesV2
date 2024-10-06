@@ -4,7 +4,14 @@ from abc import ABC
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
-from constants import SERVO_DELAY, ServoExtension
+from constants import (
+    AIRBRAKES_AFTER_COASTING,
+    GROUND_ALTITIUDE,
+    MAX_SPEED_THRESHOLD,
+    MOTOR_BURN_TIME,
+    SERVO_DELAY,
+    ServoExtension,
+)
 
 
 @pytest.fixture
@@ -34,7 +41,7 @@ def motor_burn_state(airbrakes):
 
 
 @pytest.fixture
-def flight_state(airbrakes):
+def coast_state(airbrakes):
     f = CoastState(airbrakes)
     f.context.state = f
     return f
@@ -103,8 +110,8 @@ class TestStandByState:
         ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
     )
     def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
-        stand_by_state.context.data_processor._speed = current_speed
-        stand_by_state.context.data_processor._current_altitude = current_altitude
+        stand_by_state.context.data_processor._speeds = [current_speed]
+        stand_by_state.context.data_processor._current_altitudes = [current_altitude]
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
 
@@ -120,7 +127,7 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
 
@@ -128,55 +135,64 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "max_speed", "expected_state", "burn_time", "airbrakes_ext"),
+        ("current_speed", "max_speed", "expected_state", "burn_time"),
         [
-            (0.0, 0.0, MotorBurnState, 0.0, 0.0),
-            (100.0, 100.0, MotorBurnState, 0.00, 0.0),
-            (50.0, 54.0, CoastState, 0.00, 1.0),
-            (60.0, 60.0, CoastState, 2.4, 1.0),
+            (0.0, 0.0, MotorBurnState, 0.0),
+            (100.0, 100.0, MotorBurnState, 0.00),
+            (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
+            (53.999 - 54.0 * MAX_SPEED_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
+            (60.0, 60.0, CoastState, MOTOR_BURN_TIME + 0.1),
         ],
-        ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
+        ids=[
+            "at_launchpad",
+            "motor_burn",
+            "decreasing_speed_under_threshold",
+            "decreasing_speed_over_threshold",
+            "faulty_speed",
+        ],
     )
-    def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time, airbrakes_ext):
-        motor_burn_state.context.data_processor._speed = current_speed
+    def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
+        motor_burn_state.context.data_processor._speeds = [current_speed]
         motor_burn_state.context.data_processor._max_speed = max_speed
         time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.current_extension == airbrakes_ext
+        assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
 
 
-class TestFlightState:
-    """Tests the FlightState class"""
+class TestCoastState:
+    """Tests the CoastState class"""
 
-    def test_slots(self, flight_state):
-        inst = flight_state
+    def test_slots(self, coast_state):
+        inst = coast_state
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, flight_state, airbrakes):
-        assert flight_state.context == airbrakes
-        assert flight_state.context.current_extension == 0.0
-        assert issubclass(flight_state.__class__, State)
+    def test_init(self, coast_state, airbrakes):
+        assert coast_state.context == airbrakes
+        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert issubclass(coast_state.__class__, State)
 
-    def test_name(self, flight_state):
-        assert flight_state.name == "FlightState"
+    def test_name(self, coast_state):
+        assert coast_state.name == "CoastState"
 
     @pytest.mark.parametrize(
-        ("current_altitude", "max_altitude", "expected_state"),
+        ("current_altitude", "max_altitude", "expected_state", "coast_time", "airbrakes_ext"),
         [
-            (200.0, 200.0, CoastState),
-            (100.0, 150.0, CoastState),
-            (100.0, 400.0, FreeFallState),
+            (200.0, 200.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
+            (100.0, 150.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
+            (100.0, 150.0, CoastState, AIRBRAKES_AFTER_COASTING + 0.01, ServoExtension.MAX_EXTENSION),
+            (100.0, 400.0, FreeFallState, 0.0, ServoExtension.MIN_EXTENSION),
         ],
-        ids=["climbing", "just_descent", "apogee_threshold"],
+        ids=["climbing", "just_descent", "airbrakes_long_coast", "apogee_threshold"],
     )
-    def test_update(self, flight_state, current_altitude, max_altitude, expected_state):
-        flight_state.context.data_processor._current_altitude = current_altitude
-        flight_state.context.data_processor._max_altitude = max_altitude
-        flight_state.update()
-        assert isinstance(flight_state.context.state, expected_state)
-        assert flight_state.context.current_extension == 0.0
+    def test_update(self, coast_state, current_altitude, max_altitude, expected_state, coast_time, airbrakes_ext):
+        coast_state.context.data_processor._current_altitudes = [current_altitude]
+        coast_state.context.data_processor._max_altitude = max_altitude
+        time.sleep(coast_time)
+        coast_state.update()
+        assert isinstance(coast_state.context.state, expected_state)
+        assert coast_state.context.current_extension == airbrakes_ext
 
 
 class TestFreeFallState:
@@ -189,7 +205,7 @@ class TestFreeFallState:
 
     def test_init(self, free_fall_state, airbrakes):
         assert free_fall_state.context == airbrakes
-        assert free_fall_state.context.current_extension == 0.0
+        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(free_fall_state.__class__, State)
 
     def test_name(self, free_fall_state):
@@ -200,15 +216,15 @@ class TestFreeFallState:
         [
             (50.0, FreeFallState),
             (19.0, FreeFallState),
-            (10.0, LandedState),
+            (GROUND_ALTITIUDE - 5, LandedState),
         ],
         ids=["falling", "almost_landed", "landed"],
     )
     def test_update(self, free_fall_state, current_altitude, expected_state):
-        free_fall_state.context.data_processor._current_altitude = current_altitude
+        free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.current_extension == 0.0
+        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestLandedState:
@@ -221,7 +237,7 @@ class TestLandedState:
 
     def test_init(self, landed_state, airbrakes):
         assert landed_state.context == airbrakes
-        assert landed_state.context.current_extension == 0.0
+        assert landed_state.context.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):
