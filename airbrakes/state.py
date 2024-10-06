@@ -8,6 +8,7 @@ from constants import (
     AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITIUDE,
+    MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
@@ -114,7 +115,9 @@ class MotorBurnState(State):
 
         # If our current speed is less than our max speed, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
-        if data.speed < data.max_speed:
+        # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
+        # speed
+        if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
             self.next_state()
             return
 

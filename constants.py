@@ -10,9 +10,7 @@ from pathlib import Path
 # These are used for simulations
 MOCK_ARGUMENT = "m"
 REAL_SERVO_ARGUMENT = "rs"
-# SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28 (No Airbrakes Deployed).csv")
-SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_launch_data.csv")
-# SIMULATION_LOG_PATH = Path("logs/2023-11-18_18_21_52_mergedLORDlog.csv")
+SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
 
 # -------------------------------------------------------
 # Servo Configuration
@@ -38,7 +36,6 @@ class ServoExtension(Enum):
 
 
 # -------------------------------------------------------
-# IMU Configuration
 # IMU Configuration
 # -------------------------------------------------------
 
@@ -95,9 +92,9 @@ TAKEOFF_HEIGHT = 10  # meters
 TAKEOFF_SPEED = 10  # m/s
 
 # MotorBurn to Coasting:
-# Acceleration inside this range will be considered as the motor burnout acceleration
-ACCELERATION_AT_MOTOR_BURNOUT = [0.0, 6.0]  # m/s^2  (only gravity should be acting on the rocket)
-HIGH_SPEED_AT_MOTOR_BURNOUT = 60.0  # m/s
+
+# We will only say that the motor has stopped burning if the current speed <= Max Speed * (1 - MAX_SPEED_THRESHOLD)
+MAX_SPEED_THRESHOLD = 0.03
 MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 
 # Coasting to Free fall:
