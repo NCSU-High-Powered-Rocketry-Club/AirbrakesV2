@@ -4,8 +4,14 @@ from abc import ABC
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
-from constants import AIRBRAKES_AFTER_COASTING, GROUND_ALTITIUDE, MOTOR_BURN_TIME, SERVO_DELAY, ServoExtension, \
-    MAX_SPEED_THRESHOLD
+from constants import (
+    AIRBRAKES_AFTER_COASTING,
+    GROUND_ALTITIUDE,
+    MOTOR_BURN_TIME,
+    SERVO_DELAY,
+    ServoExtension,
+    MAX_SPEED_THRESHOLD,
+)
 
 
 @pytest.fixture
@@ -137,7 +143,13 @@ class TestMotorBurnState:
             (53.999 - 54.0 * MAX_SPEED_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
             (60.0, 60.0, CoastState, MOTOR_BURN_TIME + 0.1),
         ],
-        ids=["at_launchpad", "motor_burn", "decreasing_speed", "faulty_speed"],
+        ids=[
+            "at_launchpad",
+            "motor_burn",
+            "decreasing_speed_under_threshold",
+            "decreasing_speed_over_threshold",
+            "faulty_speed",
+        ],
     )
     def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
         motor_burn_state.context.data_processor._speeds = [current_speed]
