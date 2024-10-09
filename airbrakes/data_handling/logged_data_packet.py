@@ -2,9 +2,8 @@
 
 import msgspec
 
-from airbrakes.data_handling.imu_data_packet import IMUDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import DATA_PACKET_DECIMAL_PLACES
 
 
 class LoggedDataPacket(msgspec.Struct):
@@ -66,18 +65,92 @@ class LoggedDataPacket(msgspec.Struct):
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
         """
-        Sets the attributes of the data packet corresponding to the IMU data packet. Performs
-        some processing to round the float values to 8 decimal places.
+        Sets the attributes of the data packet corresponding to the IMU data packet. Rounds the
+        float values to 8 decimal places, if the value is a float.
+
+        This function could be a lot cleaner and just use getattr() and setattr(), but that is
+        slower and takes up 15% of the main loop execution time.
+
+        :param ldp: The logged data packet to set the attributes of.
+        :param imu_data_packet: The IMU data packet to set the attributes from.
         """
-        for key in imu_data_packet.__struct_fields__:
-            if hasattr(self, key):
-                value = getattr(imu_data_packet, key)
-                # Only logs the 8 decimal places as there is already so much noise in the data
-                if isinstance(value, float):
-                    value = round(value, DATA_PACKET_DECIMAL_PLACES)
-                setattr(self, key, value)
-            else:
-                raise AttributeError(f"{key} is not a valid attribute")
+        idp = imu_data_packet
+        if isinstance(idp, EstimatedDataPacket):
+            # super ugly code, but it results in a 10-14% speedup overall
+            # The speed improvements come from not looping through the fields of the data packet
+            # and using getattr() and setattr() to set the attributes of the logged data packet.
+            # Additionally, rounding using f-strings is faster than round() by about ~25%
+            if idp.estOrientQuaternionW is not None:
+                self.estOrientQuaternionW = f"{idp.estOrientQuaternionW:.8f}"
+            if idp.estOrientQuaternionX is not None:
+                self.estOrientQuaternionX = f"{idp.estOrientQuaternionX:.8f}"
+            if idp.estOrientQuaternionY is not None:
+                self.estOrientQuaternionY = f"{idp.estOrientQuaternionY:.8f}"
+            if idp.estOrientQuaternionZ is not None:
+                self.estOrientQuaternionZ = f"{idp.estOrientQuaternionZ:.8f}"
+            if idp.estAttitudeUncertQuaternionW is not None:
+                self.estAttitudeUncertQuaternionW = f"{idp.estAttitudeUncertQuaternionW:.8f}"
+            if idp.estAttitudeUncertQuaternionX is not None:
+                self.estAttitudeUncertQuaternionX = f"{idp.estAttitudeUncertQuaternionX:.8f}"
+            if idp.estAttitudeUncertQuaternionY is not None:
+                self.estAttitudeUncertQuaternionY = f"{idp.estAttitudeUncertQuaternionY:.8f}"
+            if idp.estAttitudeUncertQuaternionZ is not None:
+                self.estAttitudeUncertQuaternionZ = f"{idp.estAttitudeUncertQuaternionZ:.8f}"
+            if idp.estAngularRateX is not None:
+                self.estAngularRateX = f"{idp.estAngularRateX:.8f}"
+            if idp.estAngularRateY is not None:
+                self.estAngularRateY = f"{idp.estAngularRateY:.8f}"
+            if idp.estAngularRateZ is not None:
+                self.estAngularRateZ = f"{idp.estAngularRateZ:.8f}"
+            if idp.estCompensatedAccelX is not None:
+                self.estCompensatedAccelX = f"{idp.estCompensatedAccelX:.8f}"
+            if idp.estCompensatedAccelY is not None:
+                self.estCompensatedAccelY = f"{idp.estCompensatedAccelY:.8f}"
+            if idp.estCompensatedAccelZ is not None:
+                self.estCompensatedAccelZ = f"{idp.estCompensatedAccelZ:.8f}"
+            if idp.estLinearAccelX is not None:
+                self.estLinearAccelX = f"{idp.estLinearAccelX:.8f}"
+            if idp.estLinearAccelY is not None:
+                self.estLinearAccelY = f"{idp.estLinearAccelY:.8f}"
+            if idp.estLinearAccelZ is not None:
+                self.estLinearAccelZ = f"{idp.estLinearAccelZ:.8f}"
+            if idp.estGravityVectorX is not None:
+                self.estGravityVectorX = f"{idp.estGravityVectorX:.8f}"
+            if idp.estGravityVectorY is not None:
+                self.estGravityVectorY = f"{idp.estGravityVectorY:.8f}"
+            if idp.estGravityVectorZ is not None:
+                self.estGravityVectorZ = f"{idp.estGravityVectorZ:.8f}"
+            if idp.estPressureAlt is not None:
+                self.estPressureAlt = f"{idp.estPressureAlt:.8f}"
+
+        if isinstance(idp, RawDataPacket):
+            if idp.scaledAccelX is not None:
+                self.scaledAccelX = f"{idp.scaledAccelX:.8f}"
+            if idp.scaledAccelY is not None:
+                self.scaledAccelY = f"{idp.scaledAccelY:.8f}"
+            if idp.scaledAccelZ is not None:
+                self.scaledAccelZ = f"{idp.scaledAccelZ:.8f}"
+            if idp.scaledGyroX is not None:
+                self.scaledGyroX = f"{idp.scaledGyroX:.8f}"
+            if idp.scaledGyroY is not None:
+                self.scaledGyroY = f"{idp.scaledGyroY:.8f}"
+            if idp.scaledGyroZ is not None:
+                self.scaledGyroZ = f"{idp.scaledGyroZ:.8f}"
+            if idp.deltaVelX is not None:
+                self.deltaVelX = f"{idp.deltaVelX:.8f}"
+            if idp.deltaVelY is not None:
+                self.deltaVelY = f"{idp.deltaVelY:.8f}"
+            if idp.deltaVelZ is not None:
+                self.deltaVelZ = f"{idp.deltaVelZ:.8f}"
+            if idp.deltaThetaX is not None:
+                self.deltaThetaX = f"{idp.deltaThetaX:.8f}"
+            if idp.deltaThetaY is not None:
+                self.deltaThetaY = f"{idp.deltaThetaY:.8f}"
+            if idp.deltaThetaZ is not None:
+                self.deltaThetaZ = f"{idp.deltaThetaZ:.8f}"
+
+        # Common field between the two
+        self.invalid_fields = idp.invalid_fields
 
     def set_processed_data_packet_attributes(self, processed_data_packet: ProcessedDataPacket) -> None:
         """
