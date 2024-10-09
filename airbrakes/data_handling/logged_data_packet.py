@@ -70,7 +70,6 @@ class LoggedDataPacket(msgspec.Struct):
         This function could be a lot cleaner and just use getattr() and setattr(), but that is
         slower and takes up 15% of the main loop execution time.
 
-        :param ldp: The logged data packet to set the attributes of.
         :param imu_data_packet: The IMU data packet to set the attributes from.
         """
         idp = imu_data_packet
