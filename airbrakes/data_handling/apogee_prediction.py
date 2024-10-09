@@ -1,9 +1,19 @@
+"""Module for predicting apogee"""
+
 import numpy as np
-from airbrakes.state import State
+
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-
+from airbrakes.state import State
 class ApogeePrediction:
+    """
+    Class that performs the calculations to predict the apogee of the rocket during flight, will be used to determine
+    servo extension. Will use multiprocessing in the future.
+
+    :param: state: airbrakes state class
+    :param: data_processor: IMUDataProcessor class
+    :param: data_points: EstimatedDataPacket class
+    """
     def __init__(self, state: State, data_processor: IMUDataProcessor, data_points: EstimatedDataPacket):
         self.state = state # not being used currently
         self.data_processor = data_processor
@@ -12,7 +22,7 @@ class ApogeePrediction:
         self._previous_velocity: float = 0.0
 
         self.GRAVITY = 9.798 # will use gravity vector in future
-    
+
     def _calculate_speeds(self):
         """
         Calculates the velocity in the z direction using rotated acceleration values
