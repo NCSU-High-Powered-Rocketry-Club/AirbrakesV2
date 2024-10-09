@@ -33,6 +33,8 @@ class IMUDataProcessor:
         "_previous_velocity",
         "_speeds",
         "upside_down",
+        "_first_data_point",
+        "_quat",
     )
 
     def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool = False):
@@ -46,6 +48,8 @@ class IMUDataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
         self._last_data_point: EstimatedDataPacket | None = None
+        self._first_data_point: EstimatedDataPacket | None = None
+        self._quat: npt.NDArray[np.float64] = None
 
         self._data_points: Sequence[EstimatedDataPacket]
 
@@ -121,6 +125,14 @@ class IMUDataProcessor:
             return
 
         self._data_points = data_points
+
+        if self._first_data_point is None:
+            self._first_data_point: EstimatedDataPacket = self._data_points[0]
+            self._quat = np.array[self._first_data_point.estOrientQuaternionW,
+                                  self._first_data_point.estOrientQuaternionX,
+                                  self._first_data_point.estOrientQuaternionY,
+                                  self._first_data_point.estOrientQuaternionZ]
+            
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
@@ -203,6 +215,66 @@ class IMUDataProcessor:
         """
         # calculate the average acceleration in the x, y, and z directions
         return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
+
+    def _calculate_rotations(self):
+        dps = self._data_points
+
+
+        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+
+
+        for dp,dt in zip(dps,time_diff):
+            compx = dp.estCompensatedAccelX
+            compy = dp.estCompensatedAccelY
+            compz = dp.estCompensatedAccelZ
+            gyrox = dp.estAngularRateX
+            gyroy = dp.estAngularRateY
+            gyroz = dp.estAngularRateZ
+            m = np.array([[0, -gyrox, -gyroy, -gyroz],
+                          [gyrox, 0, gyroz, -gyroy],
+                          [gyroy, -gyroz, 0, gyrox],
+                          [gyroz, gyroy, -gyrox, 0]])
+            epsilon = 1-(np.power(self._quat[0],2) + np.power(self._quat[1],2) + np.power(self._quat[2],2), np.power(self._quat[3],2))
+            K=1
+            deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat))
+            
+            self._quat = self._quat + np.transpose(deltaQuat)*dt
+            accelQuat = np.array([0, compx, compy, compz])
+            accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
+        rotatedAccelx = accelRotatedQuat[1]
+        rotatedAccely = accelRotatedQuat[2]
+        rotatedAccelz = accelRotatedQuat[3]
+
+            
+    def _quatmultiply(self, q1: npt.NDArray[np.float64] = None, q2: npt.NDArray[np.float64] = None):
+        """
+        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1*q2 =/= q2*q1
+
+        :param q1: numpy array with the first quaternion in row form
+        :param q2: numpy array with the second quaternion in row form
+
+        :return: numpy array with the multiplied quaternion
+        """
+        w1, x1, y1, z1 = q1
+        w2, x2, y2, z2 = q2
+        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+        return np.array([w, x, y, z])
+    
+
+    def _quatconj(self, q: npt.NDArray[np.float64] = None):
+        """
+        Calculates the conjugate of a quaternion
+
+        :param q1: numpy array with a quaternion in row form
+
+        :return: numpy array with the quaternion conjugate
+        """
+        w, x, y, z = q
+        return np.array([w, -x, -y, -z])
+
 
     def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
         """
