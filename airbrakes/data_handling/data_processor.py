@@ -50,6 +50,7 @@ class IMUDataProcessor:
         self._last_data_point: EstimatedDataPacket | None = None
         self._first_data_point: EstimatedDataPacket | None = None
         self._quat: npt.NDArray[np.float64] = None
+        self._rotated_accel: npt.NDArray[np.float64] = None
 
         self._data_points: Sequence[EstimatedDataPacket]
 
@@ -112,6 +113,11 @@ class IMUDataProcessor:
     def max_speed(self) -> float:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return self._max_speed
+    
+    @property
+    def rotated_accel(self) -> npt.NDArray[np.float64]:
+        """the rotated compensated acceleration vectors with respect to Earth frame of reference"""
+        return self._rotated_accel
 
     def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
@@ -163,6 +169,9 @@ class IMUDataProcessor:
 
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
+
+        # Rotate compensated acceleration vector to Earth frame of reference
+        self._rotated_accel = self._calculate_rotations()
 
     def get_processed_data(self) -> list[ProcessedDataPacket]:
         """
@@ -217,38 +226,45 @@ class IMUDataProcessor:
         return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
 
     def _calculate_rotations(self):
-        dps = self._data_points
+        """
+        Calculates the rotated acceleration vector. Converts gyroscope data into a delta quaternion, and adds onto the last quaternion.
+        Will most likely be replaced by IMU quaternion data in the future, this is a work-around due to bad datasets.
+
+        :return: numpy list of rotated acceleration vector [x,y,z]
+        """
+
+        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, self._data_points]]) * 1e-9
 
 
-        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
-
-
-        for dp,dt in zip(dps,time_diff):
+        for dp,dt in zip(self._data_points,time_diff):
             compx = dp.estCompensatedAccelX
             compy = dp.estCompensatedAccelY
             compz = dp.estCompensatedAccelZ
             gyrox = dp.estAngularRateX
             gyroy = dp.estAngularRateY
             gyroz = dp.estAngularRateZ
+            
+            # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
+            # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
             m = np.array([[0, -gyrox, -gyroy, -gyroz],
                           [gyrox, 0, gyroz, -gyroy],
                           [gyroy, -gyroz, 0, gyrox],
                           [gyroz, gyroy, -gyrox, 0]])
-            epsilon = 1-(np.power(self._quat[0],2) + np.power(self._quat[1],2) + np.power(self._quat[2],2), np.power(self._quat[3],2))
-            K=1
-            deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat))
+            epsilon = 1-((self._quat[0]**2) + (self._quat[1]**2) + (self._quat[2]**2), (self._quat[3]**2))
+            K=5
+            deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat)) + K*epsilon*np.transpose(self._quat)
             
+            # updates quaternion by adding delta quaternion, and rotates acceleration vector
             self._quat = self._quat + np.transpose(deltaQuat)*dt
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
-        rotatedAccelx = accelRotatedQuat[1]
-        rotatedAccely = accelRotatedQuat[2]
-        rotatedAccelz = accelRotatedQuat[3]
+
+        return np.array(accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3])
 
             
-    def _quatmultiply(self, q1: npt.NDArray[np.float64] = None, q2: npt.NDArray[np.float64] = None):
+    def _quatmultiply(self, q1: npt.NDArray[np.float64], q2: npt.NDArray[np.float64]):
         """
-        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1*q2 =/= q2*q1
+        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
 
         :param q1: numpy array with the first quaternion in row form
         :param q2: numpy array with the second quaternion in row form
@@ -264,7 +280,7 @@ class IMUDataProcessor:
         return np.array([w, x, y, z])
     
 
-    def _quatconj(self, q: npt.NDArray[np.float64] = None):
+    def _quatconj(self, q: npt.NDArray[np.float64]):
         """
         Calculates the conjugate of a quaternion
 
