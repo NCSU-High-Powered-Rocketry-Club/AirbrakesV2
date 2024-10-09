@@ -58,7 +58,6 @@ class LoggedDataPacket(msgspec.Struct):
     estGravityVectorZ: float | None = None
 
     # Processed Data Packet Fields
-    avg_acceleration: tuple[float, float, float] | None = None
     current_altitude: float | None = None
     speed: float | None = None
     # Not logging maxes because they are easily found
@@ -156,6 +155,5 @@ class LoggedDataPacket(msgspec.Struct):
         """
         Sets the attributes of the data packet corresponding to the processed data packet.
         """
-        self.avg_acceleration = processed_data_packet.avg_acceleration
         self.current_altitude = processed_data_packet.current_altitude
         self.speed = processed_data_packet.speed

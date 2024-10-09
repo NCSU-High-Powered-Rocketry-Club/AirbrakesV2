@@ -47,44 +47,53 @@ class TestLoggedDataPacket:
         available_fields = est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
         assert log_dp_fields == available_fields, f"Extra fields: {log_dp_fields - available_fields}"
 
-    def test_set_imu_data_packet_attributes(self, logged_data_packet):
+    @pytest.mark.parametrize(
+        "imu_data_packet",
+        [
+            EstimatedDataPacket(timestamp=3.0 + 1e9, invalid_fields=["test_1"]),
+            RawDataPacket(timestamp=4.0 + 1e9, invalid_fields=["test_2"]),
+        ],
+        ids=["EstimatedDataPacket", "RawDataPacket"],
+    )
+    def test_set_imu_data_packet_attributes(self, logged_data_packet, imu_data_packet):
         """Tests whether the set_imu_data_packet_attributes method sets the attributes correctly,
         along with proper rounding of the float values."""
         packet = logged_data_packet
-        est_data_packet = EstimatedDataPacket(
-            timestamp=3 + 1e9, estPressureAlt=1.234567891, estAngularRateX=0.8885554448, estOrientQuaternionW=0.4445
-        )
-        raw_data_packet = RawDataPacket(
-            timestamp=4 + 1e9, scaledAccelY=1.0923457654, deltaThetaY=1.6768972567, scaledGyroZ=0.12345
-        )
 
-        packet.set_imu_data_packet_attributes(est_data_packet)
-        assert packet.timestamp == 3.0 + 1e9
+        # simulate setting all the fields of the imu_data_packet
+        for i in imu_data_packet.__struct_fields__:
+            if i in ["timestamp", "invalid_fields"]:
+                continue  # this is not set in set_imu_data_packet_attributes
+            setattr(imu_data_packet, i, 1.2345678910)
+
+        packet.set_imu_data_packet_attributes(imu_data_packet)
+
+        if isinstance(imu_data_packet, EstimatedDataPacket):
+            assert packet.invalid_fields == ["test_1"]
+        else:
+            assert packet.invalid_fields == ["test_2"]
+
         assert packet.state == "test"
         assert packet.extension == 0.0
-        assert packet.estPressureAlt == 1.23456789
-        assert packet.estAngularRateX == 0.88855544
-        assert packet.estOrientQuaternionW == 0.4445
+        # set_imu_data_packet_attributes should not set timestamp
+        assert packet.timestamp == 0.0
 
-        packet.set_imu_data_packet_attributes(raw_data_packet)
-        assert packet.timestamp == 4.0 + 1e9
-        assert packet.state == "test"
-        assert packet.extension == 0.0
-        assert packet.scaledAccelY == 1.09234577
-        assert packet.deltaThetaY == 1.67689726
-        assert packet.scaledGyroZ == 0.12345
+        # check if all the fields are set correctly:
+        for i in imu_data_packet.__struct_fields__:
+            if i in ["timestamp", "invalid_fields"]:
+                continue  # already tested above
+            # test rounding of the float values:
+            assert getattr(packet, i) == "1.23456789", f"{i} is not set correctly"
 
     def test_set_processed_data_packet_attributes(self, logged_data_packet):
         """Tests whether the set_processed_data_packet_attributes method sets the attributes correctly"""
         packet = logged_data_packet
         proc_data_packet = ProcessedDataPacket(
-            avg_acceleration=(1.234567891, 0.8885554448, 0.4445),
             current_altitude=1.0923457654,
             speed=1.6768972567,
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
-        assert packet.avg_acceleration == (1.234567891, 0.8885554448, 0.4445)
         assert packet.current_altitude == 1.0923457654
         assert packet.speed == 1.6768972567
         assert packet.timestamp == 0.0
