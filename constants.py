@@ -71,7 +71,6 @@ TEST_LOGS_PATH = Path("test_logs")
 # see stop() and _logging_loop() for more details.
 STOP_SIGNAL = "STOP"
 
-DATA_PACKET_DECIMAL_PLACES = 8
 
 # Don't log more than x packets for StandbyState and LandedState
 LOG_CAPACITY_AT_STANDBY = 5000

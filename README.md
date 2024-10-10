@@ -66,11 +66,9 @@ flowchart TD
     %%IMUDataProcessor --> ProcessedData[(Processed Data Packet)]:::outputSquare
     IMUDataProcessor --> Speed[(Speed)]:::outputSquare
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
-    IMUDataProcessor --> AvgAccel[(Avg Acceleration)]:::outputSquare
     
     Speed -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
-    AvgAccel -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     
      ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
 

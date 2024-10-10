@@ -154,10 +154,12 @@ class TestIntegration:
             state_list = []
             for row in reader:
                 line_number += 1
-                # Check if the state field has only a single letter:
                 state: str = row["state"]
                 timestamp: str = row["timestamp"]
                 extension: str = row["extension"]
+                accel: str = row["estLinearAccelX"] or row["scaledAccelX"]  # raw or est data
+
+                # Check if the state field has only a single letter:
                 assert len(state) == 1
                 if state not in state_list:
                     state_list.append(state)
@@ -168,6 +170,10 @@ class TestIntegration:
 
                 # Check if the extension is a float:
                 assert float(extension) in [ServoExtension.MIN_EXTENSION.value, ServoExtension.MAX_EXTENSION.value]
+
+                # Check if we round our values to 8 decimal places:
+                assert accel.count(".") == 1
+                assert len(accel.split(".")[1]) == 8
 
             # Check if we have a lot of lines in the log file:
             assert line_number > 80_000  # arbitrary value, depends on length of log buffer and flight data.
