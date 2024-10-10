@@ -6,7 +6,7 @@ import multiprocessing
 import signal
 from pathlib import Path
 
-import msgspec
+from msgspec.structs import asdict
 
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
@@ -83,7 +83,7 @@ class Logger:
         for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
             # We are populating a dictionary with the fields of the logged data packet
-            message_dict = msgspec.structs.asdict(logged_data_packet)
+            message_dict = asdict(logged_data_packet)
 
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
                 if self._log_counter < LOG_CAPACITY_AT_STANDBY:
