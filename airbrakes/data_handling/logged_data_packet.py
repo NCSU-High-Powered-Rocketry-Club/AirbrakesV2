@@ -2,7 +2,7 @@
 
 import msgspec
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
@@ -121,7 +121,7 @@ class LoggedDataPacket(msgspec.Struct):
             if idp.estPressureAlt is not None:
                 self.estPressureAlt = f"{idp.estPressureAlt:.8f}"
 
-        if isinstance(idp, RawDataPacket):
+        else:
             if idp.scaledAccelX is not None:
                 self.scaledAccelX = f"{idp.scaledAccelX:.8f}"
             if idp.scaledAccelY is not None:
