@@ -17,7 +17,7 @@ except ImportError:
     )
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
+from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET, FEET_TO_METERS
 
 
 class IMU:
@@ -160,6 +160,9 @@ class IMU:
                                 setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
                                 setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
                                 setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
+                            case "estPressureAlt":
+                                # Converts the pressure altitude to meters and sets it to the data packet object
+                                setattr(imu_data_packet, channel, data_point.as_float() * FEET_TO_METERS)
                             case _:
                                 # Because the attribute names in our data packet classes are the same as the channel
                                 # names, we can just set the attribute to the value of the data point.

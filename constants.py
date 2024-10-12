@@ -52,6 +52,9 @@ RAW_DESCRIPTOR_SET = 128
 # The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
 
+# We need to convert the pressure altitude to meters
+FEET_TO_METERS = 0.3048
+
 # -------------------------------------------------------
 # Orientation Configuration
 # -------------------------------------------------------
