@@ -273,11 +273,14 @@ class IMUDataProcessor:
         actually updated at a rate of 50hz, so we have to check that it's a "new" data point before calculating speed.
         """
 
+        # Accounts for start up not having a last data point
+        if self._last_data_point is None:
+            return np.array([0.0] * len(self._data_points))
+
         # Because the pressure altitude is only updated at 50Hz, we have to check if the data point is new, we do this
         # by assuming that we will almost never get the same altitude reading twice in a row, so if we get the unique
         # altitudes, that should be each altitude reading. In theory, we don't actually need to do this as the math will
         # work out, but it's better to be safe than sorry and I like how this is more explict/intentional.
-
         altitude_list.append(self._last_data_point.estPressureAlt)
         unique_altitudes = np.unique(altitude_list)
 
