@@ -74,12 +74,16 @@ class AirbrakesContext:
             data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
         ]
 
-        # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        self.data_processor.update_data(est_data_packets)
+        # Trying to process no data packets is messy
+        # TODO: rewrite DataProcessor so it can handle no data packets
+        processed_data_packets: list[ProcessedDataPacket] = []
+        if est_data_packets:
+            # Update the processed data with the new data packets. We only care about EstimatedDataPackets
+            self.data_processor.update_data(est_data_packets)
 
-        # Get the processed data packets from the data processor, this will have the same length as the number of
-        # EstimatedDataPackets in data_packets
-        processed_data_packets: list[ProcessedDataPacket] = self.data_processor.get_processed_data()
+            # Get the processed data packets from the data processor, this will have the same length as the number of
+            # EstimatedDataPackets in data_packets
+            processed_data_packets = self.data_processor.get_processed_data()
 
         # Update the state machine based on the latest processed data
         self.state.update()

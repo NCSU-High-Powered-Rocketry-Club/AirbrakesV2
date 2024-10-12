@@ -33,6 +33,8 @@ class IMUDataProcessor:
         "_previous_velocity_from_acceleration",
         "_speeds_from_acceleration",
         "_speeds_from_altitude",
+        "_previous_altitude",
+        "_previous_velocity_from_altitude",
         "upside_down",
     )
 
@@ -46,6 +48,8 @@ class IMUDataProcessor:
         self._previous_velocity_from_acceleration: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
+        self._previous_altitude = None
+        self._previous_velocity_from_altitude = np.float64(0.0)
         self.upside_down = upside_down
         self._last_data_point: EstimatedDataPacket | None = None
 
@@ -118,10 +122,6 @@ class IMUDataProcessor:
         :param data_points: A sequence of EstimatedDataPacket objects to process
         """
 
-        # If the data points are empty, we don't want to try to process anything
-        if not data_points:
-            return
-
         self._data_points = data_points
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
@@ -167,14 +167,16 @@ class IMUDataProcessor:
         # Because estPressureAlt only updates every ~20ms, we need to "fill in" the speeds derived from it
         # to match the length of the speeds derived from acceleration--we do this via stepwise interpolation
         # _current_altitudes and _speeds_from_altitude should have the same length
-        last_altitude = self._current_altitudes[0]
-        speeds_from_altitude_interpolated = [self._speeds_from_altitude.pop(0)]
-        for i in range(1, len(self._current_altitudes)):
-            if self._current_altitudes[i] != last_altitude:
-                last_altitude = self._current_altitudes[i]
-                speeds_from_altitude_interpolated.append(self._speeds_from_altitude.pop(0))
-            else:
-                speeds_from_altitude_interpolated.append(speeds_from_altitude_interpolated[-1])
+        speeds_from_altitude_interpolated = []
+        for i in range(len(self._current_altitudes)):
+            # If the altitude has changed, we need to interpolate the speed, but you get n - 1 speeds from n altitudes,
+            # so we need to check that we have speeds left
+
+            if self._current_altitudes[i] != self._previous_altitude and len(self._speeds_from_altitude) != 0:
+                self._previous_altitude = self._current_altitudes[i]
+                self._previous_velocity_from_altitude = self._speeds_from_altitude[0]
+                self._speeds_from_altitude = self._speeds_from_altitude[1:]
+            speeds_from_altitude_interpolated.append(self._previous_velocity_from_altitude)
 
         # The lengths of speeds, current altitudes, and data points should be the same, so it
         # makes a ProcessedDataPacket for EstimatedDataPacket
@@ -276,7 +278,6 @@ class IMUDataProcessor:
         Calculates the speed of the rocket based on the altitude data points. The pressure altitude is only
         actually updated at a rate of 50hz, so we have to check that it's a "new" data point before calculating speed.
         """
-
         # Accounts for start up not having a last data point
         if self._last_data_point is None:
             return np.array([0.0] * len(self._data_points))
