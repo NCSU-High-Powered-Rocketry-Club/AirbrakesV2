@@ -58,11 +58,11 @@ class LoggedDataPacket(msgspec.Struct):
     estGravityVectorY: float | None = None
     estGravityVectorZ: float | None = None
 
-    # Processed Data Packet Fields
-    avg_acceleration: tuple[float, float, float] | None = None
-    current_altitude: float | None = None
-    speed_from_acceleration: float | None = None
-    speed_fom_altitude: float | None = None
+    # Processed Data Packet Fields, pro for processed
+    proAverageAcceleration: tuple[float, float, float] | None = None
+    proCurrentAltitude: float | None = None
+    proSpeedFromAcceleration: float | None = None
+    proSpeedFromAltitude: float | None = None
     # Not logging maxes because they are easily found
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
@@ -84,7 +84,7 @@ class LoggedDataPacket(msgspec.Struct):
         """
         Sets the attributes of the data packet corresponding to the processed data packet.
         """
-        self.avg_acceleration = processed_data_packet.avg_acceleration
-        self.current_altitude = processed_data_packet.current_altitude
-        self.speed_from_acceleration = processed_data_packet.speed_from_acceleration
-        self.speed_fom_altitude = processed_data_packet.speed_fom_altitude
+        self.proAverageAcceleration = processed_data_packet.proAverageAcceleration
+        self.proCurrentAltitude = processed_data_packet.proCurrentAltitude
+        self.proSpeedFromAcceleration = processed_data_packet.proSpeedFromAcceleration
+        self.proSpeedFromAltitude = processed_data_packet.proSpeedFromAltitude

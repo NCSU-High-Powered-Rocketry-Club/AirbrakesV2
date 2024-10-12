@@ -9,7 +9,8 @@ class ProcessedDataPacket(msgspec.Struct):
     data.
     """
 
-    avg_acceleration: tuple[float, float, float]
-    current_altitude: float
-    speed_from_acceleration: float
-    speed_fom_altitude: float
+    # pro for processed, I don't like the abbreviation, but it's better consistent est
+    proAverageAcceleration: tuple[float, float, float]
+    proCurrentAltitude: float
+    proSpeedFromAcceleration: float
+    proSpeedFromAltitude: float

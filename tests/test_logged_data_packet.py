@@ -84,8 +84,8 @@ class TestLoggedDataPacket:
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
-        assert packet.avg_acceleration == (1.234567891, 0.8885554448, 0.4445)
-        assert packet.current_altitude == 1.0923457654
+        assert packet.proAverageAcceleration == (1.234567891, 0.8885554448, 0.4445)
+        assert packet.proCurrentAltitude == 1.0923457654
         assert packet.speed == 1.6768972567
         assert packet.timestamp == 0.0
         assert packet.state == "test"
