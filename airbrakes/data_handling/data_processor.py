@@ -164,13 +164,17 @@ class IMUDataProcessor:
 
         :return: A list of ProcessedDataPacket objects.
         """
-        # Interpolate _speeds_from_altitude to match the length of _speeds_from_acceleration
-        x_target = np.linspace(0, len(self._speeds_from_altitude) - 1, num=len(self._speeds_from_acceleration))
-        speeds_from_altitude_interpolated = np.interp(
-            x_target,
-            np.arange(len(self._speeds_from_altitude)),
-            self._speeds_from_altitude
-        )
+        # Because estPressureAlt only updates every ~20ms, we need to "fill in" the speeds derived from it
+        # to match the length of the speeds derived from acceleration--we do this via stepwise interpolation
+        # _current_altitudes and _speeds_from_altitude should have the same length
+        last_altitude = self._current_altitudes[0]
+        speeds_from_altitude_interpolated = [self._speeds_from_altitude.pop(0)]
+        for i in range(1, len(self._current_altitudes)):
+            if self._current_altitudes[i] != last_altitude:
+                last_altitude = self._current_altitudes[i]
+                speeds_from_altitude_interpolated.append(self._speeds_from_altitude.pop(0))
+            else:
+                speeds_from_altitude_interpolated.append(speeds_from_altitude_interpolated[-1])
 
         # The lengths of speeds, current altitudes, and data points should be the same, so it
         # makes a ProcessedDataPacket for EstimatedDataPacket
