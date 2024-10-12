@@ -45,7 +45,8 @@ def deadband(input_value: float, threshold: float) -> float:
 
 
 def update_display(airbrakes: "AirbrakesContext", start_time: float):
-    """Prints the values from the simulation in a pretty way.
+    """
+    Prints the values from the simulation in a pretty way.
 
     :param airbrakes: The airbrakes context object.
     :param start_time: The time the simulation started, in seconds from epoch.
