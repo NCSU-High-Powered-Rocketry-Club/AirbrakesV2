@@ -61,7 +61,8 @@ class LoggedDataPacket(msgspec.Struct):
     # Processed Data Packet Fields
     avg_acceleration: tuple[float, float, float] | None = None
     current_altitude: float | None = None
-    speed: float | None = None
+    speed_from_acceleration: float | None = None
+    speed_fom_altitude: float | None = None
     # Not logging maxes because they are easily found
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
@@ -85,4 +86,5 @@ class LoggedDataPacket(msgspec.Struct):
         """
         self.avg_acceleration = processed_data_packet.avg_acceleration
         self.current_altitude = processed_data_packet.current_altitude
-        self.speed = processed_data_packet.speed
+        self.speed_from_acceleration = processed_data_packet.speed_from_acceleration
+        self.speed_fom_altitude = processed_data_packet.speed_fom_altitude

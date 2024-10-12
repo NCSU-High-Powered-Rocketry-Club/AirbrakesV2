@@ -11,4 +11,5 @@ class ProcessedDataPacket(msgspec.Struct):
 
     avg_acceleration: tuple[float, float, float]
     current_altitude: float
-    speed: float
+    speed_from_acceleration: float
+    speed_fom_altitude: float

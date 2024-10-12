@@ -23,7 +23,7 @@ class TestProcessedDataPacket:
         packet = processed_data_packet
         assert packet.avg_acceleration == self.avg_accel
         assert packet.current_altitude == self.current_altitude
-        assert packet.speed == self.speed
+        assert packet.speed_from_acceleration == self.speed
 
     def test_required_args(self):
         with pytest.raises(TypeError):

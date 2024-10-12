@@ -139,9 +139,10 @@ class IMUDataProcessor:
 
         a_x, a_y, a_z = self._compute_averages(x_accel, y_accel, z_accel)
         self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (a_x**2 + a_y**2 + a_z**2) ** 0.5
+        self._avg_accel_mag = (a_x ** 2 + a_y ** 2 + a_z ** 2) ** 0.5
 
-        self._speeds_from_acceleration: np.array[np.float64] = self._calculate_speeds_from_accel(x_accel, y_accel, z_accel)
+        self._speeds_from_acceleration: np.array[np.float64] = self._calculate_speeds_from_accel(x_accel, y_accel,
+                                                                                                 z_accel)
         self._speeds_from_altitude: np.array[np.float64] = self._calculate_altitude_speed(pressure_altitudes)
         self._max_speed = max(self._speeds_from_acceleration.max(), self._max_speed)
 
@@ -163,15 +164,26 @@ class IMUDataProcessor:
 
         :return: A list of ProcessedDataPacket objects.
         """
+        # Interpolate _speeds_from_altitude to match the length of _speeds_from_acceleration
+        x_target = np.linspace(0, len(self._speeds_from_altitude) - 1, num=len(self._speeds_from_acceleration))
+        speeds_from_altitude_interpolated = np.interp(
+            x_target,
+            np.arange(len(self._speeds_from_altitude)),
+            self._speeds_from_altitude
+        )
+
         # The lengths of speeds, current altitudes, and data points should be the same, so it
         # makes a ProcessedDataPacket for EstimatedDataPacket
         return [
             ProcessedDataPacket(
                 avg_acceleration=self.avg_acceleration,
                 current_altitude=current_alt,
-                speed=speed,
+                speed_from_acceleration=speed_from_acceleration,
+                speed_fom_altitude=speed_from_altitude
             )
-            for current_alt, speed in zip(self._current_altitudes, self._speeds_from_acceleration, strict=False)
+            for current_alt, speed_from_acceleration, speed_from_altitude in
+            zip(self._current_altitudes, self._speeds_from_acceleration, speeds_from_altitude_interpolated,
+                strict=False)
         ]
 
     def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:
@@ -207,7 +219,8 @@ class IMUDataProcessor:
         # calculate the average acceleration in the x, y, and z directions
         return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
 
-    def _calculate_speeds_from_accel(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
+    def _calculate_speeds_from_accel(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[
+        np.float64]:
         """
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
@@ -234,7 +247,8 @@ class IMUDataProcessor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        time_diff = np.diff(
+            [data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
@@ -251,7 +265,7 @@ class IMUDataProcessor:
         self._previous_velocity_from_acceleration = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
 
         # All the speeds gotten as the magnitude of the velocity vector at each point
-        return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)
+        return np.sqrt(velocities_x ** 2 + velocities_y ** 2 + velocities_z ** 2)
 
     def _calculate_altitude_speed(self, altitude_list: list[float]) -> npt.NDArray[np.float64]:
         """
