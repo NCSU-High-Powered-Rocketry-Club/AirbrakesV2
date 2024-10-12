@@ -176,10 +176,10 @@ class IMUDataProcessor:
         # makes a ProcessedDataPacket for EstimatedDataPacket
         return [
             ProcessedDataPacket(
-                avg_acceleration=self.avg_acceleration,
-                current_altitude=current_alt,
-                speed_from_acceleration=speed_from_acceleration,
-                speed_fom_altitude=speed_from_altitude
+                proAverageAcceleration=self.avg_acceleration,
+                proCurrentAltitude=current_alt,
+                proSpeedFromAcceleration=speed_from_acceleration,
+                proSpeedFromAltitude=speed_from_altitude
             )
             for current_alt, speed_from_acceleration, speed_from_altitude in
             zip(self._current_altitudes, self._speeds_from_acceleration, speeds_from_altitude_interpolated,
@@ -290,6 +290,8 @@ class IMUDataProcessor:
 
         # TODO: calculate dt in a more sophisticated way
         time_diff = 1000 / 50.0
+
+        print(np.diff(unique_altitudes) / time_diff)
 
         # calculate the speed based on the altitude data points
         return np.diff(unique_altitudes) / time_diff
