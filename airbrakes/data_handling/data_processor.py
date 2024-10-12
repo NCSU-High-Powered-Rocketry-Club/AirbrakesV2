@@ -143,7 +143,7 @@ class IMUDataProcessor:
 
         self._speeds_from_acceleration: np.array[np.float64] = self._calculate_speeds_from_accel(x_accel, y_accel,
                                                                                                  z_accel)
-        self._speeds_from_altitude: np.array[np.float64] = self._calculate_altitude_speed(pressure_altitudes)
+        self._speeds_from_altitude: np.array[np.float64] = self._calculate_speeds_from_altitude(pressure_altitudes)
         self._max_speed = max(self._speeds_from_acceleration.max(), self._max_speed)
 
         # Zero the altitude only once, during the first update:
@@ -267,7 +267,7 @@ class IMUDataProcessor:
         # All the speeds gotten as the magnitude of the velocity vector at each point
         return np.sqrt(velocities_x ** 2 + velocities_y ** 2 + velocities_z ** 2)
 
-    def _calculate_altitude_speed(self, altitude_list: list[float]) -> npt.NDArray[np.float64]:
+    def _calculate_speeds_from_altitude(self, altitude_list: list[float]) -> npt.NDArray[np.float64]:
         """
         Calculates the speed of the rocket based on the altitude data points. The pressure altitude is only
         actually updated at a rate of 50hz, so we have to check that it's a "new" data point before calculating speed.
@@ -289,9 +289,7 @@ class IMUDataProcessor:
             return np.array([0.0])
 
         # TODO: calculate dt in a more sophisticated way
-        time_diff = 1000 / 50.0
-
-        print(np.diff(unique_altitudes) / time_diff)
+        time_diff = 1 / 50.0
 
         # calculate the speed based on the altitude data points
         return np.diff(unique_altitudes) / time_diff
