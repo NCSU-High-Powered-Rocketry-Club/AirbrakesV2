@@ -30,8 +30,9 @@ class IMUDataProcessor:
         "_last_data_point",
         "_max_altitude",
         "_max_speed",
-        "_previous_velocity",
-        "_speeds",
+        "_previous_velocity_from_acceleration",
+        "_speeds_from_acceleration",
+        "_speeds_from_altitude",
         "upside_down",
     )
 
@@ -39,9 +40,10 @@ class IMUDataProcessor:
         self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
         self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
-        self._speeds: list[float] = [0.0]
+        self._speeds_from_acceleration: list[float] = [0.0]
+        self._speeds_from_altitude: list[float] = [0.0]
         self._max_speed: float = 0.0
-        self._previous_velocity: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
+        self._previous_velocity_from_acceleration: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
@@ -102,7 +104,7 @@ class IMUDataProcessor:
     @property
     def speed(self) -> float:
         """The current speed of the rocket in m/s. Calculated by integrating the linear acceleration."""
-        return self._speeds[-1]
+        return self._speeds_from_acceleration[-1]
 
     @property
     def max_speed(self) -> float:
@@ -139,8 +141,9 @@ class IMUDataProcessor:
         self._avg_accel = (a_x, a_y, a_z)
         self._avg_accel_mag = (a_x**2 + a_y**2 + a_z**2) ** 0.5
 
-        self._speeds: np.array[np.float64] = self._calculate_speeds(x_accel, y_accel, z_accel)
-        self._max_speed = max(self._speeds.max(), self._max_speed)
+        self._speeds_from_acceleration: np.array[np.float64] = self._calculate_speeds_from_accel(x_accel, y_accel, z_accel)
+        self._speeds_from_altitude: np.array[np.float64] = self._calculate_altitude_speed(pressure_altitudes)
+        self._max_speed = max(self._speeds_from_acceleration.max(), self._max_speed)
 
         # Zero the altitude only once, during the first update:
         if self._initial_altitude is None:
@@ -168,7 +171,7 @@ class IMUDataProcessor:
                 current_altitude=current_alt,
                 speed=speed,
             )
-            for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
+            for current_alt, speed in zip(self._current_altitudes, self._speeds_from_acceleration, strict=False)
         ]
 
     def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:
@@ -204,7 +207,7 @@ class IMUDataProcessor:
         # calculate the average acceleration in the x, y, and z directions
         return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
 
-    def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
+    def _calculate_speeds_from_accel(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
         """
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
@@ -235,7 +238,7 @@ class IMUDataProcessor:
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
-        previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
+        previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity_from_acceleration
 
         # We integrate each of the components of the acceleration to get the velocity
         # The [:-1] is used to remove the last element of the list, since we have one less time
@@ -245,7 +248,31 @@ class IMUDataProcessor:
         velocities_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff)
 
         # Store the last calculated velocity vectors
-        self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
+        self._previous_velocity_from_acceleration = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
 
         # All the speeds gotten as the magnitude of the velocity vector at each point
         return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)
+
+    def _calculate_altitude_speed(self, altitude_list: list[float]) -> npt.NDArray[np.float64]:
+        """
+        Calculates the speed of the rocket based on the altitude data points. The pressure altitude is only
+        actually updated at a rate of 50hz, so we have to check that it's a "new" data point before calculating speed.
+        """
+
+        # Because the pressure altitude is only updated at 50Hz, we have to check if the data point is new, we do this
+        # by assuming that we will almost never get the same altitude reading twice in a row, so if we get the unique
+        # altitudes, that should be each altitude reading. In theory, we don't actually need to do this as the math will
+        # work out, but it's better to be safe than sorry and I like how this is more explict/intentional.
+
+        altitude_list.append(self._last_data_point.estPressureAlt)
+        unique_altitudes = np.unique(altitude_list)
+
+        # We need at least two data points to calculate the speed:
+        if len(unique_altitudes) < 2:
+            return np.array([0.0])
+
+        # TODO: calculate dt in a more sophisticated way
+        time_diff = 1000 / 50.0
+
+        # calculate the speed based on the altitude data points
+        return np.diff(unique_altitudes) / time_diff
