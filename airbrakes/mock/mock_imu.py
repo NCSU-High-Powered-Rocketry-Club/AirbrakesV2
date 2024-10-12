@@ -9,6 +9,7 @@ from pathlib import Path
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.utils import convert_to_float, convert_to_nanoseconds
+from constants import FEET_TO_METERS
 
 
 class MockIMU(IMU):
@@ -19,12 +20,14 @@ class MockIMU(IMU):
 
     __slots__ = ()
 
-    def __init__(self, log_file_path: Path, real_time_simulation: bool):
+    def __init__(self, log_file_path: Path, real_time_simulation: bool, pressureAltInFeet: bool = True):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
         :param log_file_name: The name of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
+        :param pressureAltInFeet: Whether the pressure altitude in the log file is in feet or meters. Almost all
+            log files have it in feet, so it is True by default.
         """
         super().__init__(log_file_path, real_time_simulation)
 
@@ -61,6 +64,7 @@ class MockIMU(IMU):
                 fields_dict = {}
 
                 # Create the data packet based on the row
+                # If the row has scaledAccelX, it is a RawDataPacket, otherwise it is an EstimatedDataPacket
                 if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
                     for key in RawDataPacket.__struct_fields__:
                         fields_dict[key] = convert_to_float(row.get(key, None))
@@ -70,6 +74,8 @@ class MockIMU(IMU):
                     for key in EstimatedDataPacket.__struct_fields__:
                         fields_dict[key] = convert_to_float(row.get(key, None))
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
+                    # We need to convert the altitude from feet to meters
+                    fields_dict["estPressureAlt"] *= FEET_TO_METERS
                     imu_data_packet = EstimatedDataPacket(**fields_dict)
 
                 if imu_data_packet is None:

@@ -162,6 +162,7 @@ class IMU:
                                 setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
                             case "estPressureAlt":
                                 # Converts the pressure altitude to meters and sets it to the data packet object
+                                # TODO: We can maybe change this in sensor connect
                                 setattr(imu_data_packet, channel, data_point.as_float() * FEET_TO_METERS)
                             case _:
                                 # Because the attribute names in our data packet classes are the same as the channel
