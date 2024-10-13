@@ -8,8 +8,11 @@ from pathlib import Path
 
 from msgspec.structs import asdict
 
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
+from tests.test_logged_data_packet import logged_data_packet
 
 
 class Logger:
@@ -73,12 +76,24 @@ class Logger:
         # Waits for the process to finish before stopping it
         self._log_process.join()
 
-    def log(self, logged_data_packets: collections.deque[LoggedDataPacket]) -> None:
+    def log(
+        self,
+        state: str,
+        extension: float,
+        imu_data_packets: collections.deque[IMUDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
+    ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-
-        :param logged_data_packets: the list of IMU data packets to log
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
         """
+        logged_data_packets = self._create_logged_data_packets(
+            state, extension, imu_data_packets, processed_data_packets
+        )
+
         # Loop through all the IMU data packets
         for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
@@ -103,6 +118,29 @@ class Logger:
 
             # Put the message in the queue
             self._log_queue.put(message_dict)
+
+    def _create_logged_data_packets(
+        self,
+        state: str,
+        extension: float,
+        imu_data_packets: collections.deque[IMUDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
+    ) -> collections.deque[LoggedDataPacket]:
+        logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
+
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
+        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
+        # data packet
+        i = 0
+        for data_packet in imu_data_packets:
+            logged_data_packet = LoggedDataPacket(state=state, extension=extension, timestamp=data_packet.timestamp)
+            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            if isinstance(data_packet, EstimatedDataPacket):
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
+                i += 1
+
+            logged_data_packets.append(logged_data_packet)
+        return logged_data_packets
 
     def _logging_loop(self) -> None:
         """

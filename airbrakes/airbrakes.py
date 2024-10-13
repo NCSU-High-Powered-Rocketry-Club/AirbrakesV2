@@ -93,24 +93,11 @@ class AirbrakesContext:
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
-
         # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
         # data packet
-        i = 0
-        for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(
-                state=self.state.name[0], extension=self.current_extension.value, timestamp=data_packet.timestamp
-            )
-            logged_data_packet.set_imu_data_packet_attributes(data_packet)
-            if isinstance(data_packet, EstimatedDataPacket):
-                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
-                i += 1
-
-            logged_data_packets.append(logged_data_packet)
         # Logs the current state, extension, IMU data, and processed data
-        self.logger.log(logged_data_packets)
+        self.logger.log(self.state.name[0], self.current_extension.value, processed_data_packets)
 
     def extend_airbrakes(self) -> None:
         """
