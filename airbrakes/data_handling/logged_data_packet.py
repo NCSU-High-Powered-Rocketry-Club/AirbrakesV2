@@ -72,83 +72,82 @@ class LoggedDataPacket(msgspec.Struct):
 
         :param imu_data_packet: The IMU data packet to set the attributes from.
         """
-        idp = imu_data_packet
-        if isinstance(idp, EstimatedDataPacket):
+        if isinstance(imu_data_packet, EstimatedDataPacket):
             # super ugly code, but it results in a 10-14% speedup overall
             # The speed improvements come from not looping through the fields of the data packet
             # and using getattr() and setattr() to set the attributes of the logged data packet.
             # Additionally, rounding using f-strings is faster than round() by about ~25%
-            if idp.estOrientQuaternionW is not None:
-                self.estOrientQuaternionW = f"{idp.estOrientQuaternionW:.8f}"
-            if idp.estOrientQuaternionX is not None:
-                self.estOrientQuaternionX = f"{idp.estOrientQuaternionX:.8f}"
-            if idp.estOrientQuaternionY is not None:
-                self.estOrientQuaternionY = f"{idp.estOrientQuaternionY:.8f}"
-            if idp.estOrientQuaternionZ is not None:
-                self.estOrientQuaternionZ = f"{idp.estOrientQuaternionZ:.8f}"
-            if idp.estAttitudeUncertQuaternionW is not None:
-                self.estAttitudeUncertQuaternionW = f"{idp.estAttitudeUncertQuaternionW:.8f}"
-            if idp.estAttitudeUncertQuaternionX is not None:
-                self.estAttitudeUncertQuaternionX = f"{idp.estAttitudeUncertQuaternionX:.8f}"
-            if idp.estAttitudeUncertQuaternionY is not None:
-                self.estAttitudeUncertQuaternionY = f"{idp.estAttitudeUncertQuaternionY:.8f}"
-            if idp.estAttitudeUncertQuaternionZ is not None:
-                self.estAttitudeUncertQuaternionZ = f"{idp.estAttitudeUncertQuaternionZ:.8f}"
-            if idp.estAngularRateX is not None:
-                self.estAngularRateX = f"{idp.estAngularRateX:.8f}"
-            if idp.estAngularRateY is not None:
-                self.estAngularRateY = f"{idp.estAngularRateY:.8f}"
-            if idp.estAngularRateZ is not None:
-                self.estAngularRateZ = f"{idp.estAngularRateZ:.8f}"
-            if idp.estCompensatedAccelX is not None:
-                self.estCompensatedAccelX = f"{idp.estCompensatedAccelX:.8f}"
-            if idp.estCompensatedAccelY is not None:
-                self.estCompensatedAccelY = f"{idp.estCompensatedAccelY:.8f}"
-            if idp.estCompensatedAccelZ is not None:
-                self.estCompensatedAccelZ = f"{idp.estCompensatedAccelZ:.8f}"
-            if idp.estLinearAccelX is not None:
-                self.estLinearAccelX = f"{idp.estLinearAccelX:.8f}"
-            if idp.estLinearAccelY is not None:
-                self.estLinearAccelY = f"{idp.estLinearAccelY:.8f}"
-            if idp.estLinearAccelZ is not None:
-                self.estLinearAccelZ = f"{idp.estLinearAccelZ:.8f}"
-            if idp.estGravityVectorX is not None:
-                self.estGravityVectorX = f"{idp.estGravityVectorX:.8f}"
-            if idp.estGravityVectorY is not None:
-                self.estGravityVectorY = f"{idp.estGravityVectorY:.8f}"
-            if idp.estGravityVectorZ is not None:
-                self.estGravityVectorZ = f"{idp.estGravityVectorZ:.8f}"
-            if idp.estPressureAlt is not None:
-                self.estPressureAlt = f"{idp.estPressureAlt:.8f}"
+            if imu_data_packet.estOrientQuaternionW is not None:
+                self.estOrientQuaternionW = f"{imu_data_packet.estOrientQuaternionW:.8f}"
+            if imu_data_packet.estOrientQuaternionX is not None:
+                self.estOrientQuaternionX = f"{imu_data_packet.estOrientQuaternionX:.8f}"
+            if imu_data_packet.estOrientQuaternionY is not None:
+                self.estOrientQuaternionY = f"{imu_data_packet.estOrientQuaternionY:.8f}"
+            if imu_data_packet.estOrientQuaternionZ is not None:
+                self.estOrientQuaternionZ = f"{imu_data_packet.estOrientQuaternionZ:.8f}"
+            if imu_data_packet.estAttitudeUncertQuaternionW is not None:
+                self.estAttitudeUncertQuaternionW = f"{imu_data_packet.estAttitudeUncertQuaternionW:.8f}"
+            if imu_data_packet.estAttitudeUncertQuaternionX is not None:
+                self.estAttitudeUncertQuaternionX = f"{imu_data_packet.estAttitudeUncertQuaternionX:.8f}"
+            if imu_data_packet.estAttitudeUncertQuaternionY is not None:
+                self.estAttitudeUncertQuaternionY = f"{imu_data_packet.estAttitudeUncertQuaternionY:.8f}"
+            if imu_data_packet.estAttitudeUncertQuaternionZ is not None:
+                self.estAttitudeUncertQuaternionZ = f"{imu_data_packet.estAttitudeUncertQuaternionZ:.8f}"
+            if imu_data_packet.estAngularRateX is not None:
+                self.estAngularRateX = f"{imu_data_packet.estAngularRateX:.8f}"
+            if imu_data_packet.estAngularRateY is not None:
+                self.estAngularRateY = f"{imu_data_packet.estAngularRateY:.8f}"
+            if imu_data_packet.estAngularRateZ is not None:
+                self.estAngularRateZ = f"{imu_data_packet.estAngularRateZ:.8f}"
+            if imu_data_packet.estCompensatedAccelX is not None:
+                self.estCompensatedAccelX = f"{imu_data_packet.estCompensatedAccelX:.8f}"
+            if imu_data_packet.estCompensatedAccelY is not None:
+                self.estCompensatedAccelY = f"{imu_data_packet.estCompensatedAccelY:.8f}"
+            if imu_data_packet.estCompensatedAccelZ is not None:
+                self.estCompensatedAccelZ = f"{imu_data_packet.estCompensatedAccelZ:.8f}"
+            if imu_data_packet.estLinearAccelX is not None:
+                self.estLinearAccelX = f"{imu_data_packet.estLinearAccelX:.8f}"
+            if imu_data_packet.estLinearAccelY is not None:
+                self.estLinearAccelY = f"{imu_data_packet.estLinearAccelY:.8f}"
+            if imu_data_packet.estLinearAccelZ is not None:
+                self.estLinearAccelZ = f"{imu_data_packet.estLinearAccelZ:.8f}"
+            if imu_data_packet.estGravityVectorX is not None:
+                self.estGravityVectorX = f"{imu_data_packet.estGravityVectorX:.8f}"
+            if imu_data_packet.estGravityVectorY is not None:
+                self.estGravityVectorY = f"{imu_data_packet.estGravityVectorY:.8f}"
+            if imu_data_packet.estGravityVectorZ is not None:
+                self.estGravityVectorZ = f"{imu_data_packet.estGravityVectorZ:.8f}"
+            if imu_data_packet.estPressureAlt is not None:
+                self.estPressureAlt = f"{imu_data_packet.estPressureAlt:.8f}"
 
         else:
-            if idp.scaledAccelX is not None:
-                self.scaledAccelX = f"{idp.scaledAccelX:.8f}"
-            if idp.scaledAccelY is not None:
-                self.scaledAccelY = f"{idp.scaledAccelY:.8f}"
-            if idp.scaledAccelZ is not None:
-                self.scaledAccelZ = f"{idp.scaledAccelZ:.8f}"
-            if idp.scaledGyroX is not None:
-                self.scaledGyroX = f"{idp.scaledGyroX:.8f}"
-            if idp.scaledGyroY is not None:
-                self.scaledGyroY = f"{idp.scaledGyroY:.8f}"
-            if idp.scaledGyroZ is not None:
-                self.scaledGyroZ = f"{idp.scaledGyroZ:.8f}"
-            if idp.deltaVelX is not None:
-                self.deltaVelX = f"{idp.deltaVelX:.8f}"
-            if idp.deltaVelY is not None:
-                self.deltaVelY = f"{idp.deltaVelY:.8f}"
-            if idp.deltaVelZ is not None:
-                self.deltaVelZ = f"{idp.deltaVelZ:.8f}"
-            if idp.deltaThetaX is not None:
-                self.deltaThetaX = f"{idp.deltaThetaX:.8f}"
-            if idp.deltaThetaY is not None:
-                self.deltaThetaY = f"{idp.deltaThetaY:.8f}"
-            if idp.deltaThetaZ is not None:
-                self.deltaThetaZ = f"{idp.deltaThetaZ:.8f}"
+            if imu_data_packet.scaledAccelX is not None:
+                self.scaledAccelX = f"{imu_data_packet.scaledAccelX:.8f}"
+            if imu_data_packet.scaledAccelY is not None:
+                self.scaledAccelY = f"{imu_data_packet.scaledAccelY:.8f}"
+            if imu_data_packet.scaledAccelZ is not None:
+                self.scaledAccelZ = f"{imu_data_packet.scaledAccelZ:.8f}"
+            if imu_data_packet.scaledGyroX is not None:
+                self.scaledGyroX = f"{imu_data_packet.scaledGyroX:.8f}"
+            if imu_data_packet.scaledGyroY is not None:
+                self.scaledGyroY = f"{imu_data_packet.scaledGyroY:.8f}"
+            if imu_data_packet.scaledGyroZ is not None:
+                self.scaledGyroZ = f"{imu_data_packet.scaledGyroZ:.8f}"
+            if imu_data_packet.deltaVelX is not None:
+                self.deltaVelX = f"{imu_data_packet.deltaVelX:.8f}"
+            if imu_data_packet.deltaVelY is not None:
+                self.deltaVelY = f"{imu_data_packet.deltaVelY:.8f}"
+            if imu_data_packet.deltaVelZ is not None:
+                self.deltaVelZ = f"{imu_data_packet.deltaVelZ:.8f}"
+            if imu_data_packet.deltaThetaX is not None:
+                self.deltaThetaX = f"{imu_data_packet.deltaThetaX:.8f}"
+            if imu_data_packet.deltaThetaY is not None:
+                self.deltaThetaY = f"{imu_data_packet.deltaThetaY:.8f}"
+            if imu_data_packet.deltaThetaZ is not None:
+                self.deltaThetaZ = f"{imu_data_packet.deltaThetaZ:.8f}"
 
         # Common field between the two
-        self.invalid_fields = idp.invalid_fields
+        self.invalid_fields = imu_data_packet.invalid_fields
 
     def set_processed_data_packet_attributes(self, processed_data_packet: ProcessedDataPacket) -> None:
         """

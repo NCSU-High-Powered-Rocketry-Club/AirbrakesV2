@@ -91,15 +91,15 @@ class AirbrakesContext:
         # data packet
         i = 0
         for data_packet in data_packets:
-            ldp = LoggedDataPacket(
+            logged_data_packet = LoggedDataPacket(
                 state=self.state.name[0], extension=self.current_extension.value, timestamp=data_packet.timestamp
             )
-            ldp.set_imu_data_packet_attributes(data_packet)
+            logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
-                ldp.set_processed_data_packet_attributes(processed_data_packets[i])
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
                 i += 1
 
-            logged_data_packets.append(ldp)
+            logged_data_packets.append(logged_data_packet)
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(logged_data_packets)
 
