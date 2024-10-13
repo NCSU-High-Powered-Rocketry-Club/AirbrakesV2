@@ -270,3 +270,51 @@ class TestIMUDataProcessor:
                 ]
             )
         assert d.max_altitude + d._initial_altitude == max(altitudes)
+
+    @pytest.mark.parametrize(
+        ("data_packets", "expected_value"),
+
+        [[
+            [EstimatedDataPacket(
+                timestamp=1*1e9,
+                estOrientQuaternionW=0.91,
+                estOrientQuaternionX=0.1,
+                estOrientQuaternionY=0.22,
+                estOrientQuaternionZ=-0.34,
+                estCompensatedAccelX=1,
+                estCompensatedAccelY=1,
+                estCompensatedAccelZ=1,
+                estLinearAccelX=0.0,
+                estLinearAccelY=0.0,
+                estLinearAccelZ=0.0,
+                estAngularRateX=0.02,
+                estAngularRateY=0.1,
+                estAngularRateZ=2,
+                estPressureAlt=0.0,
+                ),
+            EstimatedDataPacket(
+                timestamp=1.002*1e9,
+                estOrientQuaternionW=0.92,
+                estOrientQuaternionX=0.1,
+                estOrientQuaternionY=0.22,
+                estOrientQuaternionZ=-0.34,
+                estCompensatedAccelX=1,
+                estCompensatedAccelY=1,
+                estCompensatedAccelZ=1,
+                estLinearAccelX=0.0,
+                estLinearAccelY=0.0,
+                estLinearAccelZ=0.0,
+                estAngularRateX=0.02,
+                estAngularRateY=0.1,
+                estAngularRateZ=2,
+                estPressureAlt=0.0,
+                )], (1.669236, -0.15028464, 0.45105335)]
+        ]
+    )
+    def test_calculate_rotations(self, data_packets, expected_value):
+        d = IMUDataProcessor([])
+        d.update_data(data_packets)
+        rotations = d._rotated_accel
+        assert len(rotations) == 3
+        for rot, expected_val in zip(rotations, expected_value):
+            assert rot == pytest.approx(expected_val)
