@@ -53,6 +53,15 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
 
+    def stop(self) -> None:
+        """
+        Handles shutting down the airbrakes. This will cause the main loop to break.
+        """
+        self.retract_airbrakes()
+        self.imu.stop()
+        self.logger.stop()
+        self.shutdown_requested = True
+
     def update(self) -> None:
         """
         Called every loop iteration from the main process. Depending on the current state, it will
@@ -63,15 +72,15 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
+        imu_data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
         # This should never happen, but if it does, we want to not error out and wait for packets
-        if not data_packets:
+        if not imu_data_packets:
             return
 
         # Split the data packets into estimated and raw data packets for use in processing and logging
         est_data_packets = [
-            data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
+            data_packet for data_packet in imu_data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
         ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
@@ -90,7 +99,7 @@ class AirbrakesContext:
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
         # data packet
         i = 0
-        for data_packet in data_packets:
+        for data_packet in imu_data_packets:
             logged_data_packet = LoggedDataPacket(
                 state=self.state.name[0], extension=self.current_extension.value, timestamp=data_packet.timestamp
             )
@@ -116,12 +125,3 @@ class AirbrakesContext:
         """
         self.servo.set_retracted()
         self.current_extension = ServoExtension.MIN_EXTENSION
-
-    def stop(self) -> None:
-        """
-        Handles shutting down the airbrakes. This will cause the main loop to break.
-        """
-        self.retract_airbrakes()
-        self.imu.stop()
-        self.logger.stop()
-        self.shutdown_requested = True
