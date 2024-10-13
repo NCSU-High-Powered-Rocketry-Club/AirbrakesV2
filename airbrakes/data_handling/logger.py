@@ -6,6 +6,8 @@ import multiprocessing
 import signal
 from pathlib import Path
 
+from msgspec.structs import asdict
+
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
 
@@ -74,12 +76,14 @@ class Logger:
     def log(self, logged_data_packets: collections.deque[LoggedDataPacket]) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
+
         :param logged_data_packets: the list of IMU data packets to log
         """
         # Loop through all the IMU data packets
         for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
-            message_dict = {key: getattr(logged_data_packet, key) for key in logged_data_packet.__struct_fields__}
+            # We are populating a dictionary with the fields of the logged data packet
+            message_dict = asdict(logged_data_packet)
 
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
                 if self._log_counter < LOG_CAPACITY_AT_STANDBY:
@@ -87,7 +91,7 @@ class Logger:
                     self._log_counter += 1
                 else:
                     self._log_buffer.append(message_dict)
-                    continue
+                    continue  # skip because we don't want to put the message in the queue
             else:
                 if self._log_buffer:
                     # Log the buffer before logging the new message
