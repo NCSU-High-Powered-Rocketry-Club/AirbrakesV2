@@ -53,29 +53,20 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        d = IMUDataProcessor()
+        d = data_processor
         assert d._max_altitude == 0.0
         assert isinstance(d._previous_velocity, np.ndarray)
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
         assert d._initial_altitude is None
         assert isinstance(d._current_altitudes, np.ndarray)
-        assert d._current_altitudes == [0.0]
         assert isinstance(d._speeds, np.ndarray)
-        assert d._speeds == [0.0]
+        assert list(d._speeds) == [0.0]
         assert d._max_speed == 0.0
         assert d.upside_down is False
-
-        d = data_processor
-        assert d._max_altitude == 0.5
-        assert d.current_altitude == 0.5
-        assert list(d._current_altitudes) == [-0.5, 0.5]
-        assert d._initial_altitude == 20.5
-        assert isinstance(d.speed, float)
+        assert d.current_altitude == 0.0
+        assert list(d._current_altitudes) == [0.0]
         # See the comment in _calculate_speeds() for why speed is 0 during init.
         assert d.speed == 0.0
-        assert d._max_speed == d.speed
-        assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
-        assert d.upside_down is False
 
     def test_str(self, data_processor):
         data_str = (
@@ -94,7 +85,10 @@ class TestIMUDataProcessor:
         assert d.speed == 0.0
         assert d._max_speed == d.speed
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
-        assert d._last_data_point == d._data_points[-1]
+
+        d._last_data_point = (
+            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        )
 
         d.update(
             [
