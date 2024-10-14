@@ -11,8 +11,7 @@ from airbrakes.state import StandByState, State
 from constants import ServoExtension
 
 if TYPE_CHECKING:
-    import collections
-
+    from collections import deque
     from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
@@ -72,7 +71,7 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        imu_data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
+        imu_data_packets: deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
         # This should never happen, but if it does, we want to not error out and wait for packets
         if not imu_data_packets:
@@ -88,7 +87,7 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
-        processed_data_packets: list[ProcessedDataPacket] = self.data_processor.get_processed_data()
+        processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data()
 
         # Update the state machine based on the latest processed data
         self.state.update()

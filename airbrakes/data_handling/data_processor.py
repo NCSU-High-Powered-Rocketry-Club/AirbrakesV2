@@ -121,23 +121,21 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
 
-    def get_processed_data(self) -> list[ProcessedDataPacket]:
+    def get_processed_data(self) -> deque[ProcessedDataPacket]:
         """
-        Processes the data points and returns a list of ProcessedDataPacket objects. The length
-        of the list should be the same as the length of list of the estimated data packets most
+        Processes the data points and returns a deque of ProcessedDataPacket objects. The length
+        of the deque should be the same as the length of the list of estimated data packets most
         recently passed in by update_data()
 
-        :return: A list of ProcessedDataPacket objects.
+        :return: A deque of ProcessedDataPacket objects.
         """
-        # The lengths of speeds, current altitudes, and data points should be the same, so it
-        # makes a ProcessedDataPacket for EstimatedDataPacket
-        return [
+        return deque(
             ProcessedDataPacket(
                 current_altitude=current_alt,
                 speed=speed,
             )
             for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
-        ]
+        )
 
     def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:
         """

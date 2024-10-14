@@ -1,10 +1,10 @@
 """Module for logging data to a CSV file in real time."""
 
-import collections
 import csv
 import multiprocessing
 import signal
 from pathlib import Path
+from collections import deque
 
 from msgspec.structs import asdict
 
@@ -37,7 +37,7 @@ class Logger:
 
         # Buffer for StandbyState and LandedState
         self._log_counter = 0
-        self._log_buffer = collections.deque(maxlen=LOG_BUFFER_SIZE)
+        self._log_buffer = deque(maxlen=LOG_BUFFER_SIZE)
 
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
@@ -79,8 +79,8 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: collections.deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -122,13 +122,18 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: collections.deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-    ) -> collections.deque[LoggedDataPacket]:
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
+    ) -> deque[LoggedDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
+        :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
+        logged_data_packets: deque[LoggedDataPacket] = deque()
 
         # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
