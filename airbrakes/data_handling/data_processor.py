@@ -84,31 +84,22 @@ class IMUDataProcessor:
         if not data_points:
             return
 
-        # Array of the acceleration in the x, y, and z directions, useful for calculations below
-        # If the absolute value of acceleration is less than our threshold, set it to 0
-        x_accel = np.zeros(len(data_points), dtype=np.float64)
-        y_accel = np.zeros(len(data_points), dtype=np.float64)
-        z_accel = np.zeros(len(data_points), dtype=np.float64)
-        pressure_altitudes = np.zeros(len(data_points), dtype=np.float64)
-
-        # Populate the numpy arrays.
-        for i, data_point in enumerate(data_points):
-            x_accel[i] = deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD)
-            y_accel[i] = deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD)
-            z_accel[i] = deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD)
-            pressure_altitudes[i] = data_point.estPressureAlt
+        # If we don't have a last data point, we can't calculate the time difference between the last
+        if self._last_data_point is None:
+            # Store the first data point for the next update
+            self._last_data_point = data_points[0]
+            # Handles the case where we only have one data point
+            data_points = data_points[1:]
+            if not data_points:
+                return
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
         self._speeds = self._calculate_speeds(data_points)
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
-        # Zero the altitude only once, during the first update:
-        if self._initial_altitude is None:
-            self._initial_altitude = np.mean(pressure_altitudes)
-
-        self._current_altitudes = self._calculate_current_altitudes(pressure_altitudes)
-        self._max_altitude = self._calculate_max_altitude(pressure_altitudes)
+        self._current_altitudes = self._calculate_current_altitudes(data_points)
+        self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
 
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
@@ -129,24 +120,18 @@ class IMUDataProcessor:
             for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
         )
 
-    def _calculate_max_altitude(self, pressure_alt: npt.NDArray[np.float64]) -> np.float64:
-        """
-        Calculates the maximum altitude (zeroed out) of the rocket based on the pressure
-        altitude during the flight.
-
-        :return: The maximum altitude of the rocket in meters.
-        """
-        zeroed_alts = np.array(pressure_alt) - self._initial_altitude
-        return np.float64(max(zeroed_alts.max(), self._max_altitude))
-
-    def _calculate_current_altitudes(self, altitudes: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def _calculate_current_altitudes(self, data_points: Sequence[EstimatedDataPacket]) -> npt.NDArray[np.float64]:
         """
         Calculates the current altitudes, by zeroing out the initial altitude.
-
-        :param altitudes: A  of the altitude data points.
+        :param data_points: A sequence of EstimatedDataPacket objects to process
+        :return: A numpy array of the current altitudes of the rocket at each data point
         """
-        # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
-        # landed at a height below from where it launched from, but that doesn't concern us.
+        # Get the pressure altitudes from the data points
+        altitudes = np.array([data_point.estPressureAlt for data_point in data_points], dtype=np.float64)
+        # Zero the altitude only once, during the first update:
+        if self._initial_altitude is None:
+            self._initial_altitude = np.mean(altitudes)
+        # Zero out the initial altitude
         return altitudes - self._initial_altitude
 
     def _calculate_speeds(self, data_points: Sequence[EstimatedDataPacket]) -> npt.NDArray[np.float64]:
@@ -156,21 +141,8 @@ class IMUDataProcessor:
         :param data_points: A sequence of EstimatedDataPacket objects to process
         :return: A numpy array of the speed of the rocket at each data point
         """
-        # We need at least two data points to calculate the speed:
-        if not data_points:  # We use the last_data_point, hence even a single data point works.
-            return np.array([0.0])
-
-        # Deliberately discard all our data packets for speed calc if we don't have a
-        # last_data_point. This will only happen during startup. It does not make sense to
-        # set last_data_point as the first element of data_points during initialization, as we will
-        # then have one less data point to calculate the time difference between the last data point
-        # leading to get_processed_data to have a different length than the data_points.
-        if self._last_data_point is None:
-            return np.array([0.0] * len(data_points))
-
         # Get the deadbanded accelerations in the x, y, and z directions
         x_accelerations, y_accelerations, z_accelerations = self._get_deadbanded_accelerations(data_points)
-
         # Get the time differences between each data point and the previous data point
         time_differences = self._get_time_differences(data_points)
 
@@ -179,8 +151,6 @@ class IMUDataProcessor:
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
 
         # We integrate each of the components of the acceleration to get the velocity
-        # The [:-1] is used to remove the last element of the list, since we have one less time
-        # difference than we have acceleration values.
         velocities_x: np.array = previous_vel_x + np.cumsum(np.array(x_accelerations) * time_differences)
         velocities_y: np.array = previous_vel_y + np.cumsum(np.array(y_accelerations) * time_differences)
         velocities_z: np.array = previous_vel_z + np.cumsum(np.array(z_accelerations) * time_differences)
