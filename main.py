@@ -12,7 +12,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from airbrakes.utils import update_display
+from airbrakes.utils import prepare_process_dict, update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -42,14 +42,19 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
 
+    # Prepare the processes for monitoring in the simulation:
+    if is_simulation:
+        all_processes = prepare_process_dict(airbrakes)
+
     try:
         airbrakes.start()  # Start the IMU and logger processes
+
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             airbrakes.update()
 
             if is_simulation:
-                update_display(airbrakes, sim_time_start)
+                update_display(airbrakes, sim_time_start, all_processes)
     except KeyboardInterrupt:
         pass
     finally:

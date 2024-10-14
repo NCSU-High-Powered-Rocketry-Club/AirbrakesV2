@@ -50,7 +50,7 @@ class Logger:
         self._log_queue: multiprocessing.Queue[dict[str, str] | str] = multiprocessing.Queue()
 
         # Start the logging process
-        self._log_process = multiprocessing.Process(target=self._logging_loop, name="Logger")
+        self._log_process = multiprocessing.Process(target=self._logging_loop, name="Logger Process")
 
     @property
     def is_running(self) -> bool:
