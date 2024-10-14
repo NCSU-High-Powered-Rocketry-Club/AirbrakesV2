@@ -21,7 +21,6 @@ class IMUDataProcessor:
 
     __slots__ = (
         "_current_altitudes",
-        "_data_points",
         "_initial_altitude",
         "_last_data_point",
         "_max_altitude",
@@ -41,7 +40,6 @@ class IMUDataProcessor:
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
-        self._data_points: Sequence[EstimatedDataPacket] = []
 
     def __str__(self) -> str:
         return (
@@ -86,7 +84,7 @@ class IMUDataProcessor:
         if not data_points:
             return
 
-        # TODO: remove self.data_points
+        # TODO: remove self.data_points and make it so less happens in update_data, also rename to update
         self._data_points = data_points
 
         # Next, assign variables for linear acceleration, since we don't want to recalculate them
