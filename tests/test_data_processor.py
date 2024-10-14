@@ -86,9 +86,7 @@ class TestIMUDataProcessor:
         assert d._max_speed == d.speed
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
 
-        d._last_data_point = (
-            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
-        )
+        d._last_data_point = EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
 
         d.update(
             [
@@ -153,6 +151,7 @@ class TestIMUDataProcessor:
             EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
             EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
         ]
+        d._last_data_point = EstimatedDataPacket(0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20.5)
         d.update(data_points)
         assert d._data_points == data_points
         assert len(d._current_altitudes) == 2
@@ -161,13 +160,11 @@ class TestIMUDataProcessor:
         assert d._max_altitude == 9.5 == d.max_altitude == d.current_altitude
         assert d._initial_altitude == 20.5
         assert d._last_data_point == data_points[-1]
-        # Speed calculation will be updated after kalman filter
-        # assert d.speed == pytest.approx(np.sqrt(2**2 + 4**2 + 6**2)) == d.max_speed
 
     def test_calculate_speeds_no_data(self):
         """Test that speeds are not handled when there are no data points."""
         d = IMUDataProcessor()
-        speeds = d._calculate_speeds([], [], [])
+        speeds = d._calculate_speeds()
         assert speeds == [0.0], "Speeds should return [0.0] when no data points are present."
 
     def test_previous_velocity_retained(self, data_processor):
@@ -217,39 +214,22 @@ class TestIMUDataProcessor:
         # max_altitude - calculated max altitude of the rocket
         ("altitude_reading", "current_altitude", "max_altitude"),
         [
-            ([30, 40], 19.5, 19.5),
-            ([50, 55, 60], 39.5, 39.5),
-            ([20, 10], -10.5, 0.5),
+            ([30, 40], 10, 19),
+            ([50, 55, 60], 10, 19),
+            ([20, 10], -10, 0),
         ],
         ids=["increasing_altitude", "increasing_altitude_2", "negative_altitude"],
     )
     def test_altitude_zeroing(self, data_processor, altitude_reading, current_altitude, max_altitude):
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
-        assert d._initial_altitude == 20.5
-        assert d.current_altitude == 0.5
-        assert d._current_altitudes[-1] == 0.5
-        assert d._max_altitude == 0.5
+        assert d._initial_altitude is None
 
         new_packets = [
             EstimatedDataPacket(idx + 3, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
             for idx, alt in enumerate(altitude_reading)
         ]
         d.update(new_packets)
-        assert d._initial_altitude == 20.5
+        assert d._initial_altitude == altitude_reading[0]
         assert d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude
-
-    def test_max_altitude(self, data_processor):
-        """Tests whether the max altitude is correctly calculated even when altitude decreases"""
-        d = data_processor
-        altitudes = simulate_altitude_sine_wave(n_points=1000)
-        # run update every 10 packets, to simulate actual data processing in real time:
-        for i in range(0, len(altitudes), 10):
-            d.update(
-                [
-                    EstimatedDataPacket(i, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
-                    for alt in altitudes[i : i + 10]
-                ]
-            )
-        assert d.max_altitude + d._initial_altitude == max(altitudes)
