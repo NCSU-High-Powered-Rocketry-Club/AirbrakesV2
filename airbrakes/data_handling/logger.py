@@ -126,6 +126,9 @@ class Logger:
         imu_data_packets: collections.deque[IMUDataPacket],
         processed_data_packets: list[ProcessedDataPacket],
     ) -> collections.deque[LoggedDataPacket]:
+        """
+        Creates a data packet representing a row of data to be logged.
+        """
         logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
 
         # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
@@ -133,7 +136,7 @@ class Logger:
         # data packet
         i = 0
         for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(state=state, extension=extension, timestamp=data_packet.timestamp)
+            logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
             logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])

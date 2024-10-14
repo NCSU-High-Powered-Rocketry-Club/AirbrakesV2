@@ -147,24 +147,19 @@ class TestLogger:
     # This decorator is used to run the same test with different data
     # read more about it here: https://docs.pytest.org/en/stable/parametrize.html
     @pytest.mark.parametrize(
-        "data_packet",
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
         [
-            LoggedDataPacket(
-                **{k: "1" for k in LoggedDataPacket.__struct_fields__},
-            ),
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
         ],
         ids=[
             "RawDataPacket",
         ],
     )
-    def test_log_method(self, logger, data_packet):
+    def test_log_method(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
 
-        # make `invalid_fields` a list for accurate comparison:
-        data_packet.invalid_fields = ["something_invalid"]
-
-        logger.log([data_packet])
+        logger.log(state, extension, imu_data_packets, processed_data_packets)
         time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
 
@@ -184,11 +179,11 @@ class TestLogger:
 
             assert len(row_dict) > 10  # Random check to make sure we aren't missing any fields
             assert row_dict == {
-                "state": "1",
-                "extension": "1",
-                **{attr: getattr(data_packet, attr) for attr in RawDataPacket.__struct_fields__},
-                **{attr: str(getattr(data_packet, attr)) for attr in EstimatedDataPacket.__struct_fields__},
-                **{attr: str(getattr(data_packet, attr)) for attr in processed_data_packet_fields},
+                "state": state,
+                "extension": extension,
+                **{attr: getattr(imu_data_packets[0], attr) for attr in RawDataPacket.__struct_fields__},
+                **{attr: str(getattr(imu_data_packets[0], attr)) for attr in EstimatedDataPacket.__struct_fields__},
+                **{attr: str(getattr(processed_data_packets[0], attr)) for attr in processed_data_packet_fields},
             }
 
     def test_log_buffer_exceeded_standby(self, logger):
