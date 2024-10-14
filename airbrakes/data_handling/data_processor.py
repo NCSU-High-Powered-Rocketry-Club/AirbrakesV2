@@ -17,8 +17,6 @@ class IMUDataProcessor:
     Performs high level calculations on the data packets received from the IMU. Includes
     calculation the rolling averages of acceleration, maximum altitude so far, etc., from the set of
     data points.
-
-    :param data_points: A sequence of EstimatedDataPacket objects to process.
     """
 
     __slots__ = (
@@ -34,15 +32,15 @@ class IMUDataProcessor:
     )
 
     def __init__(self, upside_down: bool = False):
-        self._max_altitude: float = 0.0
-        self._speeds: list[float] = [0.0]
-        self._max_speed: float = 0.0
-        self._previous_velocity: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
-        self._initial_altitude: np.float64 | None = None
-        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
-        self._last_data_point: EstimatedDataPacket | None = None
 
+        self._max_altitude: np.float64 = np.float64(0.0)
+        self._speeds: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._max_speed: np.float64 = np.float64(0.0)
+        self._previous_velocity: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0], dtype=np.float64)
+        self._initial_altitude: np.float64 | None = None
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._last_data_point: EstimatedDataPacket | None = None
         self._data_points: Sequence[EstimatedDataPacket] = []
 
     def __str__(self) -> str:
@@ -60,22 +58,22 @@ class IMUDataProcessor:
         Returns the highest altitude (zeroed out) attained by the rocket for the entire flight
         so far, in meters.
         """
-        return self._max_altitude
+        return float(self._max_altitude)
 
     @property
     def current_altitude(self) -> float:
         """Returns the altitudes of the rocket (zeroed out) from the data points, in meters."""
-        return self._current_altitudes[-1]
+        return float(self._current_altitudes[-1])
 
     @property
     def speed(self) -> float:
         """The current speed of the rocket in m/s. Calculated by integrating the linear acceleration."""
-        return self._speeds[-1]
+        return float(self._speeds[-1])
 
     @property
     def max_speed(self) -> float:
         """The maximum speed the rocket has attained during the flight, in m/s."""
-        return self._max_speed
+        return float(self._max_speed)
 
     def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
@@ -88,22 +86,28 @@ class IMUDataProcessor:
         if not data_points:
             return
 
+        # TODO: remove self.data_points
         self._data_points = data_points
 
-        # We use linearAcceleration because we don't want gravity to affect our calculations for
-        # speed.
         # Next, assign variables for linear acceleration, since we don't want to recalculate them
         # in the helper functions below:
         # List of the acceleration in the x, y, and z directions, useful for calculations below
         # If the absolute value of acceleration is less than our threshold, set it to 0
-        x_accel, y_accel, z_accel, pressure_altitudes = deque(), deque(), deque(), deque()
-        for data_point in self._data_points:
-            x_accel.append(deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD))
-            y_accel.append(deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD))
-            z_accel.append(deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD))
-            pressure_altitudes.append(data_point.estPressureAlt)
+        x_accel = np.zeros(len(data_points), dtype=np.float64)
+        y_accel = np.zeros(len(data_points), dtype=np.float64)
+        z_accel = np.zeros(len(data_points), dtype=np.float64)
+        pressure_altitudes = np.zeros(len(data_points), dtype=np.float64)
 
-        self._speeds: np.array[np.float64] = self._calculate_speeds(x_accel, y_accel, z_accel)
+        # Populate the numpy arrays.
+        for i, data_point in enumerate(self._data_points):
+            x_accel[i] = deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD)
+            y_accel[i] = deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD)
+            z_accel[i] = deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD)
+            pressure_altitudes[i] = data_point.estPressureAlt
+
+        # We use linearAcceleration because we don't want gravity to affect our calculations for
+        # speed.
+        self._speeds = self._calculate_speeds(x_accel, y_accel, z_accel)
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
         # Zero the altitude only once, during the first update:
@@ -132,7 +136,7 @@ class IMUDataProcessor:
             for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
         )
 
-    def _calculate_max_altitude(self, pressure_alt: Sequence[float]) -> float:
+    def _calculate_max_altitude(self, pressure_alt: npt.NDArray[np.float64]) -> np.float64:
         """
         Calculates the maximum altitude (zeroed out) of the rocket based on the pressure
         altitude during the flight.
@@ -140,19 +144,19 @@ class IMUDataProcessor:
         :return: The maximum altitude of the rocket in meters.
         """
         zeroed_alts = np.array(pressure_alt) - self._initial_altitude
-        return max(zeroed_alts.max(), self._max_altitude)
+        return np.float64(max(zeroed_alts.max(), self._max_altitude))
 
-    def _calculate_current_altitudes(self, alt_list: Sequence[float]) -> npt.NDArray[np.float64]:
+    def _calculate_current_altitudes(self, altitudes: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """
         Calculates the current altitudes, by zeroing out the initial altitude.
 
-        :param alt_list: A list of the altitude data points.
+        :param altitudes: A  of the altitude data points.
         """
         # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
         # landed at a height below from where it launched from, but that doesn't concern us.
-        return np.array(alt_list) - self._initial_altitude
+        return altitudes - self._initial_altitude
 
-    def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
+    def _calculate_speeds(self, a_x: npt.NDArray[np.float64], a_y: npt.NDArray[np.float64], a_z: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """
         Calculates the speed of the rocket based on the linear acceleration.
         Integrates the linear acceleration to get the speed.
