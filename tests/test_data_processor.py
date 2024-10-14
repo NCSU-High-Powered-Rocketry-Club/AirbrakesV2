@@ -33,7 +33,7 @@ def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, no
 
 @pytest.fixture
 def data_processor():
-    return IMUDataProcessor(TestIMUDataProcessor.packets)
+    return IMUDataProcessor()
 
 
 class TestIMUDataProcessor:
@@ -45,7 +45,7 @@ class TestIMUDataProcessor:
     ]
 
     def test_slots(self):
-        inst = IMUDataProcessor([])
+        inst = IMUDataProcessor()
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
             if isinstance(val, np.ndarray):
@@ -53,7 +53,7 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        d = IMUDataProcessor([])
+        d = IMUDataProcessor()
         assert d._max_altitude == 0.0
         assert isinstance(d._previous_velocity, np.ndarray)
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
@@ -173,7 +173,7 @@ class TestIMUDataProcessor:
 
     def test_calculate_speeds_no_data(self):
         """Test that speeds are not handled when there are no data points."""
-        d = IMUDataProcessor([])
+        d = IMUDataProcessor()
         speeds = d._calculate_speeds([], [], [])
         assert speeds == [0.0], "Speeds should return [0.0] when no data points are present."
 
