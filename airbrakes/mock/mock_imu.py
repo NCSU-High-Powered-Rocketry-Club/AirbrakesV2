@@ -48,9 +48,8 @@ class MockIMU(IMU):
             reader = csv.DictReader(csvfile)
 
             # Reads each row as a dictionary
+            row: dict[str, str]
             for row in reader:
-                row: dict[str, str]
-
                 start_time = time.time()
 
                 # Check if the process should stop
@@ -63,29 +62,27 @@ class MockIMU(IMU):
                 scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
                 est_linear_accel_x = row.get("estLinearAccelX")  # estimated data packet field
                 # Create the data packet based on the row
-                if scaled_accel_x is not None and scaled_accel_x:
+                if scaled_accel_x:
                     for key in RawDataPacket.__struct_fields__:
-                        if val:= row.get(key, None):
+                        if val := row.get(key, None):
                             fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = RawDataPacket(**fields_dict)
-                elif est_linear_accel_x is not None and est_linear_accel_x:
+                elif est_linear_accel_x:
                     for key in EstimatedDataPacket.__struct_fields__:
-                        if val:= row.get(key, None):
+                        if val := row.get(key, None):
                             fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = EstimatedDataPacket(**fields_dict)
-
-                if imu_data_packet is None:
+                else:
                     continue
 
                 # Put the packet in the queue
                 self._data_queue.put(imu_data_packet)
 
-                end_time = time.time()
-
                 # sleep only if we are running a real-time simulation
                 # Sleep 1 ms after every raw data packet, but don't sleep after an estimated data packet
                 if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
                     # Simulate polling interval
+                    end_time = time.time()
                     time.sleep(max(0.0, 0.001 - (end_time - start_time)))
