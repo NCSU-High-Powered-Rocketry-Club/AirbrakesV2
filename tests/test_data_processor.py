@@ -86,7 +86,9 @@ class TestIMUDataProcessor:
         assert d._max_speed == d.speed
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
 
-        d._last_data_point = EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        d._last_data_point = (
+            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        )
 
         d.update(
             [
@@ -151,7 +153,9 @@ class TestIMUDataProcessor:
             EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
             EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
         ]
-        d._last_data_point = EstimatedDataPacket(0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20.5)
+        d._last_data_point = EstimatedDataPacket(
+            0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20.5
+        )
         d.update(data_points)
         assert d._data_points == data_points
         assert len(d._current_altitudes) == 2

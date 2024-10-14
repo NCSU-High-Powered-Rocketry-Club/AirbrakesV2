@@ -9,6 +9,7 @@ from pathlib import Path
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.utils import convert_to_float, convert_to_nanoseconds
+from constants import MAX_QUEUE_SIZE, NOT_REAL_TIME_MAX_QUEUE_SIZE
 
 
 class MockIMU(IMU):
@@ -26,19 +27,27 @@ class MockIMU(IMU):
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
         """
-        super().__init__(log_file_path, real_time_simulation)
+        # We don't call the parent constructor as the IMU class has different parameters, so we manually start the
+        # process that fetches data from the log file
 
-        # Limit how big the queue gets when doing an integration test, because we read the file
-        # much faster than update(), sometimes resulting thousands of data packets in the queue,
-        # which will obviously mess up data processing calculations. We limit it to 15 packets, which
+        # If it's not a real time sim, we limit how big the queue gets when doing an integration test,
+        # because we read the file much faster than update(), sometimes resulting thousands of data packets in
+        # the queue, which will obviously mess up data processing calculations. We limit it to 15 packets, which
         # is more realistic for a real flight.
-        if not real_time_simulation:
-            self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(15)
+        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
+            MAX_QUEUE_SIZE if real_time_simulation else NOT_REAL_TIME_MAX_QUEUE_SIZE
+        )
+        self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
+
+        # Starts the process that fetches data from the IMU
+        self._data_fetch_process = multiprocessing.Process(
+            target=self._fetch_data_loop, args=(log_file_path, real_time_simulation), name="IMU Data Fetch Process"
+        )
 
     def _fetch_data_loop(self, log_file_path: Path, real_time_simulation: bool) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_name: the name of the log file to read data from located in logs/
+        :param log_file_path: the name of the log file to read data from located in logs/
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
         """

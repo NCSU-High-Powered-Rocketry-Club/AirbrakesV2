@@ -142,6 +142,7 @@ class Logger:
             logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
             logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
+                # For every estimated data packet, we have a corresponding processed data packet
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
 
             logged_data_packets.append(logged_data_packet)

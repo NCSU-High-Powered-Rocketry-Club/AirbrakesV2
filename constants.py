@@ -51,6 +51,8 @@ RAW_DESCRIPTOR_SET = 128
 
 # The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
+# This is used for the mock imu to limit the queue size to a more realistic value
+NOT_REAL_TIME_MAX_QUEUE_SIZE = 15
 
 # -------------------------------------------------------
 # Orientation Configuration
