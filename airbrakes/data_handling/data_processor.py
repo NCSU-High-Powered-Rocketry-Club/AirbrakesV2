@@ -73,7 +73,7 @@ class IMUDataProcessor:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return float(self._max_speed)
 
-    def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
+    def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all the averages and other
         information such as altitude, speed, etc.
@@ -84,12 +84,7 @@ class IMUDataProcessor:
         if not data_points:
             return
 
-        # TODO: remove self.data_points and make it so less happens in update_data, also rename to update
-        self._data_points = data_points
-
-        # Next, assign variables for linear acceleration, since we don't want to recalculate them
-        # in the helper functions below:
-        # List of the acceleration in the x, y, and z directions, useful for calculations below
+        # Array of the acceleration in the x, y, and z directions, useful for calculations below
         # If the absolute value of acceleration is less than our threshold, set it to 0
         x_accel = np.zeros(len(data_points), dtype=np.float64)
         y_accel = np.zeros(len(data_points), dtype=np.float64)
@@ -97,7 +92,7 @@ class IMUDataProcessor:
         pressure_altitudes = np.zeros(len(data_points), dtype=np.float64)
 
         # Populate the numpy arrays.
-        for i, data_point in enumerate(self._data_points):
+        for i, data_point in enumerate(data_points):
             x_accel[i] = deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD)
             y_accel[i] = deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD)
             z_accel[i] = deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD)
@@ -105,7 +100,7 @@ class IMUDataProcessor:
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
-        self._speeds = self._calculate_speeds(x_accel, y_accel, z_accel)
+        self._speeds = self._calculate_speeds(data_points)
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
         # Zero the altitude only once, during the first update:
@@ -154,13 +149,15 @@ class IMUDataProcessor:
         # landed at a height below from where it launched from, but that doesn't concern us.
         return altitudes - self._initial_altitude
 
-    def _calculate_speeds(self, a_x: npt.NDArray[np.float64], a_y: npt.NDArray[np.float64], a_z: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def _calculate_speeds(self, data_points: Sequence[EstimatedDataPacket]) -> npt.NDArray[np.float64]:
         """
-        Calculates the speed of the rocket based on the linear acceleration.
-        Integrates the linear acceleration to get the speed.
+        Calculates the speed of the rocket based on the linear acceleration. Integrates the
+        linear acceleration to get the speed.
+        :param data_points: A sequence of EstimatedDataPacket objects to process
+        :return: A numpy array of the speed of the rocket at each data point
         """
         # We need at least two data points to calculate the speed:
-        if not self._data_points:  # We use the last_data_point, hence even a single data point works.
+        if not data_points:  # We use the last_data_point, hence even a single data point works.
             return np.array([0.0])
 
         # Deliberately discard all our data packets for speed calc if we don't have a
@@ -169,19 +166,13 @@ class IMUDataProcessor:
         # then have one less data point to calculate the time difference between the last data point
         # leading to get_processed_data to have a different length than the data_points.
         if self._last_data_point is None:
-            return np.array([0.0] * len(self._data_points))
+            return np.array([0.0] * len(data_points))
 
-        # At this point, our last_data_point is guaranteed to be an EstimatedDataPacket.
-        self._last_data_point: EstimatedDataPacket
+        # Get the deadbanded accelerations in the x, y, and z directions
+        x_accelerations, y_accelerations, z_accelerations = self._get_deadbanded_accelerations(data_points)
 
-        # Side note: We can't use the pressure altitude to calculate the speed, since the pressure
-        # does not update fast enough to give us a good estimate of the speed.
-
-        # calculate the time differences between each data point
-        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
-        # We are using the last data point to calculate the time difference between the last data point from the
-        # previous loop, and the first data point from the current loop
-        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        # Get the time differences between each data point and the previous data point
+        time_differences = self._get_time_differences(data_points)
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
@@ -190,12 +181,46 @@ class IMUDataProcessor:
         # We integrate each of the components of the acceleration to get the velocity
         # The [:-1] is used to remove the last element of the list, since we have one less time
         # difference than we have acceleration values.
-        velocities_x: np.array = previous_vel_x + np.cumsum(np.array(a_x) * time_diff)
-        velocities_y: np.array = previous_vel_y + np.cumsum(np.array(a_y) * time_diff)
-        velocities_z: np.array = previous_vel_z + np.cumsum(np.array(a_z) * time_diff)
+        velocities_x: np.array = previous_vel_x + np.cumsum(np.array(x_accelerations) * time_differences)
+        velocities_y: np.array = previous_vel_y + np.cumsum(np.array(y_accelerations) * time_differences)
+        velocities_z: np.array = previous_vel_z + np.cumsum(np.array(z_accelerations) * time_differences)
 
         # Store the last calculated velocity vectors
         self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
 
         # All the speeds gotten as the magnitude of the velocity vector at each point
         return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)
+
+    def _get_time_differences(self, data_points: Sequence[EstimatedDataPacket]) -> npt.NDArray[np.float64]:
+        """
+        Calculates the time difference between each data point and the previous data point. This cannot
+        be called on the first update as _last_data_point is None.
+        :param data_points: A sequence of EstimatedDataPacket objects to process
+        :return: A numpy array of the time difference between each data point and the previous data point.
+        """
+        # calculate the time differences between each data point
+        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
+        # We are using the last data point to calculate the time difference between the last data point from the
+        # previous loop, and the first data point from the current loop
+        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *data_points]]) * 1e-9
+
+    def _get_deadbanded_accelerations(self, data_points: Sequence[EstimatedDataPacket]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """
+        Returns the deadbanded accelerations in the x, y, and z directions.
+        :param data_points: A sequence of EstimatedDataPacket objects to process
+        :return: A tuple of numpy arrays of the deadbanded accelerations in the x, y, and z directions.
+        """
+        # Pre-allocate numpy arrays to store the deadbanded accelerations in the x, y, and z directions.
+        # The length of each array is the number of data points.
+        x_accelerations = np.zeros(len(data_points), dtype=np.float64)
+        y_accelerations = np.zeros(len(data_points), dtype=np.float64)
+        z_accelerations = np.zeros(len(data_points), dtype=np.float64)
+
+        # Loop through each data point and apply deadbanding to the estimated accelerations
+        # in the x, y, and z directions. Store the results in the corresponding arrays.
+        for i, data_point in enumerate(data_points):
+            x_accelerations[i] = deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD)
+            y_accelerations[i] = deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD)
+            z_accelerations[i] = deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD)
+
+        return x_accelerations, y_accelerations, z_accelerations

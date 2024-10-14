@@ -83,7 +83,7 @@ class AirbrakesContext:
         ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        self.data_processor.update_data(est_data_packets)
+        self.data_processor.update(est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets

@@ -97,7 +97,7 @@ class TestIMUDataProcessor:
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
         assert d._last_data_point == d._data_points[-1]
 
-        d.update_data(
+        d.update(
             [
                 EstimatedDataPacket(
                     3 * 1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=22
@@ -113,7 +113,7 @@ class TestIMUDataProcessor:
         assert len(d._speeds) == 2
         assert d._max_speed == d.speed
 
-        d.update_data(
+        d.update(
             [
                 EstimatedDataPacket(
                     5 * 1e9, estLinearAccelX=5, estLinearAccelY=6, estLinearAccelZ=7, estPressureAlt=24
@@ -131,7 +131,7 @@ class TestIMUDataProcessor:
         assert len(d._speeds) == 3
         assert d._max_speed == d.speed
 
-        d.update_data(
+        d.update(
             [
                 EstimatedDataPacket(
                     8 * 1e9, estLinearAccelX=2, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=27
@@ -160,7 +160,7 @@ class TestIMUDataProcessor:
             EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
             EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
         ]
-        d.update_data(data_points)
+        d.update(data_points)
         assert d._data_points == data_points
         assert len(d._current_altitudes) == 2
         assert len(d._speeds) == 2
@@ -200,7 +200,7 @@ class TestIMUDataProcessor:
                 estPressureAlt=0,
             ),
         ]
-        data_processor.update_data(packets)
+        data_processor.update(packets)
         first_vel = data_processor._previous_velocity
 
         # Additional data packet
@@ -213,7 +213,7 @@ class TestIMUDataProcessor:
                 estPressureAlt=0,
             ),
         ]
-        data_processor.update_data(new_packets)
+        data_processor.update(new_packets)
         second_vel = data_processor._previous_velocity
 
         assert second_vel[0] > first_vel[0], "Previous velocity should be updated after each data update."
@@ -242,7 +242,7 @@ class TestIMUDataProcessor:
             EstimatedDataPacket(idx + 3, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
             for idx, alt in enumerate(altitude_reading)
         ]
-        d.update_data(new_packets)
+        d.update(new_packets)
         assert d._initial_altitude == 20.5
         assert d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude
@@ -253,7 +253,7 @@ class TestIMUDataProcessor:
         altitudes = simulate_altitude_sine_wave(n_points=1000)
         # run update_data every 10 packets, to simulate actual data processing in real time:
         for i in range(0, len(altitudes), 10):
-            d.update_data(
+            d.update(
                 [
                     EstimatedDataPacket(i, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
                     for alt in altitudes[i : i + 10]
