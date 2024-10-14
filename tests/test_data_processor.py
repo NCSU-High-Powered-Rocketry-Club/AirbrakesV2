@@ -60,7 +60,6 @@ class TestIMUDataProcessor:
         assert d._initial_altitude is None
         assert isinstance(d._current_altitudes, np.ndarray)
         assert d._current_altitudes == [0.0]
-        assert d._data_points == []
         assert isinstance(d._speeds, np.ndarray)
         assert d._speeds == [0.0]
         assert d._max_speed == 0.0
@@ -154,7 +153,7 @@ class TestIMUDataProcessor:
         # Our max speed is hit with the first est data packet on this update:
         assert d._max_speed == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
 
-    def test_update_data(self, data_processor):
+    def test_update(self, data_processor):
         d = data_processor
         data_points = [
             EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
@@ -251,7 +250,7 @@ class TestIMUDataProcessor:
         """Tests whether the max altitude is correctly calculated even when altitude decreases"""
         d = data_processor
         altitudes = simulate_altitude_sine_wave(n_points=1000)
-        # run update_data every 10 packets, to simulate actual data processing in real time:
+        # run update every 10 packets, to simulate actual data processing in real time:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [

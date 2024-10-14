@@ -93,14 +93,13 @@ class TestAirbrakesContext:
         calls = []
         asserts = []
 
-        def update_data(self, est_data_packets):
+        def update(self, est_data_packets):
             # monkeypatched method of IMUDataProcessor
-            calls.append("update_data called")
+            calls.append("update called")
             # Length of these lists must be equal to the number of estimated data packets for
             # get_processed_data() to work correctly
             self._current_altitudes = [0.0] * len(est_data_packets)
             self._speeds = [0.0] * len(est_data_packets)
-            self._data_points = est_data_packets
 
         def state(self):
             # monkeypatched method of State
@@ -123,7 +122,7 @@ class TestAirbrakesContext:
         assert mocked_airbrakes.state.name == "StandByState"
         assert mocked_airbrakes.data_processor._last_data_point is None
 
-        monkeypatch.setattr(data_processor.__class__, "update_data", update_data)
+        monkeypatch.setattr(data_processor.__class__, "update", update)
         monkeypatch.setattr(mocked_airbrakes.state.__class__, "update", state)
         monkeypatch.setattr(logger.__class__, "log", log)
 
@@ -131,7 +130,7 @@ class TestAirbrakesContext:
         mocked_airbrakes.update()
 
         assert len(calls) == 3
-        assert calls == ["update_data called", "state update called", "log called"]
+        assert calls == ["update called", "state update called", "log called"]
         assert all(asserts)
 
         mocked_airbrakes.stop()
