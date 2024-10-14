@@ -52,7 +52,7 @@ class IMU:
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency), name="IMU Data Fetch Process"
+            target=self._fetch_data_loop, args=(port, frequency), name="IMU Process"
         )
 
     @property
