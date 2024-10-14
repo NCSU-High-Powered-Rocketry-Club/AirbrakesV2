@@ -3,8 +3,8 @@
 import csv
 import multiprocessing
 import signal
-from pathlib import Path
 from collections import deque
+from pathlib import Path
 
 from msgspec.structs import asdict
 

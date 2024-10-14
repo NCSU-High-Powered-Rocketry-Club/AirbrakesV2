@@ -79,12 +79,11 @@ class IMUDataProcessor:
         information such as altitude, speed, etc.
         :param data_points: A sequence of EstimatedDataPacket objects to process
         """
-
         # If the data points are empty, we don't want to try to process anything
         if not data_points:
             return
 
-        # If we don't have a last data point, we can't calculate the time difference between the last
+        # If we don't have a last data point, we can't calculate the time differences
         if self._last_data_point is None:
             # Store the first data point for the next update
             self._last_data_point = data_points[0]
@@ -93,8 +92,7 @@ class IMUDataProcessor:
             if not data_points:
                 return
 
-        # We use linearAcceleration because we don't want gravity to affect our calculations for
-        # speed.
+        # We use linearAcceleration because we don't want gravity to affect our calculations for speed
         self._speeds = self._calculate_speeds(data_points)
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
@@ -174,7 +172,9 @@ class IMUDataProcessor:
         # previous loop, and the first data point from the current loop
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *data_points]]) * 1e-9
 
-    def _get_deadbanded_accelerations(self, data_points: Sequence[EstimatedDataPacket]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    def _get_deadbanded_accelerations(
+        self, data_points: Sequence[EstimatedDataPacket]
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
         Returns the deadbanded accelerations in the x, y, and z directions.
         :param data_points: A sequence of EstimatedDataPacket objects to process

@@ -201,8 +201,12 @@ class TestLogger:
         # Test if the buffer works correctly
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
-        logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
-                   processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10))
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+        )
 
         time.sleep(0.1)  # Give the process time to log to file
         assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
@@ -231,15 +235,18 @@ class TestLogger:
         """Tests if the buffer is logged after Standby state and the counter is reset."""
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
-        logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
-                   processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10))
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+        )
         time.sleep(0.1)  # Give the process time to log to file
         assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
 
         # Let's test that switching to MotorBurn will log those packets:
 
-        logger.log(state, extension, imu_data_packets * 8,
-                   processed_data_packets * 8)
+        logger.log(state, extension, imu_data_packets * 8, processed_data_packets * 8)
         logger.stop()
 
         # Read the file and check if we have LOG_BUFFER_SIZE + 10
@@ -273,8 +280,12 @@ class TestLogger:
     def test_log_buffer_reset_after_landed(self, logger, state, extension, imu_data_packets, processed_data_packets):
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
-        logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
-                   processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100))
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
+        )
         time.sleep(0.1)
         logger.stop()
 

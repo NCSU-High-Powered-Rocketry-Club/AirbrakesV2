@@ -12,6 +12,7 @@ from constants import ServoExtension
 
 if TYPE_CHECKING:
     from collections import deque
+
     from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
