@@ -52,6 +52,7 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
 
     :param airbrakes: The airbrakes context object.
     :param start_time: The time the simulation started, in seconds from epoch.
+    :param processes: A dictionary containing the processes to monitor for cpu usage.
     """
     # Print values with multiple print statements
     # The <10 is used to align the values to the left with a width of 10
