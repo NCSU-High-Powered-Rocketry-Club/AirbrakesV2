@@ -23,7 +23,7 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
             return None
 
 
-def convert_to_float(value: str | int) -> float | None:
+def convert_to_float(value: str) -> float | None:
     """Converts a value to a float, returning None if the conversion fails."""
     try:
         return float(value)  # Attempt to convert to float

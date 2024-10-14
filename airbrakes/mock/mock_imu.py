@@ -60,15 +60,19 @@ class MockIMU(IMU):
                 imu_data_packet = None
                 fields_dict = {}
 
+                scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
+                est_linear_accel_x = row.get("estLinearAccelX")  # estimated data packet field
                 # Create the data packet based on the row
-                if row.get("scaledAccelX") is not None and row.get("scaledAccelX") != "":
+                if scaled_accel_x is not None and scaled_accel_x:
                     for key in RawDataPacket.__struct_fields__:
-                        fields_dict[key] = convert_to_float(row.get(key, None))
+                        if val:= row.get(key, None):
+                            fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = RawDataPacket(**fields_dict)
-                elif row.get("estLinearAccelX") is not None and row.get("estLinearAccelX") != "":
+                elif est_linear_accel_x is not None and est_linear_accel_x:
                     for key in EstimatedDataPacket.__struct_fields__:
-                        fields_dict[key] = convert_to_float(row.get(key, None))
+                        if val:= row.get(key, None):
+                            fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = EstimatedDataPacket(**fields_dict)
 
