@@ -61,7 +61,7 @@ class TestIMUDataProcessor:
         assert isinstance(d._current_altitudes, np.ndarray)
         assert d._current_altitudes == [0.0]
         assert d._data_points == []
-        assert isinstance(d._speeds, list)
+        assert isinstance(d._speeds, np.ndarray)
         assert d._speeds == [0.0]
         assert d._max_speed == 0.0
         assert d.upside_down is False
@@ -81,8 +81,8 @@ class TestIMUDataProcessor:
     def test_str(self, data_processor):
         data_str = (
             "IMUDataProcessor("
-            "max_altitude=0.5, "
-            "current_altitude=0.5, "
+            "max_altitude=0.0, "
+            "current_altitude=0.0, "
             # See the comment in _calculate_speeds() for why speed is 0 during init.
             "speed=0.0, "
             "max_speed=0.0)"

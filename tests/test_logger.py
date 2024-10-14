@@ -186,16 +186,20 @@ class TestLogger:
                 **{attr: str(getattr(processed_data_packets[0], attr)) for attr in processed_data_packet_fields},
             }
 
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
     def test_log_buffer_exceeded_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
 
         # Test if the buffer works correctly
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="S",
-            extension=0.0,
-            timestamp=0.0,
-        )
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
                    processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10))
@@ -214,14 +218,18 @@ class TestLogger:
             assert count + 1 == LOG_CAPACITY_AT_STANDBY
             assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
 
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
     def test_log_buffer_reset_after_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests if the buffer is logged after Standby state and the counter is reset."""
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="S",
-            extension=0.0,
-            timestamp=0.0,
-        )
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
                    processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10))
@@ -253,13 +261,17 @@ class TestLogger:
             assert len(prev_state_vals) == 10
             assert len(next_state_vals) == 8
 
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
     def test_log_buffer_reset_after_landed(self, logger, state, extension, imu_data_packets, processed_data_packets):
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="L",
-            extension=0.0,
-            timestamp=0.0,
-        )
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
         logger.log(state, extension, imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
                    processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100))
