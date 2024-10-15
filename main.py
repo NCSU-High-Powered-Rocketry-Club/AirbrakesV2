@@ -31,7 +31,6 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)

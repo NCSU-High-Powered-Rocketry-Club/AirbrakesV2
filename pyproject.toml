@@ -8,6 +8,7 @@ dependencies = [
     "pigpio",  # Run sudo pigpiod before running the program
     "msgspec",
     "numpy",
+    "colorama",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
