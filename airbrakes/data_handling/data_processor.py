@@ -8,8 +8,8 @@ import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from utils import deadband
 from constants import ACCELERATION_NOISE_THRESHOLD
+from utils import deadband
 
 
 class IMUDataProcessor:

@@ -3,9 +3,9 @@
 import multiprocessing
 import time
 from typing import TYPE_CHECKING
-from colorama import Fore, Style, init
 
 import psutil
+from colorama import Fore, Style, init
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -46,7 +46,7 @@ def deadband(input_value: float, threshold: float) -> float:
 
 
 MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
-CLEAR_LINE = "\033[K"       # Clear the current line
+CLEAR_LINE = "\033[K"  # Clear the current line
 # Initialize Colorama
 init(autoreset=True)  # Automatically reset colors after each print
 
@@ -54,35 +54,41 @@ init(autoreset=True)  # Automatically reset colors after each print
 def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: dict[str, psutil.Process]) -> None:
     """Prints the values from the simulation in a pretty way."""
 
+    # Shorten colorama names, I don't love abbreviations but this is a lot of typing and ruff doesn't like when the
+    # lines are too long
+    g = Fore.GREEN
+    r = Fore.RED
+    y = Fore.YELLOW
+    reset = Style.RESET_ALL
+
     # Prepare output
     output = [
-        f"{Fore.YELLOW}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{Style.RESET_ALL}",
-        f"Time since sim start:        {Fore.GREEN}{time.time() - start_time:<10.2f}{Style.RESET_ALL} {Fore.RED}s{Style.RESET_ALL}",
-        f"State:                       {Fore.GREEN}{airbrakes.state.name}{Style.RESET_ALL}",
-        f"Current speed:               {Fore.GREEN}{airbrakes.data_processor.speed:<10.2f}{Style.RESET_ALL} {Fore.RED}m/s{Style.RESET_ALL}",
-        f"Max speed so far:            {Fore.GREEN}{airbrakes.data_processor.max_speed:<10.2f}{Style.RESET_ALL} {Fore.RED}m/s{Style.RESET_ALL}",
-        f"Current altitude:            {Fore.GREEN}{airbrakes.data_processor.current_altitude:<10.2f}{Style.RESET_ALL} {Fore.RED}m{Style.RESET_ALL}",
-        f"Max altitude so far:         {Fore.GREEN}{airbrakes.data_processor.max_altitude:<10.2f}{Style.RESET_ALL} {Fore.RED}m{Style.RESET_ALL}",
-        f"Current airbrakes extension: {Fore.GREEN}{airbrakes.current_extension.value}",
-        f"{Fore.YELLOW}{'='*13} REAL TIME CPU LOAD {'='*14}{Style.RESET_ALL}",
+        f"{y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{reset}",
+        f"Time since sim start:        {g}{time.time() - start_time:<10.2f}{reset} {r}s{reset}",
+        f"State:                       {g}{airbrakes.state.name}{reset}",
+        f"Current speed:               {g}{airbrakes.data_processor.speed:<10.2f}{reset} {r}m/s{reset}",
+        f"Max speed so far:            {g}{airbrakes.data_processor.max_speed:<10.2f}{reset} {r}m/s{reset}",
+        f"Current altitude:            {g}{airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
+        f"Max altitude so far:         {g}{airbrakes.data_processor.max_altitude:<10.2f}{reset} {r}m{reset}",
+        f"Current airbrakes extension: {g}{airbrakes.current_extension.value}",
+        f"{y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{reset}",
     ]
 
     # Add CPU usage data with color coding
     for name, process in processes.items():
         cpu_usage = process.cpu_percent(interval=None)
         if cpu_usage < 50:
-            cpu_color = Fore.GREEN
+            cpu_color = g
         elif cpu_usage < 75:
-            cpu_color = Fore.YELLOW
+            cpu_color = y
         else:
-            cpu_color = Fore.RED
-        output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>5.2f}% {Style.RESET_ALL}")
+            cpu_color = r
+        output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>5.2f}% {reset}")
 
     # Print the output
     print("\n".join(output))
 
     # Move the cursor up for the next update
-    # Calculate total lines printed and move cursor up accordingly
     print(MOVE_CURSOR_UP * len(output), end="", flush=True)
 
 

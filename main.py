@@ -12,7 +12,6 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from utils import prepare_process_dict, update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -23,6 +22,7 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
+from utils import prepare_process_dict, update_display
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
