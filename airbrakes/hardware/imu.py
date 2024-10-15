@@ -10,11 +10,8 @@ import warnings
 try:
     import mscl
 except ImportError:
-    warnings.warn(
-        "Could not import MSCL, IMU will not work. Please see installation instructions "
-        "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
-        stacklevel=2,
-    )
+    pass
+    # We should print a warning, but that messes with how the sim display looks
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
