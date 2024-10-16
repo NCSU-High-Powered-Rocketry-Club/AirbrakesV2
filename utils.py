@@ -52,8 +52,12 @@ init(autoreset=True)  # Automatically reset colors after each print
 
 
 def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: dict[str, psutil.Process]) -> None:
-    """Prints the values from the simulation in a pretty way."""
-
+    """
+    Updates the display with real-time data.
+    :param airbrakes: The AirbrakesContext object.
+    :param start_time: The time (in seconds) the simulation started.
+    :param processes: A dictionary of processes to get CPU usage from.
+    """
     # Shorten colorama names, I don't love abbreviations but this is a lot of typing and ruff doesn't like when the
     # lines are too long
     g = Fore.GREEN
@@ -93,6 +97,10 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
 
 
 def prepare_process_dict(airbrakes: "AirbrakesContext") -> dict[str, psutil.Process]:
+    """
+    Prepares a dictionary of processes to monitor CPU usage for.
+    :param airbrakes: The AirbrakesContext object.
+    """
     all_processes = {}
     imu_process = airbrakes.imu._data_fetch_process
     log_process = airbrakes.logger._log_process

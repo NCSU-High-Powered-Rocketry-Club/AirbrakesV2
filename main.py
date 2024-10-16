@@ -27,7 +27,6 @@ from utils import prepare_process_dict, update_display
 
 def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
-    sim_time_start = time.time()
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
@@ -43,6 +42,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
 
     # Prepare the processes for monitoring in the simulation:
     if is_simulation:
+        sim_time_start = time.time()
         all_processes = prepare_process_dict(airbrakes)
 
     try:
