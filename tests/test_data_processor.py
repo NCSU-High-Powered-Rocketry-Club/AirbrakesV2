@@ -54,8 +54,6 @@ class TestIMUDataProcessor:
 
     def test_init(self, data_processor):
         d = IMUDataProcessor([])
-        assert d._avg_accel == (0.0, 0.0, 0.0)
-        assert d._avg_accel_mag == 0.0
         assert d._max_altitude == 0.0
         assert isinstance(d._previous_velocity, np.ndarray)
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
@@ -69,8 +67,6 @@ class TestIMUDataProcessor:
         assert d.upside_down is False
 
         d = data_processor
-        assert d._avg_accel == (1.5, 2.5, 3.5)
-        assert d._avg_accel_mag == np.sqrt(1.5**2 + 2.5**2 + 3.5**2)
         assert d._max_altitude == 0.5
         assert d.current_altitude == 0.5
         assert list(d._current_altitudes) == [-0.5, 0.5]
@@ -83,16 +79,13 @@ class TestIMUDataProcessor:
         assert d.upside_down is False
 
     def test_str(self, data_processor):
-        data_processor._avg_accel = tuple(float(i) for i in data_processor.avg_acceleration)
         data_str = (
             "IMUDataProcessor("
-            f"avg_acceleration=(1.5, 2.5, 3.5), "
-            f"avg_acceleration_mag={np.sqrt(1.5**2 + 2.5**2 + 3.5**2)}, "
             "max_altitude=0.5, "
             "current_altitude=0.5, "
             # See the comment in _calculate_speeds() for why speed is 0 during init.
-            f"speed=0.0, "
-            f"max_speed=0.0)"
+            "speed=0.0, "
+            "max_speed=0.0)"
         )
         assert str(data_processor) == data_str
 
@@ -168,9 +161,6 @@ class TestIMUDataProcessor:
             EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
         ]
         d.update_data(data_points)
-        assert d._avg_accel == (1.5, 2.5, 3.5) == d.avg_acceleration
-        assert d._avg_accel_mag == math.sqrt(1.5**2 + 2.5**2 + 3.5**2) == d.avg_acceleration_mag
-        assert d.avg_acceleration_z == 3.5
         assert d._data_points == data_points
         assert len(d._current_altitudes) == 2
         assert len(d._speeds) == 2

@@ -52,7 +52,7 @@ class IMU:
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency), name="IMU Data Fetch Process"
+            target=self._fetch_data_loop, args=(port, frequency), name="IMU Process"
         )
 
     @property
@@ -96,9 +96,8 @@ class IMU:
         # We use a deque because it's faster than a list for popping from the left
         data_packets = collections.deque()
         # While there is data in the queue, get the data packet and add it to the dequeue which we return
-        while not self._data_queue.empty():
-            data_packet = self.get_imu_data_packet()
-            data_packets.append(data_packet)
+        for _ in range(self._data_queue.qsize()):
+            data_packets.append(self.get_imu_data_packet())
 
         return data_packets
 

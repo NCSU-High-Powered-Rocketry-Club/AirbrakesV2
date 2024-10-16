@@ -22,8 +22,6 @@ class IMUDataProcessor:
     """
 
     __slots__ = (
-        "_avg_accel",
-        "_avg_accel_mag",
         "_current_altitudes",
         "_data_points",
         "_first_data_point",
@@ -39,8 +37,6 @@ class IMUDataProcessor:
     )
 
     def __init__(self, data_points: Sequence[EstimatedDataPacket], upside_down: bool = False):
-        self._avg_accel: tuple[float, float, float] = (0.0, 0.0, 0.0)
-        self._avg_accel_mag: float = 0.0
         self._max_altitude: float = 0.0
         self._speeds: list[float] = [0.0]
         self._max_speed: float = 0.0
@@ -63,34 +59,11 @@ class IMUDataProcessor:
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"avg_acceleration={self.avg_acceleration}, "
-            f"avg_acceleration_mag={self.avg_acceleration_mag}, "
             f"max_altitude={self.max_altitude}, "
             f"current_altitude={self.current_altitude}, "
             f"speed={self.speed}, "
             f"max_speed={self.max_speed})"
         )
-
-    @property
-    def avg_acceleration_z(self) -> float:
-        """
-        Returns the average acceleration in the z direction of the data points, in m/s^2.
-        """
-        return self._avg_accel[-1]
-
-    @property
-    def avg_acceleration(self) -> tuple[float, float, float]:
-        """
-        Returns the averaged acceleration as a vector of the data points, in m/s^2.
-        """
-        return tuple(self._avg_accel)
-
-    @property
-    def avg_acceleration_mag(self) -> float:
-        """
-        Returns the magnitude of the acceleration vector of the data points, in m/s^2.
-        """
-        return self._avg_accel_mag
 
     @property
     def max_altitude(self) -> float:
@@ -154,10 +127,6 @@ class IMUDataProcessor:
             z_accel.append(deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD))
             pressure_altitudes.append(data_point.estPressureAlt)
 
-        a_x, a_y, a_z = self._compute_averages(x_accel, y_accel, z_accel)
-        self._avg_accel = (a_x, a_y, a_z)
-        self._avg_accel_mag = (a_x**2 + a_y**2 + a_z**2) ** 0.5
-
         self._speeds: np.array[np.float64] = self._calculate_speeds(x_accel, y_accel, z_accel)
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
@@ -188,7 +157,6 @@ class IMUDataProcessor:
         # makes a ProcessedDataPacket for EstimatedDataPacket
         return [
             ProcessedDataPacket(
-                avg_acceleration=self.avg_acceleration,
                 current_altitude=current_alt,
                 speed=speed,
             )
@@ -214,19 +182,6 @@ class IMUDataProcessor:
         # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
         # landed at a height below from where it launched from, but that doesn't concern us.
         return np.array(alt_list) - self._initial_altitude
-
-    def _compute_averages(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> tuple[float, float, float]:
-        """
-        Calculates the average acceleration and acceleration magnitude of the data points.
-
-        :param a_x: A list of the accelerations in the x direction.
-        :param a_y: A list of the accelerations in the y direction.
-        :param a_z: A list of the accelerations in the z direction.
-
-        :return: A numpy array of the average acceleration in the x, y, and z directions.
-        """
-        # calculate the average acceleration in the x, y, and z directions
-        return float(np.mean(a_x)), float(np.mean(a_y)), float(np.mean(a_z))
 
     def _calculate_rotations(self) -> npt.NDArray[np.float64]:
         """
