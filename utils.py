@@ -69,7 +69,7 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
     output = [
         f"{y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{reset}",
         f"Time since sim start:        {g}{time.time() - start_time:<10.2f}{reset} {r}s{reset}",
-        f"State:                       {g}{airbrakes.state.name}{reset}",
+        f"State:                       {g}{airbrakes.state.name:<15}{reset}",
         f"Current speed:               {g}{airbrakes.data_processor.speed:<10.2f}{reset} {r}m/s{reset}",
         f"Max speed so far:            {g}{airbrakes.data_processor.max_speed:<10.2f}{reset} {r}m/s{reset}",
         f"Current altitude:            {g}{airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
