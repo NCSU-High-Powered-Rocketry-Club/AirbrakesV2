@@ -137,7 +137,7 @@ class IMUDataProcessor:
         self._current_altitudes = self._calculate_current_altitudes(pressure_altitudes)
         self._max_altitude = self._calculate_max_altitude(pressure_altitudes)
 
-                # Rotate compensated acceleration vector to Earth frame of reference
+        # Rotate compensated acceleration vector to Earth frame of reference
         self._rotated_accel = self._calculate_rotations()
 
         # Store the last data point for the next update
