@@ -47,7 +47,6 @@ def main(is_simulation: bool, real_servo: bool) -> None:
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
-
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             airbrakes.update()
