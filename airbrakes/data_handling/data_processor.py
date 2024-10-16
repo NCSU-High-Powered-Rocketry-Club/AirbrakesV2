@@ -152,9 +152,9 @@ class IMUDataProcessor:
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
 
         # We integrate each of the components of the acceleration to get the velocity
-        velocities_x: np.array = previous_vel_x + np.cumsum(np.array(x_accelerations) * time_differences)
-        velocities_y: np.array = previous_vel_y + np.cumsum(np.array(y_accelerations) * time_differences)
-        velocities_z: np.array = previous_vel_z + np.cumsum(np.array(z_accelerations) * time_differences)
+        velocities_x: np.array = previous_vel_x + np.cumsum(x_accelerations * time_differences)
+        velocities_y: np.array = previous_vel_y + np.cumsum(y_accelerations * time_differences)
+        velocities_z: np.array = previous_vel_z + np.cumsum(z_accelerations * time_differences)
 
         # Store the last calculated velocity vectors
         self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
