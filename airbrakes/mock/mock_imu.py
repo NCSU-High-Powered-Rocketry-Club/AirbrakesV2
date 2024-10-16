@@ -41,7 +41,7 @@ class MockIMU(IMU):
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(log_file_path, real_time_simulation), name="IMU Data Fetch Process"
+            target=self._fetch_data_loop, args=(log_file_path, real_time_simulation), name="Mock IMU Process"
         )
 
     def _fetch_data_loop(self, log_file_path: Path, real_time_simulation: bool) -> None:
