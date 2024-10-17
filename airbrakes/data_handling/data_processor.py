@@ -62,7 +62,9 @@ class IMUDataProcessor:
             f"max_altitude={self.max_altitude}, "
             f"current_altitude={self.current_altitude}, "
             f"speed={self.speed}, "
-            f"max_speed={self.max_speed})"
+            f"max_speed={self.max_speed}, "
+            f"rotated_accel={self.rotated_accel},)"
+
         )
 
     @property
@@ -191,12 +193,9 @@ class IMUDataProcessor:
 
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
-        
+
         timestamps = []
-        if self._last_data_point is None:
-            timestamps = self._data_points
-        else:
-            timestamps = [self._last_data_point, *self._data_points]
+        timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
 
         time_diff = np.diff([data_point.timestamp for data_point in timestamps]) * 1e-9
         for dp,dt in zip(self._data_points,time_diff, strict=False):
@@ -219,11 +218,16 @@ class IMUDataProcessor:
             epsilon = 1-((self._quat[0]**2) + (self._quat[1]**2) + (self._quat[2]**2) + (self._quat[3]**2))
             K=5.0
             deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat)) + K*epsilon*np.transpose(self._quat)
+
             # updates quaternion by adding delta quaternion, and rotates acceleration vector
             self._quat = self._quat + np.transpose(deltaQuat)*dt
+
+            # normalize quaternion
+            self._quat = self._quat/np.linalg.norm(self._quat)
+
+            # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
-
         return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
 
 
@@ -243,8 +247,6 @@ class IMUDataProcessor:
         x = w1*x2 + x1*w2 + y1*z2 - z1*y2
         y = w1*y2 - x1*z2 + y1*w2 + z1*x2
         z = w1*z2 + x1*y2 - y1*x2 + z1*w2
-        print([q1,q2])
-        print([w,x,y,z])
         return np.array([w, x, y, z])
 
 
