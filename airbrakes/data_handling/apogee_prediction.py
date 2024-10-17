@@ -38,15 +38,15 @@ class ApogeePrediction:
         "_params",
     )
 
-    def __init__(self, state: State, data_processor: IMUDataProcessor, data_points: Sequence[EstimatedDataPacket]):
-        self.state = state
+    def __init__(self, state: State, data_processor: IMUDataProcessor):
         self.data_processor = data_processor
-        self._data_points = data_points
+        self._data_points = None
+        self.state = state
         self._previous_velocity: float = 0.0
         self._all_accel: npt.NDArray[np.float64] = np.array([])
         self._all_time: npt.NDArray[np.float64] = np.array([])
         self._burnout_time: np.float64 | None = None
-        self._apogee_prediction: np.float64 | None = None
+        self._apogee_prediction: np.float64 | None = np.float64(0.0)
 
         self._gravity = 9.798 # will use gravity vector in future
 
@@ -62,16 +62,13 @@ class ApogeePrediction:
             return
 
         self._data_points = data_points
-
-        self.state = self.state
-
         self._accel = self.data_processor._rotated_accel[2]
 
         self._speed = self._calculate_speeds(self._accel)
 
         # not recording apogee prediction until coast phase
 
-        if self.state is CoastState:
+        if isinstance(self.state, CoastState):
             self._params = self._curve_fit(self._accel)
             self._apogee_prediction = self._get_apogee(self._params,self._speed,self.data_processor.current_altitude)
 
@@ -154,7 +151,7 @@ class ApogeePrediction:
         xvec = np.arange(0,30.02,0.002)
 
         if params is None:
-            return None
+            return 0.0
         else:
             estAccel = -self._gravity - (params[0] * (1 - params[1]*xvec)**4)
             estVel = cumulative_trapezoid(estAccel)*DT + velocity

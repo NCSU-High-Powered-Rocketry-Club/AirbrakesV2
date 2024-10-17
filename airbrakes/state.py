@@ -12,6 +12,7 @@ from constants import (
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
+    TARGET_ALTITUDE
 )
 
 if TYPE_CHECKING:
@@ -146,10 +147,8 @@ class CoastState(State):
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
-        # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > AIRBRAKES_AFTER_COASTING and not self.airbrakes_extended:
+        if (pred_apogee:=self.context.apogee_prediction._apogee_prediction) is not None and pred_apogee >= TARGET_ALTITUDE:
             self.context.extend_airbrakes()
-            self.airbrakes_extended = True
 
         data = self.context.data_processor
 

@@ -228,6 +228,7 @@ class IMUDataProcessor:
             # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
+            print(accelRotatedQuat)
         return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
 
 
