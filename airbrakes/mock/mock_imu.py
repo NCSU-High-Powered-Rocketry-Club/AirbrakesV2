@@ -8,7 +8,7 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
-from airbrakes.utils import convert_to_float, convert_to_nanoseconds
+from utils import convert_to_float, convert_to_nanoseconds
 
 
 class MockIMU(IMU):
