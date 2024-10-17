@@ -147,24 +147,19 @@ class TestLogger:
     # This decorator is used to run the same test with different data
     # read more about it here: https://docs.pytest.org/en/stable/parametrize.html
     @pytest.mark.parametrize(
-        "data_packet",
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
         [
-            LoggedDataPacket(
-                **{k: "1" for k in LoggedDataPacket.__struct_fields__},
-            ),
+            ("S", 0.0, [RawDataPacket(**{k: 1.12345678 for k in RawDataPacket.__struct_fields__})], []),
         ],
         ids=[
             "RawDataPacket",
         ],
     )
-    def test_log_method(self, logger, data_packet):
+    def test_log_method(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
 
-        # make `invalid_fields` a list for accurate comparison:
-        data_packet.invalid_fields = ["something_invalid"]
-
-        logger.log([data_packet])
+        logger.log(state, extension, imu_data_packets, processed_data_packets)
         time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
 
@@ -175,35 +170,46 @@ class TestLogger:
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
             # The row with the data packet:
+            row: dict[str, str]
             for row in reader:
-                row: dict[str]
                 # Only fetch non-empty values:
-                row_dict = {k: v for k, v in row.items() if v}
+                row_dict_non_empty = {k: v for k, v in row.items() if v}
 
             processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
 
-            assert len(row_dict) > 10  # Random check to make sure we aren't missing any fields
-            assert row_dict == {
-                "state": "1",
-                "extension": "1",
-                **{attr: getattr(data_packet, attr) for attr in RawDataPacket.__struct_fields__},
-                **{attr: str(getattr(data_packet, attr)) for attr in EstimatedDataPacket.__struct_fields__},
-                **{attr: str(getattr(data_packet, attr)) for attr in processed_data_packet_fields},
+            assert len(row_dict_non_empty) > 10  # Random check to make sure we aren't missing any fields
+            assert row == {
+                "state": state,
+                "extension": str(extension),
+                **{attr: str(getattr(imu_data_packets[0], attr, "")) for attr in RawDataPacket.__struct_fields__},
+                **{attr: str(getattr(imu_data_packets[0], attr, "")) for attr in EstimatedDataPacket.__struct_fields__},
+                **{
+                    attr: str(getattr(processed_data_packets if processed_data_packets else None, attr, ""))
+                    for attr in processed_data_packet_fields
+                },
             }
 
-    def test_log_buffer_exceeded_standby(self, logger):
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
+    def test_log_buffer_exceeded_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
 
         # Test if the buffer works correctly
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="S",
-            extension=0.0,
-            timestamp=0.0,
-        )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 10)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
-        logger.log(log_packets)
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+        )
 
         time.sleep(0.1)  # Give the process time to log to file
         assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
@@ -219,33 +225,31 @@ class TestLogger:
             assert count + 1 == LOG_CAPACITY_AT_STANDBY
             assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
 
-    def test_log_buffer_reset_after_standby(self, logger):
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
+    def test_log_buffer_reset_after_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
         """Tests if the buffer is logged after Standby state and the counter is reset."""
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="S",
-            extension=0.0,
-            timestamp=0.0,
-        )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 10)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
-        logger.log(log_packets)
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+        )
         time.sleep(0.1)  # Give the process time to log to file
         assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
 
-        log_packets = [
-            LoggedDataPacket(
-                state="M",
-                extension=0.0,
-                timestamp=0.0,
-            )
-            for _ in range(8)
-        ]
-
         # Let's test that switching to MotorBurn will log those packets:
 
-        logger.log(log_packets)
-
+        logger.log(state, extension, imu_data_packets * 8, processed_data_packets * 8)
         logger.stop()
 
         # Read the file and check if we have LOG_BUFFER_SIZE + 10
@@ -267,16 +271,24 @@ class TestLogger:
             assert len(prev_state_vals) == 10
             assert len(next_state_vals) == 8
 
-    def test_log_buffer_reset_after_landed(self, logger):
+    @pytest.mark.parametrize(
+        ("state", "extension", "imu_data_packets", "processed_data_packets"),
+        [
+            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+        ],
+        ids=[
+            "RawDataPacket",
+        ],
+    )
+    def test_log_buffer_reset_after_landed(self, logger, state, extension, imu_data_packets, processed_data_packets):
         logger.start()
-        log_packet = LoggedDataPacket(
-            state="L",
-            extension=0.0,
-            timestamp=0.0,
-        )
-        log_packets = [log_packet for _ in range(LOG_CAPACITY_AT_STANDBY + 100)]
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
-        logger.log(log_packets)
+        logger.log(
+            state,
+            extension,
+            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
+            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
+        )
         time.sleep(0.1)
         logger.stop()
 
