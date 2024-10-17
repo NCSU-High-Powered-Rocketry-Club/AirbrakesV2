@@ -91,7 +91,7 @@ class IMU:
         # We use a deque because it's faster than a list for popping from the left
         data_packets = collections.deque()
         # While there is data in the queue, get the data packet and add it to the dequeue which we return
-        for _ in range(self._data_queue.qsize()):
+        while not self._data_queue.empty():
             data_packets.append(self.get_imu_data_packet())
 
         return data_packets
