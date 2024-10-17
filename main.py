@@ -12,7 +12,6 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from airbrakes.utils import prepare_process_dict, update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -23,15 +22,14 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
+from utils import prepare_process_dict, update_display
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
-    sim_time_start = time.time()
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
@@ -44,11 +42,11 @@ def main(is_simulation: bool, real_servo: bool) -> None:
 
     # Prepare the processes for monitoring in the simulation:
     if is_simulation:
+        sim_time_start = time.time()
         all_processes = prepare_process_dict(airbrakes)
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
-
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             airbrakes.update()

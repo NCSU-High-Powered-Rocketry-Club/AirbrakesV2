@@ -8,6 +8,7 @@ dependencies = [
     "pigpio",  # Run sudo pigpiod before running the program
     "msgspec",
     "numpy",
+    "colorama",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
@@ -40,7 +41,7 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]
-"airbrakes/utils.py" = ["T201"]
+"utils.py" = ["T201"]
 "tests/*.py" = ["T20", "S101", "D100", "ARG001", "RUF012"]
 
 

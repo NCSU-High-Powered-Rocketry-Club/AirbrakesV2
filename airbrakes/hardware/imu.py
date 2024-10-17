@@ -1,20 +1,15 @@
 """Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import collections
+import contextlib
 import multiprocessing
 import signal
-import warnings
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing mscl is annoying
 # and we really just have it installed on the pi
-try:
+with contextlib.suppress(ImportError):
     import mscl
-except ImportError:
-    warnings.warn(
-        "Could not import MSCL, IMU will not work. Please see installation instructions "
-        "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
-        stacklevel=2,
-    )
+    # We should print a warning, but that messes with how the sim display looks
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
