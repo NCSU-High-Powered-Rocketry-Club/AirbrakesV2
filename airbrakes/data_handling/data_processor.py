@@ -41,7 +41,7 @@ class IMUDataProcessor:
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
-        self._data_points: Sequence[EstimatedDataPacket] = []
+        self._data_points: list[EstimatedDataPacket] = []
 
     def __str__(self) -> str:
         return (
@@ -194,4 +194,3 @@ class IMUDataProcessor:
         )
 
         return x_accelerations, y_accelerations, z_accelerations
-

@@ -75,7 +75,7 @@ STOP_SIGNAL = "STOP"
 
 
 # Don't log more than x packets for StandbyState and LandedState
-LOG_CAPACITY_AT_STANDBY = 5000
+LOG_CAPACITY_AT_STANDBY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
 LOG_BUFFER_SIZE = 5000
 
