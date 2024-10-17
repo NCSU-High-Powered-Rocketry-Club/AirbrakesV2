@@ -87,7 +87,7 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
             cpu_color = y
         else:
             cpu_color = r
-        output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>5.2f}% {reset}")
+        output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {reset}")
 
     # Print the output
     print("\n".join(output))
