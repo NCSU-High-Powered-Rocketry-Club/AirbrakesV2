@@ -149,7 +149,7 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets"),
         [
-            ("S", 0.0, [RawDataPacket(0.0)], [ProcessedDataPacket(0.0, 0.0)]),
+            ("S", 0.0, [RawDataPacket(**{k: 1.12345678 for k in RawDataPacket.__struct_fields__})], []),
         ],
         ids=[
             "RawDataPacket",
@@ -170,20 +170,23 @@ class TestLogger:
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
             # The row with the data packet:
+            row: dict[str, str]
             for row in reader:
-                row: dict[str]
                 # Only fetch non-empty values:
-                row_dict = {k: v for k, v in row.items() if v}
+                row_dict_non_empty = {k: v for k, v in row.items() if v}
 
             processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
 
-            assert len(row_dict) > 10  # Random check to make sure we aren't missing any fields
-            assert row_dict == {
+            assert len(row_dict_non_empty) > 10  # Random check to make sure we aren't missing any fields
+            assert row == {
                 "state": state,
-                "extension": extension,
-                **{attr: getattr(imu_data_packets[0], attr) for attr in RawDataPacket.__struct_fields__},
-                **{attr: str(getattr(imu_data_packets[0], attr)) for attr in EstimatedDataPacket.__struct_fields__},
-                **{attr: str(getattr(processed_data_packets[0], attr)) for attr in processed_data_packet_fields},
+                "extension": str(extension),
+                **{attr: str(getattr(imu_data_packets[0], attr, "")) for attr in RawDataPacket.__struct_fields__},
+                **{attr: str(getattr(imu_data_packets[0], attr, "")) for attr in EstimatedDataPacket.__struct_fields__},
+                **{
+                    attr: str(getattr(processed_data_packets if processed_data_packets else None, attr, ""))
+                    for attr in processed_data_packet_fields
+                },
             }
 
     @pytest.mark.parametrize(

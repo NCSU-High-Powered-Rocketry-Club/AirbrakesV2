@@ -105,13 +105,13 @@ class TestAirbrakesContext:
             # monkeypatched method of State
             calls.append("state update called")
 
-        def log(self, logged_data_packets):
+        def log(self, state, extension, imu_data_packets, processed_data_packets):
             # monkeypatched method of Logger
             calls.append("log called")
-            asserts.append(len(logged_data_packets) > 10)
-            asserts.append(logged_data_packets[0].state == "S")
-            asserts.append(logged_data_packets[0].extension == ServoExtension.MIN_EXTENSION.value)
-            asserts.append(logged_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
+            asserts.append(len(imu_data_packets) > 10)
+            asserts.append(state == "S")
+            asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
+            asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
 
         mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor)
         mocked_airbrakes.start()

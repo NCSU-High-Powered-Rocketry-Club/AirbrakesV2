@@ -86,8 +86,8 @@ class TestIMUDataProcessor:
         assert d._max_speed == d.speed
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
 
-        d._last_data_point = (
-            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        d._last_data_point = EstimatedDataPacket(
+            2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21
         )
 
         d.update(
@@ -147,29 +147,92 @@ class TestIMUDataProcessor:
         # Our max speed is hit with the first est data packet on this update:
         assert d._max_speed == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
 
-    def test_update(self, data_processor):
+    def test_first_update_no_data_packets(self, data_processor):
+        """Tests whether the update() method works correctly, when no data packets are passed."""
         d = data_processor
-        data_points = [
-            EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
-            EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30),
-        ]
-        d._last_data_point = EstimatedDataPacket(
-            0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20.5
-        )
-        d.update(data_points)
-        assert d._data_points == data_points
-        assert len(d._current_altitudes) == 2
-        assert len(d._speeds) == 2
-        assert len(d._data_points) == 2
-        assert d._max_altitude == 9.5 == d.max_altitude == d.current_altitude
-        assert d._initial_altitude == 20.5
-        assert d._last_data_point == data_points[-1]
+        d.update([])
+        assert d._last_data_point is None
+        assert len(d._data_points) == 0
+        assert len(d._current_altitudes) == 1
+        assert len(d._speeds) == 1
+        assert d._initial_altitude is None
+        assert d._max_altitude == 0.0
+        assert d._last_data_point is None
+
+    @pytest.mark.parametrize(
+        (
+            "data_packets",
+            "init_alt",
+            "max_alt",
+        ),
+        [
+            (
+                [
+                    EstimatedDataPacket(
+                        0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                    )
+                ],
+                None,
+                0.0,
+            ),
+            (
+                [
+                    EstimatedDataPacket(
+                        1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                    ),
+                    EstimatedDataPacket(
+                        2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30
+                    ),
+                ],
+                30.0,
+                0.0,
+            ),
+            (
+                [
+                    EstimatedDataPacket(
+                        1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                    ),
+                    EstimatedDataPacket(
+                        2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30
+                    ),
+                    EstimatedDataPacket(
+                        3 * 1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=40
+                    ),
+                ],
+                35.0,
+                5.0,
+            ),
+        ],
+        ids=["one_data_point", "two_data_points", "three_data_points"],
+    )
+    def test_first_update(self, data_processor, data_packets, init_alt, max_alt):
+        """Tests whether the update() method works correctly, for the first update() call."""
+        d = data_processor
+        d.update(data_packets.copy())
+        # We should always have a last data point
+        assert d._last_data_point
+        assert d._last_data_point == data_packets[-1]
+        # the data points should be one less, since the first one is set to _last_data_point
+        # before the rest are processed, and then it is set to the last data point in the list
+        assert len(d._data_points) == len(data_packets) - 1
+        # implicitly test that the first data point was set to _last_data_point:
+        assert d._data_points == data_packets[1:]
+
+        # current alts and speeds should be one less than the number of data points because
+        # the first data point is set to _last_data_point:
+        # the max() is there because if we only process one data packet, we just return early
+        # and the variables set at __init__ are used:
+        assert len(d._current_altitudes) == max(len(data_packets) - 1, 1)
+        assert len(d._speeds) == max(len(data_packets) - 1, 1)
+
+        assert d._initial_altitude == init_alt
+        assert d.current_altitude == (0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt)
+        assert d._max_altitude == d.max_altitude == max_alt
 
     def test_calculate_speeds_no_data(self):
         """Test that speeds are not handled when there are no data points."""
         d = IMUDataProcessor()
-        speeds = d._calculate_speeds()
-        assert speeds == [0.0], "Speeds should return [0.0] when no data points are present."
+        assert d.speed == 0.0, "Speed should return 0.0 when no data points are present."
 
     def test_previous_velocity_retained(self, data_processor):
         """Test that previous velocity is retained correctly between updates."""
@@ -218,22 +281,25 @@ class TestIMUDataProcessor:
         # max_altitude - calculated max altitude of the rocket
         ("altitude_reading", "current_altitude", "max_altitude"),
         [
-            ([30, 40], 10, 19),
-            ([50, 55, 60], 10, 19),
-            ([20, 10], -10, 0),
+            ([30, 40], 20.0, 20.0),
+            ([50, 55, 60], 40.0, 40.0),
+            ([30, 20, 10], -10.0, 10.0),
         ],
         ids=["increasing_altitude", "increasing_altitude_2", "negative_altitude"],
     )
     def test_altitude_zeroing(self, data_processor, altitude_reading, current_altitude, max_altitude):
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
-        assert d._initial_altitude is None
+        # test_first_update tests the initial alt update, so we can skip that here:
+        d._last_data_point = EstimatedDataPacket(
+            0, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=altitude_reading[0]
+        )
+        d._initial_altitude = 20.0
 
         new_packets = [
             EstimatedDataPacket(idx + 3, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
             for idx, alt in enumerate(altitude_reading)
         ]
         d.update(new_packets)
-        assert d._initial_altitude == altitude_reading[0]
         assert d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude

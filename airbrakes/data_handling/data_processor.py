@@ -1,7 +1,6 @@
 """Module for processing IMU data on a higher level."""
 
 from collections import deque
-from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -41,7 +40,7 @@ class IMUDataProcessor:
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
-        self._data_points: Sequence[EstimatedDataPacket] = []
+        self._data_points: list[EstimatedDataPacket] = []
 
     def __str__(self) -> str:
         return (
@@ -75,7 +74,7 @@ class IMUDataProcessor:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return float(self._max_speed)
 
-    def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
+    def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all the averages and other
         information such as altitude, speed, etc.
@@ -90,9 +89,8 @@ class IMUDataProcessor:
         # If we don't have a last data point, we can't calculate the time differences
         if self._last_data_point is None:
             # Store the first data point for the next update
-            self._last_data_point = self._data_points[0]
             # Handles the case where we only have one data point
-            self._data_points = self._data_points[1:]
+            self._last_data_point = self._data_points.pop(0)
             if not self._data_points:
                 return
 
