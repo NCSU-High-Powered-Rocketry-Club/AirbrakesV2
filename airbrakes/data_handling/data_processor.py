@@ -75,7 +75,7 @@ class IMUDataProcessor:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return float(self._max_speed)
 
-    def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
+    def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all the averages and other
         information such as altitude, speed, etc.
@@ -90,9 +90,8 @@ class IMUDataProcessor:
         # If we don't have a last data point, we can't calculate the time differences
         if self._last_data_point is None:
             # Store the first data point for the next update
-            self._last_data_point = self._data_points[0]
+            self._last_data_point = self._data_points.pop(0)
             # Handles the case where we only have one data point
-            self._data_points = self._data_points[1:]
             if not self._data_points:
                 return
 
@@ -175,23 +174,24 @@ class IMUDataProcessor:
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
     def _get_deadbanded_accelerations(
-        self,
+            self,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
-        Returns the deadbanded accelerations in the x, y, and z directions.
+        Gets the deadbanded accelerations in the x, y, and z directions.
         :return: A tuple of numpy arrays of the deadbanded accelerations in the x, y, and z directions.
         """
-        # Pre-allocate numpy arrays to store the deadbanded accelerations in the x, y, and z directions.
-        # The length of each array is the number of data points.
-        x_accelerations = np.zeros(len(self._data_points), dtype=np.float64)
-        y_accelerations = np.zeros(len(self._data_points), dtype=np.float64)
-        z_accelerations = np.zeros(len(self._data_points), dtype=np.float64)
-
-        # Loop through each data point and apply deadbanding to the estimated accelerations
-        # in the x, y, and z directions. Store the results in the corresponding arrays.
-        for i, data_point in enumerate(self._data_points):
-            x_accelerations[i] = deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD)
-            y_accelerations[i] = deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD)
-            z_accelerations[i] = deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD)
+        x_accelerations = np.array(
+            [deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
+            dtype=np.float64
+        )
+        y_accelerations = np.array(
+            [deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
+            dtype=np.float64
+        )
+        z_accelerations = np.array(
+            [deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
+            dtype=np.float64
+        )
 
         return x_accelerations, y_accelerations, z_accelerations
+
