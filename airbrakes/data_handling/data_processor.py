@@ -1,7 +1,6 @@
 """Module for processing IMU data on a higher level."""
 
 from collections import deque
-from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
