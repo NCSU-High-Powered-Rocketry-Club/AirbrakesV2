@@ -75,6 +75,7 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
         f"Current altitude:            {g}{airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
         f"Max altitude so far:         {g}{airbrakes.data_processor.max_altitude:<10.2f}{reset} {r}m{reset}",
         f"Current airbrakes extension: {g}{airbrakes.current_extension.value}",
+        f"Predicted Apogee:            {g}{airbrakes.apogee_prediction._apogee_prediction:<10.2f}{reset} {r}m{reset}",
         f"{y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{reset}",
     ]
 

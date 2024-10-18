@@ -24,11 +24,14 @@ class IMUDataProcessor:
     __slots__ = (
         "_current_altitudes",
         "_data_points",
+        "_first_data_point",
         "_initial_altitude",
         "_last_data_point",
         "_max_altitude",
         "_max_speed",
         "_previous_velocity",
+        "_quat",
+        "_rotated_accel",
         "_speeds",
         "upside_down",
     )
@@ -42,6 +45,9 @@ class IMUDataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self.upside_down = upside_down
         self._last_data_point: EstimatedDataPacket | None = None
+        self._first_data_point: EstimatedDataPacket | None = None
+        self._quat: npt.NDArray[np.float64] = None
+        self._rotated_accel: npt.NDArray[np.float64] = None
 
         self._data_points: Sequence[EstimatedDataPacket]
 
@@ -56,7 +62,9 @@ class IMUDataProcessor:
             f"max_altitude={self.max_altitude}, "
             f"current_altitude={self.current_altitude}, "
             f"speed={self.speed}, "
-            f"max_speed={self.max_speed})"
+            f"max_speed={self.max_speed}, "
+            f"rotated_accel={self.rotated_accel},)"
+
         )
 
     @property
@@ -82,6 +90,11 @@ class IMUDataProcessor:
         """The maximum speed the rocket has attained during the flight, in m/s."""
         return self._max_speed
 
+    @property
+    def rotated_accel(self) -> npt.NDArray[np.float64]:
+        """the rotated compensated acceleration vectors with respect to Earth frame of reference"""
+        return self._rotated_accel
+
     def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all the averages and other
@@ -94,6 +107,15 @@ class IMUDataProcessor:
             return
 
         self._data_points = data_points
+
+        if self._first_data_point is None:
+            self._first_data_point: EstimatedDataPacket = self._data_points[0]
+            self._quat = np.array([self._first_data_point.estOrientQuaternionX,
+                                  self._first_data_point.estOrientQuaternionY,
+                                  self._first_data_point.estOrientQuaternionZ,
+                                  self._first_data_point.estOrientQuaternionW])
+            print(self._quat)
+
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
         # speed.
@@ -118,8 +140,13 @@ class IMUDataProcessor:
         self._current_altitudes = self._calculate_current_altitudes(pressure_altitudes)
         self._max_altitude = self._calculate_max_altitude(pressure_altitudes)
 
+        # Rotate compensated acceleration vector to Earth frame of reference
+        self._rotated_accel = self._calculate_rotations()
+
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
+
+
 
     def get_processed_data(self) -> list[ProcessedDataPacket]:
         """
@@ -158,6 +185,83 @@ class IMUDataProcessor:
         # There is a decent chance that the zeroed out altitude is negative, e.g. if the rocket
         # landed at a height below from where it launched from, but that doesn't concern us.
         return np.array(alt_list) - self._initial_altitude
+
+    def _calculate_rotations(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the rotated acceleration vector. Converts gyroscope data into a delta quaternion, and adds
+        onto the last quaternion. Will most likely be replaced by IMU quaternion data in the future, this
+        is a work-around due to bad datasets.
+
+        :return: numpy list of rotated acceleration vector [x,y,z]
+        """
+
+        timestamps = []
+        timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
+        time_diff = [timestamps[0].timestamp] if self._last_data_point is None else np.diff(
+            [data_point.timestamp for data_point in timestamps]) * 1e-9
+        for dp,dt in zip(self._data_points,time_diff, strict=False):
+            compx = dp.estCompensatedAccelX
+            compy = dp.estCompensatedAccelY
+            compz = dp.estCompensatedAccelZ
+            gyrox = dp.estAngularRateX
+            gyroy = dp.estAngularRateY
+            gyroz = dp.estAngularRateZ
+
+            if not any([compx,compy,compz,gyrox,gyroy,gyroz]):
+                return np.array([0.0,0.0,0.0])
+
+            # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
+            # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
+            m = np.array([[0, -gyrox, -gyroy, -gyroz],
+                          [gyrox, 0, gyroz, -gyroy],
+                          [gyroy, -gyroz, 0, gyrox],
+                          [gyroz, gyroy, -gyrox, 0]])
+            epsilon = 1-((self._quat[0]**2) + (self._quat[1]**2) + (self._quat[2]**2) + (self._quat[3]**2))
+            K=5.0
+            deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat)) + K*epsilon*np.transpose(self._quat)
+
+            # updates quaternion by adding delta quaternion, and rotates acceleration vector
+            self._quat = self._quat + np.transpose(deltaQuat)*dt
+
+            # normalize quaternion
+            self._quat = self._quat/np.linalg.norm(self._quat)
+            # rotate acceleration by quaternion
+            accelQuat = np.array([0, compx, compy, compz])
+            accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
+
+        return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
+
+
+    def _quatmultiply(self, q1: npt.NDArray[np.float64], q2: npt.NDArray[np.float64]):
+        """
+        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
+
+        :param q1: numpy array with the first quaternion in row form
+        :param q2: numpy array with the second quaternion in row form
+
+        :return: numpy array with the multiplied quaternion
+        """
+        w1, x1, y1, z1 = q1
+        w2, x2, y2, z2 = q2
+
+        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+        return np.array([w, x, y, z])
+
+
+    def _quatconj(self, q: npt.NDArray[np.float64]):
+        """
+        Calculates the conjugate of a quaternion
+
+        :param q1: numpy array with a quaternion in row form
+
+        :return: numpy array with the quaternion conjugate
+        """
+        w, x, y, z = q
+        return np.array([w, -x, -y, -z])
+
 
     def _calculate_speeds(self, a_x: list[float], a_y: list[float], a_z: list[float]) -> npt.NDArray[np.float64]:
         """
