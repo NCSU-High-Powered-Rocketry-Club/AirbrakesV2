@@ -76,25 +76,23 @@ class IMUDataProcessor:
 
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
-        Updates the data points to process. This will recompute all the averages and other
-        information such as altitude, speed, etc.
-        :param data_points: A sequence of EstimatedDataPacket objects to process
+        Updates the data points to process. This will recompute all information such as altitude,
+        speed, etc.
+        :param data_points: A list of EstimatedDataPacket objects to process
         """
-        self._data_points = data_points
-
         # If the data points are empty, we don't want to try to process anything
-        if not self._data_points:
+        if not data_points:
             return
 
-        # If we don't have a last data point, we can't calculate the time differences
-        if self._last_data_point is None:
-            # Store the first data point for the next update
-            self._last_data_point = self._data_points.pop(0)
-            # Handles the case where we only have one data point
-            if not self._data_points:
-                return
+        self._data_points = data_points
 
-        # We use linearAcceleration because we don't want gravity to affect our calculations for speed
+        # If we don't have a last data point, we can't calculate the time differences needed
+        # for speed calculation:
+        if self._last_data_point is None:
+            # setting last data point as the first element, makes it so that the time diff
+            # automatically becomes 0, and the speed becomes 0
+            self._last_data_point = self._data_points[0]
+
         self._speeds = self._calculate_speeds()
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
@@ -104,7 +102,7 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_point = data_points[-1]
 
-    def get_processed_data(self) -> deque[ProcessedDataPacket]:
+    def get_processed_data_packets(self) -> deque[ProcessedDataPacket]:
         """
         Processes the data points and returns a deque of ProcessedDataPacket objects. The length
         of the deque should be the same as the length of the list of estimated data packets most
@@ -173,23 +171,24 @@ class IMUDataProcessor:
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
     def _get_deadbanded_accelerations(
-            self,
+        self,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
         Gets the deadbanded accelerations in the x, y, and z directions.
         :return: A tuple of numpy arrays of the deadbanded accelerations in the x, y, and z directions.
         """
+        # We use linearAcceleration because we don't want gravity to affect our calculations for speed
         x_accelerations = np.array(
             [deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64
+            dtype=np.float64,
         )
         y_accelerations = np.array(
             [deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64
+            dtype=np.float64,
         )
         z_accelerations = np.array(
             [deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64
+            dtype=np.float64,
         )
 
         return x_accelerations, y_accelerations, z_accelerations
