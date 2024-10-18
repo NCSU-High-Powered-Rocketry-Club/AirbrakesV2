@@ -1,20 +1,15 @@
 """Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import collections
+import contextlib
 import multiprocessing
 import signal
-import warnings
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing mscl is annoying
 # and we really just have it installed on the pi
-try:
+with contextlib.suppress(ImportError):
     import mscl
-except ImportError:
-    warnings.warn(
-        "Could not import MSCL, IMU will not work. Please see installation instructions "
-        "here: https://github.com/LORD-MicroStrain/MSCL/tree/master",
-        stacklevel=2,
-    )
+    # We should print a warning, but that messes with how the sim display looks
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
@@ -52,7 +47,7 @@ class IMU:
 
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency), name="IMU Data Fetch Process"
+            target=self._fetch_data_loop, args=(port, frequency), name="IMU Process"
         )
 
     @property
@@ -96,7 +91,7 @@ class IMU:
         # We use a deque because it's faster than a list for popping from the left
         data_packets = collections.deque()
         # While there is data in the queue, get the data packet and add it to the dequeue which we return
-        for _ in range(self._data_queue.qsize()):
+        while not self._data_queue.empty():
             data_packets.append(self.get_imu_data_packet())
 
         return data_packets
