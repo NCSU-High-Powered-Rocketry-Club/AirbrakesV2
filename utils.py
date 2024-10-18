@@ -53,7 +53,6 @@ class FlightDisplay:
     # Initialize Colorama
     init(autoreset=True)  # Automatically reset colors after each print
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
-    MOVE_CURSOR_DOWN = "\033[E"  # Move cursor down one line
     NATURAL_END = "natural"
     INTERRUPTED_END = "interrupted"
 
