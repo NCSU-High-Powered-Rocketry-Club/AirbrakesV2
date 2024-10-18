@@ -46,6 +46,7 @@ def deadband(input_value: float, threshold: float) -> float:
 
 
 MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
+MOVE_CURSOR_DOWN = "\033[E"  # Move cursor down one line
 CLEAR_LINE = "\033[K"  # Clear the current line
 # Initialize Colorama
 init(autoreset=True)  # Automatically reset colors after each print
@@ -94,6 +95,20 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
 
     # Move the cursor up for the next update
     print(MOVE_CURSOR_UP * len(output), end="", flush=True)
+
+
+def update_display_end(airbrakes: "AirbrakesContext", start_time: float, processes: dict[str, psutil.Process]) -> None:
+    """
+    Updates the display with real-time data at the end of the simulation, and then moves the cursor
+    to the end of the screen, to save the output.
+    :param airbrakes: The AirbrakesContext object.
+    :param start_time: The time (in seconds) the simulation started.
+    :param processes: A dictionary of processes to get CPU usage from.
+    """
+    # call update_display to print the last update:
+    update_display(airbrakes, start_time, processes)
+    # Move the cursor to the end of the screen
+    print(MOVE_CURSOR_DOWN * 20, flush=True)
 
 
 def prepare_process_dict(airbrakes: "AirbrakesContext") -> dict[str, psutil.Process]:

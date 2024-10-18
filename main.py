@@ -22,7 +22,7 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
-from utils import prepare_process_dict, update_display
+from utils import prepare_process_dict, update_display, update_display_end
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
@@ -54,7 +54,8 @@ def main(is_simulation: bool, real_servo: bool) -> None:
             if is_simulation:
                 update_display(airbrakes, sim_time_start, all_processes)
     except KeyboardInterrupt:
-        pass
+        if is_simulation:
+            update_display_end(airbrakes, sim_time_start, all_processes)
     finally:
         airbrakes.stop()  # Stop the IMU and logger processes
 
