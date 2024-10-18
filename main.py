@@ -22,11 +22,13 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
-from utils import prepare_process_dict, update_display, update_display_end
+from utils import FlightDisplay
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
     # Create the objects that will be used in the airbrakes context
+    sim_time_start = time.time()
+
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
@@ -40,10 +42,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
 
-    # Prepare the processes for monitoring in the simulation:
-    if is_simulation:
-        sim_time_start = time.time()
-        all_processes = prepare_process_dict(airbrakes)
+    flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
@@ -52,10 +51,14 @@ def main(is_simulation: bool, real_servo: bool) -> None:
             airbrakes.update()
 
             if is_simulation:
-                update_display(airbrakes, sim_time_start, all_processes)
+                flight_display.update_display()
+                # Stop the sim when the data is exhausted:
+                if not airbrakes.imu._data_fetch_process.is_alive():
+                    flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
+                    break
     except KeyboardInterrupt:
         if is_simulation:
-            update_display_end(airbrakes, sim_time_start, all_processes)
+            flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
     finally:
         airbrakes.stop()  # Stop the IMU and logger processes
 
