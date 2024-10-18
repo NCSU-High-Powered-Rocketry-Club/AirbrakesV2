@@ -11,6 +11,12 @@ if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 
 
+G = Fore.GREEN
+R = Fore.RED
+Y = Fore.YELLOW
+RESET = Style.RESET_ALL
+
+
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
     """Converts seconds to nanoseconds, if it isn't already in nanoseconds."""
     try:
@@ -56,6 +62,8 @@ class FlightDisplay:
     NATURAL_END = "natural"
     INTERRUPTED_END = "interrupted"
 
+    __slots__ = ("airbrakes", "processes", "start_time")
+
     def __init__(self, airbrakes: "AirbrakesContext", start_time: float) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
@@ -73,10 +81,6 @@ class FlightDisplay:
         """
         # Shorten colorama names, I don't love abbreviations but this is a lot of typing and ruff doesn't like when the
         # lines are too long
-        g = Fore.GREEN
-        r = Fore.RED
-        y = Fore.YELLOW
-        reset = Style.RESET_ALL
 
         try:
             current_queue_size = self.airbrakes.imu._data_queue.qsize()
@@ -85,28 +89,28 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{reset}",
-            f"Time since sim start:        {g}{time.time() - self.start_time:<10.2f}{reset} {r}s{reset}",
-            f"State:                       {g}{self.airbrakes.state.name:<15}{reset}",
-            f"Current speed:               {g}{self.airbrakes.data_processor.speed:<10.2f}{reset} {r}m/s{reset}",
-            f"Max speed so far:            {g}{self.airbrakes.data_processor.max_speed:<10.2f}{reset} {r}m/s{reset}",
-            f"Current height:            {g}{self.airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
-            f"Max height so far:         {g}{self.airbrakes.data_processor.max_altitude:<10.2f}{reset} {r}m{reset}",
-            f"Current airbrakes extension: {g}{self.airbrakes.current_extension.value}{reset}",
-            f"IMU Data Queue Size:         {g}{current_queue_size}{reset}",
-            f"{y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{reset}",
+            f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
+            f"Time since sim start:        {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
+            f"State:                       {G}{self.airbrakes.state.name:<15}{RESET}",
+            f"Current speed:               {G}{self.airbrakes.data_processor.speed:<10.2f}{RESET} {R}m/s{RESET}",
+            f"Max speed so far:            {G}{self.airbrakes.data_processor.max_speed:<10.2f}{RESET} {R}m/s{RESET}",
+            f"Current height:            {G}{self.airbrakes.data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Max height so far:         {G}{self.airbrakes.data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Current airbrakes extension: {G}{self.airbrakes.current_extension.value}{RESET}",
+            f"IMU Data Queue Size:         {G}{current_queue_size}{RESET}",
+            f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 
         # Add CPU usage data with color coding
         for name, process in self.processes.items():
             cpu_usage = process.cpu_percent(interval=None)
             if cpu_usage < 50:
-                cpu_color = g
+                cpu_color = G
             elif cpu_usage < 75:
-                cpu_color = y
+                cpu_color = Y
             else:
-                cpu_color = r
-            output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {reset}")
+                cpu_color = R
+            output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
 
         # Print the output
         print("\n".join(output))
