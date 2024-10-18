@@ -65,6 +65,11 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
     y = Fore.YELLOW
     reset = Style.RESET_ALL
 
+    try:
+        current_queue_size = airbrakes.imu._data_queue.qsize()
+    except NotImplementedError:  # Returns NotImplementedError on arm architecture (Raspberry Pi)
+        current_queue_size = "N/A"
+
     # Prepare output
     output = [
         f"{y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{reset}",
@@ -74,7 +79,8 @@ def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: 
         f"Max speed so far:            {g}{airbrakes.data_processor.max_speed:<10.2f}{reset} {r}m/s{reset}",
         f"Current altitude:            {g}{airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
         f"Max altitude so far:         {g}{airbrakes.data_processor.max_altitude:<10.2f}{reset} {r}m{reset}",
-        f"Current airbrakes extension: {g}{airbrakes.current_extension.value}",
+        f"Current airbrakes extension: {g}{airbrakes.current_extension.value}{reset}",
+        f"IMU Data Queue Size:         {g}{current_queue_size}{reset}",
         f"{y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{reset}",
     ]
 
