@@ -47,7 +47,6 @@ def deadband(input_value: float, threshold: float) -> float:
 
 MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
 MOVE_CURSOR_DOWN = "\033[E"  # Move cursor down one line
-CLEAR_LINE = "\033[K"  # Clear the current line
 # Initialize Colorama
 init(autoreset=True)  # Automatically reset colors after each print
 
