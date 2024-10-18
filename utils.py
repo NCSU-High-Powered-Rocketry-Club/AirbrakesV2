@@ -2,13 +2,21 @@
 
 import multiprocessing
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import psutil
 from colorama import Fore, Style, init
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
+
+
+# Shorten colorama names, I (jackson) don't love abbreviations but this is a lot of typing and
+# ruff doesn't like when the lines are too long and they are ugly when long (harshil)
+G = Fore.GREEN
+R = Fore.RED
+Y = Fore.YELLOW
+RESET = Style.RESET_ALL
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
@@ -45,66 +53,86 @@ def deadband(input_value: float, threshold: float) -> float:
     return input_value
 
 
-MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
-CLEAR_LINE = "\033[K"  # Clear the current line
-# Initialize Colorama
-init(autoreset=True)  # Automatically reset colors after each print
-
-
-def update_display(airbrakes: "AirbrakesContext", start_time: float, processes: dict[str, psutil.Process]) -> None:
+class FlightDisplay:
+    """Class related to displaying real-time flight data in the terminal with pretty colors
+    and spacing.
     """
-    Updates the display with real-time data.
-    :param airbrakes: The AirbrakesContext object.
-    :param start_time: The time (in seconds) the simulation started.
-    :param processes: A dictionary of processes to get CPU usage from.
-    """
-    # Shorten colorama names, I don't love abbreviations but this is a lot of typing and ruff doesn't like when the
-    # lines are too long
-    g = Fore.GREEN
-    r = Fore.RED
-    y = Fore.YELLOW
-    reset = Style.RESET_ALL
 
-    # Prepare output
-    output = [
-        f"{y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{reset}",
-        f"Time since sim start:        {g}{time.time() - start_time:<10.2f}{reset} {r}s{reset}",
-        f"State:                       {g}{airbrakes.state.name:<15}{reset}",
-        f"Current speed:               {g}{airbrakes.data_processor.speed:<10.2f}{reset} {r}m/s{reset}",
-        f"Max speed so far:            {g}{airbrakes.data_processor.max_speed:<10.2f}{reset} {r}m/s{reset}",
-        f"Current altitude:            {g}{airbrakes.data_processor.current_altitude:<10.2f}{reset} {r}m{reset}",
-        f"Max altitude so far:         {g}{airbrakes.data_processor.max_altitude:<10.2f}{reset} {r}m{reset}",
-        f"Current airbrakes extension: {g}{airbrakes.current_extension.value}",
-        f"{y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{reset}",
-    ]
+    # Initialize Colorama
+    init(autoreset=True)  # Automatically reset colors after each print
+    MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
+    NATURAL_END = "natural"
+    INTERRUPTED_END = "interrupted"
 
-    # Add CPU usage data with color coding
-    for name, process in processes.items():
-        cpu_usage = process.cpu_percent(interval=None)
-        if cpu_usage < 50:
-            cpu_color = g
-        elif cpu_usage < 75:
-            cpu_color = y
-        else:
-            cpu_color = r
-        output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {reset}")
+    __slots__ = ("airbrakes", "processes", "start_time")
 
-    # Print the output
-    print("\n".join(output))
+    def __init__(self, airbrakes: "AirbrakesContext", start_time: float) -> None:
+        """
+        :param airbrakes: The AirbrakesContext object.
+        :param start_time: The time (in seconds) the simulation started.
+        """
+        self.airbrakes = airbrakes
+        self.start_time = start_time
+        # Prepare the processes for monitoring in the simulation:
+        self.processes = self.prepare_process_dict()
 
-    # Move the cursor up for the next update
-    print(MOVE_CURSOR_UP * len(output), end="", flush=True)
+    def update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
+        """
+        Updates the display with real-time data.
+        :param end_sim: Whether the simulation ended or was interrupted.
+        """
+        try:
+            current_queue_size = self.airbrakes.imu._data_queue.qsize()
+        except NotImplementedError:  # Returns NotImplementedError on arm architecture (Raspberry Pi)
+            current_queue_size = "N/A"
 
+        # Prepare output
+        output = [
+            f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
+            f"Time since sim start:        {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
+            f"State:                       {G}{self.airbrakes.state.name:<15}{RESET}",
+            f"Current speed:               {G}{self.airbrakes.data_processor.speed:<10.2f}{RESET} {R}m/s{RESET}",
+            f"Max speed so far:            {G}{self.airbrakes.data_processor.max_speed:<10.2f}{RESET} {R}m/s{RESET}",
+            f"Current height:            {G}{self.airbrakes.data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Max height so far:         {G}{self.airbrakes.data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Current airbrakes extension: {G}{self.airbrakes.current_extension.value}{RESET}",
+            f"IMU Data Queue Size:         {G}{current_queue_size}{RESET}",
+            f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
+        ]
 
-def prepare_process_dict(airbrakes: "AirbrakesContext") -> dict[str, psutil.Process]:
-    """
-    Prepares a dictionary of processes to monitor CPU usage for.
-    :param airbrakes: The AirbrakesContext object.
-    """
-    all_processes = {}
-    imu_process = airbrakes.imu._data_fetch_process
-    log_process = airbrakes.logger._log_process
-    current_process = multiprocessing.current_process()
-    for p in [imu_process, log_process, current_process]:
-        all_processes[p.name] = psutil.Process(p.pid)
-    return all_processes
+        # Add CPU usage data with color coding
+        for name, process in self.processes.items():
+            cpu_usage = process.cpu_percent(interval=None)
+            if cpu_usage < 50:
+                cpu_color = G
+            elif cpu_usage < 75:
+                cpu_color = Y
+            else:
+                cpu_color = R
+            output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
+
+        # Print the output
+        print("\n".join(output))
+
+        # Move the cursor up for the next update, if the simulation hasn't ended:
+        if not end_sim:
+            print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
+
+        # Print the end of simulation message if the simulation has ended
+        if end_sim == self.NATURAL_END:
+            # Print the end of simulation header
+            print(f"{Fore.RED}{'=' * 14} END OF SIMULATION {'=' * 14}{Style.RESET_ALL}")
+        elif end_sim == self.INTERRUPTED_END:
+            print(f"{Fore.RED}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{Style.RESET_ALL}")
+
+    def prepare_process_dict(self) -> dict[str, psutil.Process]:
+        """
+        Prepares a dictionary of processes to monitor CPU usage for.
+        """
+        all_processes = {}
+        imu_process = self.airbrakes.imu._data_fetch_process
+        log_process = self.airbrakes.logger._log_process
+        current_process = multiprocessing.current_process()
+        for p in [imu_process, log_process, current_process]:
+            all_processes[p.name] = psutil.Process(p.pid)
+        return all_processes
