@@ -150,30 +150,41 @@ class TestIntegration:
             headers = reader.fieldnames
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
+            # Let's just test the first line (excluding the headers) for a few things:
+            line = next(reader)
+
+            # Check if we round our values to 8 decimal places:
+            accel: str = line["estLinearAccelX"] or line["scaledAccelX"]  # raw or est data
+            assert accel.count(".") == 1
+            assert len(accel.split(".")[1]) == 8
+
+            # Check if the timestamp is a valid and in nanoseconds:
+            timestamp: str = line["timestamp"]
+            assert timestamp.isdigit()
+            assert int(timestamp) > 1e9
+
+            # Check if the state field has only a single letter:
+            state: str = line["state"]
+            assert len(state) == 1
+
             line_number = 0
             state_list = []
             for row in reader:
                 line_number += 1
                 state: str = row["state"]
-                timestamp: str = row["timestamp"]
                 extension: str = row["extension"]
-                accel: str = row["estLinearAccelX"] or row["scaledAccelX"]  # raw or est data
+                is_est_data_packet: bool = row["estLinearAccelX"] != ""
 
-                # Check if the state field has only a single letter:
-                assert len(state) == 1
                 if state not in state_list:
                     state_list.append(state)
 
-                # Check if the timestamp is a valid and in nanoseconds:
-                assert timestamp.isdigit()
-                assert int(timestamp) > 1e9
+                # Check if we logged speed and zeroed out alt for estimated data packets:
+                if is_est_data_packet:
+                    assert row["speed"] != ""
+                    assert row["current_altitude"] != ""
 
                 # Check if the extension is a float:
                 assert float(extension) in [ServoExtension.MIN_EXTENSION.value, ServoExtension.MAX_EXTENSION.value]
-
-                # Check if we round our values to 8 decimal places:
-                assert accel.count(".") == 1
-                assert len(accel.split(".")[1]) == 8
 
             # Check if we have a lot of lines in the log file:
             assert line_number > 80_000  # arbitrary value, depends on length of log buffer and flight data.

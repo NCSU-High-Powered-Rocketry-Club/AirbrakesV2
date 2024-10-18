@@ -35,7 +35,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         imu = IMU(PORT, FREQUENCY)
 
     logger = Logger(LOGS_PATH)
-    data_processor = IMUDataProcessor([], UPSIDE_DOWN)
+    data_processor = IMUDataProcessor(UPSIDE_DOWN)
 
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
