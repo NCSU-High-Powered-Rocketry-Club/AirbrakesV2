@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 
 
+# Shorten colorama names, I (jackson) don't love abbreviations but this is a lot of typing and
+# ruff doesn't like when the lines are too long and they are ugly when long (harshil)
 G = Fore.GREEN
 R = Fore.RED
 Y = Fore.YELLOW
@@ -79,9 +81,6 @@ class FlightDisplay:
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
         """
-        # Shorten colorama names, I don't love abbreviations but this is a lot of typing and ruff doesn't like when the
-        # lines are too long
-
         try:
             current_queue_size = self.airbrakes.imu._data_queue.qsize()
         except NotImplementedError:  # Returns NotImplementedError on arm architecture (Raspberry Pi)
