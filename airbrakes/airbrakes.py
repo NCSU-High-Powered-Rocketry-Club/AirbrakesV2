@@ -46,7 +46,7 @@ class AirbrakesContext:
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
 
         self.state: State = StandByState(self)
-        self.apogee_prediction: ApogeePrediction = ApogeePrediction(self.state,self.data_processor)
+        self.apogee_prediction: ApogeePrediction = ApogeePrediction(self.state,self.data_processor,self)
         self.shutdown_requested = False
 
     def start(self) -> None:

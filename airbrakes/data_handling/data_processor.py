@@ -110,10 +110,11 @@ class IMUDataProcessor:
 
         if self._first_data_point is None:
             self._first_data_point: EstimatedDataPacket = self._data_points[0]
-            self._quat = np.array([self._first_data_point.estOrientQuaternionW,
-                                  self._first_data_point.estOrientQuaternionX,
+            self._quat = np.array([self._first_data_point.estOrientQuaternionX,
                                   self._first_data_point.estOrientQuaternionY,
-                                  self._first_data_point.estOrientQuaternionZ])
+                                  self._first_data_point.estOrientQuaternionZ,
+                                  self._first_data_point.estOrientQuaternionW])
+            print(self._quat)
 
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
@@ -196,8 +197,8 @@ class IMUDataProcessor:
 
         timestamps = []
         timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
-
-        time_diff = np.diff([data_point.timestamp for data_point in timestamps]) * 1e-9
+        time_diff = [timestamps[0].timestamp] if self._last_data_point is None else np.diff(
+            [data_point.timestamp for data_point in timestamps]) * 1e-9
         for dp,dt in zip(self._data_points,time_diff, strict=False):
             compx = dp.estCompensatedAccelX
             compy = dp.estCompensatedAccelY
@@ -224,11 +225,10 @@ class IMUDataProcessor:
 
             # normalize quaternion
             self._quat = self._quat/np.linalg.norm(self._quat)
-
             # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
-            print(accelRotatedQuat)
+
         return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
 
 
