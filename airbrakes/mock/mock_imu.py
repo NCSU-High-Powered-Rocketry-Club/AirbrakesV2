@@ -23,9 +23,9 @@ class MockIMU(IMU):
     def __init__(self, log_file_path: Path, real_time_simulation: bool):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
-        :param log_file_name: The name of the log file to read data from.
+        :param log_file_path: The name of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
-            speed, e.g. for using it in the CI.
+        speed, e.g. for using it in the CI.
         """
         # We don't call the parent constructor as the IMU class has different parameters, so we manually start the
         # process that fetches data from the log file
@@ -49,7 +49,7 @@ class MockIMU(IMU):
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: the name of the log file to read data from located in logs/
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
-            speed, e.g. for using it in the CI.
+        speed, e.g. for using it in the CI.
         """
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignore the KeyboardInterrupt signal
 

@@ -26,6 +26,15 @@ from constants import (
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
+    """
+    The main function that will be run when the program is started. It will create the objects that will be used in the
+    airbrakes context and run the main loop. The main loop will run until the user presses Ctrl+C.
+
+    This function handles is what handles if the program is running in simulation mode or not.
+
+    :param is_simulation: Whether to run the program in simulation mode or not
+    :param real_servo: Whether to use the real servo or a mock servo
+    """
     # Create the objects that will be used in the airbrakes context
     if is_simulation:
         # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
@@ -37,6 +46,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
+        # If we are not running a simulation, then we will use the real hardware objects
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
 
@@ -51,6 +61,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         airbrakes.start()  # Start the IMU and logger processes
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
+            # Update the airbrakes finite state machine
             airbrakes.update()
 
             if is_simulation:

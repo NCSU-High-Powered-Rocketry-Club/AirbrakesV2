@@ -38,7 +38,7 @@ class IMU:
         "_running",
     )
 
-    def __init__(self, port: str, frequency: int):
+    def __init__(self, port: str, frequency: int) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
