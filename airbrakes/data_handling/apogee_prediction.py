@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.state import State, CoastState
+from airbrakes.state import State, CoastState, MotorBurnState
 
 
 class ApogeePrediction:
@@ -35,7 +35,7 @@ class ApogeePrediction:
         "_speed",
         "_all_accel",
         "_all_time",
-        "_burnout_time",
+        "_start_time",
         "_apogee_prediction",
         "_last_data_point",
         "_params",
@@ -49,9 +49,10 @@ class ApogeePrediction:
         self._previous_velocity: float = 0.0
         self._all_accel: npt.NDArray[np.float64] = np.array([])
         self._all_time: npt.NDArray[np.float64] = np.array([])
-        self._burnout_time: np.float64 | None = None
+        self._start_time: np.float64 | None = None
         self._apogee_prediction: np.float64 | None = np.float64(0.0)
         self._context = context
+        self._last_data_point: EstimatedDataPacket | None = None
 
         self._gravity = 9.798 # will use gravity vector in future
 
@@ -68,9 +69,12 @@ class ApogeePrediction:
 
         self._data_points = data_points
         self._accel = self.data_processor._rotated_accel[2]
-
         self._speed = self._calculate_speeds(self._accel)
 
+        # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
+        if  self._all_time.size == 0 and isinstance(self.state,MotorBurnState):
+            self._start_time = self._data_points[-1].timestamp
+        
         # not recording apogee prediction until coast phase
         self.state = self._context.state
         if isinstance(self.state, CoastState):
@@ -88,13 +92,12 @@ class ApogeePrediction:
 
         :return: current velocity in the z direction
         """
-        last_data_point : EstimatedDataPacket = self.data_processor._last_data_point
 
         # gives dt between last data point of data_points (should be timestamp of rotated_accel?), and last_data_point
-        time_diff = (last_data_point.timestamp - self._data_points[0].timestamp) * 1e-9
+        time_diff = 0.002 if self._last_data_point is None else (
+            self._data_points[0].timestamp - self._last_data_point.timestamp) * 1e-9
         # adds gravity to the z component of rotated acceleration and multiplies by dt
-        velocity = self._previous_velocity + (rotated_accel* -1 - self._gravity)*time_diff
-
+        velocity = self._previous_velocity + (((rotated_accel*-1) - self._gravity)*time_diff)
         # updates previous velocity with new velocity
         self._previous_velocity = velocity
 
@@ -117,12 +120,9 @@ class ApogeePrediction:
         :return: numpy array with values of A and B
         """
 
-        # once in coast phase, gets timestamp so all future data used in curve fit has burnout at t=0
-        if  self._all_time.size == 0:
-            self._burnout_time = self._data_points[-1].timestamp
 
         # creates running list of rotated acceleration, and associated timestamp
-        self._all_time = np.append(self._all_time, (self._data_points[-1].timestamp-self._burnout_time)*1e-9)
+        self._all_time = np.append(self._all_time, (self._data_points[-1].timestamp-self._start_time)*1e-9)
         self._all_accel = np.append(self._all_accel,accel)
         # initial values for curve fit
         CURVE_FIT_INITIAL = [15.5, 0.03]
@@ -153,10 +153,12 @@ class ApogeePrediction:
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0,30.02,0.002)
+        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp-self._start_time)*1e-9)/0.002))
+
         if params is None:
             return 0.0
         else:
             estAccel = -self._gravity - (params[0] * (1 - params[1]*xvec)**4)
-            estVel = cumulative_trapezoid(estAccel)*DT + velocity
+            estVel = cumulative_trapezoid(estAccel[current_vec_point:-1])*DT + velocity
             estAlt = cumulative_trapezoid(estVel)*DT + altitude
             return np.max(estAlt)

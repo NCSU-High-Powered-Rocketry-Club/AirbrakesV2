@@ -206,11 +206,7 @@ class IMUDataProcessor:
             gyrox = dp.estAngularRateX
             gyroy = dp.estAngularRateY
             gyroz = dp.estAngularRateZ
-            if compz < -100:
-                raise Exception("accel")
-            if dt > 0.02:
-                print(dt)
-                print(self._quat)
+
 
             if not any([compx,compy,compz,gyrox,gyroy,gyroz]):
                 return np.array([0.0,0.0,0.0])
@@ -232,10 +228,7 @@ class IMUDataProcessor:
             # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
-            if dt > 0.02:
-                print(self._quat)
-                raise Exception('time error')
-        
+
         return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
 
 

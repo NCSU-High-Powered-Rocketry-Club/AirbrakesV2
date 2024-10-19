@@ -61,6 +61,9 @@ class MockIMU(IMU):
 
                 scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
                 est_linear_accel_x = row.get("estLinearAccelX")  # estimated data packet field
+
+                if convert_to_nanoseconds(row["timestamp"]) < 1727551375347022591:
+                    continue
                 # Create the data packet based on the row
                 if scaled_accel_x:
                     for key in RawDataPacket.__struct_fields__:
