@@ -28,7 +28,15 @@ class Logger:
 
     __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
 
-    def __init__(self, log_dir: Path):
+    def __init__(self, log_dir: Path) -> None:
+        """
+        Initializes the logger object. It creates a new log file in the specified directory. Like the IMU class, it
+        creates a queue to store log messages, and starts a separate process to handle the logging. We are logging a lot
+        of data, and logging is I/O-bound, so running it in a separate process allows the main loop to continue running
+        without waiting for the log file to be written to.
+        :param log_dir: The directory where the log files will be.
+        """
+        # Create the log directory if it doesn't exist
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Get all existing log files and find the highest suffix number
@@ -99,6 +107,8 @@ class Logger:
             # We are populating a dictionary with the fields of the logged data packet
             message_dict = asdict(logged_data_packet)
 
+            # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
+            # we could have gigabytes of data in the log file just for when the rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
                 if self._log_counter < LOG_CAPACITY_AT_STANDBY:
                     # add the count:

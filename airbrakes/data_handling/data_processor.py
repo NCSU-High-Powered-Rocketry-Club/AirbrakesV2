@@ -31,6 +31,14 @@ class IMUDataProcessor:
     )
 
     def __init__(self, upside_down: bool = False):
+        """
+        Initializes the IMUDataProcessor object. It processes data points to calculate various things we need such as
+        the maximum altitude, current altitude, speed, etc. All numbers in this class are handled with numpy.
+
+        This class has properties for the maximum altitude, current altitude, speed, and maximum speed of the rocket.
+
+        :param upside_down: Whether the rocket is upside down or not.
+        """
         self.upside_down = upside_down
 
         self._max_altitude: np.float64 = np.float64(0.0)
@@ -179,6 +187,9 @@ class IMUDataProcessor:
         Gets the deadbanded accelerations in the x, y, and z directions.
         :return: A tuple of numpy arrays of the deadbanded accelerations in the x, y, and z directions.
         """
+        # Deadbands the accelerations in the x, y, and z and creates the numpy arrays via list comprehension
+        # As it turns out, list comprehensions are significantly faster than appending to a list in a for loop or
+        # pre-allocating a numpy array and filling it in a for loop.
         x_accelerations = np.array(
             [deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
             dtype=np.float64
