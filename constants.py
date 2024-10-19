@@ -113,4 +113,4 @@ GROUND_ALTITIUDE = 15.0  # meters
 # -------------------------------------------------------
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 1554  # m (5,100 ft)
+TARGET_ALTITUDE = 1700  # m (5,100 ft)
