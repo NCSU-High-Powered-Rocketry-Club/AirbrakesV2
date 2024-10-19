@@ -110,11 +110,11 @@ class IMUDataProcessor:
 
         if self._first_data_point is None:
             self._first_data_point: EstimatedDataPacket = self._data_points[0]
-            self._quat = np.array([self._first_data_point.estOrientQuaternionX,
+            self._quat = np.array([self._first_data_point.estOrientQuaternionW,
+                                  self._first_data_point.estOrientQuaternionX,
                                   self._first_data_point.estOrientQuaternionY,
-                                  self._first_data_point.estOrientQuaternionZ,
-                                  self._first_data_point.estOrientQuaternionW])
-            print(self._quat)
+                                  self._first_data_point.estOrientQuaternionZ])
+            
 
 
         # We use linearAcceleration because we don't want gravity to affect our calculations for
@@ -197,7 +197,7 @@ class IMUDataProcessor:
 
         timestamps = []
         timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
-        time_diff = [timestamps[0].timestamp] if self._last_data_point is None else np.diff(
+        time_diff = [0.002] if self._last_data_point is None else np.diff(
             [data_point.timestamp for data_point in timestamps]) * 1e-9
         for dp,dt in zip(self._data_points,time_diff, strict=False):
             compx = dp.estCompensatedAccelX
@@ -206,6 +206,11 @@ class IMUDataProcessor:
             gyrox = dp.estAngularRateX
             gyroy = dp.estAngularRateY
             gyroz = dp.estAngularRateZ
+            if compz < -100:
+                raise Exception("accel")
+            if dt > 0.02:
+                print(dt)
+                print(self._quat)
 
             if not any([compx,compy,compz,gyrox,gyroy,gyroz]):
                 return np.array([0.0,0.0,0.0])
@@ -222,13 +227,15 @@ class IMUDataProcessor:
 
             # updates quaternion by adding delta quaternion, and rotates acceleration vector
             self._quat = self._quat + np.transpose(deltaQuat)*dt
-
             # normalize quaternion
             self._quat = self._quat/np.linalg.norm(self._quat)
             # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
             accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
-
+            if dt > 0.02:
+                print(self._quat)
+                raise Exception('time error')
+        
         return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
 
 
