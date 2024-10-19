@@ -30,7 +30,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     sim_time_start = time.time()
 
     if is_simulation:
-        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
+        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True, start_after_log_buffer=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
     else:
         servo = Servo(SERVO_PIN)

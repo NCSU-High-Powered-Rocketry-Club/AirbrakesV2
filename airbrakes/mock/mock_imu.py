@@ -19,12 +19,14 @@ class MockIMU(IMU):
 
     __slots__ = ()
 
-    def __init__(self, log_file_path: Path, real_time_simulation: bool):
+    def __init__(self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
         :param log_file_name: The name of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
+        :param start_after_log_buffer: Whether to send the data packets only after the log buffer
+            was filled for Standby state.
         """
         super().__init__(log_file_path, real_time_simulation)
 
@@ -34,22 +36,59 @@ class MockIMU(IMU):
         # is more realistic for a real flight.
         if not real_time_simulation:
             self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(15)
+        self._data_fetch_process = multiprocessing.Process(
+            target=self._fetch_data_loop,
+            args=(
+                log_file_path,
+                real_time_simulation,
+                start_after_log_buffer,
+            ),
+            name="Mock IMU Process",
+        )
 
-    def _fetch_data_loop(self, log_file_path: Path, real_time_simulation: bool) -> None:
+    def _fetch_data_loop(
+        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
+    ) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_name: the name of the log file to read data from located in logs/
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
+        :param start_after_log_buffer: Whether to send the data packets only after the log buffer
+            was filled for Standby state.
         """
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignore the KeyboardInterrupt signal
+
+        start_index = 0
+        if start_after_log_buffer:
+            # We need to loop through the file and calculate the time difference to find the index
+            # at which the log buffer starts. That index will be used as the start point.
+            with log_file_path.open(newline="") as csvfile:
+                reader = csv.DictReader(csvfile)
+
+                # Reads each row as a dictionary
+                row: dict[str, str]
+                init_timestamp = None
+                for idx, row in enumerate(reader):
+                    timestamp = convert_to_nanoseconds(row["timestamp"])
+                    if init_timestamp is None:
+                        init_timestamp = timestamp
+                        continue
+                    if timestamp - init_timestamp > 1e9:  # Anything greater than 1 second is end of the buffer.
+                        start_index = idx
+                        break
+                    init_timestamp = timestamp
 
         with log_file_path.open(newline="") as csvfile:
             reader = csv.DictReader(csvfile)
 
             # Reads each row as a dictionary
             row: dict[str, str]
-            for row in reader:
+            for idx, row in enumerate(reader):
+                # If we are starting after the log buffer, skip the rows before the buffer:
+                if idx < start_index:
+                    continue
+
                 start_time = time.time()
 
                 # Check if the process should stop
@@ -64,13 +103,15 @@ class MockIMU(IMU):
                 # Create the data packet based on the row
                 if scaled_accel_x:
                     for key in RawDataPacket.__struct_fields__:
-                        if val := row.get(key, None):
+                        val = row.get(key, None)
+                        if val:
                             fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = RawDataPacket(**fields_dict)
                 elif est_linear_accel_x:
                     for key in EstimatedDataPacket.__struct_fields__:
-                        if val := row.get(key, None):
+                        val = row.get(key, None)
+                        if val:
                             fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = EstimatedDataPacket(**fields_dict)
