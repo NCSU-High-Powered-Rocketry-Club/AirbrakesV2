@@ -13,6 +13,7 @@ from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.mock.mock_logger import MockLogger
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -32,11 +33,12 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     if is_simulation:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True, start_after_log_buffer=True)
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
+        logger = MockLogger(LOGS_PATH, delete_log_file=True)
     else:
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
+        logger = Logger(LOGS_PATH)
 
-    logger = Logger(LOGS_PATH)
     data_processor = IMUDataProcessor([], UPSIDE_DOWN)
 
     # The context that will manage the airbrakes state machine
