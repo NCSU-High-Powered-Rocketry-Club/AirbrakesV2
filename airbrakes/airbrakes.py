@@ -90,7 +90,10 @@ class AirbrakesContext:
 
         # Split the data packets into estimated and raw data packets for use in processing and logging
         est_data_packets = [
-            data_packet for data_packet in imu_data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
+            data_packet
+            for data_packet in imu_data_packets.copy()
+            if isinstance(data_packet, EstimatedDataPacket)
+            # The copy() above is critical to ensure the data here is not modified by the data processor
         ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
@@ -98,7 +101,7 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
-        processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data()
+        processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()

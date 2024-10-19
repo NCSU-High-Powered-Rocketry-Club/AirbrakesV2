@@ -12,7 +12,6 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from airbrakes.utils import update_display
 from constants import (
     FREQUENCY,
     LOGS_PATH,
@@ -23,6 +22,7 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
+from utils import prepare_process_dict, update_display
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
@@ -36,10 +36,10 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     :param real_servo: Whether to use the real servo or a mock servo
     """
     # Create the objects that will be used in the airbrakes context
+    sim_time_start = time.time()
     if is_simulation:
         # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
         # to be the real hardware. This is useful for testing the software without having to fly the rocket.
-        sim_time_start = time.time()
         # MockIMU pretends to be the imu by reading previous flight data from a log file
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
@@ -57,6 +57,11 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
 
+    # Prepare the processes for monitoring in the simulation:
+    if is_simulation:
+        sim_time_start = time.time()
+        all_processes = prepare_process_dict(airbrakes)
+
     try:
         airbrakes.start()  # Start the IMU and logger processes
         # This is the main loop that will run until we press Ctrl+C
@@ -67,7 +72,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
             if is_simulation:
                 # This is what prints the flight data to the console in real time, we only do it when running the sim
                 # because printing a lot of things can significantly slow down the program
-                update_display(airbrakes, sim_time_start)
+                update_display(airbrakes, sim_time_start, all_processes)
     except KeyboardInterrupt:
         pass
     finally:
