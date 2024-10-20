@@ -6,7 +6,7 @@ import pytest
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
 from constants import (
     AIRBRAKES_AFTER_COASTING,
-    GROUND_ALTITIUDE,
+    GROUND_ALTITUDE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     SERVO_DELAY,
@@ -216,7 +216,7 @@ class TestFreeFallState:
         [
             (50.0, FreeFallState),
             (19.0, FreeFallState),
-            (GROUND_ALTITIUDE - 5, LandedState),
+            (GROUND_ALTITUDE - 5, LandedState),
         ],
         ids=["falling", "almost_landed", "landed"],
     )

@@ -10,7 +10,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import DISTANCE_FROM_APOGEE, GROUND_ALTITIUDE, TAKEOFF_HEIGHT, TAKEOFF_SPEED, ServoExtension
+from constants import DISTANCE_FROM_APOGEE, GROUND_ALTITUDE, TAKEOFF_HEIGHT, TAKEOFF_SPEED, ServoExtension
 
 SNAPSHOT_INTERVAL = 0.01  # seconds
 
@@ -130,15 +130,15 @@ class TestIntegration:
         )
 
         assert (
-            states_dict["FreeFallState"].min_altitude <= GROUND_ALTITIUDE + 10.0
+            states_dict["FreeFallState"].min_altitude <= GROUND_ALTITUDE + 10.0
         )  # free fall should be close to ground
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["FreeFallState"].extensions)
 
         # TODO: update after fixing speed calculations:
         # assert states_dict["LandedState"].min_speed == 0.0
         assert states_dict["LandedState"].max_speed <= 300.0  # high error for now
-        assert states_dict["LandedState"].min_altitude <= GROUND_ALTITIUDE
-        assert states_dict["LandedState"].max_altitude <= GROUND_ALTITIUDE + 10.0
+        assert states_dict["LandedState"].min_altitude <= GROUND_ALTITUDE
+        assert states_dict["LandedState"].max_altitude <= GROUND_ALTITUDE + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["LandedState"].extensions)
 
         # Now let's check if everything was logged correctly:

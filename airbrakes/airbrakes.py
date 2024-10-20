@@ -34,7 +34,16 @@ class AirbrakesContext:
         "state",
     )
 
-    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor):
+    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor) -> None:
+        """
+        Initializes the airbrakes context with the specified hardware objects, logger, and data processor. The state
+        machine starts in the StandByState, which is the initial state of the airbrakes system.
+        :param servo: The servo object that controls the extension of the airbrakes. This can be a real servo or a mock
+        servo.
+        :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or a mock IMU.
+        :param logger: The logger object that logs data to a CSV file.
+        :param data_processor: The data processor object that processes IMU data on a higher level.
+        """
         self.servo = servo
         self.imu = imu
         self.logger = logger
@@ -55,7 +64,8 @@ class AirbrakesContext:
 
     def stop(self) -> None:
         """
-        Handles shutting down the airbrakes. This will cause the main loop to break.
+        Handles shutting down the airbrakes. This will cause the main loop to break. It retracts the airbrakes, stops
+        the IMU, and stops the logger.
         """
         self.retract_airbrakes()
         self.imu.stop()

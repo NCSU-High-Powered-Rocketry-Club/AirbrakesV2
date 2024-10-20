@@ -10,12 +10,21 @@ from constants import SERVO_DELAY, ServoExtension
 
 class Servo:
     """
-    A custom class that represents a servo motor, controlling the extension of the airbrakes.
+    A custom class that represents a servo motor, controlling the extension of the airbrakes. The servo is controlled
+    using the gpiozero library, which provides a simple interface for controlling GPIO pins on the Raspberry Pi.
     """
 
     __slots__ = ("current_extension", "servo")
 
-    def __init__(self, gpio_pin_number: int, pin_factory=None):
+    def __init__(self, gpio_pin_number: int, pin_factory=None) -> None:
+        """
+        Initializes the servo object with the specified GPIO pin number.
+        :param gpio_pin_number: The GPIO pin number that the servo is connected to.
+        :param pin_factory: The pin factory to use for controlling the GPIO pins. If None, the default PiGPIOFactory
+        from the gpiozero library is used, which is commonly used on Raspberry Pi for more precise servo control. The
+        pin factory provides an abstraction layer that allows the Servo class to work across different hardware
+        platforms or with different GPIO libraries (e.g., RPi.GPIO or pigpio).
+        """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
         # Sets up the servo with the specified GPIO pin number
@@ -31,6 +40,7 @@ class Servo:
         """
         Extends the servo to the maximum extension.
         """
+        # We have to use threading to avoid blocking the main thread because our extension methods sleep
         thread = threading.Thread(target=self._extend_then_no_buzz)
         thread.start()
 

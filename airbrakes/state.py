@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from constants import (
     AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
-    GROUND_ALTITIUDE,
+    GROUND_ALTITUDE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
@@ -176,7 +176,7 @@ class FreeFallState(State):
         data = self.context.data_processor
 
         # If our altitude is 0, we have landed:
-        if data.current_altitude <= GROUND_ALTITIUDE:
+        if data.current_altitude <= GROUND_ALTITUDE:
             self.next_state()
 
     def next_state(self):
