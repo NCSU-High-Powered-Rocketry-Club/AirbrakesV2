@@ -8,7 +8,7 @@ from pathlib import Path
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
-from constants import MAX_QUEUE_SIZE, NOT_REAL_TIME_MAX_QUEUE_SIZE
+from constants import MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
 from utils import convert_to_float, convert_to_nanoseconds
 
 
@@ -35,7 +35,7 @@ class MockIMU(IMU):
         # the queue, which will obviously mess up data processing calculations. We limit it to 15 packets, which
         # is more realistic for a real flight.
         self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else NOT_REAL_TIME_MAX_QUEUE_SIZE
+            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
         )
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
