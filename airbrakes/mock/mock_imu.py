@@ -23,7 +23,7 @@ class MockIMU(IMU):
     def __init__(self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
-        :param log_file_name: The name of the log file to read data from.
+        :param log_file_path: The path of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
@@ -122,6 +122,8 @@ class MockIMU(IMU):
                             fields_dict[key] = convert_to_float(val)
                     fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
                     imu_data_packet = EstimatedDataPacket(**fields_dict)
+                # Accounts for the case that the log file is messed up and has empty rows
+                # (or rows not corresponding to any data packet)
                 else:
                     continue
 
@@ -129,7 +131,7 @@ class MockIMU(IMU):
                 self._data_queue.put(imu_data_packet)
 
                 # sleep only if we are running a real-time simulation
-                # Sleep 1 ms after every raw data packet, but don't sleep after an estimated data packet
+                # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to pretend to be real-time
                 if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
                     # Simulate polling interval
                     end_time = time.time()
