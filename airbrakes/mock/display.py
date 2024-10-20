@@ -87,13 +87,15 @@ class FlightDisplay:
         # Print the end of simulation message if the simulation has ended
         if end_sim == self.NATURAL_END:
             # Print the end of simulation header
-            print(f"{Fore.RED}{'=' * 14} END OF SIMULATION {'=' * 14}{Style.RESET_ALL}")
+            print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
         elif end_sim == self.INTERRUPTED_END:
-            print(f"{Fore.RED}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{Style.RESET_ALL}")
+            print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
         Prepares a dictionary of processes to monitor CPU usage for.
+
+        :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
         imu_process = self.airbrakes.imu._data_fetch_process
