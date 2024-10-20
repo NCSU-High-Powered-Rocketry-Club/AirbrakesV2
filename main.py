@@ -30,7 +30,8 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     The main function that will be run when the program is started. It will create the objects that will be used in the
     airbrakes context and run the main loop. The main loop will run until the user presses Ctrl+C.
 
-    This function is what handles if the program is running in simulation mode or not.
+    Depending on its arguments, it will run the program in simulation mode or not. If it is running in simulation mode,
+    it will replace the hardware objects with mock objects that pretend to be the real hardware.
 
     :param is_simulation: Whether to run the program in simulation mode or not
     :param real_servo: Whether to use the real servo or a mock servo
