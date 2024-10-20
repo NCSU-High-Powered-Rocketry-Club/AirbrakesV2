@@ -1,7 +1,7 @@
 """The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object and run the main
 loop."""
 
-import sys
+import argparse
 import time
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
@@ -17,23 +17,22 @@ from airbrakes.mock.mock_logger import MockLogger
 from constants import (
     FREQUENCY,
     LOGS_PATH,
-    MOCK_ARGUMENT,
     PORT,
-    REAL_SERVO_ARGUMENT,
     SERVO_PIN,
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
+from utils import arg_parser
 
 
-def main(is_simulation: bool, real_servo: bool) -> None:
+def main(args: argparse.Namespace) -> None:
     # Create the objects that will be used in the airbrakes context
     sim_time_start = time.time()
 
-    if is_simulation:
-        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True, start_after_log_buffer=True)
-        servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        logger = MockLogger(LOGS_PATH, delete_log_file=True)
+    if args.mock:
+        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
+        servo = Servo(SERVO_PIN) if args.real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
+        logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
     else:
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
@@ -52,19 +51,20 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         while not airbrakes.shutdown_requested:
             airbrakes.update()
 
-            if is_simulation:
-                flight_display.update_display()
+            if args.mock:
+                if not args.debug:
+                    flight_display.update_display()
                 # Stop the sim when the data is exhausted:
                 if not airbrakes.imu._data_fetch_process.is_alive():
                     flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
                     break
     except KeyboardInterrupt:
-        if is_simulation:
+        if args.mock:
             flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
     finally:
         airbrakes.stop()  # Stop the IMU and logger processes
 
 
 if __name__ == "__main__":
-    # If the mock argument is passed in, then run the simulation: python main.py mock
-    main(len(sys.argv) > 1 and MOCK_ARGUMENT in sys.argv[1:], len(sys.argv) > 1 and REAL_SERVO_ARGUMENT in sys.argv[1:])
+    args = arg_parser()  # Load all command line options
+    main(args)

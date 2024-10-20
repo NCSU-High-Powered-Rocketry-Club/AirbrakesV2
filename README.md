@@ -165,8 +165,17 @@ Testing our code can be difficult, so we've developed a way to run mock launches
 
 To run a mock launch, make sure to first specify the path to the CSV file for the previous launch's data in `constants.py` and then run:
 ```bash
-python3 main.py m
+python3 main.py -m
 ```
+If you want to run a mock launch, but with the real servo running, run:
+```bash
+python3 main.py -m -r
+```
+There are some additional options you can use when running a mock launch. To view them all, run:
+```bash
+python3 main.py --help
+```
+
 ### Running Tests
 Our CI pipeline uses [pytest](https://pytest.org) to run tests. You can run the tests locally to ensure that your changes are working as expected.
 
@@ -211,12 +220,6 @@ During development, you may want to run individual scripts to test components. F
 ```bash
 # Make sure you are in the root directory,
 python3 -m scripts.run_servo
-```
-
-### Running Mock Launches
-If you want to connect to the servo so you can see the air brakes extension in realtime, run
-```bash
-python3 main.py m rs
 ```
 
 ## Contributing
