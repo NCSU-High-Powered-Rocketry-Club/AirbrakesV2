@@ -68,6 +68,8 @@ class FlightDisplay:
 
         # Add CPU usage data with color coding
         for name, process in self.processes.items():
+            # interval=None can result in inaccurate readings (it might show > 100%), but we don't
+            # need high accuracy
             cpu_usage = process.cpu_percent(interval=None)
             if cpu_usage < 50:
                 cpu_color = G
@@ -102,5 +104,7 @@ class FlightDisplay:
         log_process = self.airbrakes.logger._log_process
         current_process = multiprocessing.current_process()
         for p in [imu_process, log_process, current_process]:
+            # psutil allows us to monitor CPU usage of a process, along with low level information
+            # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)
         return all_processes
