@@ -1,11 +1,9 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
-import collections
 from typing import TYPE_CHECKING
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
@@ -13,6 +11,8 @@ from airbrakes.state import StandByState, State
 from constants import ServoExtension
 
 if TYPE_CHECKING:
+    from collections import deque
+
     from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
@@ -53,6 +53,15 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
 
+    def stop(self) -> None:
+        """
+        Handles shutting down the airbrakes. This will cause the main loop to break.
+        """
+        self.retract_airbrakes()
+        self.imu.stop()
+        self.logger.stop()
+        self.shutdown_requested = True
+
     def update(self) -> None:
         """
         Called every loop iteration from the main process. Depending on the current state, it will
@@ -63,45 +72,32 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        data_packets: collections.deque[IMUDataPacket] = self.imu.get_imu_data_packets()
+        imu_data_packets: deque[IMUDataPacket] = self.imu.get_imu_data_packets()
 
         # This should never happen, but if it does, we want to not error out and wait for packets
-        if not data_packets:
+        if not imu_data_packets:
             return
 
         # Split the data packets into estimated and raw data packets for use in processing and logging
         est_data_packets = [
-            data_packet for data_packet in data_packets.copy() if isinstance(data_packet, EstimatedDataPacket)
+            data_packet
+            for data_packet in imu_data_packets.copy()
+            if isinstance(data_packet, EstimatedDataPacket)
+            # The copy() above is critical to ensure the data here is not modified by the data processor
         ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        self.data_processor.update_data(est_data_packets)
+        self.data_processor.update(est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
-        processed_data_packets: list[ProcessedDataPacket] = self.data_processor.get_processed_data()
+        processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        logged_data_packets: collections.deque[LoggedDataPacket] = collections.deque()
-
-        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
-        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
-        # data packet
-        i = 0
-        for data_packet in data_packets:
-            logged_data_packet = LoggedDataPacket(
-                state=self.state.name[0], extension=self.current_extension.value, timestamp=data_packet.timestamp
-            )
-            logged_data_packet.set_imu_data_packet_attributes(data_packet)
-            if isinstance(data_packet, EstimatedDataPacket):
-                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets[i])
-                i += 1
-
-            logged_data_packets.append(logged_data_packet)
         # Logs the current state, extension, IMU data, and processed data
-        self.logger.log(logged_data_packets)
+        self.logger.log(self.state.name[0], self.current_extension.value, imu_data_packets, processed_data_packets)
 
     def extend_airbrakes(self) -> None:
         """
@@ -116,12 +112,3 @@ class AirbrakesContext:
         """
         self.servo.set_retracted()
         self.current_extension = ServoExtension.MIN_EXTENSION
-
-    def stop(self) -> None:
-        """
-        Handles shutting down the airbrakes. This will cause the main loop to break.
-        """
-        self.retract_airbrakes()
-        self.imu.stop()
-        self.logger.stop()
-        self.shutdown_requested = True
