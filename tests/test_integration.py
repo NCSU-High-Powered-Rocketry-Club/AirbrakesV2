@@ -130,7 +130,7 @@ class TestIntegration:
         )
 
         assert (
-                states_dict["FreeFallState"].min_altitude <= GROUND_ALTITUDE + 10.0
+            states_dict["FreeFallState"].min_altitude <= GROUND_ALTITUDE + 10.0
         )  # free fall should be close to ground
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["FreeFallState"].extensions)
 
