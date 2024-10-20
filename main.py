@@ -44,7 +44,6 @@ def main(is_simulation: bool, real_servo: bool) -> None:
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=True)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = Servo(SERVO_PIN) if real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        print(f"\n{'='*10} REAL TIME FLIGHT DATA {'='*10}\n")
     else:
         # If we are not running a simulation, then we will use the real hardware objects
         servo = Servo(SERVO_PIN)
