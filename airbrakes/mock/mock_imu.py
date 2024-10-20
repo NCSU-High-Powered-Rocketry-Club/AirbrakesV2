@@ -69,8 +69,8 @@ class MockIMU(IMU):
                 imu_data_packet = None
                 fields_dict = {}
 
-                scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
-                est_linear_accel_x = row.get("estLinearAccelX")  # estimated data packet field
+                scaled_accel_x = row.get("scaledAccelX")
+                est_linear_accel_x = row.get("estLinearAccelX")
                 # Create the data packet based on the row
                 if scaled_accel_x:
                     # If the row has the scaledAccelX field, then it's a raw data packet
