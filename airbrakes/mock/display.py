@@ -68,6 +68,8 @@ class FlightDisplay:
 
         # Add CPU usage data with color coding
         for name, process in self.processes.items():
+            # interval=None can result in inaccurate readings (it might show > 100%), but we don't
+            # need high accuracy
             cpu_usage = process.cpu_percent(interval=None)
             if cpu_usage < 50:
                 cpu_color = G
@@ -87,18 +89,22 @@ class FlightDisplay:
         # Print the end of simulation message if the simulation has ended
         if end_sim == self.NATURAL_END:
             # Print the end of simulation header
-            print(f"{Fore.RED}{'=' * 14} END OF SIMULATION {'=' * 14}{Style.RESET_ALL}")
+            print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
         elif end_sim == self.INTERRUPTED_END:
-            print(f"{Fore.RED}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{Style.RESET_ALL}")
+            print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
         Prepares a dictionary of processes to monitor CPU usage for.
+
+        :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
         imu_process = self.airbrakes.imu._data_fetch_process
         log_process = self.airbrakes.logger._log_process
         current_process = multiprocessing.current_process()
         for p in [imu_process, log_process, current_process]:
+            # psutil allows us to monitor CPU usage of a process, along with low level information
+            # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)
         return all_processes

@@ -26,18 +26,34 @@ from utils import arg_parser
 
 
 def main(args: argparse.Namespace) -> None:
+    """
+    The main function that will be run when the program is started. It will create the objects that will be used in the
+    airbrakes context and run the main loop. The main loop will run until the user presses Ctrl+C.
+
+    Depending on its arguments, it will run the program in simulation mode or not. If it is running in simulation mode,
+    it will replace the hardware objects with mock objects that pretend to be the real hardware.
+
+    :param args: Contains the command line arguments that the user passed to the program. See
+        :func:`utils.arg_parser` in utils.py to know what arguments are available.
+    """
     # Create the objects that will be used in the airbrakes context
     sim_time_start = time.time()
 
     if args.mock:
+        # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
+        # to be the real hardware. This is useful for testing the software without having to fly the rocket.
+        # MockIMU pretends to be the imu by reading previous flight data from a log file
         imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
+        # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = Servo(SERVO_PIN) if args.real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
     else:
+        # If we are not running a simulation, then we will use the real hardware objects
         servo = Servo(SERVO_PIN)
         imu = IMU(PORT, FREQUENCY)
         logger = Logger(LOGS_PATH)
 
+    # Our data processor stay the same regardless of whether we are running a simulation or not
     data_processor = IMUDataProcessor(UPSIDE_DOWN)
 
     # The context that will manage the airbrakes state machine
@@ -49,10 +65,13 @@ def main(args: argparse.Namespace) -> None:
         airbrakes.start()  # Start the IMU and logger processes
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
+            # Update the airbrakes finite state machine
             airbrakes.update()
 
             if args.mock:
-                if not args.debug:
+                if not args.debug:  # Don't print the flight data if we are in debug mode
+                    # This is what prints the flight data to the console in real time, we only do
+                    # it when running the sim because printing a lot of things can significantly slow down the program
                     flight_display.update_display()
                 # Stop the sim when the data is exhausted:
                 if not airbrakes.imu._data_fetch_process.is_alive():
@@ -62,7 +81,7 @@ def main(args: argparse.Namespace) -> None:
         if args.mock:
             flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
     finally:
-        airbrakes.stop()  # Stop the IMU and logger processes
+        airbrakes.stop()
 
 
 if __name__ == "__main__":

@@ -106,7 +106,7 @@ DISTANCE_FROM_APOGEE = 100  # meters
 # Free fall to Landing:
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
-GROUND_ALTITIUDE = 15.0  # meters
+GROUND_ALTITUDE = 15.0  # meters
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
