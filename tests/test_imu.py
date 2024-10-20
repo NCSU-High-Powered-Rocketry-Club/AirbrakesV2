@@ -19,11 +19,19 @@ class TestIMU:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, imu):
+    def test_init(self, imu, mock_imu):
+        """Tests whether the IMU and MockIMU objects initialize correctly."""
+        # Tests that the data queue is correctly initialized
         assert isinstance(imu._data_queue, multiprocessing.queues.Queue)
-        # Test that _running is a shared boolean multiprocessing.Value:
+        assert type(imu._data_queue) is type(mock_imu._data_queue)
+        # Tests that _running is correctly initialized
         assert isinstance(imu._running, multiprocessing.sharedctypes.Synchronized)
+        assert type(imu._running) is type(mock_imu._running)
+        assert not imu._running.value
+        assert not mock_imu._running.value
+        # Tests that the process is correctly initialized
         assert isinstance(imu._data_fetch_process, multiprocessing.Process)
+        assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
 
     def test_imu_start(self, monkeypatch):
         """Tests whether the IMU process starts correctly with the passed arguments."""
@@ -112,7 +120,6 @@ class TestIMU:
 
     def test_data_packets_fetch(self, random_data_mock_imu):
         """Tests whether the data fetching loop actually adds data to the queue."""
-
         imu = random_data_mock_imu
         imu.start()
         time.sleep(0.3)
@@ -138,7 +145,7 @@ class TestIMU:
                 raw_count += 1
 
         # Practically the ratio may not be exactly 1:2
-        assert raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
+        assert 2.30 >= raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
 
     @pytest.mark.skip(reason="Need to install mscl in the CI and ideally auto-build locally.")
     def test_imu_data_loop(self):

@@ -52,7 +52,7 @@ RAW_DESCRIPTOR_SET = 128
 # The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
 # This is used for the mock imu to limit the queue size to a more realistic value
-NOT_REAL_TIME_MAX_QUEUE_SIZE = 15
+SIMULATION_MAX_QUEUE_SIZE = 15
 
 # -------------------------------------------------------
 # Orientation Configuration
@@ -108,7 +108,7 @@ DISTANCE_FROM_APOGEE = 100  # meters
 # Free fall to Landing:
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
-GROUND_ALTITIUDE = 15.0  # meters
+GROUND_ALTITUDE = 15.0  # meters
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
