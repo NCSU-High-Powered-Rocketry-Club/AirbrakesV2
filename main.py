@@ -11,6 +11,7 @@ from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from constants import (
     FREQUENCY,
@@ -22,7 +23,6 @@ from constants import (
     SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
-from utils import prepare_process_dict, update_display
 
 
 def main(is_simulation: bool, real_servo: bool) -> None:
@@ -37,6 +37,8 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     :param real_servo: Whether to use the real servo or a mock servo
     """
     # Create the objects that will be used in the airbrakes context
+    sim_time_start = time.time()
+
     if is_simulation:
         # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
         # to be the real hardware. This is useful for testing the software without having to fly the rocket.
@@ -56,10 +58,7 @@ def main(is_simulation: bool, real_servo: bool) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
 
-    # Prepare the processes for monitoring in the simulation:
-    if is_simulation:
-        sim_time_start = time.time()
-        all_processes = prepare_process_dict(airbrakes)
+    flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
@@ -71,9 +70,14 @@ def main(is_simulation: bool, real_servo: bool) -> None:
             if is_simulation:
                 # This is what prints the flight data to the console in real time, we only do it when running the sim
                 # because printing a lot of things can significantly slow down the program
-                update_display(airbrakes, sim_time_start, all_processes)
+                flight_display.update_display()
+                # Stop the sim when the data is exhausted:
+                if not airbrakes.imu._data_fetch_process.is_alive():
+                    flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
+                    break
     except KeyboardInterrupt:
-        pass
+        if is_simulation:
+            flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
     finally:
         airbrakes.stop()
 
