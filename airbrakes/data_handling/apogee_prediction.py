@@ -1,5 +1,6 @@
 """Module for predicting apogee"""
 
+import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState, MotorBurnState, State
 
+# TODO: See why this warning is being thrown for curve_fit:
+warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
 
 class ApogeePredictor:
     """
@@ -57,12 +60,12 @@ class ApogeePredictor:
         self._gravity = 9.798  # will use gravity vector in future
 
     @property
-    def apogee(self) -> np.float64:
+    def apogee(self) -> float:
         """
         Returns the predicted apogee of the rocket
-        :return: predicted apogee as a numpy float64.
+        :return: predicted apogee as a float.
         """
-        return self._apogee_prediction
+        return float(self._apogee_prediction)
 
     def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
