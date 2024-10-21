@@ -85,5 +85,11 @@ def main(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    # Command line args:
+    # python main.py -m: Runs a simulation on your computer.
+    # python main.py -m -r: Runs a simulation on your computer with the real servo.
+    # python main.py -m -l: Runs a simulation on your computer and keeps the log file after the simulation stops.
+    # python main.py -m -f: Runs a simulation on your computer at full speed.
+    # python main.py -m -d: Runs a simulation on your computer in debug mode.
     args = arg_parser()  # Load all command line options
     main(args)
