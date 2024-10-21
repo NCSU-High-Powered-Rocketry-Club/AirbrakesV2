@@ -36,7 +36,7 @@ def logger():
 
 @pytest.fixture
 def data_processor():
-    return IMUDataProcessor([])
+    return IMUDataProcessor()
 
 
 @pytest.fixture

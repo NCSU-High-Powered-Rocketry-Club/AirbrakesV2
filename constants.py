@@ -51,6 +51,8 @@ RAW_DESCRIPTOR_SET = 128
 
 # The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
+# This is used for the mock imu to limit the queue size to a more realistic value
+SIMULATION_MAX_QUEUE_SIZE = 15
 
 # -------------------------------------------------------
 # Orientation Configuration
@@ -73,7 +75,7 @@ STOP_SIGNAL = "STOP"
 
 
 # Don't log more than x packets for StandbyState and LandedState
-LOG_CAPACITY_AT_STANDBY = 5000
+LOG_CAPACITY_AT_STANDBY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
 LOG_BUFFER_SIZE = 5000
 
@@ -106,7 +108,7 @@ DISTANCE_FROM_APOGEE = 100  # meters
 # Free fall to Landing:
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
-GROUND_ALTITIUDE = 15.0  # meters
+GROUND_ALTITUDE = 15.0  # meters
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration

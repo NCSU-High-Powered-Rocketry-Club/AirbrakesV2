@@ -1,14 +1,16 @@
 """Module for logging data to a CSV file in real time."""
 
-import collections
 import csv
 import multiprocessing
 import signal
+from collections import deque
 from pathlib import Path
 
 from msgspec.structs import asdict
 
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
 
 
@@ -26,7 +28,15 @@ class Logger:
 
     __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
 
-    def __init__(self, log_dir: Path):
+    def __init__(self, log_dir: Path) -> None:
+        """
+        Initializes the logger object. It creates a new log file in the specified directory. Like the IMU class, it
+        creates a queue to store log messages, and starts a separate process to handle the logging. We are logging a lot
+        of data, and logging is I/O-bound, so running it in a separate process allows the main loop to continue running
+        without waiting for the log file to be written to.
+        :param log_dir: The directory where the log files will be.
+        """
+        # Create the log directory if it doesn't exist
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Get all existing log files and find the highest suffix number
@@ -35,7 +45,7 @@ class Logger:
 
         # Buffer for StandbyState and LandedState
         self._log_counter = 0
-        self._log_buffer = collections.deque(maxlen=LOG_BUFFER_SIZE)
+        self._log_buffer = deque(maxlen=LOG_BUFFER_SIZE)
 
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
@@ -73,18 +83,32 @@ class Logger:
         # Waits for the process to finish before stopping it
         self._log_process.join()
 
-    def log(self, logged_data_packets: collections.deque[LoggedDataPacket]) -> None:
+    def log(
+        self,
+        state: str,
+        extension: float,
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
+    ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-
-        :param logged_data_packets: the list of IMU data packets to log
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
         """
+        logged_data_packets = self._create_logged_data_packets(
+            state, extension, imu_data_packets, processed_data_packets
+        )
+
         # Loop through all the IMU data packets
         for logged_data_packet in logged_data_packets:
             # Formats the log message as a CSV line
             # We are populating a dictionary with the fields of the logged data packet
             message_dict = asdict(logged_data_packet)
 
+            # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
+            # we could have gigabytes of data in the log file just for when the rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
                 if self._log_counter < LOG_CAPACITY_AT_STANDBY:
                     # add the count:
@@ -103,6 +127,36 @@ class Logger:
 
             # Put the message in the queue
             self._log_queue.put(message_dict)
+
+    def _create_logged_data_packets(
+        self,
+        state: str,
+        extension: float,
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
+    ) -> deque[LoggedDataPacket]:
+        """
+        Creates a data packet representing a row of data to be logged.
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
+        :return: A deque of LoggedDataPacket objects.
+        """
+        logged_data_packets: deque[LoggedDataPacket] = deque()
+
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
+        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
+        # data packet
+        for data_packet in imu_data_packets:
+            logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
+            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            if isinstance(data_packet, EstimatedDataPacket):
+                # For every estimated data packet, we have a corresponding processed data packet
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
+
+            logged_data_packets.append(logged_data_packet)
+        return logged_data_packets
 
     def _logging_loop(self) -> None:
         """

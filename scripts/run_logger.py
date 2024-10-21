@@ -12,7 +12,7 @@ from airbrakes.data_handling.logger import Logger
 def main():
     # Initialize the logger
     logger = Logger(TEST_LOGS_PATH)
-    data_processor = IMUDataProcessor([], False)
+    data_processor = IMUDataProcessor(False)
 
     # Log for 5 seconds, and automatically stops logging
     start_time = time.time()
