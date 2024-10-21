@@ -1,18 +1,18 @@
 """Module for predicting apogee"""
 
 from collections.abc import Sequence
-from scipy.optimize import curve_fit
-from scipy.integrate import cumulative_trapezoid
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+from scipy.integrate import cumulative_trapezoid
+from scipy.optimize import curve_fit
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.state import State, CoastState, MotorBurnState
+from airbrakes.state import CoastState, MotorBurnState, State
 
 
 class ApogeePrediction:
@@ -26,20 +26,20 @@ class ApogeePrediction:
     """
 
     __slots__ = (
-        "state",
-        "data_processor",
-        "_previous_velocity",
-        "_gravity",
-        "_data_points",
         "_accel",
-        "_speed",
         "_all_accel",
         "_all_time",
-        "_start_time",
         "_apogee_prediction",
+        "_context",
+        "_data_points",
+        "_gravity",
         "_last_data_point",
         "_params",
-        "_context",
+        "_previous_velocity",
+        "_speed",
+        "_start_time",
+        "data_processor",
+        "state",
     )
 
     def __init__(self, state: State, data_processor: IMUDataProcessor, context: "AirbrakesContext"):
@@ -54,9 +54,9 @@ class ApogeePrediction:
         self._context = context
         self._last_data_point: EstimatedDataPacket | None = None
 
-        self._gravity = 9.798 # will use gravity vector in future
+        self._gravity = 9.798  # will use gravity vector in future
 
-    def update_data(self,data_points: Sequence[EstimatedDataPacket]) -> None:
+    def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. Will recompute all of the necesary
         information, and recompute the apogee prediction
@@ -72,19 +72,18 @@ class ApogeePrediction:
         self._speed = self._calculate_speeds(self._accel)
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
-        if  self._all_time.size == 0 and isinstance(self.state,MotorBurnState):
+        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState):
             self._start_time = self._data_points[-1].timestamp
-        
+
         # not recording apogee prediction until coast phase
         self.state = self._context.state
         if isinstance(self.state, CoastState):
             self._params = self._curve_fit(self._accel)
-            self._apogee_prediction = self._get_apogee(self._params,self._speed,self.data_processor.current_altitude)
+            self._apogee_prediction = self._get_apogee(self._params, self._speed, self.data_processor.current_altitude)
 
         self._last_data_point = data_points[-1]
 
-
-    def _calculate_speeds(self, rotated_accel : np.float64):
+    def _calculate_speeds(self, rotated_accel: np.float64):
         """
         Calculates the velocity in the z direction using rotated acceleration values
 
@@ -94,23 +93,26 @@ class ApogeePrediction:
         """
 
         # gives dt between last data point of data_points (should be timestamp of rotated_accel?), and last_data_point
-        time_diff = 0.002 if self._last_data_point is None else (
-            self._data_points[0].timestamp - self._last_data_point.timestamp) * 1e-9
+        time_diff = (
+            0.002
+            if self._last_data_point is None
+            else (self._data_points[0].timestamp - self._last_data_point.timestamp) * 1e-9
+        )
         # adds gravity to the z component of rotated acceleration and multiplies by dt
-        velocity = self._previous_velocity + (((rotated_accel*-1) - self._gravity)*time_diff)
+        velocity = self._previous_velocity + (((rotated_accel * -1) - self._gravity) * time_diff)
         # updates previous velocity with new velocity
         self._previous_velocity = velocity
 
         return velocity
 
-    def _curve_fit_function(self,t,a,b):
+    def _curve_fit_function(self, t, a, b):
         """
         This function is only used internally by scipy curve_fit function
         Defines the function that the curve fit will use
         """
-        return a*(1-b*t)**4
+        return a * (1 - b * t) ** 4
 
-    def _curve_fit(self,accel : np.float64):
+    def _curve_fit(self, accel: np.float64):
         """
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
@@ -120,22 +122,18 @@ class ApogeePrediction:
         :return: numpy array with values of A and B
         """
 
-
         # creates running list of rotated acceleration, and associated timestamp
-        self._all_time = np.append(self._all_time, (self._data_points[-1].timestamp-self._start_time)*1e-9)
-        self._all_accel = np.append(self._all_accel,accel)
+        self._all_time = np.append(self._all_time, (self._data_points[-1].timestamp - self._start_time) * 1e-9)
+        self._all_accel = np.append(self._all_accel, accel)
         # initial values for curve fit
         CURVE_FIT_INITIAL = [15.5, 0.03]
 
-
         if len(self._all_accel) and len(self._all_time) >= 2:
             # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-            popt,pcov = curve_fit(self._curve_fit_function,self._all_time,self._all_accel,p0=CURVE_FIT_INITIAL)
-            a,b = popt
-            return np.array([a,b])
-        else:
-            return None
-
+            popt, _pcov = curve_fit(self._curve_fit_function, self._all_time, self._all_accel, p0=CURVE_FIT_INITIAL)
+            a, b = popt
+            return np.array([a, b])
+        return None
 
     def _get_apogee(self, params, velocity, altitude):
         """
@@ -152,13 +150,12 @@ class ApogeePrediction:
         DT = 0.002
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
-        xvec = np.arange(0,30.02,0.002)
-        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp-self._start_time)*1e-9)/0.002))
+        xvec = np.arange(0, 30.02, 0.002)
+        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp - self._start_time) * 1e-9) / 0.002))
 
         if params is None:
             return 0.0
-        else:
-            estAccel = -self._gravity - (params[0] * (1 - params[1]*xvec)**4)
-            estVel = cumulative_trapezoid(estAccel[current_vec_point:-1])*DT + velocity
-            estAlt = cumulative_trapezoid(estVel)*DT + altitude
-            return np.max(estAlt)
+        estAccel = -self._gravity - (params[0] * (1 - params[1] * xvec) ** 4)
+        estVel = cumulative_trapezoid(estAccel[current_vec_point:-1]) * DT + velocity
+        estAlt = cumulative_trapezoid(estVel) * DT + altitude
+        return np.max(estAlt)

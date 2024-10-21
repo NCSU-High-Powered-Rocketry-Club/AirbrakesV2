@@ -112,10 +112,14 @@ class IMUDataProcessor:
             # setting last data point as the first element, makes it so that the time diff
             # automatically becomes 0, and the speed becomes 0
             self._last_data_point = self._data_points[0]
-            self._quat = np.array([self._last_data_point.estOrientQuaternionW,
-                                  self._last_data_point.estOrientQuaternionX,
-                                  self._last_data_point.estOrientQuaternionY,
-                                  self._last_data_point.estOrientQuaternionZ])
+            self._quat = np.array(
+                [
+                    self._last_data_point.estOrientQuaternionW,
+                    self._last_data_point.estOrientQuaternionX,
+                    self._last_data_point.estOrientQuaternionY,
+                    self._last_data_point.estOrientQuaternionZ,
+                ]
+            )
 
         self._speeds = self._calculate_speeds()
         self._max_speed = max(self._speeds.max(), self._max_speed)
@@ -169,9 +173,12 @@ class IMUDataProcessor:
 
         timestamps = []
         timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
-        time_diff = [0.002] if self._last_data_point is None else np.diff(
-            [data_point.timestamp for data_point in timestamps]) * 1e-9
-        for dp,dt in zip(self._data_points,time_diff, strict=False):
+        time_diff = (
+            [0.002]
+            if self._last_data_point is None
+            else np.diff([data_point.timestamp for data_point in timestamps]) * 1e-9
+        )
+        for dp, dt in zip(self._data_points, time_diff, strict=False):
             compx = dp.estCompensatedAccelX
             compy = dp.estCompensatedAccelY
             compz = dp.estCompensatedAccelZ
@@ -179,30 +186,32 @@ class IMUDataProcessor:
             gyroy = dp.estAngularRateY
             gyroz = dp.estAngularRateZ
 
-
-            if not any([compx,compy,compz,gyrox,gyroy,gyroz]):
-                return np.array([0.0,0.0,0.0])
+            if not any([compx, compy, compz, gyrox, gyroy, gyroz]):
+                return np.array([0.0, 0.0, 0.0])
 
             # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
             # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
-            m = np.array([[0, -gyrox, -gyroy, -gyroz],
-                          [gyrox, 0, gyroz, -gyroy],
-                          [gyroy, -gyroz, 0, gyrox],
-                          [gyroz, gyroy, -gyrox, 0]])
-            epsilon = 1-((self._quat[0]**2) + (self._quat[1]**2) + (self._quat[2]**2) + (self._quat[3]**2))
-            K=5.0
-            deltaQuat = 0.5 * np.matmul(m,np.transpose(self._quat)) + K*epsilon*np.transpose(self._quat)
+            m = np.array(
+                [
+                    [0, -gyrox, -gyroy, -gyroz],
+                    [gyrox, 0, gyroz, -gyroy],
+                    [gyroy, -gyroz, 0, gyrox],
+                    [gyroz, gyroy, -gyrox, 0],
+                ]
+            )
+            epsilon = 1 - ((self._quat[0] ** 2) + (self._quat[1] ** 2) + (self._quat[2] ** 2) + (self._quat[3] ** 2))
+            K = 5.0
+            deltaQuat = 0.5 * np.matmul(m, np.transpose(self._quat)) + K * epsilon * np.transpose(self._quat)
 
             # updates quaternion by adding delta quaternion, and rotates acceleration vector
-            self._quat = self._quat + np.transpose(deltaQuat)*dt
+            self._quat = self._quat + np.transpose(deltaQuat) * dt
             # normalize quaternion
-            self._quat = self._quat/np.linalg.norm(self._quat)
+            self._quat = self._quat / np.linalg.norm(self._quat)
             # rotate acceleration by quaternion
             accelQuat = np.array([0, compx, compy, compz])
-            accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat,accelQuat),self._quatconj(self._quat))
+            accelRotatedQuat = self._quatmultiply(self._quatmultiply(self._quat, accelQuat), self._quatconj(self._quat))
 
-        return np.array([accelRotatedQuat[1],accelRotatedQuat[2],accelRotatedQuat[3]])
-
+        return np.array([accelRotatedQuat[1], accelRotatedQuat[2], accelRotatedQuat[3]])
 
     def _quatmultiply(self, q1: npt.NDArray[np.float64], q2: npt.NDArray[np.float64]):
         """
@@ -216,12 +225,11 @@ class IMUDataProcessor:
         w1, x1, y1, z1 = q1
         w2, x2, y2, z2 = q2
 
-        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
-        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
-        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
-        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
         return np.array([w, x, y, z])
-
 
     def _quatconj(self, q: npt.NDArray[np.float64]):
         """
@@ -233,7 +241,6 @@ class IMUDataProcessor:
         """
         w, x, y, z = q
         return np.array([w, -x, -y, -z])
-
 
     def _calculate_speeds(self) -> npt.NDArray[np.float64]:
         """

@@ -4,11 +4,10 @@ import random
 import numpy as np
 import pytest
 
+from airbrakes.data_handling.apogee_prediction import ApogeePrediction
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.apogee_prediction import ApogeePrediction
-from airbrakes.state import State,CoastState
-
+from airbrakes.state import CoastState
 
 
 def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20):
@@ -329,115 +328,123 @@ class TestIMUDataProcessor:
 
     @pytest.mark.parametrize(
         ("data_packets", "expected_value"),
-
-        [(
-            [EstimatedDataPacket(
-                timestamp=1*1e9,
-                estOrientQuaternionW=0.91,
-                estOrientQuaternionX=0.1,
-                estOrientQuaternionY=0.22,
-                estOrientQuaternionZ=-0.34,
-                estCompensatedAccelX=1,
-                estCompensatedAccelY=1,
-                estCompensatedAccelZ=1,
-                estLinearAccelX=0.0,
-                estLinearAccelY=0.0,
-                estLinearAccelZ=0.0,
-                estAngularRateX=0.02,
-                estAngularRateY=0.1,
-                estAngularRateZ=2,
-                estPressureAlt=0.0,
-                ),
-            EstimatedDataPacket(
-                timestamp=1.002*1e9,
-                estOrientQuaternionW=0.92,
-                estOrientQuaternionX=0.1,
-                estOrientQuaternionY=0.22,
-                estOrientQuaternionZ=-0.34,
-                estCompensatedAccelX=1,
-                estCompensatedAccelY=1,
-                estCompensatedAccelZ=1,
-                estLinearAccelX=0.0,
-                estLinearAccelY=0.0,
-                estLinearAccelZ=0.0,
-                estAngularRateX=0.02,
-                estAngularRateY=0.1,
-                estAngularRateZ=2,
-                estPressureAlt=0.0,
-                )], (1.6658015, -0.14997540, 0.450125221))
-        ]
+        [
+            (
+                [
+                    EstimatedDataPacket(
+                        timestamp=1 * 1e9,
+                        estOrientQuaternionW=0.91,
+                        estOrientQuaternionX=0.1,
+                        estOrientQuaternionY=0.22,
+                        estOrientQuaternionZ=-0.34,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=1,
+                        estCompensatedAccelZ=1,
+                        estLinearAccelX=0.0,
+                        estLinearAccelY=0.0,
+                        estLinearAccelZ=0.0,
+                        estAngularRateX=0.02,
+                        estAngularRateY=0.1,
+                        estAngularRateZ=2,
+                        estPressureAlt=0.0,
+                    ),
+                    EstimatedDataPacket(
+                        timestamp=1.002 * 1e9,
+                        estOrientQuaternionW=0.92,
+                        estOrientQuaternionX=0.1,
+                        estOrientQuaternionY=0.22,
+                        estOrientQuaternionZ=-0.34,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=1,
+                        estCompensatedAccelZ=1,
+                        estLinearAccelX=0.0,
+                        estLinearAccelY=0.0,
+                        estLinearAccelZ=0.0,
+                        estAngularRateX=0.02,
+                        estAngularRateY=0.1,
+                        estAngularRateZ=2,
+                        estPressureAlt=0.0,
+                    ),
+                ],
+                (1.6658015, -0.14997540, 0.450125221),
+            )
+        ],
     )
     def test_calculate_rotations(self, data_packets, expected_value):
         d = IMUDataProcessor([])
         d.update_data(data_packets)
         rotations = d._rotated_accel
         assert len(rotations) == 3
-        for rot, expected_val in zip(rotations, expected_value,strict=False):
+        for rot, expected_val in zip(rotations, expected_value, strict=False):
             assert rot == pytest.approx(expected_val)
 
     @pytest.mark.parametrize(
         ("data_packets", "set_state", "expected_values"),
-
-        [(
-            [EstimatedDataPacket(
-                timestamp=1*1e9,
-                estOrientQuaternionW=0.91,
-                estOrientQuaternionX=0.1,
-                estOrientQuaternionY=0.22,
-                estOrientQuaternionZ=-0.34,
-                estCompensatedAccelX=1,
-                estCompensatedAccelY=1,
-                estCompensatedAccelZ=1,
-                estLinearAccelX=0.0,
-                estLinearAccelY=0.0,
-                estLinearAccelZ=0.0,
-                estAngularRateX=0.02,
-                estAngularRateY=0.1,
-                estAngularRateZ=2,
-                estPressureAlt=0.0,
-                ),
-            EstimatedDataPacket(
-                timestamp=1.002*1e9,
-                estOrientQuaternionW=0.92,
-                estOrientQuaternionX=0.1,
-                estOrientQuaternionY=0.22,
-                estOrientQuaternionZ=-0.34,
-                estCompensatedAccelX=1,
-                estCompensatedAccelY=1,
-                estCompensatedAccelZ=1,
-                estLinearAccelX=0.0,
-                estLinearAccelY=0.0,
-                estLinearAccelZ=0.0,
-                estAngularRateX=0.02,
-                estAngularRateY=0.1,
-                estAngularRateZ=2,
-                estPressureAlt=0.0,
-                ),
-            EstimatedDataPacket(
-                timestamp=1.002*1e9,
-                estOrientQuaternionW=0.92,
-                estOrientQuaternionX=0.1,
-                estOrientQuaternionY=0.22,
-                estOrientQuaternionZ=-0.34,
-                estCompensatedAccelX=1,
-                estCompensatedAccelY=1,
-                estCompensatedAccelZ=1,
-                estLinearAccelX=0.0,
-                estLinearAccelY=0.0,
-                estLinearAccelZ=0.0,
-                estAngularRateX=0.02,
-                estAngularRateY=0.1,
-                estAngularRateZ=2,
-                estPressureAlt=0.0,
-                )], CoastState, [-0.02049625,[0.45012522,0.03],-0.00010248071212592195])
-        ]
+        [
+            (
+                [
+                    EstimatedDataPacket(
+                        timestamp=1 * 1e9,
+                        estOrientQuaternionW=0.91,
+                        estOrientQuaternionX=0.1,
+                        estOrientQuaternionY=0.22,
+                        estOrientQuaternionZ=-0.34,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=1,
+                        estCompensatedAccelZ=1,
+                        estLinearAccelX=0.0,
+                        estLinearAccelY=0.0,
+                        estLinearAccelZ=0.0,
+                        estAngularRateX=0.02,
+                        estAngularRateY=0.1,
+                        estAngularRateZ=2,
+                        estPressureAlt=0.0,
+                    ),
+                    EstimatedDataPacket(
+                        timestamp=1.002 * 1e9,
+                        estOrientQuaternionW=0.92,
+                        estOrientQuaternionX=0.1,
+                        estOrientQuaternionY=0.22,
+                        estOrientQuaternionZ=-0.34,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=1,
+                        estCompensatedAccelZ=1,
+                        estLinearAccelX=0.0,
+                        estLinearAccelY=0.0,
+                        estLinearAccelZ=0.0,
+                        estAngularRateX=0.02,
+                        estAngularRateY=0.1,
+                        estAngularRateZ=2,
+                        estPressureAlt=0.0,
+                    ),
+                    EstimatedDataPacket(
+                        timestamp=1.002 * 1e9,
+                        estOrientQuaternionW=0.92,
+                        estOrientQuaternionX=0.1,
+                        estOrientQuaternionY=0.22,
+                        estOrientQuaternionZ=-0.34,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=1,
+                        estCompensatedAccelZ=1,
+                        estLinearAccelX=0.0,
+                        estLinearAccelY=0.0,
+                        estLinearAccelZ=0.0,
+                        estAngularRateX=0.02,
+                        estAngularRateY=0.1,
+                        estAngularRateZ=2,
+                        estPressureAlt=0.0,
+                    ),
+                ],
+                CoastState,
+                [-0.02049625, [0.45012522, 0.03], -0.00010248071212592195],
+            )
+        ],
     )
     def test_apogee_pred(self, data_packets, set_state, expected_values):
-
         d = IMUDataProcessor([])
-        d.update_data([data_packets[0],data_packets[1]])
-        ap_pred = ApogeePrediction(set_state,d,[])
-        ap_pred.update_data([data_packets[0],data_packets[1]])
+        d.update_data([data_packets[0], data_packets[1]])
+        ap_pred = ApogeePrediction(set_state, d, [])
+        ap_pred.update_data([data_packets[0], data_packets[1]])
         d.update_data([data_packets[2]])
         ap_pred.update_data([data_packets[2]])
 
@@ -449,4 +456,3 @@ class TestIMUDataProcessor:
 
         apogee_pred = ap_pred._apogee_prediction
         assert apogee_pred == pytest.approx(expected_values[2])
-

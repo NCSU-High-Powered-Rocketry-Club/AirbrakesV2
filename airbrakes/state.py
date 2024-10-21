@@ -5,14 +5,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITUDE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
-    TARGET_ALTITUDE
+    TARGET_ALTITUDE,
 )
 
 if TYPE_CHECKING:
@@ -147,7 +146,9 @@ class CoastState(State):
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
-        if (pred_apogee:=self.context.apogee_prediction._apogee_prediction) is not None and pred_apogee >= TARGET_ALTITUDE:
+        if (
+            pred_apogee := self.context.apogee_prediction._apogee_prediction
+        ) is not None and pred_apogee >= TARGET_ALTITUDE:
             self.context.extend_airbrakes()
 
         data = self.context.data_processor
