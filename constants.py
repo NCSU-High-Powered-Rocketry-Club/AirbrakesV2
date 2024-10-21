@@ -8,8 +8,6 @@ from pathlib import Path
 # -------------------------------------------------------
 
 # These are used for simulations
-MOCK_ARGUMENT = "m"
-REAL_SERVO_ARGUMENT = "rs"
 SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
 
 # -------------------------------------------------------
