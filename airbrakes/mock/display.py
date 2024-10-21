@@ -63,7 +63,7 @@ class FlightDisplay:
             f"Max height so far:         {G}{self.airbrakes.data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
-            f"Predicted Apogee:          {G}{self.airbrakes.apogee_prediction._apogee_prediction:<10.2f}{RESET} {R}m{RESET}",
+            f"Predicted Apogee:          {G}{self.airbrakes.apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 

@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.data_handling.apogee_prediction import ApogeePrediction
+from airbrakes.data_handling.apogee_prediction import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
@@ -26,7 +26,7 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "apogee_prediction",
+        "apogee_predictor",
         "current_extension",
         "data_processor",
         "imu",
@@ -55,7 +55,7 @@ class AirbrakesContext:
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
 
         self.state: State = StandByState(self)
-        self.apogee_prediction: ApogeePrediction = ApogeePrediction(self.state, self.data_processor, self)
+        self.apogee_predictor: ApogeePredictor = ApogeePredictor(self.state, self.data_processor, self)
         self.shutdown_requested = False
 
     def start(self) -> None:
@@ -101,7 +101,7 @@ class AirbrakesContext:
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update(est_data_packets)
-        self.apogee_prediction.update_data(est_data_packets)
+        self.apogee_predictor.update(est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets

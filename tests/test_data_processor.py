@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pytest
 
-from airbrakes.data_handling.apogee_prediction import ApogeePrediction
+from airbrakes.data_handling.apogee_prediction import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState
@@ -443,10 +443,10 @@ class TestIMUDataProcessor:
     def test_apogee_pred(self, data_packets, set_state, expected_values):
         d = IMUDataProcessor([])
         d.update_data([data_packets[0], data_packets[1]])
-        ap_pred = ApogeePrediction(set_state, d, [])
-        ap_pred.update_data([data_packets[0], data_packets[1]])
+        ap_pred = ApogeePredictor(set_state, d, [])
+        ap_pred.update([data_packets[0], data_packets[1]])
         d.update_data([data_packets[2]])
-        ap_pred.update_data([data_packets[2]])
+        ap_pred.update([data_packets[2]])
 
         velocity = ap_pred._speed
         assert velocity == pytest.approx(expected_values[0])

@@ -15,7 +15,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState, MotorBurnState, State
 
 
-class ApogeePrediction:
+class ApogeePredictor:
     """
     Class that performs the calculations to predict the apogee of the rocket during flight, will be used to determine
     servo extension. Will use multiprocessing in the future.
@@ -56,7 +56,15 @@ class ApogeePrediction:
 
         self._gravity = 9.798  # will use gravity vector in future
 
-    def update_data(self, data_points: Sequence[EstimatedDataPacket]) -> None:
+    @property
+    def apogee(self) -> np.float64:
+        """
+        Returns the predicted apogee of the rocket
+        :return: predicted apogee as a numpy float64.
+        """
+        return self._apogee_prediction
+
+    def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. Will recompute all of the necesary
         information, and recompute the apogee prediction
