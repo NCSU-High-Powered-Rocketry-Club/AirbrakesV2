@@ -18,6 +18,7 @@ from airbrakes.state import CoastState, MotorBurnState, State
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
 
+
 class ApogeePredictor:
     """
     Class that performs the calculations to predict the apogee of the rocket during flight, will be used to determine
