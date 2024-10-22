@@ -1,5 +1,6 @@
 """Module for predicting apogee"""
 
+import multiprocessing
 import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
@@ -44,6 +45,7 @@ class ApogeePredictor:
         "_start_time",
         "data_processor",
         "state",
+        "_time_diff",
     )
 
     def __init__(self, state: State, data_processor: IMUDataProcessor, context: "AirbrakesContext"):
@@ -57,8 +59,10 @@ class ApogeePredictor:
         self._apogee_prediction: np.float64 | None = np.float64(0.0)
         self._context = context
         self._last_data_point: EstimatedDataPacket | None = None
+        self._time_diff: npt.NDArray[np.float64] | None = None
 
         self._gravity = 9.798  # will use gravity vector in future
+        # self._data_points = multiprocessing.Queue(maxsize=100)
 
     @property
     def apogee(self) -> float:
@@ -67,6 +71,12 @@ class ApogeePredictor:
         :return: predicted apogee as a float.
         """
         return float(self._apogee_prediction)
+
+    # def start(self) -> None:
+    #     """
+    #     Starts the apogee prediction process. This is called before the main while loop starts.
+    #     """
+    #     self._log_process.start()
 
     def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
         """
@@ -90,7 +100,7 @@ class ApogeePredictor:
         self._speed = self._calculate_speeds(self._accel)
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
-        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time == None:
+        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time is None:
             self._start_time = self._data_points[-1].timestamp
 
         # not recording apogee prediction until coast phase
@@ -134,7 +144,17 @@ class ApogeePredictor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        if self._time_diff is None:
+            self._time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        return self._time_diff
+    
+    def get_time_differences(self) -> npt.NDArray[np.float64]:
+        """Returns the time difference of the data points."""
+        return self._time_diff
+
+    def reset_time_diff(self):
+        """Resets the time difference once update() is called."""
+        self._time_diff = None
 
     def _curve_fit_function(self, t, a, b):
         """

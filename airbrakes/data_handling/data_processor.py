@@ -31,6 +31,7 @@ class IMUDataProcessor:
         "_rotated_accel",
         "_speeds",
         "upside_down",
+        "_time_diff",
     )
 
     def __init__(self, upside_down: bool = False):
@@ -55,6 +56,7 @@ class IMUDataProcessor:
         self._quat: npt.NDArray[np.float64] = None
         self._rotated_accel: npt.NDArray[np.float64] = None
         self._data_points: list[EstimatedDataPacket] = []
+        self._time_diff: npt.NDArray[np.float64] | None = None
 
     def __str__(self) -> str:
         return (
@@ -149,6 +151,14 @@ class IMUDataProcessor:
             for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
         )
 
+    def get_time_differences(self) -> npt.NDArray[np.float64]:
+        """Returns the time difference of the data points."""
+        return self._time_diff
+
+    def reset_time_diff(self):
+        """Resets the time difference once update() is called."""
+        self._time_diff = None
+
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
         Calculates the current altitudes, by zeroing out the initial altitude.
@@ -171,14 +181,9 @@ class IMUDataProcessor:
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
 
-        timestamps = []
-        timestamps = self._data_points if self._last_data_point is None else [self._last_data_point, *self._data_points]
-        time_diff = (
-            [0.002]
-            if self._last_data_point is None
-            else np.diff([data_point.timestamp for data_point in timestamps]) * 1e-9
-        )
-        for dp, dt in zip(self._data_points, time_diff, strict=False):
+        time_diffs = self._get_time_differences()
+
+        for dp, dt in zip(self._data_points, time_diffs, strict=False):
             compx = dp.estCompensatedAccelX
             compy = dp.estCompensatedAccelY
             compz = dp.estCompensatedAccelZ
@@ -272,14 +277,17 @@ class IMUDataProcessor:
     def _get_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data point and the previous data point. This cannot
-        be called on the first update as _last_data_point is None.
+        be called on the first update as _last_data_point is None. This method is cached and time
+        diff is only computed once for a set of data points.
         :return: A numpy array of the time difference between each data point and the previous data point.
         """
         # calculate the time differences between each data point
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        if self._time_diff is None:
+            self._time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        return self._time_diff
 
     def _get_deadbanded_accelerations(
         self,
