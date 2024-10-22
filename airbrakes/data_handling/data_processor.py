@@ -23,6 +23,8 @@ class IMUDataProcessor:
         "_current_orientation_quaternions",
         "_data_points",
         "_first_data_point",
+        "_gravity_orientation",
+        "gravity_upwards",
         "_initial_altitude",
         "_last_data_point",
         "_max_altitude",
@@ -31,6 +33,7 @@ class IMUDataProcessor:
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
+        "gravity_magnitude",
         "upside_down",
     )
 
@@ -54,6 +57,9 @@ class IMUDataProcessor:
         self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_points: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] | None = None
+        self._gravity_orientation: npt.NDArray[np.float64] | None = None
+        self._gravity_upwards : np.float64 | None = None
+        self.gravity_magnitude : np.float64 | None = None
 
     def __str__(self) -> str:
         return (
@@ -114,6 +120,23 @@ class IMUDataProcessor:
                     self._last_data_point.estOrientQuaternionZ,
                 ]
             )
+
+            # We also get the initial gravity vector to determine which direction is up
+            self._gravity_orientation = np.array(
+                [
+                    self._last_data_point.estGravityVectorX,
+                    self._last_data_point.estGravityVectorY,
+                    self._last_data_point.estGravityVectorZ,
+                ]
+            )
+            # finding max of absolute value of gravity vector, and finding index
+            absolute_gravity_vector = np.abs(self._gravity_orientation)
+            self._gravity_upwards = absolute_gravity_vector.index(max(absolute_gravity_vector))
+
+            self.gravity_magnitude = np.linalg.norm(self._gravity_orientation)
+            if self._gravity_orientation[self._gravity_upwards] < 0:
+                gravity_magnitude = gravity_magnitude*-1 
+
 
         self._time_differences = self._calculate_time_differences()
 
@@ -236,18 +259,21 @@ class IMUDataProcessor:
         # doesn't show a jump, e.g. after motor burn out.
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
 
-        # TODO get gravity and orientation from the gravity vector
         # We integrate each of the components of the acceleration to get the velocity
-        velocities_x = previous_vel_x + np.cumsum(((x_accelerations * Z_DOWN[0]) - 0) * self._time_differences)
-        velocities_y = previous_vel_y + np.cumsum(((y_accelerations * Z_DOWN[1]) - 0) * self._time_differences)
-        velocities_z = previous_vel_z + np.cumsum(((z_accelerations * Z_DOWN[2]) - 9.81) * self._time_differences)
+        velocities_x = previous_vel_x + np.cumsum((x_accelerations * Z_DOWN[0]) * self._time_differences)
+        velocities_y = previous_vel_y + np.cumsum((y_accelerations * Z_DOWN[1]) * self._time_differences)
+        velocities_z = previous_vel_z + np.cumsum((z_accelerations * Z_DOWN[2]) * self._time_differences)
+
+        # adding gravity into the acceleration vector based off of the upwards direction
+        velocities_vector = [velocities_x,velocities_y,velocities_z]
+        velocities_vector[self._gravity_upwards] = velocities_vector[self._gravity_upwards] + self.gravity_magnitude
 
         # Store the last calculated velocity vectors
-        self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
+        self._previous_velocity = (velocities_vector[0][-1], velocities_vector[1][-1], velocities_vector[2][-1])
 
         # Gets the vertical velocity
-        # TODO: this should be a switch statement or something based on the gravity vector
-        return velocities_z
+        vertical_velocites = velocities_vector[self._gravity_upwards]
+        return vertical_velocites
 
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
