@@ -90,7 +90,7 @@ class ApogeePredictor:
         self._speed = self._calculate_speeds(self._accel)
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
-        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState):
+        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time == None:
             self._start_time = self._data_points[-1].timestamp
 
         # not recording apogee prediction until coast phase
@@ -159,9 +159,9 @@ class ApogeePredictor:
         # initial values for curve fit
         CURVE_FIT_INITIAL = [15.5, 0.03]
 
-        if len(self._all_accel) and len(self._all_time) >= 2:
+        if len(self._all_accel) and len(self._all_time) >= 30:
             # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-            popt, _pcov = curve_fit(self._curve_fit_function, self._all_time, self._all_accel, p0=CURVE_FIT_INITIAL)
+            popt, _pcov = curve_fit(self._curve_fit_function, self._all_time, self._all_accel, p0=CURVE_FIT_INITIAL,maxfev = 2000)
             a, b = popt
             return np.array([a, b])
         return None
@@ -176,17 +176,27 @@ class ApogeePredictor:
 
         :return: predicted altitude at apogee
         """
-        # time diff between estimated data packets
-        # will use something better later
-        DT = 0.002
+        # average time diff between estimated data packets
+        dts = self._get_time_differences()
+        avg_dt = sum(dts)/len(dts)
+
+        # to calculate the predicted apogee, we are integrating the acceleration function. The most
+        # straightfoward way to do this is to use the function with fitted parameters for A and B, and
+        # a large incremental vector, with small uniform steps for the dependent variable of the function, t.
+        # Then we can evaluate the function at every point in t, and use cumulative trapezoids to integrate
+        # for velocity, and repeat with velocity to integrate for altitude.
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
-        xvec = np.arange(0, 30.02, 0.002)
-        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp - self._start_time) * 1e-9) / 0.002))
+        xvec = np.arange(0, 30.02, avg_dt)
+
+        # uses the timestamp of the current data point and the timestamp of when the rocket leaves the launch pad
+        # to determine what point in xvec the current time lines up with.
+        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp - self._start_time) * 1e-9) / avg_dt))
 
         if params is None:
             return 0.0
+
         estAccel = -self._gravity - (params[0] * (1 - params[1] * xvec) ** 4)
-        estVel = cumulative_trapezoid(estAccel[current_vec_point:-1]) * DT + velocity
-        estAlt = cumulative_trapezoid(estVel) * DT + altitude
+        estVel = cumulative_trapezoid(estAccel[current_vec_point:-1]) * avg_dt + velocity
+        estAlt = cumulative_trapezoid(estVel) * avg_dt + altitude
         return np.max(estAlt)

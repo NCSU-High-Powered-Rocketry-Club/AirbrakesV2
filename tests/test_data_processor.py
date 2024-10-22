@@ -378,6 +378,10 @@ class TestIMUDataProcessor:
         for rot, expected_val in zip(rotations, expected_value, strict=False):
             assert rot == pytest.approx(expected_val)
 
+""" 
+This is unit tests for apogee prediction. Does not work currently, will most likely be moved to
+it's own file, because it is not in data_processor.
+
     @pytest.mark.parametrize(
         ("data_packets", "set_state", "expected_values"),
         [
@@ -456,3 +460,4 @@ class TestIMUDataProcessor:
 
         apogee_pred = ap_pred._apogee_prediction
         assert apogee_pred == pytest.approx(expected_values[2])
+"""

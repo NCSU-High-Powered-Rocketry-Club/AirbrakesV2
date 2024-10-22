@@ -118,6 +118,7 @@ class MotorBurnState(State):
         # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
         # speed
         if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
+            print('velocity switch')
             self.next_state()
             return
 
@@ -125,6 +126,7 @@ class MotorBurnState(State):
 
         # =======DISABLED==========
         # if time.time() - self.start_time > MOTOR_BURN_TIME:
+        #     print('fallback switch')
         #     self.next_state()
         #     return
 
