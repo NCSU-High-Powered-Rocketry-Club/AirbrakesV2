@@ -163,7 +163,7 @@ class IMUDataProcessor:
         """
 
         # Iterates through the data points and time differences between the data points
-        for data_point, dt in zip(self._data_points, self._time_diffs, strict=False):
+        for data_point, dt in zip(self._data_points, self._time_differences, strict=False):
             # Accelerations are in m/s^2
             x_accel = data_point.estCompensatedAccelX
             y_accel = data_point.estCompensatedAccelY
