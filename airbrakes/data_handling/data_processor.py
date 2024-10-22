@@ -33,17 +33,14 @@ class IMUDataProcessor:
         "upside_down",
     )
 
-    def __init__(self, upside_down: bool = False):
+    def __init__(self):
         """
         Initializes the IMUDataProcessor object. It processes data points to calculate various things we need such as
         the maximum altitude, current altitude, speed, etc. All numbers in this class are handled with numpy.
 
         This class has properties for the maximum altitude, current altitude, speed, and maximum speed of the rocket.
 
-        :param upside_down: Whether the rocket is upside down or not.
         """
-        self.upside_down = upside_down
-
         self._max_altitude: np.float64 = np.float64(0.0)
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
