@@ -63,6 +63,10 @@ class ApogeePredictor:
 
         self._gravity = 9.798  # will use gravity vector in future
         # self._data_points = multiprocessing.Queue(maxsize=100)
+        # self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
+        # self._update_process = multiprocessing.Process(
+        #     target=self.update, name="Apogee Prediction Process"
+        # )
 
     @property
     def apogee(self) -> float:
@@ -72,20 +76,23 @@ class ApogeePredictor:
         """
         return float(self._apogee_prediction)
 
-    # def start(self) -> None:
-    #     """
-    #     Starts the apogee prediction process. This is called before the main while loop starts.
-    #     """
-    #     self._log_process.start()
+    def get_
 
-    def update(self, data_points: Sequence[EstimatedDataPacket]) -> None:
+    def start(self) -> None:
         """
-        Updates the data points to process. Will recompute all of the necesary
+        Starts the apogee prediction process. This is called before the main while loop starts.
+        """
+        self.update.start()
+
+    def update(self, data_points: list[EstimatedDataPacket]) -> None:
+        """
+        Updates the data points to process. Will recompute all of the neccessary
         information, and recompute the apogee prediction
         :param data_points: A sequence of EstimatedDataPacket objects to process
         """
 
         # If the data points are empty, we don't want to try to process anything
+        # while self._running.value:
         if not data_points:
             return
 
@@ -97,6 +104,7 @@ class ApogeePredictor:
             self._last_data_point = self._data_points[0]
 
         self._accel = self.data_processor._rotated_accel[2]
+        self._time_diff = self._get_time_differences()
         self._speed = self._calculate_speeds(self._accel)
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
@@ -121,13 +129,13 @@ class ApogeePredictor:
 
         # Get the time differences between each data point and the previous data point
         time_diffs = self._get_time_differences()
-        
+
         # update previous_velocity
         previous_velocity = self._previous_velocity
 
         # adds gravity to the z component of rotated acceleration and multiplies by dt
         velocities: np.array = previous_velocity + np.cumsum(((rotated_accel * -1) - self._gravity) * time_diffs)
-        
+
         # updates previous velocity with new velocity
         self._previous_velocity = velocities[-1]
 
@@ -144,17 +152,7 @@ class ApogeePredictor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        if self._time_diff is None:
-            self._time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
-        return self._time_diff
-
-    def get_time_differences(self) -> npt.NDArray[np.float64]:
-        """Returns the time difference of the data points."""
-        return self._time_diff
-
-    def reset_time_diff(self):
-        """Resets the time difference once update() is called."""
-        self._time_diff = None
+        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
     def _curve_fit_function(self, t, a, b):
         """
