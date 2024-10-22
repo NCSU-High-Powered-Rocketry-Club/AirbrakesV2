@@ -31,7 +31,7 @@ class IMUDataProcessor:
         "_rotated_accel",
         "_speeds",
         "upside_down",
-        "_time_diff",
+        "_time_differences",
     )
 
     def __init__(self, upside_down: bool = False):
@@ -56,7 +56,7 @@ class IMUDataProcessor:
         self._quat: npt.NDArray[np.float64] = None
         self._rotated_accel: npt.NDArray[np.float64] = None
         self._data_points: list[EstimatedDataPacket] = []
-        self._time_diff: npt.NDArray[np.float64] | None = None
+        self._time_differences: npt.NDArray[np.float64] | None = None
 
     def __str__(self) -> str:
         return (
@@ -123,6 +123,8 @@ class IMUDataProcessor:
                 ]
             )
 
+        self._time_differences = self._get_time_differences()
+
         self._speeds = self._calculate_speeds()
         self._max_speed = max(self._speeds.max(), self._max_speed)
 
@@ -151,14 +153,6 @@ class IMUDataProcessor:
             for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
         )
 
-    def get_time_differences(self) -> npt.NDArray[np.float64]:
-        """Returns the time difference of the data points."""
-        return self._time_diff
-
-    def reset_time_diff(self):
-        """Resets the time difference once update() is called."""
-        self._time_diff = None
-
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
         Calculates the current altitudes, by zeroing out the initial altitude.
@@ -181,9 +175,7 @@ class IMUDataProcessor:
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
 
-        time_diffs = self._get_time_differences()
-
-        for dp, dt in zip(self._data_points, time_diffs, strict=False):
+        for dp, dt in zip(self._data_points, self._time_diffs, strict=False):
             compx = dp.estCompensatedAccelX
             compy = dp.estCompensatedAccelY
             compz = dp.estCompensatedAccelZ
@@ -257,16 +249,15 @@ class IMUDataProcessor:
         # Get the deadbanded accelerations in the x, y, and z directions
         x_accelerations, y_accelerations, z_accelerations = self._get_deadbanded_accelerations()
         # Get the time differences between each data point and the previous data point
-        time_differences = self._get_time_differences()
 
         # We store the previous calculated velocity vectors, so that our speed
         # doesn't show a jump, e.g. after motor burn out.
         previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
 
         # We integrate each of the components of the acceleration to get the velocity
-        velocities_x: np.array = previous_vel_x + np.cumsum(x_accelerations * time_differences)
-        velocities_y: np.array = previous_vel_y + np.cumsum(y_accelerations * time_differences)
-        velocities_z: np.array = previous_vel_z + np.cumsum(z_accelerations * time_differences)
+        velocities_x: np.array = previous_vel_x + np.cumsum(x_accelerations * self._time_differences)
+        velocities_y: np.array = previous_vel_y + np.cumsum(y_accelerations * self._time_differences)
+        velocities_z: np.array = previous_vel_z + np.cumsum(z_accelerations * self._time_differences)
 
         # Store the last calculated velocity vectors
         self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
@@ -285,9 +276,8 @@ class IMUDataProcessor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        if self._time_diff is None:
-            self._time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
-        return self._time_diff
+        time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        return time_diff
 
     def _get_deadbanded_accelerations(
         self,
