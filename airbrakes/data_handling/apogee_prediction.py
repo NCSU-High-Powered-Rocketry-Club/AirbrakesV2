@@ -80,6 +80,12 @@ class ApogeePredictor:
             return
 
         self._data_points = data_points
+
+        if self._last_data_point is None:
+            # setting last data point as the first element, makes it so that the time diff
+            # automatically becomes 0, and the speed becomes 0
+            self._last_data_point = self._data_points[0]
+
         self._accel = self.data_processor._rotated_accel[2]
         self._speed = self._calculate_speeds(self._accel)
 
@@ -92,7 +98,6 @@ class ApogeePredictor:
         if isinstance(self.state, CoastState):
             self._params = self._curve_fit(self._accel)
             self._apogee_prediction = self._get_apogee(self._params, self._speed, self.data_processor.current_altitude)
-
         self._last_data_point = data_points[-1]
 
     def _calculate_speeds(self, rotated_accel: np.float64):
@@ -104,18 +109,32 @@ class ApogeePredictor:
         :return: current velocity in the z direction
         """
 
-        # gives dt between last data point of data_points (should be timestamp of rotated_accel?), and last_data_point
-        time_diff = (
-            0.002
-            if self._last_data_point is None
-            else (self._data_points[0].timestamp - self._last_data_point.timestamp) * 1e-9
-        )
-        # adds gravity to the z component of rotated acceleration and multiplies by dt
-        velocity = self._previous_velocity + (((rotated_accel * -1) - self._gravity) * time_diff)
-        # updates previous velocity with new velocity
-        self._previous_velocity = velocity
+        # Get the time differences between each data point and the previous data point
+        time_diffs = self._get_time_differences()
+        
+        # update previous_velocity
+        previous_velocity = self._previous_velocity
 
-        return velocity
+        # adds gravity to the z component of rotated acceleration and multiplies by dt
+        velocities: np.array = previous_velocity + np.cumsum(((rotated_accel * -1) - self._gravity) * time_diffs)
+        
+        # updates previous velocity with new velocity
+        self._previous_velocity = velocities[-1]
+
+        # only return last velocity in list
+        return velocities[-1]
+
+    def _get_time_differences(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the time difference between each data point and the previous data point. This cannot
+        be called on the first update as _last_data_point is None.
+        :return: A numpy array of the time difference between each data point and the previous data point.
+        """
+        # calculate the time differences between each data point
+        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
+        # We are using the last data point to calculate the time difference between the last data point from the
+        # previous loop, and the first data point from the current loop
+        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
     def _curve_fit_function(self, t, a, b):
         """

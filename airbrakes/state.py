@@ -122,9 +122,11 @@ class MotorBurnState(State):
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if time.time() - self.start_time > MOTOR_BURN_TIME:
-            self.next_state()
-            return
+
+        # =======DISABLED==========
+        # if time.time() - self.start_time > MOTOR_BURN_TIME:
+        #     self.next_state()
+        #     return
 
     def next_state(self):
         self.context.state = CoastState(self.context)
