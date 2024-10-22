@@ -113,6 +113,7 @@ class AirbrakesContext:
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(self.state.name[0], self.current_extension.value, imu_data_packets, processed_data_packets)
         self.data_processor.reset_time_diff()
+        self.apogee_predictor.reset_time_diff()
 
     def extend_airbrakes(self) -> None:
         """

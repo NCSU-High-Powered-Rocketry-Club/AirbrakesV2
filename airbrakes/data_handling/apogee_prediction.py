@@ -147,7 +147,7 @@ class ApogeePredictor:
         if self._time_diff is None:
             self._time_diff = np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
         return self._time_diff
-    
+
     def get_time_differences(self) -> npt.NDArray[np.float64]:
         """Returns the time difference of the data points."""
         return self._time_diff
