@@ -76,7 +76,7 @@ class ApogeePredictor:
         """
         return float(self._apogee_prediction)
 
-    def get_
+    # def get_
 
     def start(self) -> None:
         """

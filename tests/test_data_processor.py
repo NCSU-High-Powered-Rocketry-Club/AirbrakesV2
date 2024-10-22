@@ -61,14 +61,14 @@ class TestIMUDataProcessor:
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
         assert d._initial_altitude is None
         assert isinstance(d._current_altitudes, np.ndarray)
-        assert isinstance(d._speeds, np.ndarray)
-        assert list(d._speeds) == [0.0]
-        assert d._max_speed == 0.0
+        assert isinstance(d._vertical_velocities, np.ndarray)
+        assert list(d._vertical_velocities) == [0.0]
+        assert d._max_vertical_velocity == 0.0
         assert d.upside_down is False
         assert d.current_altitude == 0.0
         assert list(d._current_altitudes) == [0.0]
         # See the comment in _calculate_speeds() for why speed is 0 during init.
-        assert d.speed == 0.0
+        assert d.vertical_velocity == 0.0
 
     def test_str(self, data_processor):
         data_str = (
@@ -85,8 +85,8 @@ class TestIMUDataProcessor:
     def test_calculate_speed(self, data_processor):
         """Tests whether the speed is correctly calculated"""
         d = data_processor
-        assert d.speed == 0.0
-        assert d._max_speed == d.speed
+        assert d.vertical_velocity == 0.0
+        assert d._max_vertical_velocity == d.vertical_velocity
         assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
 
         d._last_data_point = EstimatedDataPacket(
@@ -105,9 +105,9 @@ class TestIMUDataProcessor:
         )
         # we use pytest.approx() because of floating point errors
         assert d._previous_velocity == pytest.approx((7.0, 9.0, 11.0))
-        assert d.speed == math.sqrt(7.0**2 + 9.0**2 + 11.0**2)
-        assert len(d._speeds) == 2
-        assert d._max_speed == d.speed
+        assert d.vertical_velocity == math.sqrt(7.0 ** 2 + 9.0 ** 2 + 11.0 ** 2)
+        assert len(d._vertical_velocities) == 2
+        assert d._max_vertical_velocity == d.vertical_velocity
 
         d.update(
             [
@@ -123,9 +123,9 @@ class TestIMUDataProcessor:
             ]
         )
         assert d._previous_velocity == pytest.approx((25.0, 30.0, 35.0))
-        assert d.speed == pytest.approx(math.sqrt(25.0**2 + 30.0**2 + 35.0**2))
-        assert len(d._speeds) == 3
-        assert d._max_speed == d.speed
+        assert d.vertical_velocity == pytest.approx(math.sqrt(25.0 ** 2 + 30.0 ** 2 + 35.0 ** 2))
+        assert len(d._vertical_velocities) == 3
+        assert d._max_vertical_velocity == d.vertical_velocity
 
         d.update(
             [
@@ -145,10 +145,10 @@ class TestIMUDataProcessor:
         )
 
         assert d._previous_velocity == pytest.approx((26.0, 25.0, 31.0))
-        assert d.speed == pytest.approx(math.sqrt(26.0**2 + 25.0**2 + 31.0**2))
-        assert d._max_speed != d.speed
+        assert d.vertical_velocity == pytest.approx(math.sqrt(26.0 ** 2 + 25.0 ** 2 + 31.0 ** 2))
+        assert d._max_vertical_velocity != d.vertical_velocity
         # Our max speed is hit with the first est data packet on this update:
-        assert d._max_speed == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
+        assert d._max_vertical_velocity == pytest.approx(math.sqrt(27.0 ** 2 + 32.0 ** 2 + 38.0 ** 2))
 
     def test_first_update_no_data_packets(self, data_processor):
         """Tests whether the update() method works correctly, when no data packets are passed."""
@@ -157,8 +157,8 @@ class TestIMUDataProcessor:
         assert d._last_data_point is None
         assert len(d._data_points) == 0
         assert len(d._current_altitudes) == 1
-        assert len(d._speeds) == 1
-        assert d.speed == 0.0, "Speed should be the same as set in __init__"
+        assert len(d._vertical_velocities) == 1
+        assert d.vertical_velocity == 0.0, "Speed should be the same as set in __init__"
         assert d.current_altitude == 0.0, "Current altitude should be the same as set in __init__"
         assert d._initial_altitude is None
         assert d._max_altitude == 0.0
@@ -225,12 +225,12 @@ class TestIMUDataProcessor:
         # the max() is there because if we only process one data packet, we just return early
         # and the variables set at __init__ are used:
         assert len(d._current_altitudes) == max(len(data_packets), 1)
-        assert len(d._speeds) == max(len(data_packets), 1)
-        assert len(d._speeds) == len(d._current_altitudes)
+        assert len(d._vertical_velocities) == max(len(data_packets), 1)
+        assert len(d._vertical_velocities) == len(d._current_altitudes)
         # Our initial speed should always be zero, since we set the previous data point to the first
         # data point, giving a time difference of zero, and hence a speed of zero, and thus
         # implicitly testing it.
-        assert d._speeds[0] == 0.0
+        assert d._vertical_velocities[0] == 0.0
 
         assert d._initial_altitude == init_alt
         assert d.current_altitude == (0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt)
@@ -240,7 +240,7 @@ class TestIMUDataProcessor:
         assert len(processed_data) == len(data_packets)
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
-            assert data.speed == d._speeds[idx]
+            assert data.speed == d._vertical_velocities[idx]
 
     def test_previous_velocity_retained(self, data_processor):
         """Test that previous velocity is retained correctly between updates."""

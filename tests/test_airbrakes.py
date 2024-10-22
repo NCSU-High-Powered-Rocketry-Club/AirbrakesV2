@@ -99,7 +99,7 @@ class TestAirbrakesContext:
             # Length of these lists must be equal to the number of estimated data packets for
             # get_processed_data() to work correctly
             self._current_altitudes = [0.0] * len(est_data_packets)
-            self._speeds = [0.0] * len(est_data_packets)
+            self._vertical_velocities = [0.0] * len(est_data_packets)
 
         def state(self):
             # monkeypatched method of State

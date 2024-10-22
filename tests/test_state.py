@@ -110,7 +110,7 @@ class TestStandByState:
         ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
     )
     def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
-        stand_by_state.context.data_processor._speeds = [current_speed]
+        stand_by_state.context.data_processor._vertical_velocities = [current_speed]
         stand_by_state.context.data_processor._current_altitudes = [current_altitude]
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
@@ -152,8 +152,8 @@ class TestMotorBurnState:
         ],
     )
     def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
-        motor_burn_state.context.data_processor._speeds = [current_speed]
-        motor_burn_state.context.data_processor._max_speed = max_speed
+        motor_burn_state.context.data_processor._vertical_velocities = [current_speed]
+        motor_burn_state.context.data_processor._max_vertical_velocity = max_speed
         time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)

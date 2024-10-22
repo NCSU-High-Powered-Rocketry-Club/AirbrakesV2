@@ -84,7 +84,7 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.speed > TAKEOFF_SPEED:
+        if data.vertical_velocity > TAKEOFF_SPEED:
             self.next_state()
             return
 
@@ -117,7 +117,7 @@ class MotorBurnState(State):
         # This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
         # speed
-        if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
+        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_SPEED_THRESHOLD:
             print('velocity switch')
             self.next_state()
             return

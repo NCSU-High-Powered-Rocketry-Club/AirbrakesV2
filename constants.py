@@ -53,11 +53,11 @@ MAX_QUEUE_SIZE = 100000
 SIMULATION_MAX_QUEUE_SIZE = 15
 
 # -------------------------------------------------------
-# Orientation Configuration
+# Data Processing Configuration
 # -------------------------------------------------------
 
 # Should be checked before launch
-UPSIDE_DOWN = False
+Z_DOWN = (1, 1, -1)
 
 # -------------------------------------------------------
 # Logging Configuration
