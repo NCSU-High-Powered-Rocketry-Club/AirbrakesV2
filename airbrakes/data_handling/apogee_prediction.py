@@ -43,9 +43,9 @@ class ApogeePredictor:
         "_previous_velocity",
         "_speed",
         "_start_time",
+        "_time_diff",
         "data_processor",
         "state",
-        "_time_diff",
     )
 
     def __init__(self, state: State, data_processor: IMUDataProcessor, context: "AirbrakesContext"):
@@ -76,8 +76,6 @@ class ApogeePredictor:
         """
         return float(self._apogee_prediction)
 
-    # def get_
-
     def start(self) -> None:
         """
         Starts the apogee prediction process. This is called before the main while loop starts.
@@ -103,7 +101,7 @@ class ApogeePredictor:
             # automatically becomes 0, and the speed becomes 0
             self._last_data_point = self._data_points[0]
 
-        self._accel = self.data_processor._rotated_accel[2]
+        self._accel = self.data_processor._rotated_accelerations[2]
         self._time_diff = self._get_time_differences()
         self._speed = self._calculate_speeds(self._accel)
 
@@ -113,34 +111,9 @@ class ApogeePredictor:
 
         # not recording apogee prediction until coast phase
         self.state = self._context.state
-        if isinstance(self.state, CoastState):
-            self._params = self._curve_fit(self._accel)
-            self._apogee_prediction = self._get_apogee(self._params, self._speed, self.data_processor.current_altitude)
+        self._params = self._curve_fit(self._accel)
+        self._apogee_prediction = self._get_apogee(self._params, self._speed, self.data_processor.current_altitude)
         self._last_data_point = data_points[-1]
-
-    def _calculate_speeds(self, rotated_accel: np.float64):
-        """
-        Calculates the velocity in the z direction using rotated acceleration values
-
-        :param: rotated_accel: z direction of compensated acceleration after rotated to Earth frame of reference
-
-        :return: current velocity in the z direction
-        """
-
-        # Get the time differences between each data point and the previous data point
-        time_diffs = self._get_time_differences()
-
-        # update previous_velocity
-        previous_velocity = self._previous_velocity
-
-        # adds gravity to the z component of rotated acceleration and multiplies by dt
-        velocities: np.array = previous_velocity + np.cumsum(((rotated_accel * -1) - self._gravity) * time_diffs)
-
-        # updates previous velocity with new velocity
-        self._previous_velocity = velocities[-1]
-
-        # only return last velocity in list
-        return velocities[-1]
 
     def _get_time_differences(self) -> npt.NDArray[np.float64]:
         """

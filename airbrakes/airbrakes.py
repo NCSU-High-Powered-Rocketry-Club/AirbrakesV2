@@ -101,7 +101,9 @@ class AirbrakesContext:
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update(est_data_packets)
-        # self.apogee_predictor.update(est_data_packets)
+        if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
+            pass
+            # self.apogee_predictor.update(est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
@@ -112,7 +114,6 @@ class AirbrakesContext:
 
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(self.state.name[0], self.current_extension.value, imu_data_packets, processed_data_packets)
-        # self.apogee_predictor.reset_time_diff()
 
     def extend_airbrakes(self) -> None:
         """

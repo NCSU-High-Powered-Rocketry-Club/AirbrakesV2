@@ -373,7 +373,7 @@ class TestIMUDataProcessor:
     def test_calculate_rotations(self, data_packets, expected_value):
         d = IMUDataProcessor([])
         d.update_data(data_packets)
-        rotations = d._rotated_accel
+        rotations = d._rotated_accelerations
         assert len(rotations) == 3
         for rot, expected_val in zip(rotations, expected_value, strict=False):
             assert rot == pytest.approx(expected_val)

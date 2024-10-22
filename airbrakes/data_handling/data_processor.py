@@ -28,8 +28,9 @@ class IMUDataProcessor:
         "_max_altitude",
         "_max_vertical_velocity",
         "_previous_velocity",
-        "_vertical_velocities",
+        "_rotated_accelerations",
         "_time_differences",
+        "_vertical_velocities",
         "upside_down",
     )
 
@@ -50,6 +51,7 @@ class IMUDataProcessor:
         self._last_data_point: EstimatedDataPacket | None = None
         self._first_data_point: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: npt.NDArray[np.float64] = None
+        self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_points: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] | None = None
 
@@ -115,6 +117,7 @@ class IMUDataProcessor:
 
         self._time_differences = self._calculate_time_differences()
 
+        self._rotated_accelerations = self._calculate_rotated_accelerations()
         self._vertical_velocities = self._calculate_velocities()
         self._max_vertical_velocity = max(self._vertical_velocities.max(), self._max_vertical_velocity)
 
@@ -153,7 +156,7 @@ class IMUDataProcessor:
         # Zero out the initial altitude
         return altitudes - self._initial_altitude
 
-    def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
+    def _calculate_rotated_accelerations(self) ->  list[npt.NDArray[np.float64]]:
         """
         Calculates the rotated acceleration vector. Converts gyroscope data into a delta quaternion, and adds
         onto the last quaternion. Will most likely be replaced by IMU quaternion data in the future, this
@@ -162,8 +165,14 @@ class IMUDataProcessor:
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
 
+        accel_rotated_quats = [
+            np.zeros(len(self._data_points)),
+            np.zeros(len(self._data_points)),
+            np.zeros(len(self._data_points))
+        ]
+
         # Iterates through the data points and time differences between the data points
-        for data_point, dt in zip(self._data_points, self._time_differences, strict=False):
+        for i, (data_point, dt) in enumerate(zip(self._data_points, self._time_differences, strict=False)):
             # Accelerations are in m/s^2
             x_accel = data_point.estCompensatedAccelX
             y_accel = data_point.estCompensatedAccelY
@@ -175,7 +184,7 @@ class IMUDataProcessor:
 
             # If we are missing the data points, then say we didn't rotate
             if not any([x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
-                return np.array([0.0, 0.0, 0.0])
+                return [np.array([0.0]), np.array([0.0]), np.array([0.0])]
 
             # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
             # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
@@ -204,7 +213,12 @@ class IMUDataProcessor:
                 self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
             )
 
-        return np.array([accelRotatedQuat[1], accelRotatedQuat[2], accelRotatedQuat[3]])
+            # Adds the accelerations to our list of rotated accelerations
+            accel_rotated_quats[0][i] = accelRotatedQuat[1]
+            accel_rotated_quats[1][i] = accelRotatedQuat[2]
+            accel_rotated_quats[2][i] = accelRotatedQuat[3]
+
+        return accel_rotated_quats
 
     def _calculate_velocities(self) -> npt.NDArray[np.float64]:
         """
@@ -215,7 +229,7 @@ class IMUDataProcessor:
         """
         # Get the deadbanded accelerations in the x, y, and z directions
         # TODO: we need to deadband the acceleration
-        x_accelerations, y_accelerations, z_accelerations = self._calculate_rotated_accelerations()
+        x_accelerations, y_accelerations, z_accelerations = self._rotated_accelerations
         # Get the time differences between each data point and the previous data point
 
         # We store the previous calculated velocity vectors, so that our speed
@@ -224,8 +238,8 @@ class IMUDataProcessor:
 
         # TODO get gravity and orientation from the gravity vector
         # We integrate each of the components of the acceleration to get the velocity
-        velocities_x = previous_vel_x + np.cumsum(((z_accelerations * Z_DOWN[0]) - 0) * self._time_differences)
-        velocities_y = previous_vel_y + np.cumsum(((z_accelerations * Z_DOWN[1]) - 0) * self._time_differences)
+        velocities_x = previous_vel_x + np.cumsum(((x_accelerations * Z_DOWN[0]) - 0) * self._time_differences)
+        velocities_y = previous_vel_y + np.cumsum(((y_accelerations * Z_DOWN[1]) - 0) * self._time_differences)
         velocities_z = previous_vel_z + np.cumsum(((z_accelerations * Z_DOWN[2]) - 9.81) * self._time_differences)
 
         # Store the last calculated velocity vectors
