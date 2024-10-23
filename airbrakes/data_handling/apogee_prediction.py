@@ -10,6 +10,9 @@ import numpy.typing as npt
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
 
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from constants import STOP_SIGNAL
+
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
@@ -36,7 +39,7 @@ class ApogeePredictor:
         "_all_time",
         "_apogee_prediction",
         "_context",
-        "_data_points",
+        "_prediction_queue",
         "_gravity",
         "_last_data_point",
         "_params",
@@ -44,13 +47,14 @@ class ApogeePredictor:
         "_speed",
         "_start_time",
         "_time_diff",
+        "_prediction_process",
         "data_processor",
         "state",
     )
 
     def __init__(self, state: State, data_processor: IMUDataProcessor, context: "AirbrakesContext"):
         self.data_processor = data_processor
-        self._data_points = None
+        self._prediction_queue = None
         self.state = state
         self._previous_velocity: float = 0.0
         self._all_accel: npt.NDArray[np.float64] = np.array([])
@@ -62,11 +66,12 @@ class ApogeePredictor:
         self._time_diff: npt.NDArray[np.float64] | None = None
 
         self._gravity = 9.798  # will use gravity vector in future
-        # self._data_points = multiprocessing.Queue(maxsize=100)
-        # self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
-        # self._update_process = multiprocessing.Process(
-        #     target=self.update, name="Apogee Prediction Process"
-        # )
+        # TODO: decide on packet limit? Also how does it work? If we try to add 200 packets and the limit is 100,
+        #  will it add the first 100 packets or the last 100 packets (we would want last 100--this could be a time save)
+        self._prediction_queue: multiprocessing.Queue[ProcessedDataPacket] = multiprocessing.Queue()
+        self._prediction_process = multiprocessing.Process(
+            target=self.update, name="Apogee Prediction Process"
+        )
 
     @property
     def apogee(self) -> float:
@@ -76,11 +81,30 @@ class ApogeePredictor:
         """
         return float(self._apogee_prediction)
 
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the prediction process is running.
+        """
+        return self._prediction_process.is_alive()
+
     def start(self) -> None:
         """
-        Starts the apogee prediction process. This is called before the main while loop starts.
+        Starts the prediction process. This is called before the main while loop starts.
         """
-        self.update.start()
+        self._prediction_process.start()
+
+    def stop(self) -> None:
+        """
+        Stops the logging process. It will finish logging the current message and then stop.
+        """
+        self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        # Waits for the process to finish before stopping it
+        self._prediction_process.join()
+
+    def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
+        for processed_data_packet in processed_data_packets:
+            self._prediction_queue.put(processed_data_packet)
 
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
@@ -94,12 +118,12 @@ class ApogeePredictor:
         if not data_points:
             return
 
-        self._data_points = data_points
+        self._prediction_queue = data_points
 
         if self._last_data_point is None:
             # setting last data point as the first element, makes it so that the time diff
             # automatically becomes 0, and the speed becomes 0
-            self._last_data_point = self._data_points[0]
+            self._last_data_point = self._prediction_queue[0]
 
         self._accel = self.data_processor._rotated_accelerations[2]
         self._time_diff = self._get_time_differences()
@@ -107,7 +131,7 @@ class ApogeePredictor:
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
         if self._all_time.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time is None:
-            self._start_time = self._data_points[-1].timestamp
+            self._start_time = self._prediction_queue[-1].timestamp
 
         # not recording apogee prediction until coast phase
         self.state = self._context.state
@@ -125,7 +149,7 @@ class ApogeePredictor:
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
+        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._prediction_queue]]) * 1e-9
 
     def _curve_fit_function(self, t, a, b):
         """
@@ -145,7 +169,7 @@ class ApogeePredictor:
         """
 
         # creates running list of rotated acceleration, and associated timestamp
-        self._all_time = np.append(self._all_time, (self._data_points[-1].timestamp - self._start_time) * 1e-9)
+        self._all_time = np.append(self._all_time, (self._prediction_queue[-1].timestamp - self._start_time) * 1e-9)
         self._all_accel = np.append(self._all_accel, accel)
         # initial values for curve fit
         CURVE_FIT_INITIAL = [15.5, 0.03]
@@ -182,7 +206,7 @@ class ApogeePredictor:
 
         # uses the timestamp of the current data point and the timestamp of when the rocket leaves the launch pad
         # to determine what point in xvec the current time lines up with.
-        current_vec_point = np.int64(np.floor(((self._data_points[-1].timestamp - self._start_time) * 1e-9) / avg_dt))
+        current_vec_point = np.int64(np.floor(((self._prediction_queue[-1].timestamp - self._start_time) * 1e-9) / avg_dt))
 
         if params is None:
             return 0.0

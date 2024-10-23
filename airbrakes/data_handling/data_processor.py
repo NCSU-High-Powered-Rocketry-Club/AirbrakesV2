@@ -268,7 +268,6 @@ class IMUDataProcessor:
         """
         Calculates the speed of the rocket based on the linear acceleration. Integrates the
         linear acceleration to get the speed.
-        :param data_points: A sequence of EstimatedDataPacket objects to process
         :return: A numpy array of the speed of the rocket at each data point
         """
         # TODO: we need to deadband the acceleration
