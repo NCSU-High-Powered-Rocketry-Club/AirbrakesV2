@@ -8,7 +8,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
-from airbrakes.state import StandByState, State
+from airbrakes.state import StandByState, State, CoastState
 from constants import ServoExtension
 
 if TYPE_CHECKING:
@@ -101,13 +101,14 @@ class AirbrakesContext:
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
         self.data_processor.update(est_data_packets)
-        if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
-            pass
-            # self.apogee_predictor.update(est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
+
+        if isinstance(self.state, CoastState):  # Only run apogee prediction in coast state:
+            pass
+            # self.apogee_predictor.update(est_data_packets)
 
         # Update the state machine based on the latest processed data
         self.state.update()

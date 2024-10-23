@@ -2,7 +2,7 @@
 
 import multiprocessing
 import warnings
-from collections.abc import Sequence
+from collections import deque
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -11,7 +11,6 @@ from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import STOP_SIGNAL
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -48,6 +47,7 @@ class ApogeePredictor:
         "_start_time",
         "_time_diff",
         "_prediction_process",
+        "_running",
         "data_processor",
         "state",
     )
@@ -68,6 +68,7 @@ class ApogeePredictor:
         self._gravity = 9.798  # will use gravity vector in future
         # TODO: decide on packet limit? Also how does it work? If we try to add 200 packets and the limit is 100,
         #  will it add the first 100 packets or the last 100 packets (we would want last 100--this could be a time save)
+        self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
         self._prediction_queue: multiprocessing.Queue[ProcessedDataPacket] = multiprocessing.Queue()
         self._prediction_process = multiprocessing.Process(
             target=self.update, name="Apogee Prediction Process"
@@ -86,7 +87,7 @@ class ApogeePredictor:
         """
         Returns whether the prediction process is running.
         """
-        return self._prediction_process.is_alive()
+        return self._running.value
 
     def start(self) -> None:
         """
@@ -98,13 +99,28 @@ class ApogeePredictor:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
-        self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._running.value = False
         # Waits for the process to finish before stopping it
         self._prediction_process.join()
 
-    def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
+    def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
+        """
+        Updates the apogee predictor to include the most recent processed data packets. This method
+        should only be called during the coast phase of the rocket's flight.
+        :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
+        """
         for processed_data_packet in processed_data_packets:
             self._prediction_queue.put(processed_data_packet)
+
+    def _prediction_loop(self):
+        """
+        The loop that will run the prediction process. It runs in parallel with the main loop.
+        """
+        while self._running.value:
+            # Get the next data packet from the queue
+            data_packet = self._prediction_queue.get()
+            # TODO: this is where the prediction will happen
+            vertical_accelerations = [data_packet]
 
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
@@ -138,18 +154,6 @@ class ApogeePredictor:
         self._params = self._curve_fit(self._accel)
         self._apogee_prediction = self._get_apogee(self._params, self._speed, self.data_processor.current_altitude)
         self._last_data_point = data_points[-1]
-
-    def _get_time_differences(self) -> npt.NDArray[np.float64]:
-        """
-        Calculates the time difference between each data point and the previous data point. This cannot
-        be called on the first update as _last_data_point is None.
-        :return: A numpy array of the time difference between each data point and the previous data point.
-        """
-        # calculate the time differences between each data point
-        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
-        # We are using the last data point to calculate the time difference between the last data point from the
-        # previous loop, and the first data point from the current loop
-        return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._prediction_queue]]) * 1e-9
 
     def _curve_fit_function(self, t, a, b):
         """
