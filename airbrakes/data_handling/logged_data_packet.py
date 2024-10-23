@@ -59,7 +59,7 @@ class LoggedDataPacket(msgspec.Struct):
 
     # Processed Data Packet Fields
     current_altitude: float | None = None
-    speed: float | None = None
+    vertical_velocity: float | None = None
     # Not logging maxes because they are easily found
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
@@ -154,4 +154,4 @@ class LoggedDataPacket(msgspec.Struct):
         Sets the attributes of the data packet corresponding to the processed data packet.
         """
         self.current_altitude = processed_data_packet.current_altitude
-        self.speed = processed_data_packet.speed
+        self.vertical_velocity = processed_data_packet.vertical_velocity
