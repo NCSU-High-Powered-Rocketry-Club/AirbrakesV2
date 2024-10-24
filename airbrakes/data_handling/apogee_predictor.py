@@ -99,6 +99,8 @@ class ApogeePredictor:
         The loop that will run the prediction process. It runs in parallel with the main loop.
         """
         # These arrays belong to the prediction process, and are used to store the data packets that are passed in
+        altitudes: npt.NDArray[np.float64] = np.array([])
+        velocities: npt.NDArray[np.float64] = np.array([])
         accelerations: npt.NDArray[np.float64] = np.array([])
         time_differences: npt.NDArray[np.float64] = np.array([])
         while self._running.value:
@@ -107,7 +109,9 @@ class ApogeePredictor:
             # prediction process will get the data packets from the queue and add them to its own arrays.
             while not self._prediction_queue.empty():
                 data_packet = self._prediction_queue.get()
-                accelerations = np.append(accelerations, data_packet.rotated_accelerations[2])
+                altitudes = np.append(altitudes, data_packet.current_altitude)
+                velocities = np.append(velocities, data_packet.vertical_velocity)
+                accelerations = np.append(accelerations, data_packet.vertical_acceleration)
                 time_differences = np.append(time_differences, data_packet.time_since_last_data_point)
                 # TODO: what exactly do we need to pass into the prediction? Altitute, velocity, acceleration?
             # TODO this is where apogee prediction goes

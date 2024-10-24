@@ -58,7 +58,7 @@ class IMUDataProcessor:
         self._data_points: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
-        self._gravity_upwards_index: np.float64 | None = None
+        self._gravity_upwards_index: int | None = None
         self.gravity_magnitude: np.float64 | None = None
 
     def __str__(self) -> str:
@@ -175,8 +175,7 @@ class IMUDataProcessor:
             ) in zip(
                 self._current_altitudes,
                 self._vertical_velocities,
-                # TODO make this work with the gravity automatically
-                self._rotated_accelerations[2],
+                self._rotated_accelerations[self._gravity_upwards_index],
                 self._time_differences,
                 strict=False,
             )
@@ -269,6 +268,7 @@ class IMUDataProcessor:
 
         # Reverse the acceleration vector depending on the orientation of the IMU in the rocket,
         # and add gravity to the acceleration vector
+        # TODO: can we get rid of this -1?
         accelerations = accelerations * -1 + self.gravity_magnitude
 
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)

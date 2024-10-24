@@ -112,5 +112,8 @@ GROUND_ALTITUDE = 15.0  # meters
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+# This is the standard gravity on Earth, in m/s^2
+GRAVITY = 9.80665
+
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
