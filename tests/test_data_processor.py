@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pytest
 
-from airbrakes.data_handling.apogee_prediction import ApogeePredictor
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState

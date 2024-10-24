@@ -33,37 +33,19 @@ class ApogeePredictor:
     """
 
     __slots__ = (
-        "_accel",
-        "_all_accel",
-        "_all_time",
         "_apogee_prediction",
-        "_context",
         "_prediction_queue",
         "_gravity",
-        "_last_data_point",
         "_params",
-        "_previous_velocity",
-        "_speed",
         "_start_time",
-        "_time_diff",
         "_prediction_process",
         "_running",
-        "data_processor",
-        "state",
     )
 
-    def __init__(self, state: State, data_processor: IMUDataProcessor, context: "AirbrakesContext"):
-        self.data_processor = data_processor
+    def __init__(self):
         self._prediction_queue = None
-        self.state = state
-        self._previous_velocity: float = 0.0
-        self._all_accel: npt.NDArray[np.float64] = np.array([])
-        self._all_time: npt.NDArray[np.float64] = np.array([])
         self._start_time: np.float64 | None = None
         self._apogee_prediction: np.float64 | None = np.float64(0.0)
-        self._context = context
-        self._last_data_point: EstimatedDataPacket | None = None
-        self._time_diff: npt.NDArray[np.float64] | None = None
 
         self._gravity = 9.798  # will use gravity vector in future
         # TODO: decide on packet limit? Also how does it work? If we try to add 200 packets and the limit is 100,
@@ -116,11 +98,19 @@ class ApogeePredictor:
         """
         The loop that will run the prediction process. It runs in parallel with the main loop.
         """
+        # These arrays belong to the prediction process, and are used to store the data packets that are passed in
+        accelerations: npt.NDArray[np.float64] = np.array([])
+        time_differences: npt.NDArray[np.float64] = np.array([])
         while self._running.value:
-            # Get the next data packet from the queue
-            data_packet = self._prediction_queue.get()
-            # TODO: this is where the prediction will happen
-            vertical_accelerations = [data_packet]
+            # Rather than having the queue store all the data packets, it is only used to communicate between the main
+            # process and the prediction process. The main process will add the data packets to the queue, and the
+            # prediction process will get the data packets from the queue and add them to its own arrays.
+            while not self._prediction_queue.empty():
+                data_packet = self._prediction_queue.get()
+                accelerations = np.append(accelerations, data_packet.rotated_accelerations[2])
+                time_differences = np.append(time_differences, data_packet.time_since_last_data_point)
+                # TODO: what exactly do we need to pass into the prediction? Altitute, velocity, acceleration?
+            # TODO this is where apogee prediction goes
 
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
@@ -128,7 +118,6 @@ class ApogeePredictor:
         information, and recompute the apogee prediction
         :param data_points: A sequence of EstimatedDataPacket objects to process
         """
-
         # If the data points are empty, we don't want to try to process anything
         # while self._running.value:
         if not data_points:
@@ -146,7 +135,7 @@ class ApogeePredictor:
         self._speed = self._calculate_speeds(self._accel)
 
         # once in motor burn phase, gets timestamp so all future data used in curve fit has the start at t=0
-        if self._all_time.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time is None:
+        if self._all_time_differences.size == 0 and isinstance(self.state, MotorBurnState) and self._start_time is None:
             self._start_time = self._prediction_queue[-1].timestamp
 
         # not recording apogee prediction until coast phase
@@ -173,14 +162,14 @@ class ApogeePredictor:
         """
 
         # creates running list of rotated acceleration, and associated timestamp
-        self._all_time = np.append(self._all_time, (self._prediction_queue[-1].timestamp - self._start_time) * 1e-9)
-        self._all_accel = np.append(self._all_accel, accel)
+        self._all_time_differences = np.append(self._all_time_differences, (self._prediction_queue[-1].timestamp - self._start_time) * 1e-9)
+        self._all_accelerations = np.append(self._all_accelerations, accel)
         # initial values for curve fit
         CURVE_FIT_INITIAL = [15.5, 0.03]
 
-        if len(self._all_accel) and len(self._all_time) >= 30:
+        if len(self._all_accelerations) and len(self._all_time_differences) >= 30:
             # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-            popt, _pcov = curve_fit(self._curve_fit_function, self._all_time, self._all_accel, p0=CURVE_FIT_INITIAL,maxfev = 2000)
+            popt, _pcov = curve_fit(self._curve_fit_function, self._all_time_differences, self._all_accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
             a, b = popt
             return np.array([a, b])
         return None

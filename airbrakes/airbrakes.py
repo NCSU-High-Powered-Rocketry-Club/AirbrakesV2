@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from airbrakes.data_handling.apogee_prediction import ApogeePredictor
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
@@ -106,7 +106,7 @@ class AirbrakesContext:
         # EstimatedDataPackets in data_packets
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
-        if isinstance(self.state, CoastState):  # Only run apogee prediction in coast state:
+        if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
             pass
             # self.apogee_predictor.update(est_data_packets)
 
