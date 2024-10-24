@@ -11,7 +11,5 @@ class ProcessedDataPacket(msgspec.Struct):
 
     current_altitude: float
     vertical_velocity: float
+    vertical_acceleration: float
     time_since_last_data_point: float  # dt is the time difference between the current and previous data point
-    # gravity_magnitude: float
-    # TODO: change to vertical_acceleration
-    rotated_accelerations: tuple[float, float, float]

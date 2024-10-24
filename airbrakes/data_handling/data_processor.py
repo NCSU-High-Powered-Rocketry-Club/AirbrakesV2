@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCELERATION_NOISE_THRESHOLD, Z_DOWN
+from constants import ACCELERATION_NOISE_THRESHOLD
 from utils import deadband
 
 
@@ -53,7 +53,7 @@ class IMUDataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
         self._first_data_point: EstimatedDataPacket | None = None
-        self._current_orientation_quaternions: npt.NDArray[np.float64] = None
+        self._current_orientation_quaternions: npt.NDArray[np.float64] | None = None
         self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_points: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
@@ -164,27 +164,20 @@ class IMUDataProcessor:
             ProcessedDataPacket(
                 current_altitude=current_alt,
                 vertical_velocity=vertical_velocity,
+                vertical_acceleration=vertical_acceleration,
                 time_since_last_data_point=time_since_last_data_point,
-                rotated_accelerations=(
-                    rotated_accels_x,
-                    rotated_accels_y,
-                    rotated_accels_z,
-                ),
             )
             for (
                 current_alt,
                 vertical_velocity,
+                vertical_acceleration,
                 time_since_last_data_point,
-                rotated_accels_x,
-                rotated_accels_y,
-                rotated_accels_z,
             ) in zip(
                 self._current_altitudes,
                 self._vertical_velocities,
-                self._time_differences,
-                self._rotated_accelerations[0],
-                self._rotated_accelerations[1],
+                # TODO make this work with the gravity automatically
                 self._rotated_accelerations[2],
+                self._time_differences,
                 strict=False,
             )
         )
