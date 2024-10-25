@@ -119,7 +119,7 @@ class ApogeePredictor:
         """
         # mean = np.mean(cumulative_time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        print(accelerations)
+        # print(accelerations)
         popt, _ = curve_fit(ApogeePredictor._curve_fit_function, cumulative_time_differences, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
         a, b = popt
         # print(f"{a=} {b=}")
