@@ -271,8 +271,11 @@ class IMUDataProcessor:
         # Get the vertical accelerations from the rotated acceleration vectors
         accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
-        # add gravity to the accelerations, (this is regardless of imu orientation)
-        accelerations = ((accelerations) + self._gravity_magnitude)*((-np.abs(self._gravity_magnitude))/self._gravity_magnitude)
+        # jank way to determine whether to multiply by -1 or not. if gravity is a positive value (like when
+        # -z is upwards direction) you multiply accelratons by -1. If gravity is negative, multiply by positve 1
+        boolean = ((-np.abs(self._gravity_magnitude))/self._gravity_magnitude)
+        # add gravity to the accelerations, (this is regardless of imu orientation) and multiplies by either 1 or -1
+        accelerations = ((accelerations) + self._gravity_magnitude)*boolean
 
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 

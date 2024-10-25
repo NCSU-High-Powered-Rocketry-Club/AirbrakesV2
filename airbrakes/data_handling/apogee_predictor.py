@@ -145,7 +145,7 @@ class ApogeePredictor:
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0, 30.02, avg_dt)
-        cumalative_timestamps = cumulative_trapezoid(time_differences)
+        cumalative_timestamps = np.cumsum(time_differences)
         # sums up the time differences to get a vector with all the timestamps of each data packet, from the start of coast
         # phase. This determines what point in xvec the current time lines up with. This is used as the start of the
         # integral and the 30 seconds at the end of xvec is the end of the integral. The idea is to integrate the acceleration
@@ -190,7 +190,7 @@ class ApogeePredictor:
             # TODO: play around with this value
             if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
                 print(f"running curve fit!")
-                curve_fit_timestamps = cumulative_trapezoid(time_differences)
+                curve_fit_timestamps = np.cumsum(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
                 self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
                 last_run_length = len(accelerations)
