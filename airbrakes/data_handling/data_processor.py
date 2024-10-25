@@ -23,6 +23,7 @@ class IMUDataProcessor:
         "_current_orientation_quaternions",
         "_data_points",
         "_first_data_point",
+        "_gravity_magnitude",
         "_gravity_orientation",
         "_gravity_upwards_index",
         "_initial_altitude",
@@ -58,6 +59,7 @@ class IMUDataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
         self._gravity_upwards_index: int | None = 0
+        self._gravity_magnitude: np.float64 | None = None
 
     def __str__(self) -> str:
         return (
@@ -139,6 +141,9 @@ class IMUDataProcessor:
             # on the physical IMU, it has a depiction of the orientation. If a negative direction is
             # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
             # so the magnitude of gravity is negative.
+            self._gravity_magnitude = GRAVITY
+            if self._gravity_orientation[self._gravity_upwards_index] < 0:
+                self._gravity_magnitude = self._gravity_magnitude * -1
 
         self._time_differences = self._calculate_time_differences()
 
@@ -266,10 +271,8 @@ class IMUDataProcessor:
         # Get the vertical accelerations from the rotated acceleration vectors
         accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
-        # add gravity to the accelerations, and make the value negative (this is regardless of imu orientation)
-        # TODO: can we get rid of this -1?
-        # ^^^ No, but it's fixed
-        accelerations = -1 * (np.abs(accelerations) + GRAVITY)
+        # add gravity to the accelerations, (this is regardless of imu orientation)
+        accelerations = (accelerations) + GRAVITY
 
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 
