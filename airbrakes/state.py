@@ -157,7 +157,6 @@ class CoastState(State):
 
         data = self.context.data_processor
 
-
         # if our velocity is close to zero or negative, we are in free fall.
         if data.vertical_velocity <= 0:
             self.next_state()

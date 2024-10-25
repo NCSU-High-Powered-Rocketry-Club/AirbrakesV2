@@ -105,7 +105,7 @@ class TestIMUDataProcessor:
         )
         # we use pytest.approx() because of floating point errors
         assert d._previous_velocity == pytest.approx((7.0, 9.0, 11.0))
-        assert d.vertical_velocity == math.sqrt(7.0 ** 2 + 9.0 ** 2 + 11.0 ** 2)
+        assert d.vertical_velocity == math.sqrt(7.0**2 + 9.0**2 + 11.0**2)
         assert len(d._vertical_velocities) == 2
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -123,7 +123,7 @@ class TestIMUDataProcessor:
             ]
         )
         assert d._previous_velocity == pytest.approx((25.0, 30.0, 35.0))
-        assert d.vertical_velocity == pytest.approx(math.sqrt(25.0 ** 2 + 30.0 ** 2 + 35.0 ** 2))
+        assert d.vertical_velocity == pytest.approx(math.sqrt(25.0**2 + 30.0**2 + 35.0**2))
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -145,10 +145,10 @@ class TestIMUDataProcessor:
         )
 
         assert d._previous_velocity == pytest.approx((26.0, 25.0, 31.0))
-        assert d.vertical_velocity == pytest.approx(math.sqrt(26.0 ** 2 + 25.0 ** 2 + 31.0 ** 2))
+        assert d.vertical_velocity == pytest.approx(math.sqrt(26.0**2 + 25.0**2 + 31.0**2))
         assert d._max_vertical_velocity != d.vertical_velocity
         # Our max speed is hit with the first est data packet on this update:
-        assert d._max_vertical_velocity == pytest.approx(math.sqrt(27.0 ** 2 + 32.0 ** 2 + 38.0 ** 2))
+        assert d._max_vertical_velocity == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
 
     def test_first_update_no_data_packets(self, data_processor):
         """Tests whether the update() method works correctly, when no data packets are passed."""
@@ -377,6 +377,7 @@ class TestIMUDataProcessor:
         assert len(rotations) == 3
         for rot, expected_val in zip(rotations, expected_value, strict=False):
             assert rot == pytest.approx(expected_val)
+
 
 """ 
 This is unit tests for apogee prediction. Does not work currently, will most likely be moved to

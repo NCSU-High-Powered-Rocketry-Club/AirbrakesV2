@@ -30,7 +30,7 @@ class IMUDataProcessor:
         "_last_data_point",
         "_max_altitude",
         "_max_vertical_velocity",
-        "_previous_upwards_velocity",
+        "_previous_vertical_velocity",
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
@@ -48,7 +48,7 @@ class IMUDataProcessor:
         self._max_altitude: np.float64 = np.float64(0.0)
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
-        self._previous_upwards_velocity: np.float64 = np.float64(0.0)
+        self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
@@ -124,7 +124,7 @@ class IMUDataProcessor:
             # We also get the initial gravity vector to determine which direction is up
             # Important to note that when the compensated acceleration reads -9.8 when on the
             # ground, the upwards direction of the gravity vector will be positive, not negative
-            self._gravity_orientation = np.array(
+            gravity_orientation = np.array(
                 [
                     self._last_data_point.estGravityVectorX,
                     self._last_data_point.estGravityVectorY,
@@ -132,16 +132,14 @@ class IMUDataProcessor:
                 ]
             )
             # TODO: Comment this line out before flight!
-            self._gravity_orientation = np.array([0.01, 0.01, 9.79])
-            # finding max of absolute value of gravity vector, and finding index
-            absolute_gravity_vector = np.abs(self._gravity_orientation)
-            # TODO: check if the indexing of -1 below is not just because the z-axis is 9.8
-            self._gravity_upwards_index = np.where(absolute_gravity_vector == max(absolute_gravity_vector))[-1][-1]
+            gravity_orientation = np.array([0.01, 0.01, 9.79])
+            # Gets the index for the direction (x, y, or z) that is pointing upwards
+            self._gravity_upwards_index = np.argmax(np.abs(gravity_orientation))
 
             # on the physical IMU, it has a depiction of the orientation. If a negative direction is
             # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
             # so the magnitude of gravity is negative.
-            self._gravity_direction = 1 if self._gravity_orientation[self._gravity_upwards_index] < 0 else -1
+            self._gravity_direction = 1 if gravity_orientation[self._gravity_upwards_index] < 0 else -1
 
         self._time_differences = self._calculate_time_differences()
 
@@ -292,22 +290,26 @@ class IMUDataProcessor:
         linear acceleration to get the speed.
         :return: A numpy array of the speed of the rocket at each data point
         """
-        # TODO: we need to deadband the acceleration
         # Get the vertical accelerations from the rotated acceleration vectors
-        accelerations = self._rotated_accelerations[self._gravity_upwards_index]
+        vertical_accelerations = np.array([
+            deadband(vertical_acceleration, ACCELERATION_NOISE_THRESHOLD)
+            for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
+        ])
 
         # If gravity is a positive value (like when -z is upwards direction) you multiply accelerations by -1. If
         # gravity is negative, multiply by positive 1. This adds gravity to the accelerations, (regardless of imu
         # orientation) and multiplies by either 1 or -1.
-        accelerations = (accelerations + GRAVITY) * self._gravity_direction
+        vertical_accelerations = (vertical_accelerations + GRAVITY) * self._gravity_direction
 
         # Integrate the accelerations to get the velocities
-        velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
+        vertical_velocities = self._previous_vertical_velocity + np.cumsum(
+            vertical_accelerations * self._time_differences
+        )
 
         # Store the last calculated velocity vectors
-        self._previous_upwards_velocity = velocities[-1]
+        self._previous_vertical_velocity = vertical_velocities[-1]
 
-        return velocities
+        return vertical_velocities
 
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
@@ -320,29 +322,3 @@ class IMUDataProcessor:
         # We are using the last data point to calculate the time difference  between the last data point from the
         # previous loop, and the first data point from the current loop
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
-
-    def _get_deadbanded_accelerations(
-        self,
-    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        """
-        Gets the deadbanded accelerations in the x, y, and z directions.
-        :return: A tuple of numpy arrays of the deadbanded accelerations in the x, y, and z directions.
-        """
-        # Deadbands the accelerations in the x, y, and z and creates the numpy arrays via list comprehension
-        # As it turns out, list comprehensions are significantly faster than appending to a list in a for loop or
-        # pre-allocating a numpy array and filling it in a for loop.
-        # We use linearAcceleration because we don't want gravity to affect our calculations for speed
-        x_accelerations = np.array(
-            [deadband(data_point.estLinearAccelX, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64,
-        )
-        y_accelerations = np.array(
-            [deadband(data_point.estLinearAccelY, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64,
-        )
-        z_accelerations = np.array(
-            [deadband(data_point.estLinearAccelZ, ACCELERATION_NOISE_THRESHOLD) for data_point in self._data_points],
-            dtype=np.float64,
-        )
-
-        return x_accelerations, y_accelerations, z_accelerations

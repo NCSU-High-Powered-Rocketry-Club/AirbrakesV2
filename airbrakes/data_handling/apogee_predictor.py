@@ -120,7 +120,13 @@ class ApogeePredictor:
         # mean = np.mean(cumulative_time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
         # print(accelerations)
-        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, cumulative_time_differences, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
+        popt, _ = curve_fit(
+            ApogeePredictor._curve_fit_function,
+            cumulative_time_differences,
+            accelerations,
+            p0=CURVE_FIT_INITIAL,
+            maxfev=2000,
+        )
         a, b = popt
         # print(f"{a=} {b=}")
         return np.array([a, b])
@@ -193,6 +199,8 @@ class ApogeePredictor:
             if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
                 curve_fit_timestamps = np.cumsum(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
-                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
+                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(
+                    params, current_velocity, current_altitude, time_differences
+                )
                 last_run_length = len(accelerations)
                 print(f"The predicted apogee is: {self._apogee_prediction_value.value}")
