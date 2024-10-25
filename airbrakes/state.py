@@ -157,6 +157,13 @@ class CoastState(State):
 
         data = self.context.data_processor
 
+
+        # if our velocity is close to zero or negative, we are in free fall.
+        if data.vertical_velocity <= 0:
+            self.next_state()
+            return
+
+        # fallback condition:
         # if our altitude has started to decrease, we have reached apogee:
         if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()

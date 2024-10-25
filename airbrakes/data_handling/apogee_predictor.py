@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState, MotorBurnState, State
-from constants import GRAVITY
+from constants import GRAVITY, CURVE_FIT_INITIAL
 
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
@@ -104,20 +104,18 @@ class ApogeePredictor:
         return a * (1 - b * t) ** 4
 
     @staticmethod
-    def _curve_fit(accelerations: deque[float], time_differences: deque[float]) -> npt.NDArray[np.float64] | None:
+    def _curve_fit(accelerations: deque[float], cumulative_time_differences: deque[float]) -> npt.NDArray[np.float64]:
         """
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
 
-        :param: accel: rotated compensated acceleration
+        :param: accel: rotated compensated acceleration of the vertical axis
+        :param: cumulative_time_differences: an array of the cumulative time differences. E.g. 0.002, 0.004, 0.006, etc
 
         :return: numpy array with values of A and B
         """
-        CURVE_FIT_INITIAL = [10.5, 0.03]
-
-        curve_fit_timestamps = cumulative_trapezoid(time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, curve_fit_timestamps, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
+        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, cumulative_time_differences, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
         a, b = popt
         return np.array([a, b])
 
@@ -160,7 +158,6 @@ class ApogeePredictor:
         estAlt = cumulative_trapezoid(estVel) * avg_dt + altitude
         return np.max(estAlt)
 
-
     def _prediction_loop(self):
         """
         The loop that will run the prediction process. It runs in parallel with the main loop.
@@ -168,8 +165,8 @@ class ApogeePredictor:
         # These arrays belong to the prediction process, and are used to store the data packets that are passed in
         current_altitude: float = 0
         current_velocity: float = 0
-        accelerations: deque[float] = []
-        time_differences: deque[float] = []
+        accelerations: deque[float] = []  # list of all the accelerations since motor burn out
+        time_differences: deque[float] = []  # list of all the dt's since motor burn out
         while self._running.value:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
             # process and the prediction process. The main process will add the data packets to the queue, and the
@@ -183,6 +180,7 @@ class ApogeePredictor:
                     current_velocity = data_packet.vertical_velocity
                     break
             # TODO: play around with this value
-            if len(accelerations > 0):
-                params = ApogeePredictor._curve_fit(accelerations, time_differences)
-                apogee = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
+            if len(accelerations) > 100:
+                curve_fit_timestamps = cumulative_trapezoid(time_differences)
+                params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
+                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
