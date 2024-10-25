@@ -60,7 +60,11 @@ class LoggedDataPacket(msgspec.Struct):
     # Processed Data Packet Fields
     current_altitude: float | None = None
     vertical_velocity: float | None = None
+    vertical_acceleration: float | None = None
     # Not logging maxes because they are easily found
+
+    # field which is not in any of the data packets:
+    predicted_apogee: float | None = None
 
     def set_imu_data_packet_attributes(self, imu_data_packet: IMUDataPacket) -> None:
         """
@@ -155,3 +159,4 @@ class LoggedDataPacket(msgspec.Struct):
         """
         self.current_altitude = processed_data_packet.current_altitude
         self.vertical_velocity = processed_data_packet.vertical_velocity
+        self.vertical_acceleration = processed_data_packet.vertical_acceleration

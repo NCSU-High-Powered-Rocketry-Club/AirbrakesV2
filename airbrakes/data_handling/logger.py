@@ -89,6 +89,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -96,9 +97,16 @@ class Logger:
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
+        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched from
+            the apogee predictor, which runs in a separate process, it may not be the most recent value,
+            nor would it correspond to the respective data packet being logged.
         """
         logged_data_packets = self._create_logged_data_packets(
-            state, extension, imu_data_packets, processed_data_packets
+            state,
+            extension,
+            imu_data_packets,
+            processed_data_packets,
+            predicted_apogee,
         )
 
         # Loop through all the IMU data packets
@@ -152,6 +160,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
     ) -> deque[LoggedDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -167,7 +176,9 @@ class Logger:
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
         # data packet
         for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
+            logged_data_packet = LoggedDataPacket(
+                state, extension, data_packet.timestamp, predicted_apogee=predicted_apogee
+            )
             logged_data_packet.set_imu_data_packet_attributes(data_packet)
             if isinstance(data_packet, EstimatedDataPacket):
                 # For every estimated data packet, we have a corresponding processed data packet

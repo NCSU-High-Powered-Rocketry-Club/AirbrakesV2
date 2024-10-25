@@ -42,8 +42,8 @@ class IMUDataProcessor:
         Initializes the IMUDataProcessor object. It processes data points to calculate various things we need such as
         the maximum altitude, current altitude, velocity, etc. All numbers in this class are handled with numpy.
 
-        This class has properties for the maximum altitude, current altitude, velocity, and maximum velocity of the rocket.
-
+        This class has properties for the maximum altitude, current altitude, velocity, and
+        maximum velocity of the rocket.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)

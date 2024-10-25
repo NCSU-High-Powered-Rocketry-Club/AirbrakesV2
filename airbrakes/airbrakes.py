@@ -117,7 +117,8 @@ class AirbrakesContext:
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
         # Only run apogee prediction for estimated data packets in the coast state
-        if self.state.name[0] == "C" and est_data_packets:
+        state_letter = self.state.name[0]
+        if state_letter == "C" and est_data_packets:
             # The .copy() below is critical to ensure the data is actually transferred correctly to
             # the apogee prediction process.
             self.apogee_predictor.update(processed_data_packets.copy())
@@ -126,7 +127,13 @@ class AirbrakesContext:
         self.state.update()
 
         # Logs the current state, extension, IMU data, and processed data
-        self.logger.log(self.state.name[0], self.current_extension.value, imu_data_packets, processed_data_packets)
+        self.logger.log(
+            state_letter,
+            self.current_extension.value,
+            imu_data_packets,
+            processed_data_packets,
+            self.apogee_predictor.apogee,
+        )
 
     def extend_airbrakes(self) -> None:
         """
