@@ -8,7 +8,8 @@ from pathlib import Path
 # -------------------------------------------------------
 
 # These are used for simulations
-SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
+#SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
+SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_Gyro_Comp.csv")
 
 # -------------------------------------------------------
 # Servo Configuration

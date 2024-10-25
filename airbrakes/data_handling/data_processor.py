@@ -112,12 +112,24 @@ class IMUDataProcessor:
             # automatically becomes 0, and the speed becomes 0
             self._last_data_point = self._data_points[0]
             # This is us getting the rocket's initial orientation
+
+
+            # UNCOMMENT THIS LATER
+            # self._current_orientation_quaternions = np.array(
+            #     [
+            #         self._last_data_point.estOrientQuaternionW,
+            #         self._last_data_point.estOrientQuaternionX,
+            #         self._last_data_point.estOrientQuaternionY,
+            #         self._last_data_point.estOrientQuaternionZ,
+            #     ]
+            # )
+            # HARDCODED INITIAL QUATERNIONS
             self._current_orientation_quaternions = np.array(
                 [
-                    self._last_data_point.estOrientQuaternionW,
-                    self._last_data_point.estOrientQuaternionX,
-                    self._last_data_point.estOrientQuaternionY,
-                    self._last_data_point.estOrientQuaternionZ,
+                    0.999792,
+                    0,
+                    0,
+                    -0.0203967,
                 ]
             )
 
@@ -132,14 +144,18 @@ class IMUDataProcessor:
                 ]
             )
             # TODO: Comment this line out before flight!
-            gravity_orientation = np.array([0.01, 0.01, 9.79])
+            #gravity_orientation = np.array([0.01, 0.01, 9.79])
+            gravity_orientation = np.array([9.79, 0.01, 0.01])
             # Gets the index for the direction (x, y, or z) that is pointing upwards
             self._gravity_upwards_index = np.argmax(np.abs(gravity_orientation))
 
-            # on the physical IMU, it has a depiction of the orientation. If a negative direction is
-            # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
-            # so the magnitude of gravity is negative.
-            self._gravity_direction = 1 if gravity_orientation[self._gravity_upwards_index] < 0 else -1
+            # on the physical IMU there is a depiction of the orientation. If a negative direction is
+            # pointing to the sky, by convention, we define the gravity direction as positive. Otherwise if
+            # a positive direction is pointing to the sky, we define the gravity direction as positive.
+            # For purposes of standardizing the sign of accelerations that come out of calculate_rotated_accelerations,
+            # we define acceleration from motor burn as negative, acceleration due to drag as positve, and
+            # acceleration on the ground to be -9.8.
+            self._gravity_direction = 1 if gravity_orientation[self._gravity_upwards_index] > 0 else -1
 
         self._time_differences = self._calculate_time_differences()
 
@@ -276,6 +292,9 @@ class IMUDataProcessor:
                 self._multiply_quaternions(self._current_orientation_quaternions, accel_quat),
                 self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
             )
+            # multiplies by gravity direction, so direction of acceleration will be the same sign regarless
+            # of IMU orientation.
+            rotated_accelerations *= self._gravity_direction
 
             # Adds the accelerations to our list of rotated accelerations
             rotated_accelerations[0][idx] = accel_rotated_quat[1]
@@ -290,18 +309,15 @@ class IMUDataProcessor:
         linear acceleration to get the speed.
         :return: A numpy array of the speed of the rocket at each data point
         """
-        # Get the vertical accelerations from the rotated acceleration vectors
+        # Gets the vertical accelerations from the rotated acceleration vectors. gravity needs to be
+        # added to vertical acceleration, and then flipped, so motor burn has positve accelerations,
+        # and coast phase has negative accelerations. Then this value is deadbanded.
         vertical_accelerations = np.array(
             [
-                deadband(vertical_acceleration, ACCELERATION_NOISE_THRESHOLD)
+                deadband((vertical_acceleration+ GRAVITY)*-1, ACCELERATION_NOISE_THRESHOLD)
                 for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
             ]
         )
-
-        # If gravity is a positive value (like when -z is upwards direction) you multiply accelerations by -1. If
-        # gravity is negative, multiply by positive 1. This adds gravity to the accelerations, (regardless of imu
-        # orientation) and multiplies by either 1 or -1.
-        vertical_accelerations = (vertical_accelerations + GRAVITY) * self._gravity_direction
 
         # Integrate the accelerations to get the velocities
         vertical_velocities = self._previous_vertical_velocity + np.cumsum(
