@@ -78,7 +78,7 @@ def main(args: argparse.Namespace) -> None:
 
             # Stop the sim when the data is exhausted:
             if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
-                flight_display.end_sim_interrupted.set()
+                flight_display.end_sim_natural.set()
                 break
     except KeyboardInterrupt:
         if args.mock:
