@@ -23,7 +23,7 @@ class IMUDataProcessor:
         "_current_orientation_quaternions",
         "_data_points",
         "_first_data_point",
-        "_gravity_magnitude",
+        "_gravity_direction",
         "_gravity_orientation",
         "_gravity_upwards_index",
         "_initial_altitude",
@@ -59,7 +59,7 @@ class IMUDataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
         self._gravity_upwards_index: int | None = 0
-        self._gravity_magnitude: np.float64 | None = None
+        self._gravity_direction: np.float64 | None = None
 
     def __str__(self) -> str:
         return (
@@ -141,9 +141,7 @@ class IMUDataProcessor:
             # on the physical IMU, it has a depiction of the orientation. If a negative direction is
             # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
             # so the magnitude of gravity is negative.
-            self._gravity_magnitude = GRAVITY
-            if self._gravity_orientation[self._gravity_upwards_index] < 0:
-                self._gravity_magnitude = self._gravity_magnitude * -1
+            self._gravity_direction = 1 if self._gravity_orientation[self._gravity_upwards_index] < 0 else -1
 
         self._time_differences = self._calculate_time_differences()
 
@@ -185,6 +183,33 @@ class IMUDataProcessor:
                 strict=False,
             )
         )
+
+    @staticmethod
+    def _multiply_quaternions(first_quaternion: npt.NDArray[np.float64], second_quaternion: npt.NDArray[np.float64]):
+        """
+        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
+        :param first_quaternion: numpy array with the first quaternion in row form
+        :param second_quaternion: numpy array with the second quaternion in row form
+        :return: numpy array with the multiplied quaternion
+        """
+        w1, x1, y1, z1 = first_quaternion
+        w2, x2, y2, z2 = second_quaternion
+
+        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
+        return np.array([w, x, y, z])
+
+    @staticmethod
+    def _calculate_quaternion_conjugate(quaternion: npt.NDArray[np.float64]):
+        """
+        Calculates the conjugate of a quaternion
+        :param quaternion: numpy array with a quaternion in row form
+        :return: numpy array with the quaternion conjugate
+        """
+        w, x, y, z = quaternion
+        return np.array([w, -x, -y, -z])
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
@@ -242,22 +267,22 @@ class IMUDataProcessor:
                 ]
             )
 
-            deltaQuat = 0.5 * np.matmul(gyro_to_quaternion_matrix, np.transpose(self._current_orientation_quaternions))
+            delta_quat = 0.5 * np.matmul(gyro_to_quaternion_matrix, np.transpose(self._current_orientation_quaternions))
             # Updates quaternion by adding delta quaternion, and rotates acceleration vector
-            self._current_orientation_quaternions += np.transpose(deltaQuat) * dt
+            self._current_orientation_quaternions += np.transpose(delta_quat) * dt
             # Normalize quaternion
             self._current_orientation_quaternions /= np.linalg.norm(self._current_orientation_quaternions)
             # Rotate acceleration by quaternion
-            accelQuat = np.array([0, x_accel, y_accel, z_accel])
-            accelRotatedQuat = self._multiply_quaternions(
-                self._multiply_quaternions(self._current_orientation_quaternions, accelQuat),
+            accel_quat = np.array([0, x_accel, y_accel, z_accel])
+            accel_rotated_quat = self._multiply_quaternions(
+                self._multiply_quaternions(self._current_orientation_quaternions, accel_quat),
                 self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
             )
 
             # Adds the accelerations to our list of rotated accelerations
-            rotated_accelerations[0][idx] = accelRotatedQuat[1]
-            rotated_accelerations[1][idx] = accelRotatedQuat[2]
-            rotated_accelerations[2][idx] = accelRotatedQuat[3]
+            rotated_accelerations[0][idx] = accel_rotated_quat[1]
+            rotated_accelerations[1][idx] = accel_rotated_quat[2]
+            rotated_accelerations[2][idx] = accel_rotated_quat[3]
 
         return rotated_accelerations
 
@@ -271,18 +296,17 @@ class IMUDataProcessor:
         # Get the vertical accelerations from the rotated acceleration vectors
         accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
-        # jank way to determine whether to multiply by -1 or not. if gravity is a positive value (like when
-        # -z is upwards direction) you multiply accelratons by -1. If gravity is negative, multiply by positve 1
-        boolean = ((-np.abs(self._gravity_magnitude))/self._gravity_magnitude)
-        # add gravity to the accelerations, (this is regardless of imu orientation) and multiplies by either 1 or -1
-        accelerations = ((accelerations) + self._gravity_magnitude)*boolean
+        # If gravity is a positive value (like when -z is upwards direction) you multiply accelerations by -1. If
+        # gravity is negative, multiply by positive 1. This adds gravity to the accelerations, (regardless of imu
+        # orientation) and multiplies by either 1 or -1.
+        accelerations = (accelerations + GRAVITY) * self._gravity_direction
 
+        # Integrate the accelerations to get the velocities
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 
         # Store the last calculated velocity vectors
         self._previous_upwards_velocity = velocities[-1]
 
-        # Return the vertical velocity
         return velocities
 
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
@@ -293,7 +317,7 @@ class IMUDataProcessor:
         """
         # calculate the time differences between each data point
         # We are converting from ns to s, since we don't want to have a speed in m/ns^2
-        # We are using the last data point to calculate the time difference between the last data point from the
+        # We are using the last data point to calculate the time difference  between the last data point from the
         # previous loop, and the first data point from the current loop
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
 
@@ -322,32 +346,3 @@ class IMUDataProcessor:
         )
 
         return x_accelerations, y_accelerations, z_accelerations
-
-    def _multiply_quaternions(self, q1: npt.NDArray[np.float64], q2: npt.NDArray[np.float64]):
-        """
-        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
-
-        :param q1: numpy array with the first quaternion in row form
-        :param q2: numpy array with the second quaternion in row form
-
-        :return: numpy array with the multiplied quaternion
-        """
-        w1, x1, y1, z1 = q1
-        w2, x2, y2, z2 = q2
-
-        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
-        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
-        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
-        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
-        return np.array([w, x, y, z])
-
-    def _calculate_quaternion_conjugate(self, q: npt.NDArray[np.float64]):
-        """
-        Calculates the conjugate of a quaternion
-
-        :param q1: numpy array with a quaternion in row form
-
-        :return: numpy array with the quaternion conjugate
-        """
-        w, x, y, z = q
-        return np.array([w, -x, -y, -z])
