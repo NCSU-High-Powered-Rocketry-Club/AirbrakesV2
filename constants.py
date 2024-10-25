@@ -117,4 +117,4 @@ GRAVITY = 9.80665
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
-CURVE_FIT_INITIAL = [15.5, 0.03]
+CURVE_FIT_INITIAL = [10.5, 0.03]

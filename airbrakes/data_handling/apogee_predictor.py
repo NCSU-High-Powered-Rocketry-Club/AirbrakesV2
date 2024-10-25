@@ -78,6 +78,7 @@ class ApogeePredictor:
         """
         Starts the prediction process. This is called before the main while loop starts.
         """
+        self._running.value = True
         self._prediction_process.start()
 
     def stop(self) -> None:
@@ -116,9 +117,12 @@ class ApogeePredictor:
 
         :return: numpy array with values of A and B
         """
+        # mean = np.mean(cumulative_time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
+        print(accelerations)
         popt, _ = curve_fit(ApogeePredictor._curve_fit_function, cumulative_time_differences, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
         a, b = popt
+        # print(f"{a=} {b=}")
         return np.array([a, b])
 
     @staticmethod
@@ -156,8 +160,8 @@ class ApogeePredictor:
             return 0.0
 
         estAccel = -GRAVITY - (params[0] * (1 - params[1] * xvec) ** 4)
-        estVel = cumulative_trapezoid(estAccel[current_vec_point:-1]) * avg_dt + current_velocity
-        estAlt = cumulative_trapezoid(estVel) * avg_dt + altitude
+        estVel = np.cumsum(estAccel[current_vec_point:-1]) * avg_dt + current_velocity
+        estAlt = np.cumsum(estVel) * avg_dt + altitude
         return np.max(estAlt)
 
     def _prediction_loop(self):
@@ -172,24 +176,21 @@ class ApogeePredictor:
         accelerations: deque[float] = []  # list of all the accelerations since motor burn out
         time_differences: deque[float] = []  # list of all the dt's since motor burn out
         last_run_length = 0
-        print("Prediction loop started!")
+        # print("Prediction loop started!")
 
         while self._running.value:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
             # process and the prediction process. The main process will add the data packets to the queue, and the
             # prediction process will get the data packets from the queue and add them to its own arrays.
-            while True:
-                data_packet = self._prediction_queue.get()
-                print(f"fetched packet")
-                accelerations = accelerations.append(data_packet.vertical_acceleration)
-                time_differences = time_differences.append(data_packet.time_since_last_data_point)
-                if self._prediction_queue.empty():
-                    current_altitude = data_packet.current_altitude
-                    current_velocity = data_packet.vertical_velocity
-                    break
+            data_packets = self._prediction_queue.get()
+            for data_packet in data_packets:
+                accelerations.append(data_packet.vertical_acceleration)
+                time_differences.append(data_packet.time_since_last_data_point)
+                current_altitude = data_packet.current_altitude
+                current_velocity = data_packet.vertical_velocity
+
             # TODO: play around with this value
             if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
-                print(f"running curve fit!")
                 curve_fit_timestamps = np.cumsum(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
                 self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
