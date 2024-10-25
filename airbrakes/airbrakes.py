@@ -82,6 +82,7 @@ class AirbrakesContext:
         self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
+        self.apogee_predictor.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:
@@ -115,11 +116,12 @@ class AirbrakesContext:
         # EstimatedDataPackets in data_packets
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
-        if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
-            # pass
-            self.apogee_predictor.update(processed_data_packets)
-        elif self.state.name[0] == "F":  # Stop apogee prediction process in free fall:
-            self.apogee_predictor.stop()
+        # Only run apogee prediction for estimated data packets in the coast state
+        if self.state.name[0] == "C" and est_data_packets:
+            # The .copy() below is critical to ensure the data is actually transferred correctly to
+            # the apogee prediction process.
+            self.apogee_predictor.update(processed_data_packets.copy())
+
         # Update the state machine based on the latest processed data
         self.state.update()
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState, MotorBurnState, State
-from constants import GRAVITY, CURVE_FIT_INITIAL
+from constants import GRAVITY, CURVE_FIT_INITIAL, STOP_SIGNAL
 
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
@@ -35,9 +35,7 @@ class ApogeePredictor:
     """
 
     __slots__ = (
-        "_apogee_prediction",
         "_apogee_prediction_value",
-        "_gravity",
         "_params",
         "_prediction_process",
         "_prediction_queue",
@@ -46,14 +44,7 @@ class ApogeePredictor:
     )
 
     def __init__(self):
-        # self._start_time: np.float64 | None = None
-        # create a pipe to transfer our predicted apogee to the main process.
         self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
-        self._apogee_prediction: np.float64 | None = np.float64(0.0)
-
-        # TODO: decide on packet limit? Also how does it work? If we try to add 200 packets and the limit is 100,
-        #  will it add the first 100 packets or the last 100 packets (we would want last 100--this could be a time save)
-        self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
         self._prediction_queue: multiprocessing.Queue[ProcessedDataPacket] = multiprocessing.Queue()
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
@@ -78,22 +69,21 @@ class ApogeePredictor:
         """
         Starts the prediction process. This is called before the main while loop starts.
         """
-        self._running.value = True
         self._prediction_process.start()
 
     def stop(self) -> None:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
-        if self._running.value:
-            self._running.value = False
-            # Waits for the process to finish before stopping it
-            self._prediction_process.join()
+        # Waits for the process to finish before stopping it
+        self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._prediction_process.join()
 
     def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
         """
         Updates the apogee predictor to include the most recent processed data packets. This method
         should only be called during the coast phase of the rocket's flight.
+
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
         self._prediction_queue.put(processed_data_packets)
@@ -117,22 +107,13 @@ class ApogeePredictor:
 
         :return: numpy array with values of A and B
         """
-        # mean = np.mean(cumulative_time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        # print(accelerations)
-        popt, _ = curve_fit(
-            ApogeePredictor._curve_fit_function,
-            cumulative_time_differences,
-            accelerations,
-            p0=CURVE_FIT_INITIAL,
-            maxfev=2000,
-        )
+        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, np.array(cumulative_time_differences), np.array(accelerations), p0=CURVE_FIT_INITIAL, maxfev = 2000)
         a, b = popt
-        # print(f"{a=} {b=}")
         return np.array([a, b])
 
     @staticmethod
-    def _get_apogee(params, current_velocity, altitude, time_differences):
+    def _get_apogee(params: tuple[float, float], current_velocity: float, altitude: float, time_differences: npt.NDArray, cumulative_time_differences: npt.NDArray):
         """
         Uses curve fit and current velocity and altitude to predict the apogee
 
@@ -140,6 +121,7 @@ class ApogeePredictor:
         :param: velocity: current upwards velocity, after rotation is applied
         :param: altitude: current estimated pressure altitude
         :param: time_differences: array of time differences between data packets
+        :param: cumulative_time_differences: an array of the cumulative time differences. E.g. 0.002, 0.004, 0.006, etc
 
         :return: predicted altitude at apogee
         """
@@ -155,12 +137,11 @@ class ApogeePredictor:
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0, 30.02, avg_dt)
-        cumalative_timestamps = np.cumsum(time_differences)
         # sums up the time differences to get a vector with all the timestamps of each data packet, from the start of coast
         # phase. This determines what point in xvec the current time lines up with. This is used as the start of the
         # integral and the 30 seconds at the end of xvec is the end of the integral. The idea is to integrate the acceleration
         # and velocity functions during the time between the current time, and 30 seconds (well after apogee, to be safe)
-        current_vec_point = np.int64(np.floor(cumalative_timestamps[-1] / avg_dt))
+        current_vec_point = np.int64(np.floor(cumulative_time_differences[-1] / avg_dt))
 
         if params is None:
             return 0.0
@@ -182,13 +163,17 @@ class ApogeePredictor:
         accelerations: deque[float] = []  # list of all the accelerations since motor burn out
         time_differences: deque[float] = []  # list of all the dt's since motor burn out
         last_run_length = 0
-        # print("Prediction loop started!")
 
-        while self._running.value:
+        # Keep checking for new data packets until the stop signal is received:
+        while True:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
             # process and the prediction process. The main process will add the data packets to the queue, and the
             # prediction process will get the data packets from the queue and add them to its own arrays.
             data_packets = self._prediction_queue.get()
+
+            if data_packets == STOP_SIGNAL:
+                break
+
             for data_packet in data_packets:
                 accelerations.append(data_packet.vertical_acceleration)
                 time_differences.append(data_packet.time_since_last_data_point)
@@ -199,8 +184,5 @@ class ApogeePredictor:
             if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
                 curve_fit_timestamps = np.cumsum(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
-                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(
-                    params, current_velocity, current_altitude, time_differences
-                )
+                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences, curve_fit_timestamps)
                 last_run_length = len(accelerations)
-                print(f"The predicted apogee is: {self._apogee_prediction_value.value}")
