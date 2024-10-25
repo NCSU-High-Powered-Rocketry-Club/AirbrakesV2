@@ -113,10 +113,11 @@ class ApogeePredictor:
 
         :return: numpy array with values of A and B
         """
-        CURVE_FIT_INITIAL = [15.5, 0.03]
+        CURVE_FIT_INITIAL = [10.5, 0.03]
 
+        curve_fit_timestamps = cumulative_trapezoid(time_differences)
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, time_differences, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
+        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, curve_fit_timestamps, accelerations, p0=CURVE_FIT_INITIAL, maxfev = 2000)
         a, b = popt
         return np.array([a, b])
 
