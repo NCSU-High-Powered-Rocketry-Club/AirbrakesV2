@@ -272,7 +272,7 @@ class IMUDataProcessor:
         accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
         # add gravity to the accelerations, (this is regardless of imu orientation)
-        accelerations = (accelerations) + GRAVITY
+        accelerations = ((accelerations) + self._gravity_magnitude)*((-np.abs(self._gravity_magnitude))/self._gravity_magnitude)
 
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 
