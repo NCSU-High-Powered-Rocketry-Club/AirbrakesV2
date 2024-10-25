@@ -63,9 +63,9 @@ class FlightDisplay:
             f"Max speed so far:          {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Predicted Apogee:          {G}{apogee_predictor.apogee:<20.2f}{RESET} {R}m{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
-            f"Predicted Apogee:          {G}{apogee_predictor.apogee:<20.2f}{RESET} {R}m{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 
@@ -105,8 +105,9 @@ class FlightDisplay:
         all_processes = {}
         imu_process = self.airbrakes.imu._data_fetch_process
         log_process = self.airbrakes.logger._log_process
+        apogee_process = self.airbrakes.apogee_predictor._prediction_process
         current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process]:
+        for p in [imu_process, log_process, current_process, apogee_process]:
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)
