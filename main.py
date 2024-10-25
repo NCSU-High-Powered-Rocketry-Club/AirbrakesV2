@@ -20,7 +20,6 @@ from constants import (
     PORT,
     SERVO_PIN,
     SIMULATION_LOG_PATH,
-    UPSIDE_DOWN,
 )
 from utils import arg_parser
 
@@ -54,7 +53,7 @@ def main(args: argparse.Namespace) -> None:
         logger = Logger(LOGS_PATH)
 
     # Our data processor stay the same regardless of whether we are running a simulation or not
-    data_processor = IMUDataProcessor(UPSIDE_DOWN)
+    data_processor = IMUDataProcessor()
 
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor)

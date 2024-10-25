@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCELERATION_NOISE_THRESHOLD
+from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
 from utils import deadband
 
 
@@ -20,43 +20,52 @@ class IMUDataProcessor:
 
     __slots__ = (
         "_current_altitudes",
+        "_current_orientation_quaternions",
         "_data_points",
+        "_first_data_point",
+        "_gravity_orientation",
+        "_gravity_upwards_index",
         "_initial_altitude",
         "_last_data_point",
         "_max_altitude",
-        "_max_speed",
-        "_previous_velocity",
-        "_speeds",
+        "_max_vertical_velocity",
+        "_previous_upwards_velocity",
+        "_rotated_accelerations",
+        "_time_differences",
+        "_vertical_velocities",
         "upside_down",
     )
 
-    def __init__(self, upside_down: bool = False):
+    def __init__(self):
         """
         Initializes the IMUDataProcessor object. It processes data points to calculate various things we need such as
         the maximum altitude, current altitude, speed, etc. All numbers in this class are handled with numpy.
 
         This class has properties for the maximum altitude, current altitude, speed, and maximum speed of the rocket.
 
-        :param upside_down: Whether the rocket is upside down or not.
         """
-        self.upside_down = upside_down
-
         self._max_altitude: np.float64 = np.float64(0.0)
-        self._speeds: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
-        self._max_speed: np.float64 = np.float64(0.0)
-        self._previous_velocity: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0], dtype=np.float64)
+        self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._max_vertical_velocity: np.float64 = np.float64(0.0)
+        self._previous_upwards_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_point: EstimatedDataPacket | None = None
+        self._first_data_point: EstimatedDataPacket | None = None
+        self._current_orientation_quaternions: npt.NDArray[np.float64] | None = None
+        self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_points: list[EstimatedDataPacket] = []
+        self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
+        self._gravity_orientation: npt.NDArray[np.float64] | None = None
+        self._gravity_upwards_index: int | None = 0
 
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}("
             f"max_altitude={self.max_altitude}, "
             f"current_altitude={self.current_altitude}, "
-            f"speed={self.speed}, "
-            f"max_speed={self.max_speed})"
+            f"speed={self.vertical_velocity}, "
+            f"max_speed={self.max_vertical_velocity}, "
         )
 
     @property
@@ -73,14 +82,14 @@ class IMUDataProcessor:
         return float(self._current_altitudes[-1])
 
     @property
-    def speed(self) -> float:
-        """The current speed of the rocket in m/s. Calculated by integrating the linear acceleration."""
-        return float(self._speeds[-1])
+    def vertical_velocity(self) -> float:
+        """The current vertical velocity of the rocket in m/s. Calculated by integrating the linear acceleration."""
+        return float(self._vertical_velocities[-1])
 
     @property
-    def max_speed(self) -> float:
-        """The maximum speed the rocket has attained during the flight, in m/s."""
-        return float(self._max_speed)
+    def max_vertical_velocity(self) -> float:
+        """The maximum vertical velocity the rocket has attained during the flight, in m/s."""
+        return float(self._max_vertical_velocity)
 
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
@@ -100,9 +109,42 @@ class IMUDataProcessor:
             # setting last data point as the first element, makes it so that the time diff
             # automatically becomes 0, and the speed becomes 0
             self._last_data_point = self._data_points[0]
+            # This is us getting the rocket's initial orientation
+            self._current_orientation_quaternions = np.array(
+                [
+                    self._last_data_point.estOrientQuaternionW,
+                    self._last_data_point.estOrientQuaternionX,
+                    self._last_data_point.estOrientQuaternionY,
+                    self._last_data_point.estOrientQuaternionZ,
+                ]
+            )
 
-        self._speeds = self._calculate_speeds()
-        self._max_speed = max(self._speeds.max(), self._max_speed)
+            # We also get the initial gravity vector to determine which direction is up
+            # Important to note that when the compensated acceleration reads -9.8 when on the
+            # ground, the upwards direction of the gravity vector will be positive, not negative
+            self._gravity_orientation = np.array(
+                [
+                    self._last_data_point.estGravityVectorX,
+                    self._last_data_point.estGravityVectorY,
+                    self._last_data_point.estGravityVectorZ,
+                ]
+            )
+            # TODO: Comment this line out before flight!
+            self._gravity_orientation = np.array([0.01, 0.01, 9.79])
+            # finding max of absolute value of gravity vector, and finding index
+            absolute_gravity_vector = np.abs(self._gravity_orientation)
+            # TODO: check if the indexing of -1 below is not just because the z-axis is 9.8
+            self._gravity_upwards_index = np.where(absolute_gravity_vector == max(absolute_gravity_vector))[-1][-1]
+
+            # on the physical IMU, it has a depiction of the orientation. If a negative direction is
+            # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
+            # so the magnitude of gravity is negative.
+
+        self._time_differences = self._calculate_time_differences()
+
+        self._rotated_accelerations = self._calculate_rotated_accelerations()
+        self._vertical_velocities = self._calculate_vertical_velocity()
+        self._max_vertical_velocity = max(self._vertical_velocities.max(), self._max_vertical_velocity)
 
         self._current_altitudes = self._calculate_current_altitudes()
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
@@ -121,9 +163,22 @@ class IMUDataProcessor:
         return deque(
             ProcessedDataPacket(
                 current_altitude=current_alt,
-                speed=speed,
+                vertical_velocity=vertical_velocity,
+                vertical_acceleration=vertical_acceleration,
+                time_since_last_data_point=time_since_last_data_point,
             )
-            for current_alt, speed in zip(self._current_altitudes, self._speeds, strict=False)
+            for (
+                current_alt,
+                vertical_velocity,
+                vertical_acceleration,
+                time_since_last_data_point,
+            ) in zip(
+                self._current_altitudes,
+                self._vertical_velocities,
+                self._rotated_accelerations[self._gravity_upwards_index],
+                self._time_differences,
+                strict=False,
+            )
         )
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
@@ -139,34 +194,92 @@ class IMUDataProcessor:
         # Zero out the initial altitude
         return altitudes - self._initial_altitude
 
-    def _calculate_speeds(self) -> npt.NDArray[np.float64]:
+    def _calculate_rotated_accelerations(self) -> list[npt.NDArray[np.float64]]:
+        """
+        Calculates the rotated acceleration vector. Converts gyroscope data into a delta quaternion, and adds
+        onto the last quaternion. Will most likely be replaced by IMU quaternion data in the future, this
+        is a work-around due to bad datasets.
+
+        :return: numpy list of rotated acceleration vector [x,y,z]
+        """
+
+        # We pre-allocate the space for our accelerations first
+        len_data_points = len(self._data_points)
+        rotated_accelerations = [
+            np.zeros(len_data_points),
+            np.zeros(len_data_points),
+            np.zeros(len_data_points),
+        ]
+
+        # Iterates through the data points and time differences between the data points
+        for idx, (data_point, dt) in enumerate(zip(self._data_points, self._time_differences, strict=False)):
+            # Accelerations are in m/s^2
+            x_accel = data_point.estCompensatedAccelX
+            y_accel = data_point.estCompensatedAccelY
+            z_accel = data_point.estCompensatedAccelZ
+            # Angular rates are in rads/s
+            gyro_x = data_point.estAngularRateX
+            gyro_y = data_point.estAngularRateY
+            gyro_z = data_point.estAngularRateZ
+
+            # If we are missing the data points, then say we didn't rotate
+            if not any([x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
+                return rotated_accelerations
+
+            # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
+            # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
+            gyro_to_quaternion_matrix = np.array(
+                [
+                    [0, -gyro_x, -gyro_y, -gyro_z],
+                    [gyro_x, 0, gyro_z, -gyro_y],
+                    [gyro_y, -gyro_z, 0, gyro_x],
+                    [gyro_z, gyro_y, -gyro_x, 0],
+                ]
+            )
+
+            deltaQuat = 0.5 * np.matmul(gyro_to_quaternion_matrix, np.transpose(self._current_orientation_quaternions))
+            # Updates quaternion by adding delta quaternion, and rotates acceleration vector
+            self._current_orientation_quaternions += np.transpose(deltaQuat) * dt
+            # Normalize quaternion
+            self._current_orientation_quaternions /= np.linalg.norm(self._current_orientation_quaternions)
+            # Rotate acceleration by quaternion
+            accelQuat = np.array([0, x_accel, y_accel, z_accel])
+            accelRotatedQuat = self._multiply_quaternions(
+                self._multiply_quaternions(self._current_orientation_quaternions, accelQuat),
+                self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
+            )
+
+            # Adds the accelerations to our list of rotated accelerations
+            rotated_accelerations[0][idx] = accelRotatedQuat[1]
+            rotated_accelerations[1][idx] = accelRotatedQuat[2]
+            rotated_accelerations[2][idx] = accelRotatedQuat[3]
+
+        return rotated_accelerations
+
+    def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
         Calculates the speed of the rocket based on the linear acceleration. Integrates the
         linear acceleration to get the speed.
-        :param data_points: A sequence of EstimatedDataPacket objects to process
         :return: A numpy array of the speed of the rocket at each data point
         """
-        # Get the deadbanded accelerations in the x, y, and z directions
-        x_accelerations, y_accelerations, z_accelerations = self._get_deadbanded_accelerations()
-        # Get the time differences between each data point and the previous data point
-        time_differences = self._get_time_differences()
+        # TODO: we need to deadband the acceleration
+        # Get the vertical accelerations from the rotated acceleration vectors
+        accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
-        # We store the previous calculated velocity vectors, so that our speed
-        # doesn't show a jump, e.g. after motor burn out.
-        previous_vel_x, previous_vel_y, previous_vel_z = self._previous_velocity
+        # add gravity to the accelerations, and make the value negative (this is regardless of imu orientation)
+        # TODO: can we get rid of this -1?
+        # ^^^ No, but it's fixed
+        accelerations = -1 * (np.abs(accelerations) + GRAVITY)
 
-        # We integrate each of the components of the acceleration to get the velocity
-        velocities_x: np.array = previous_vel_x + np.cumsum(x_accelerations * time_differences)
-        velocities_y: np.array = previous_vel_y + np.cumsum(y_accelerations * time_differences)
-        velocities_z: np.array = previous_vel_z + np.cumsum(z_accelerations * time_differences)
+        velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 
         # Store the last calculated velocity vectors
-        self._previous_velocity = (velocities_x[-1], velocities_y[-1], velocities_z[-1])
+        self._previous_upwards_velocity = velocities[-1]
 
-        # All the speeds gotten as the magnitude of the velocity vector at each point
-        return np.sqrt(velocities_x**2 + velocities_y**2 + velocities_z**2)
+        # Return the vertical velocity
+        return velocities
 
-    def _get_time_differences(self) -> npt.NDArray[np.float64]:
+    def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data point and the previous data point. This cannot
         be called on the first update as _last_data_point is None.
@@ -203,3 +316,32 @@ class IMUDataProcessor:
         )
 
         return x_accelerations, y_accelerations, z_accelerations
+
+    def _multiply_quaternions(self, q1: npt.NDArray[np.float64], q2: npt.NDArray[np.float64]):
+        """
+        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
+
+        :param q1: numpy array with the first quaternion in row form
+        :param q2: numpy array with the second quaternion in row form
+
+        :return: numpy array with the multiplied quaternion
+        """
+        w1, x1, y1, z1 = q1
+        w2, x2, y2, z2 = q2
+
+        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
+        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
+        return np.array([w, x, y, z])
+
+    def _calculate_quaternion_conjugate(self, q: npt.NDArray[np.float64]):
+        """
+        Calculates the conjugate of a quaternion
+
+        :param q1: numpy array with a quaternion in row form
+
+        :return: numpy array with the quaternion conjugate
+        """
+        w, x, y, z = q
+        return np.array([w, -x, -y, -z])

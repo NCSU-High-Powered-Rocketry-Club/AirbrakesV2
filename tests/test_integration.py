@@ -62,15 +62,15 @@ class TestIntegration:
 
                 # During the first snapshot of a state, we set the min values to the current values
                 if state_info.min_speed is None:
-                    state_info.min_speed = ab.data_processor.speed
-                    state_info.max_speed = ab.data_processor.speed
+                    state_info.min_speed = ab.data_processor.vertical_velocity
+                    state_info.max_speed = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
 
-                state_info.min_speed = min(ab.data_processor.speed, state_info.min_speed)
+                state_info.min_speed = min(ab.data_processor.vertical_velocity, state_info.min_speed)
                 state_info.min_altitude = min(ab.data_processor.current_altitude, state_info.min_altitude)
                 state_info.extensions.append(ab.current_extension)
-                state_info.max_speed = max(ab.data_processor.speed, state_info.max_speed)
+                state_info.max_speed = max(ab.data_processor.vertical_velocity, state_info.max_speed)
                 state_info.max_altitude = max(ab.data_processor.current_altitude, state_info.max_altitude)
 
                 # Update the state information in the dictionary
@@ -119,7 +119,8 @@ class TestIntegration:
         # Check if we have extended the airbrakes at least once
         # Unfortunately we read through the file too fast for it to trigger the time-based extension
         # specially on subscale flights, where coast phase is very short anyway.
-        # assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
+        # We should hit target apogee, and then deploy airbrakes:
+        assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
 
         assert states_dict["FreeFallState"].min_speed >= 7.0  # speed might be less than gravity (parachutes)
         assert states_dict["FreeFallState"].max_speed <= 300.0  # high error for now

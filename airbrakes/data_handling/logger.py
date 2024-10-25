@@ -128,8 +128,26 @@ class Logger:
             # Put the message in the queue
             self._log_queue.put(message_dict)
 
+    def _logging_loop(self) -> None:
+        """
+        The loop that saves data to the logs. It runs in parallel with the main loop.
+        """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+        # Set up the csv logging in the new process
+        with self.log_path.open(mode="a", newline="") as file_writer:
+            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
+            while True:
+                # Get a message from the queue (this will block until a message is available)
+                # Because there's no timeout, it will wait indefinitely until it gets a message.
+                message_fields = self._log_queue.get()
+                # If the message is the stop signal, break out of the loop
+                if message_fields == STOP_SIGNAL:
+                    break
+                writer.writerow(message_fields)
+
+    @staticmethod
     def _create_logged_data_packets(
-        self,
         state: str,
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
@@ -157,21 +175,3 @@ class Logger:
 
             logged_data_packets.append(logged_data_packet)
         return logged_data_packets
-
-    def _logging_loop(self) -> None:
-        """
-        The loop that saves data to the logs. It runs in parallel with the main loop.
-        """
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-        # Set up the csv logging in the new process
-        with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=LoggedDataPacket.__struct_fields__)
-            while True:
-                # Get a message from the queue (this will block until a message is available)
-                # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get()
-                # If the message is the stop signal, break out of the loop
-                if message_fields == STOP_SIGNAL:
-                    break
-                writer.writerow(message_fields)

@@ -10,6 +10,7 @@ dependencies = [
     "numpy",
     "colorama",
     "psutil",
+    "scipy",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]

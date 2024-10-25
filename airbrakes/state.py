@@ -5,13 +5,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    AIRBRAKES_AFTER_COASTING,
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITUDE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
+    TARGET_ALTITUDE,
 )
 
 if TYPE_CHECKING:
@@ -84,7 +84,7 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.speed > TAKEOFF_SPEED:
+        if data.vertical_velocity > TAKEOFF_SPEED:
             self.next_state()
             return
 
@@ -117,14 +117,17 @@ class MotorBurnState(State):
         # This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
         # speed
-        if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
+        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_SPEED_THRESHOLD:
             self.next_state()
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if time.time() - self.start_time > MOTOR_BURN_TIME:
-            self.next_state()
-            return
+
+        # =======DISABLED==========
+        # if time.time() - self.start_time > MOTOR_BURN_TIME:
+        #     print('fallback switch')
+        #     self.next_state()
+        #     return
 
     def next_state(self):
         self.context.state = CoastState(self.context)
@@ -146,13 +149,21 @@ class CoastState(State):
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
-        # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > AIRBRAKES_AFTER_COASTING and not self.airbrakes_extended:
+        # Check if we are going to overshoot our target apogee, and extend the airbrakes if we are.
+        pred_apogee = self.context.apogee_predictor.apogee
+
+        if pred_apogee is not None and pred_apogee >= TARGET_ALTITUDE:
             self.context.extend_airbrakes()
-            self.airbrakes_extended = True
 
         data = self.context.data_processor
 
+
+        # if our velocity is close to zero or negative, we are in free fall.
+        if data.vertical_velocity <= 0:
+            self.next_state()
+            return
+
+        # fallback condition:
         # if our altitude has started to decrease, we have reached apogee:
         if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()

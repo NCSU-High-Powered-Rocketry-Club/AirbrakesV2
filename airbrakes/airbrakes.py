@@ -2,12 +2,13 @@
 
 from typing import TYPE_CHECKING
 
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
-from airbrakes.state import StandByState, State
+from airbrakes.state import StandByState, State, CoastState
 from constants import ServoExtension
 
 if TYPE_CHECKING:
@@ -25,6 +26,7 @@ class AirbrakesContext:
     """
 
     __slots__ = (
+        "apogee_predictor",
         "current_extension",
         "data_processor",
         "imu",
@@ -53,6 +55,7 @@ class AirbrakesContext:
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
 
         self.state: State = StandByState(self)
+        self.apogee_predictor: ApogeePredictor = ApogeePredictor()
         self.shutdown_requested = False
 
     def start(self) -> None:
@@ -61,6 +64,7 @@ class AirbrakesContext:
         """
         self.imu.start()
         self.logger.start()
+        self.apogee_predictor.start()
 
     def stop(self) -> None:
         """
@@ -103,6 +107,11 @@ class AirbrakesContext:
         # EstimatedDataPackets in data_packets
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
+        if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
+            # pass
+            self.apogee_predictor.update(est_data_packets)
+        elif self.state.name[0] == "F":  # Stop apogee prediction process in free fall:
+            self.apogee_predictor.stop()
         # Update the state machine based on the latest processed data
         self.state.update()
 
