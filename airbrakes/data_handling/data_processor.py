@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCELERATION_NOISE_THRESHOLD
+from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
 from utils import deadband
 
 
@@ -33,7 +33,6 @@ class IMUDataProcessor:
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
-        "gravity_magnitude",
         "upside_down",
     )
 
@@ -59,7 +58,6 @@ class IMUDataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
         self._gravity_upwards_index: int | None = None
-        self.gravity_magnitude: np.float64 | None = None
 
     def __str__(self) -> str:
         return (
@@ -122,6 +120,8 @@ class IMUDataProcessor:
             )
 
             # We also get the initial gravity vector to determine which direction is up
+            # Important to note that when the compensated acceleration reads -9.8 when on the
+            # ground, the upwards direction of the gravity vector will be positive, not negative
             self._gravity_orientation = np.array(
                 [
                     self._last_data_point.estGravityVectorX,
@@ -130,15 +130,15 @@ class IMUDataProcessor:
                 ]
             )
             # TODO: Comment this line out before flight!
-            self._gravity_orientation = np.array([0.01, 0.01, -9.8])
+            self._gravity_orientation = np.array([0.01, 0.01, 9.79])
             # finding max of absolute value of gravity vector, and finding index
             absolute_gravity_vector = np.abs(self._gravity_orientation)
-            # TODO: check if the indexing of -1 below is not just because the z-axis is -9.8
+            # TODO: check if the indexing of -1 below is not just because the z-axis is 9.8
             self._gravity_upwards_index = np.where(absolute_gravity_vector == max(absolute_gravity_vector))[-1][-1]
 
-            self.gravity_magnitude = np.linalg.norm(self._gravity_orientation)
-            if self._gravity_orientation[self._gravity_upwards_index] < 0:
-                self.gravity_magnitude = self.gravity_magnitude * -1
+            # on the physical IMU, it has a depiction of the orientation. If a negative direction is
+            # pointing to the sky, the gravity magnitude will be positive. Otherwise, we flip the sign
+            # so the magnitude of gravity is negative.
 
         self._time_differences = self._calculate_time_differences()
 
@@ -266,10 +266,10 @@ class IMUDataProcessor:
         # Get the vertical accelerations from the rotated acceleration vectors
         accelerations = self._rotated_accelerations[self._gravity_upwards_index]
 
-        # Reverse the acceleration vector depending on the orientation of the IMU in the rocket,
-        # and add gravity to the acceleration vector
+        # add gravity to the accelerations, and make the value negative (this is regardless of imu orientation)
         # TODO: can we get rid of this -1?
-        accelerations = accelerations * -1 + self.gravity_magnitude
+        # ^^^ No, but it's fixed
+        accelerations = -1 * (np.abs(accelerations) + GRAVITY)
 
         velocities = self._previous_upwards_velocity + np.cumsum(accelerations * self._time_differences)
 
