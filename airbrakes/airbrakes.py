@@ -36,7 +36,14 @@ class AirbrakesContext:
         "state",
     )
 
-    def __init__(self, servo: Servo, imu: IMU, logger: Logger, data_processor: IMUDataProcessor) -> None:
+    def __init__(
+        self,
+        servo: Servo,
+        imu: IMU,
+        logger: Logger,
+        data_processor: IMUDataProcessor,
+        apogee_predictor: ApogeePredictor,
+    ) -> None:
         """
         Initializes the airbrakes context with the specified hardware objects, logger, and data processor. The state
         machine starts in the StandByState, which is the initial state of the airbrakes system.
@@ -45,17 +52,18 @@ class AirbrakesContext:
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or a mock IMU.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
+        :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo = servo
         self.imu = imu
         self.logger = logger
         self.data_processor = data_processor
+        self.apogee_predictor = apogee_predictor
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
-
+        # The rocket starts in the StandByState
         self.state: State = StandByState(self)
-        self.apogee_predictor: ApogeePredictor = ApogeePredictor()
         self.shutdown_requested = False
 
     def start(self) -> None:

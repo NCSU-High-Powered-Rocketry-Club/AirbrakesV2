@@ -7,6 +7,7 @@ import time
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
@@ -52,11 +53,12 @@ def main(args: argparse.Namespace) -> None:
         imu = IMU(PORT, FREQUENCY)
         logger = Logger(LOGS_PATH)
 
-    # Our data processor stay the same regardless of whether we are running a simulation or not
+    # Our data processing and apogee prediction stay the same regardless of whether we are running a simulation or not
     data_processor = IMUDataProcessor()
+    apogee_predictor = ApogeePredictor()
 
     # The context that will manage the airbrakes state machine
-    airbrakes = AirbrakesContext(servo, imu, logger, data_processor)
+    airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
 
     flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
 

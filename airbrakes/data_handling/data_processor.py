@@ -291,10 +291,12 @@ class IMUDataProcessor:
         :return: A numpy array of the speed of the rocket at each data point
         """
         # Get the vertical accelerations from the rotated acceleration vectors
-        vertical_accelerations = np.array([
-            deadband(vertical_acceleration, ACCELERATION_NOISE_THRESHOLD)
-            for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
-        ])
+        vertical_accelerations = np.array(
+            [
+                deadband(vertical_acceleration, ACCELERATION_NOISE_THRESHOLD)
+                for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
+            ]
+        )
 
         # If gravity is a positive value (like when -z is upwards direction) you multiply accelerations by -1. If
         # gravity is negative, multiply by positive 1. This adds gravity to the accelerations, (regardless of imu
