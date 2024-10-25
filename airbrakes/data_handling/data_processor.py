@@ -311,8 +311,7 @@ class IMUDataProcessor:
         :return: A numpy array of the speed of the rocket at each data point
         """
         # Gets the vertical accelerations from the rotated acceleration vectors. gravity needs to be
-        # added to vertical acceleration, and then flipped, so motor burn has positve accelerations,
-        # and coast phase has negative accelerations. Then this value is deadbanded.
+        # subracted from vertical acceleration, Then deadbanded.
         vertical_accelerations = np.array(
             [
                 deadband((vertical_acceleration - GRAVITY), ACCELERATION_NOISE_THRESHOLD)
