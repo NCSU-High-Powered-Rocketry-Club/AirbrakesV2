@@ -8,8 +8,8 @@ from pathlib import Path
 # -------------------------------------------------------
 
 # These are used for simulations
-#SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
-SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_Gyro_Comp.csv")
+SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
+#SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_Gyro_Comp.csv")
 
 # -------------------------------------------------------
 # Servo Configuration
@@ -118,4 +118,4 @@ GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
-CURVE_FIT_INITIAL = [15.5, 0.03]
+CURVE_FIT_INITIAL = [-10.5, 0.03]

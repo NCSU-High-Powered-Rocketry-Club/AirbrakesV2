@@ -152,7 +152,7 @@ class ApogeePredictor:
         if params is None:
             return 0.0
 
-        estAccel = -GRAVITY - (params[0] * (1 - params[1] * xvec) ** 4)
+        estAccel = (params[0] * (1 - params[1] * xvec) ** 4) - GRAVITY
         estVel = np.cumsum(estAccel[current_vec_point:-1]) * avg_dt + self._current_velocity
         estAlt = np.cumsum(estVel) * avg_dt + self._current_altitude
         return np.max(estAlt)
