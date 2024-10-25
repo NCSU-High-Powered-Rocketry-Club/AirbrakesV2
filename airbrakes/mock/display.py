@@ -59,14 +59,13 @@ class FlightDisplay:
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             f"Time since sim start:      {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
             f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
-            f"Current speed:             {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
+            f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
             f"Max speed so far:          {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<20.2f}{RESET} {R}m{RESET}",
-            f"New velocity calculation:  {G}{apogee_predictor._previous_velocity:<10.2f}{RESET} {R}m/s{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+import signal
 from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
 
@@ -55,7 +56,7 @@ class ApogeePredictor:
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
         self._prediction_queue: multiprocessing.Queue[ProcessedDataPacket] = multiprocessing.Queue()
         self._prediction_process = multiprocessing.Process(
-            target=self.update, name="Apogee Prediction Process"
+            target=self._prediction_loop, name="Apogee Prediction Process"
         )
 
     @property
@@ -83,9 +84,10 @@ class ApogeePredictor:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
-        self._running.value = False
-        # Waits for the process to finish before stopping it
-        self._prediction_process.join()
+        if self._running.value:
+            self._running.value = False
+            # Waits for the process to finish before stopping it
+            self._prediction_process.join()
 
     def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
         """
@@ -162,17 +164,23 @@ class ApogeePredictor:
         """
         The loop that will run the prediction process. It runs in parallel with the main loop.
         """
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # These arrays belong to the prediction process, and are used to store the data packets that are passed in
         current_altitude: float = 0
         current_velocity: float = 0
         accelerations: deque[float] = []  # list of all the accelerations since motor burn out
         time_differences: deque[float] = []  # list of all the dt's since motor burn out
+        last_run_length = 0
+        print("Prediction loop started!")
+
         while self._running.value:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
             # process and the prediction process. The main process will add the data packets to the queue, and the
             # prediction process will get the data packets from the queue and add them to its own arrays.
             while True:
                 data_packet = self._prediction_queue.get()
+                print(f"fetched packet")
                 accelerations = accelerations.append(data_packet.vertical_acceleration)
                 time_differences = time_differences.append(data_packet.time_since_last_data_point)
                 if self._prediction_queue.empty():
@@ -180,7 +188,10 @@ class ApogeePredictor:
                     current_velocity = data_packet.vertical_velocity
                     break
             # TODO: play around with this value
-            if len(accelerations) > 100:
+            if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
+                print(f"running curve fit!")
                 curve_fit_timestamps = cumulative_trapezoid(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
                 self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences)
+                last_run_length = len(accelerations)
+                print(f"The predicted apogee is: {self._apogee_prediction_value.value}")

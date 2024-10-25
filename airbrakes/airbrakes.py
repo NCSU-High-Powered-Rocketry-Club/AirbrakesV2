@@ -64,6 +64,7 @@ class AirbrakesContext:
         """
         self.imu.start()
         self.logger.start()
+        self.apogee_predictor.start()
 
     def stop(self) -> None:
         """
@@ -107,9 +108,10 @@ class AirbrakesContext:
         processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
 
         if self.state.name[0] == "C":  # Only run apogee prediction in coast state:
-            pass
-            # self.apogee_predictor.update(est_data_packets)
-
+            # pass
+            self.apogee_predictor.update(est_data_packets)
+        elif self.state.name[0] == "F":  # Stop apogee prediction process in free fall:
+            self.apogee_predictor.stop()
         # Update the state machine based on the latest processed data
         self.state.update()
 

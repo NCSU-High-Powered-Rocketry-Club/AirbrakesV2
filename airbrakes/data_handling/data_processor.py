@@ -57,7 +57,7 @@ class IMUDataProcessor:
         self._data_points: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
-        self._gravity_upwards_index: int | None = None
+        self._gravity_upwards_index: int | None = 0
 
     def __str__(self) -> str:
         return (
