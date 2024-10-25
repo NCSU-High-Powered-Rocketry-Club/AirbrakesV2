@@ -8,7 +8,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
-from airbrakes.state import StandByState, State, CoastState
+from airbrakes.state import StandByState, State
 from constants import ServoExtension
 
 if TYPE_CHECKING:

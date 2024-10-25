@@ -1,24 +1,16 @@
 """Module for predicting apogee"""
 
 import multiprocessing
+import signal
 import warnings
 from collections import deque
-from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
-import signal
-from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-
-if TYPE_CHECKING:
-    from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.state import CoastState, MotorBurnState, State
-from constants import GRAVITY, CURVE_FIT_INITIAL, STOP_SIGNAL
+from constants import CURVE_FIT_INITIAL, GRAVITY, STOP_SIGNAL
 
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
@@ -108,12 +100,24 @@ class ApogeePredictor:
         :return: numpy array with values of A and B
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        popt, _ = curve_fit(ApogeePredictor._curve_fit_function, np.array(cumulative_time_differences), np.array(accelerations), p0=CURVE_FIT_INITIAL, maxfev = 2000)
+        popt, _ = curve_fit(
+            ApogeePredictor._curve_fit_function,
+            np.array(cumulative_time_differences),
+            np.array(accelerations),
+            p0=CURVE_FIT_INITIAL,
+            maxfev=2000,
+        )
         a, b = popt
         return np.array([a, b])
 
     @staticmethod
-    def _get_apogee(params: tuple[float, float], current_velocity: float, altitude: float, time_differences: npt.NDArray, cumulative_time_differences: npt.NDArray):
+    def _get_apogee(
+        params: tuple[float, float],
+        current_velocity: float,
+        altitude: float,
+        time_differences: npt.NDArray,
+        cumulative_time_differences: npt.NDArray,
+    ):
         """
         Uses curve fit and current velocity and altitude to predict the apogee
 
@@ -137,10 +141,11 @@ class ApogeePredictor:
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0, 30.02, avg_dt)
-        # sums up the time differences to get a vector with all the timestamps of each data packet, from the start of coast
-        # phase. This determines what point in xvec the current time lines up with. This is used as the start of the
-        # integral and the 30 seconds at the end of xvec is the end of the integral. The idea is to integrate the acceleration
-        # and velocity functions during the time between the current time, and 30 seconds (well after apogee, to be safe)
+        # sums up the time differences to get a vector with all the timestamps of each data packet,
+        # from the start of coast phase. This determines what point in xvec the current time lines
+        # up with. This is used as the start of the integral and the 30 seconds at the end of xvec
+        # is the end of the integral. The idea is to integrate the acceleration and velocity functions
+        # during the time between the current time, and 30 seconds (well after apogee, to be safe)
         current_vec_point = np.int64(np.floor(cumulative_time_differences[-1] / avg_dt))
 
         if params is None:
@@ -184,5 +189,7 @@ class ApogeePredictor:
             if len(accelerations) > 100 and len(accelerations) - last_run_length > 100:
                 curve_fit_timestamps = np.cumsum(time_differences)
                 params = ApogeePredictor._curve_fit(accelerations, curve_fit_timestamps)
-                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(params, current_velocity, current_altitude, time_differences, curve_fit_timestamps)
+                self._apogee_prediction_value.value = ApogeePredictor._get_apogee(
+                    params, current_velocity, current_altitude, time_differences, curve_fit_timestamps
+                )
                 last_run_length = len(accelerations)

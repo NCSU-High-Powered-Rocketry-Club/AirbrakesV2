@@ -4,10 +4,8 @@ import random
 import numpy as np
 import pytest
 
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.state import CoastState
 
 
 def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20):
@@ -379,7 +377,7 @@ class TestIMUDataProcessor:
             assert rot == pytest.approx(expected_val)
 
 
-""" 
+"""
 This is unit tests for apogee prediction. Does not work currently, will most likely be moved to
 it's own file, because it is not in data_processor.
 
