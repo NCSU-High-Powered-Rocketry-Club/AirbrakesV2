@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 from constants import (
     DISTANCE_FROM_APOGEE,
     GROUND_ALTITUDE,
-    MAX_SPEED_THRESHOLD,
+    MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
-    TAKEOFF_SPEED,
+    TAKEOFF_VELOCITY,
     TARGET_ALTITUDE,
 )
 
@@ -72,18 +72,18 @@ class StandByState(State):
 
     def update(self):
         """
-        Checks if the rocket has launched, based on our speed and altitude.
+        Checks if the rocket has launched, based on our velocity and altitude.
         """
         # We need to check if the rocket has launched, if it has, we move to the next state.
         # For that we can check:
-        # 1) Speed - If the speed of the rocket is above a threshold, the rocket has
+        # 1) Velocity - If the velocity of the rocket is above a threshold, the rocket has
         # launched.
         # 2) Altitude - If the altitude is above a threshold, the rocket has launched.
         # Ideally we would directly communicate with the motor, but we don't have that capability.
 
         data = self.context.data_processor
 
-        if data.vertical_velocity > TAKEOFF_SPEED:
+        if data.vertical_velocity > TAKEOFF_VELOCITY:
             self.next_state()
             return
 
@@ -112,11 +112,11 @@ class MotorBurnState(State):
 
         data = self.context.data_processor
 
-        # If our current speed is less than our max speed, that means we have stopped accelerating
+        # If our current velocity is less than our max velocity, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
-        # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
-        # speed
-        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_SPEED_THRESHOLD:
+        # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
+        # bit less than the max velocity
+        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
             self.next_state()
             return
 

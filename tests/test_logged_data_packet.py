@@ -90,12 +90,12 @@ class TestLoggedDataPacket:
         packet = logged_data_packet
         proc_data_packet = ProcessedDataPacket(
             current_altitude=1.0923457654,
-            speed=1.6768972567,
+            velocity=1.6768972567,
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
         assert packet.current_altitude == 1.0923457654
-        assert packet.speed == 1.6768972567
+        assert packet.velocity == 1.6768972567
         assert packet.timestamp == 0.0
         assert packet.state == "test"
         assert packet.extension == 0.0

@@ -7,7 +7,7 @@ from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnSta
 from constants import (
     AIRBRAKES_AFTER_COASTING,
     GROUND_ALTITUDE,
-    MAX_SPEED_THRESHOLD,
+    MAX_VELOCITY_THRESHOLD,
     MOTOR_BURN_TIME,
     SERVO_DELAY,
     ServoExtension,
@@ -99,7 +99,7 @@ class TestStandByState:
         assert stand_by_state.name == "StandByState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "current_altitude", "expected_state"),
+        ("current_velocity", "current_altitude", "expected_state"),
         [
             (0.0, 0.0, StandByState),
             (0.0, 100.0, MotorBurnState),
@@ -107,10 +107,10 @@ class TestStandByState:
             (11, 7, MotorBurnState),
             (20, 15, MotorBurnState),
         ],
-        ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
+        ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_velocity"],
     )
-    def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
-        stand_by_state.context.data_processor._vertical_velocities = [current_speed]
+    def test_update(self, stand_by_state, current_velocity, current_altitude, expected_state):
+        stand_by_state.context.data_processor._vertical_velocities = [current_velocity]
         stand_by_state.context.data_processor._current_altitudes = [current_altitude]
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
@@ -135,25 +135,25 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "max_speed", "expected_state", "burn_time"),
+        ("current_velocity", "max_velocity", "expected_state", "burn_time"),
         [
             (0.0, 0.0, MotorBurnState, 0.0),
             (100.0, 100.0, MotorBurnState, 0.00),
             (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
-            (53.999 - 54.0 * MAX_SPEED_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
+            (53.999 - 54.0 * MAX_VELOCITY_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
             (60.0, 60.0, CoastState, MOTOR_BURN_TIME + 0.1),
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
-            "decreasing_speed_under_threshold",
-            "decreasing_speed_over_threshold",
-            "faulty_speed",
+            "decreasing_velocity_under_threshold",
+            "decreasing_velocity_over_threshold",
+            "faulty_velocity",
         ],
     )
-    def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
-        motor_burn_state.context.data_processor._vertical_velocities = [current_speed]
-        motor_burn_state.context.data_processor._max_vertical_velocity = max_speed
+    def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time):
+        motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
+        motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
         time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)

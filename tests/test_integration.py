@@ -10,7 +10,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import DISTANCE_FROM_APOGEE, GROUND_ALTITUDE, TAKEOFF_HEIGHT, TAKEOFF_SPEED, ServoExtension
+from constants import DISTANCE_FROM_APOGEE, GROUND_ALTITUDE, TAKEOFF_HEIGHT, TAKEOFF_VELOCITY, ServoExtension
 
 SNAPSHOT_INTERVAL = 0.01  # seconds
 
@@ -18,8 +18,8 @@ SNAPSHOT_INTERVAL = 0.01  # seconds
 class StateInformation(msgspec.Struct):
     """Records the values achieved by the airbrakes system in a particular state."""
 
-    min_speed: float | None = None
-    max_speed: float | None = None
+    min_velocity: float | None = None
+    max_velocity: float | None = None
     extensions: list[float] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
@@ -37,7 +37,7 @@ class TestIntegration:
         # values being StateInformation, which will note information about that state.
         # Example:
         # {
-        # "StandByState": StateInformation(min_speed=0.0, max_speed=0.0,
+        # "StandByState": StateInformation(min_velocity=0.0, max_velocity=0.0,
         #           extensions=[0.0, ...], min_altitude=0.0, max_altitude=0.0),
         #  ...
         # }
@@ -54,23 +54,23 @@ class TestIntegration:
             ab.update()
             if time.time() - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
-                    # Reset the current state speeds and altitudes
+                    # Reset the current state velocities and altitudes
                     states_dict[ab.state.name] = StateInformation(extensions=[ab.current_extension])
 
                 # Let's update all our values:
                 state_info = states_dict[ab.state.name]
 
                 # During the first snapshot of a state, we set the min values to the current values
-                if state_info.min_speed is None:
-                    state_info.min_speed = ab.data_processor.vertical_velocity
-                    state_info.max_speed = ab.data_processor.vertical_velocity
+                if state_info.min_velocity is None:
+                    state_info.min_velocity = ab.data_processor.vertical_velocity
+                    state_info.max_velocity = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
 
-                state_info.min_speed = min(ab.data_processor.vertical_velocity, state_info.min_speed)
+                state_info.min_velocity = min(ab.data_processor.vertical_velocity, state_info.min_velocity)
                 state_info.min_altitude = min(ab.data_processor.current_altitude, state_info.min_altitude)
                 state_info.extensions.append(ab.current_extension)
-                state_info.max_speed = max(ab.data_processor.vertical_velocity, state_info.max_speed)
+                state_info.max_velocity = max(ab.data_processor.vertical_velocity, state_info.max_velocity)
                 state_info.max_altitude = max(ab.data_processor.current_altitude, state_info.max_altitude)
 
                 # Update the state information in the dictionary
@@ -96,24 +96,24 @@ class TestIntegration:
         ]
 
         # Now let's check if the values in each state are as expected:
-        assert states_dict["StandByState"].min_speed == pytest.approx(0.0, abs=0.1)
-        assert states_dict["StandByState"].max_speed <= TAKEOFF_SPEED
+        assert states_dict["StandByState"].min_velocity == pytest.approx(0.0, abs=0.1)
+        assert states_dict["StandByState"].max_velocity <= TAKEOFF_VELOCITY
         assert states_dict["StandByState"].min_altitude >= -6.0  # might be negative due to noise/flakiness
         assert states_dict["StandByState"].max_altitude <= TAKEOFF_HEIGHT
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["StandByState"].extensions)
 
-        assert states_dict["MotorBurnState"].min_speed >= TAKEOFF_SPEED
-        assert states_dict["MotorBurnState"].max_speed <= 300.0  # arbitrary value, we haven't hit Mach 1
-        assert states_dict["MotorBurnState"].min_altitude >= -2.5  # detecting takeoff from speed data
+        assert states_dict["MotorBurnState"].min_velocity >= TAKEOFF_VELOCITY
+        assert states_dict["MotorBurnState"].max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
+        assert states_dict["MotorBurnState"].min_altitude >= -2.5  # detecting takeoff from velocity data
         assert states_dict["MotorBurnState"].max_altitude >= TAKEOFF_HEIGHT
         assert states_dict["MotorBurnState"].max_altitude <= 500.0  # Our motor burn time isn't usually that long
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["MotorBurnState"].extensions)
 
-        # TODO: Fix our current speed (kalman filter). Currently tests with broken speed values:
-        # our coasting speed be fractionally higher than motor burn speed due to data processing time
+        # TODO: Fix our current velocity (kalman filter). Currently tests with broken velocity values:
+        # our coasting velocity be fractionally higher than motor burn velocity due to data processing time
         # (does not actually happen in real life)
-        assert (states_dict["CoastState"].max_speed - 10) <= states_dict["MotorBurnState"].max_speed
-        assert states_dict["CoastState"].min_speed <= 50.0  # speed around apogee should be low
+        assert (states_dict["CoastState"].max_velocity - 10) <= states_dict["MotorBurnState"].max_velocity
+        assert states_dict["CoastState"].min_velocity <= 50.0  # velocity around apogee should be low
         assert states_dict["CoastState"].min_altitude >= states_dict["MotorBurnState"].max_altitude
         assert states_dict["CoastState"].max_altitude <= 2000.0  # arbitrary value
         # Check if we have extended the airbrakes at least once
@@ -122,8 +122,8 @@ class TestIntegration:
         # We should hit target apogee, and then deploy airbrakes:
         assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
 
-        assert states_dict["FreeFallState"].min_speed >= 7.0  # speed might be less than gravity (parachutes)
-        assert states_dict["FreeFallState"].max_speed <= 300.0  # high error for now
+        assert states_dict["FreeFallState"].min_velocity >= 7.0  # velocity might be less than gravity (parachutes)
+        assert states_dict["FreeFallState"].max_velocity <= 300.0  # high error for now
         # max altitude should be less than coasting altitude minus some error
         assert (
             states_dict["CoastState"].max_altitude - states_dict["FreeFallState"].max_altitude
@@ -135,9 +135,9 @@ class TestIntegration:
         )  # free fall should be close to ground
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["FreeFallState"].extensions)
 
-        # TODO: update after fixing speed calculations:
-        # assert states_dict["LandedState"].min_speed == 0.0
-        assert states_dict["LandedState"].max_speed <= 300.0  # high error for now
+        # TODO: update after fixing velocity calculations:
+        # assert states_dict["LandedState"].min_velocity == 0.0
+        assert states_dict["LandedState"].max_velocity <= 300.0  # high error for now
         assert states_dict["LandedState"].min_altitude <= GROUND_ALTITUDE
         assert states_dict["LandedState"].max_altitude <= GROUND_ALTITUDE + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["LandedState"].extensions)
@@ -179,9 +179,9 @@ class TestIntegration:
                 if state not in state_list:
                     state_list.append(state)
 
-                # Check if we logged speed and zeroed out alt for estimated data packets:
+                # Check if we logged velocity and zeroed out alt for estimated data packets:
                 if is_est_data_packet:
-                    assert row["speed"] != ""
+                    assert row["velocity"] != ""
                     assert row["current_altitude"] != ""
 
                 # Check if the extension is a float:

@@ -391,7 +391,7 @@ class TestLogger:
             assert isinstance(converted["invalid_fields"], float)
             assert isinstance(converted["timestamp"], float)
             if not is_raw_data_packet:
-                assert isinstance(converted["speed"], float)
+                assert isinstance(converted["velocity"], float)
                 assert isinstance(converted["current_altitude"], float)
             assert isinstance(converted["extension"], float)
 
@@ -399,7 +399,7 @@ class TestLogger:
             converted["invalid_fields"] = str(converted["invalid_fields"])
             converted["timestamp"] = str(converted["timestamp"])
             if not is_raw_data_packet:
-                converted["speed"] = str(converted["speed"])
+                converted["velocity"] = str(converted["velocity"])
                 converted["current_altitude"] = str(converted["current_altitude"])
             converted["extension"] = str(converted["extension"])
 

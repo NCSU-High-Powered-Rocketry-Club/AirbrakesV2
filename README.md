@@ -11,7 +11,7 @@ _A video of our air brakes extending and retracting_
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
 
 1. **Gets data from the IMU**
-2. **Processes the data** in the Data Processor (calculates speed, averages, maximums, etc.)
+2. **Processes the data** in the Data Processor (calculates velocity, averages, maximums, etc.)
 3. **Updates the current state** with the processed data
 4. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
 5. **Logs all data** from the IMU, Data Processor, Servo, and States
@@ -64,10 +64,10 @@ flowchart TD
     %% IMU Data Processing
     IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
     %%IMUDataProcessor --> ProcessedData[(Processed Data Packet)]:::outputSquare
-    IMUDataProcessor --> Speed[(Speed)]:::outputSquare
+    IMUDataProcessor --> Velocity[(Velocity)]:::outputSquare
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
     
-    Speed -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Velocity -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     
      ProcessedData[(Processed Data Packet)]:::outputSquare --> Update

@@ -65,7 +65,7 @@ class TestIMUDataProcessor:
         assert d.upside_down is False
         assert d.current_altitude == 0.0
         assert list(d._current_altitudes) == [0.0]
-        # See the comment in _calculate_speeds() for why speed is 0 during init.
+        # See the comment in _calculate_velocitys() for why velocity is 0 during init.
         assert d.vertical_velocity == 0.0
 
     def test_str(self, data_processor):
@@ -73,15 +73,15 @@ class TestIMUDataProcessor:
             "IMUDataProcessor("
             "max_altitude=0.0, "
             "current_altitude=0.0, "
-            # See the comment in _calculate_speeds() for why speed is 0 during init.
-            "speed=0.0, "
-            "max_speed=0.0, "
+            # See the comment in _calculate_velocitys() for why velocity is 0 during init.
+            "velocity=0.0, "
+            "max_velocity=0.0, "
             "rotated_accel=[0. 0. 0.],)"
         )
         assert str(data_processor) == data_str
 
-    def test_calculate_speed(self, data_processor):
-        """Tests whether the speed is correctly calculated"""
+    def test_calculate_velocity(self, data_processor):
+        """Tests whether the velocity is correctly calculated"""
         d = data_processor
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
@@ -145,7 +145,7 @@ class TestIMUDataProcessor:
         assert d._previous_velocity == pytest.approx((26.0, 25.0, 31.0))
         assert d.vertical_velocity == pytest.approx(math.sqrt(26.0**2 + 25.0**2 + 31.0**2))
         assert d._max_vertical_velocity != d.vertical_velocity
-        # Our max speed is hit with the first est data packet on this update:
+        # Our max velocity is hit with the first est data packet on this update:
         assert d._max_vertical_velocity == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
 
     def test_first_update_no_data_packets(self, data_processor):
@@ -156,7 +156,7 @@ class TestIMUDataProcessor:
         assert len(d._data_points) == 0
         assert len(d._current_altitudes) == 1
         assert len(d._vertical_velocities) == 1
-        assert d.vertical_velocity == 0.0, "Speed should be the same as set in __init__"
+        assert d.vertical_velocity == 0.0, "velocity should be the same as set in __init__"
         assert d.current_altitude == 0.0, "Current altitude should be the same as set in __init__"
         assert d._initial_altitude is None
         assert d._max_altitude == 0.0
@@ -225,8 +225,8 @@ class TestIMUDataProcessor:
         assert len(d._current_altitudes) == max(len(data_packets), 1)
         assert len(d._vertical_velocities) == max(len(data_packets), 1)
         assert len(d._vertical_velocities) == len(d._current_altitudes)
-        # Our initial speed should always be zero, since we set the previous data point to the first
-        # data point, giving a time difference of zero, and hence a speed of zero, and thus
+        # Our initial velocity should always be zero, since we set the previous data point to the first
+        # data point, giving a time difference of zero, and hence a velocity of zero, and thus
         # implicitly testing it.
         assert d._vertical_velocities[0] == 0.0
 
@@ -238,7 +238,7 @@ class TestIMUDataProcessor:
         assert len(processed_data) == len(data_packets)
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
-            assert data.speed == d._vertical_velocities[idx]
+            assert data.velocity == d._vertical_velocities[idx]
 
     def test_previous_velocity_retained(self, data_processor):
         """Test that previous velocity is retained correctly between updates."""
@@ -451,7 +451,7 @@ it's own file, because it is not in data_processor.
         d.update_data([data_packets[2]])
         ap_pred.update([data_packets[2]])
 
-        velocity = ap_pred._speed
+        velocity = ap_pred._velocity
         assert velocity == pytest.approx(expected_values[0])
 
         params = ap_pred._params

@@ -40,9 +40,9 @@ class IMUDataProcessor:
     def __init__(self):
         """
         Initializes the IMUDataProcessor object. It processes data points to calculate various things we need such as
-        the maximum altitude, current altitude, speed, etc. All numbers in this class are handled with numpy.
+        the maximum altitude, current altitude, velocity, etc. All numbers in this class are handled with numpy.
 
-        This class has properties for the maximum altitude, current altitude, speed, and maximum speed of the rocket.
+        This class has properties for the maximum altitude, current altitude, velocity, and maximum velocity of the rocket.
 
         """
         self._max_altitude: np.float64 = np.float64(0.0)
@@ -66,8 +66,8 @@ class IMUDataProcessor:
             f"{self.__class__.__name__}("
             f"max_altitude={self.max_altitude}, "
             f"current_altitude={self.current_altitude}, "
-            f"speed={self.vertical_velocity}, "
-            f"max_speed={self.max_vertical_velocity}, "
+            f"velocity={self.vertical_velocity}, "
+            f"max_velocity={self.max_vertical_velocity}, "
         )
 
     @property
@@ -96,7 +96,7 @@ class IMUDataProcessor:
     def update(self, data_points: list[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all information such as altitude,
-        speed, etc.
+        velocity, etc.
         :param data_points: A list of EstimatedDataPacket objects to process
         """
         # If the data points are empty, we don't want to try to process anything
@@ -106,10 +106,10 @@ class IMUDataProcessor:
         self._data_points = data_points
 
         # If we don't have a last data point, we can't calculate the time differences needed
-        # for speed calculation:
+        # for velocity calculation:
         if self._last_data_point is None:
             # setting last data point as the first element, makes it so that the time diff
-            # automatically becomes 0, and the speed becomes 0
+            # automatically becomes 0, and the velocity becomes 0
             self._last_data_point = self._data_points[0]
             # This is us getting the rocket's initial orientation
             self._current_orientation_quaternions = np.array(
@@ -286,9 +286,9 @@ class IMUDataProcessor:
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the speed of the rocket based on the linear acceleration. Integrates the
-        linear acceleration to get the speed.
-        :return: A numpy array of the speed of the rocket at each data point
+        Calculates the velocity of the rocket based on the linear acceleration. Integrates the
+        linear acceleration to get the velocity.
+        :return: A numpy array of the velocity of the rocket at each data point
         """
         # Get the vertical accelerations from the rotated acceleration vectors
         vertical_accelerations = np.array(
@@ -320,7 +320,7 @@ class IMUDataProcessor:
         :return: A numpy array of the time difference between each data point and the previous data point.
         """
         # calculate the time differences between each data point
-        # We are converting from ns to s, since we don't want to have a speed in m/ns^2
+        # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
         # We are using the last data point to calculate the time difference  between the last data point from the
         # previous loop, and the first data point from the current loop
         return np.diff([data_point.timestamp for data_point in [self._last_data_point, *self._data_points]]) * 1e-9
