@@ -145,10 +145,12 @@ class ApogeePredictor:
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0, 30.02, avg_dt)
-
-        # uses the timestamp of the current data point and the timestamp of when the rocket leaves the launch pad
-        # to determine what point in xvec the current time lines up with.
-        current_vec_point = np.int64(np.floor(((_prediction_queue[-1].timestamp - self._start_time) * 1e-9) / avg_dt))
+        cumalative_timestamps = cumulative_trapezoid(time_differences)
+        # sums up the time differences to get a vector with all the timestamps of each data packet, from the start of coast
+        # phase. This determines what point in xvec the current time lines up with. This is used as the start of the
+        # integral and the 30 seconds at the end of xvec is the end of the integral. The idea is to integrate the acceleration
+        # and velocity functions during the time between the current time, and 30 seconds (well after apogee, to be safe)
+        current_vec_point = np.int64(np.floor(cumalative_timestamps[-1] / avg_dt))
 
         if params is None:
             return 0.0
