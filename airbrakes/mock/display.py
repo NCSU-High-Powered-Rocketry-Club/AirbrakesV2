@@ -60,16 +60,18 @@ class FlightDisplay:
         self.end_sim_interrupted = threading.Event()
 
     def start(self) -> None:
-        """Starts the display and cpu monitoring thread. Also initializes the processes to monitor."""
-        # Prepare the processes for monitoring in the simulation:
-        # This should only be done after airbrakes.start() is called, because we need the process IDs.
+        """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring in
+        the simulation. This should only be done *after* airbrakes.start() is called, because we need the process IDs.
+        """
         self._processes = self.prepare_process_dict()
         self._cpu_usages = {name: 0.0 for name in self._processes}
         self._cpu_thread.start()
         self._thread_target.start()
 
     def stop(self) -> None:
-        """Stops the display thread."""
+        """Stops the display thread. Similar to start(), this must be called *before* airbrakes.stop() is called.
+        to prevent psutil from raising a NoSuchProcess exception.
+        """
         self._cpu_thread.join()
         self._thread_target.join()
 
