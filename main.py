@@ -63,29 +63,34 @@ def main(args: argparse.Namespace) -> None:
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
+
+        # Setup our flight display, only for mock sims:
+        # Don't print the flight data if we are in debug mode
+        if args.mock and not args.debug:
+            # This is what prints the flight data to the console in real time, we only do
+            # it when running the sim because printing a lot of things can significantly slow down the program
+            flight_display.start()
+
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             # Update the airbrakes finite state machine
             airbrakes.update()
 
-            if args.mock:
-                if not args.debug:  # Don't print the flight data if we are in debug mode
-                    # This is what prints the flight data to the console in real time, we only do
-                    # it when running the sim because printing a lot of things can significantly slow down the program
-                    flight_display.update_display()
-                # Stop the sim when the data is exhausted:
-                if not airbrakes.imu._data_fetch_process.is_alive():
-                    break
-    except KeyboardInterrupt:  # This is run if we press Ctrl+C:
+            # Stop the sim when the data is exhausted:
+            if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
+                break
+    except KeyboardInterrupt:
         if args.mock:
-            flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
+            flight_display.end_sim_interrupted.set()
     else:  # This is run if we have landed and the program is not interrupted (see state.py)
         if args.mock:
             # Usually the mock sim will stop itself due to data exhaustion, so we will actually
             # hit the condition above, but if the data isn't exhausted, we will stop it here.
-            flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
+            flight_display.end_sim_natural.set()
     finally:
-        airbrakes.stop()  # Stop the airbrakes system no matter what path we took
+        if args.mock:
+            flight_display.stop()
+        airbrakes.stop()
 
 
 if __name__ == "__main__":

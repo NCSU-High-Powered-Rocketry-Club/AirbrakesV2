@@ -1,5 +1,7 @@
 """Mock Logger class for testing purposes. Currently only used to delete the log file."""
 
+from pathlib import Path
+
 from airbrakes.data_handling.logger import Logger
 
 
@@ -10,7 +12,7 @@ class MockLogger(Logger):
 
     __slots__ = ("delete_log_file",)
 
-    def __init__(self, log_file_path: str, delete_log_file: bool = True):
+    def __init__(self, log_file_path: Path, delete_log_file: bool = True):
         super().__init__(log_file_path)
         self.delete_log_file = delete_log_file
         self._log_process.name = "Mock Logger Process"

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from msgspec.structs import asdict
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
@@ -96,7 +96,7 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
     ) -> None:
         """
@@ -147,7 +147,7 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
     ) -> deque[LoggedDataPacket]:
         """
@@ -164,11 +164,15 @@ class Logger:
         # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
         # data packet
         for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
-            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            logged_data_packet = LoggedDataPacket(
+                state, extension, data_packet.timestamp, invalid_fields=data_packet.invalid_fields
+            )
             if isinstance(data_packet, EstimatedDataPacket):
                 # For every estimated data packet, we have a corresponding processed data packet
+                logged_data_packet.set_estimated_data_packet_attributes(data_packet)
                 logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
+            else:
+                logged_data_packet.set_raw_data_packet_attributes(data_packet)
 
             logged_data_packets.append(logged_data_packet)
         return logged_data_packets
