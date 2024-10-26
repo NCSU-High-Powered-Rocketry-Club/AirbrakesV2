@@ -123,6 +123,7 @@ class LoggedDataPacket(msgspec.Struct):
         """
         Sets the attributes of the data packet corresponding to the raw data packet. Rounds the
         float values to 8 decimal places, if the value is a float.
+        :param data_packet: The raw data packet to set the attributes from.
         """
         if data_packet.scaledAccelX is not None:
             self.scaledAccelX = f"{data_packet.scaledAccelX:.8f}"
