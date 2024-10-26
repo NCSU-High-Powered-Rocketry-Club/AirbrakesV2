@@ -88,7 +88,7 @@ def main(args: argparse.Namespace) -> None:
             # hit the condition above, but if the data isn't exhausted, we will stop it here.
             flight_display.end_sim_natural.set()
     finally:
-        if args.mock:
+        if args.mock and not args.debug:
             flight_display.stop()
         airbrakes.stop()
 
