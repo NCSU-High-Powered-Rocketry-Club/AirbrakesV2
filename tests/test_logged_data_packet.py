@@ -50,8 +50,8 @@ class TestLoggedDataPacket:
     @pytest.mark.parametrize(
         "imu_data_packet",
         [
-            EstimatedDataPacket(timestamp=3.0 + 1e9, invalid_fields=["test_1"]),
-            RawDataPacket(timestamp=4.0 + 1e9, invalid_fields=["test_2"]),
+            EstimatedDataPacket(timestamp=3 * 1e9),
+            RawDataPacket(timestamp=4 * 1e9),
         ],
         ids=["EstimatedDataPacket", "RawDataPacket"],
     )
@@ -66,12 +66,10 @@ class TestLoggedDataPacket:
                 continue  # this is not set in set_imu_data_packet_attributes
             setattr(imu_data_packet, i, 1.2345678910)
 
-        packet.set_imu_data_packet_attributes(imu_data_packet)
-
         if isinstance(imu_data_packet, EstimatedDataPacket):
-            assert packet.invalid_fields == ["test_1"]
+            packet.set_estimated_data_packet_attributes(imu_data_packet)
         else:
-            assert packet.invalid_fields == ["test_2"]
+            packet.set_raw_data_packet_attributes(imu_data_packet)
 
         assert packet.state == "test"
         assert packet.extension == 0.0
@@ -94,8 +92,8 @@ class TestLoggedDataPacket:
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
-        assert packet.current_altitude == 1.0923457654
-        assert packet.speed == 1.6768972567
+        assert packet.current_altitude == "1.09234577"
+        assert packet.speed == "1.67689726"
         assert packet.timestamp == 0.0
         assert packet.state == "test"
         assert packet.extension == 0.0
