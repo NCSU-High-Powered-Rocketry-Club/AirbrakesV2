@@ -84,7 +84,11 @@ class FlightDisplay:
                 # interval=None is not recommended and can be inaccurate.
                 # We normalize the CPU usage by the number of CPUs to get average cpu usage, otherwise
                 # it's usually > 100%.
-                self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
+                try:
+                    self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
+                except psutil.NoSuchProcess:
+                    # The process has ended, so we set the CPU usage to 0.
+                    self._cpu_usages[name] = 0.0
 
     def update_display(self) -> None:
         """
