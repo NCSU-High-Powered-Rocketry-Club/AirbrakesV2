@@ -79,6 +79,8 @@ class Logger:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
+        # Log the buffer before stopping the process
+        self._log_the_buffer()
         self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         # Waits for the process to finish before stopping it
         self._log_process.join()
@@ -119,14 +121,20 @@ class Logger:
             else:
                 if self._log_buffer:
                     # Log the buffer before logging the new message
-                    for buffered_message in self._log_buffer:
-                        self._log_queue.put(buffered_message)
-                    self._log_buffer.clear()
+                    self._log_the_buffer()
 
                 self._log_counter = 0  # Reset the counter for other states
 
             # Put the message in the queue
             self._log_queue.put(message_dict)
+
+    def _log_the_buffer(self):
+        """
+        Adds the log buffer to the queue, so it can be logged to file.
+        """
+        for buffered_message in self._log_buffer:
+            self._log_queue.put(buffered_message)
+        self._log_buffer.clear()
 
     def _create_logged_data_packets(
         self,

@@ -17,13 +17,20 @@ from constants import LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
-def gen_data_packet(kind: Literal["est", "raw", "processed"]) -> IMUDataPacket:
+def gen_data_packet(kind: Literal["est", "raw", "processed"]) -> IMUDataPacket | ProcessedDataPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
         return EstimatedDataPacket(**{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__})
     if kind == "raw":
         return RawDataPacket(**{k: 1.98765432 for k in RawDataPacket.__struct_fields__})
     return ProcessedDataPacket(**{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__})
+
+
+def patched_stop(self):
+    """Monkeypatched stop method which does not log the buffer."""
+    # Make sure the rest of the code is the same as the original method!
+    self._log_queue.put(STOP_SIGNAL)
+    self._log_process.join()
 
 
 class TestLogger:
@@ -83,6 +90,22 @@ class TestLogger:
         logger.stop()
         assert not logger.is_running
         assert logger._log_process.exitcode == 0
+
+    def test_logger_stop_logs_the_buffer(self, logger):
+        logger.start()
+        log_dict = {"state": "S", "extension": "0.0", "timestamp": "4", "invalid_fields": "[]"}
+        logger._log_buffer.appendleft(log_dict)
+        logger.stop()
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            count = 0
+            for idx, row in enumerate(reader):
+                count = idx + 1
+                assert len(row) > 5  # Should have other fields with empty values
+                # Only fetch non-empty values:
+                row_dict = {k: v for k, v in row.items() if v}
+                assert row_dict == log_dict
+            assert count == 1
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
@@ -219,9 +242,11 @@ class TestLogger:
             "EstimatedDataPacket",
         ],
     )
-    def test_log_buffer_exceeded_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
+    def test_log_buffer_exceeded_standby(self, state, extension, imu_data_packets, processed_data_packets, monkeypatch):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
 
+        monkeypatch.setattr(Logger, "stop", patched_stop)
+        logger = Logger(LOG_PATH)
         # Test if the buffer works correctly
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
@@ -242,7 +267,7 @@ class TestLogger:
             for idx, _ in enumerate(reader):
                 count = idx
 
-            # First row is headers
+            # First row index is zero, hence the +1
             assert count + 1 == LOG_CAPACITY_AT_STANDBY
             assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
 
@@ -296,10 +321,10 @@ class TestLogger:
                         prev_state_vals.append(True)
                     if states == "M":
                         next_state_vals.append(True)
-            # First row is headers
             assert len(logger._log_buffer) == 0
             assert len(prev_state_vals) == 10
             assert len(next_state_vals) == 8
+            # First row index is zero, hence the +1
             assert count + 1 == LOG_CAPACITY_AT_STANDBY + 10 + 8
 
     @pytest.mark.parametrize(
@@ -313,7 +338,11 @@ class TestLogger:
             "EstimatedDataPacket",
         ],
     )
-    def test_log_buffer_reset_after_landed(self, logger, state, extension, imu_data_packets, processed_data_packets):
+    def test_log_buffer_reset_after_landed(
+        self, monkeypatch, state, extension, imu_data_packets, processed_data_packets
+    ):
+        monkeypatch.setattr(Logger, "stop", patched_stop)
+        logger = Logger(LOG_PATH)
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
         logger.log(
@@ -323,6 +352,7 @@ class TestLogger:
             processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
         )
         time.sleep(0.1)
+        assert len(logger._log_buffer) == 100
         logger.stop()
 
         # Read the file and check if we have LOG_BUFFER_SIZE packets
@@ -332,7 +362,7 @@ class TestLogger:
             for idx, _ in enumerate(reader):
                 count = idx
 
-            # First row is headers
+            # First row index is zero, hence the +1
             assert count + 1 == LOG_CAPACITY_AT_STANDBY
             assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
 
