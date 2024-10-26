@@ -113,7 +113,6 @@ class IMUDataProcessor:
             self._last_data_point = self._data_points[0]
             # This is us getting the rocket's initial orientation
 
-
             self._current_orientation_quaternions = np.array(
                 [
                     self._last_data_point.estOrientQuaternionW,
@@ -122,16 +121,6 @@ class IMUDataProcessor:
                     self._last_data_point.estOrientQuaternionZ,
                 ]
             )
-            # HARDCODED INITIAL QUATERNIONS FOR winter_2023_Gyro_Comp.csv
-            # only until quaternions/gravity is merged into csv file
-            # self._current_orientation_quaternions = np.array(
-            #     [
-            #         0.999792,
-            #         0,
-            #         0,
-            #         -0.0203967,
-            #     ]
-            # )
 
             # We also get the initial gravity vector to determine which direction is up
             # Important to note that when the compensated acceleration reads -9.8 when on the
@@ -143,9 +132,6 @@ class IMUDataProcessor:
                     self._last_data_point.estGravityVectorZ,
                 ]
             )
-            # TODO: Comment this line out before flight!
-            gravity_orientation = np.array([0.01, 0.01, 9.79]) # Gravity vector for interest launch
-            #gravity_orientation = np.array([9.79, 0.01, 0.01]) # Gravity vector for winter_2023_Gyro_Comp.csv
 
             # Gets the index for the direction (x, y, or z) that is pointing upwards
             self._gravity_upwards_index = np.argmax(np.abs(gravity_orientation))
@@ -311,10 +297,10 @@ class IMUDataProcessor:
         :return: A numpy array of the speed of the rocket at each data point
         """
         # Gets the vertical accelerations from the rotated acceleration vectors. gravity needs to be
-        # subracted from vertical acceleration, Then deadbanded.
+        # subtracted from vertical acceleration, Then deadbanded.
         vertical_accelerations = np.array(
             [
-                deadband((vertical_acceleration - GRAVITY), ACCELERATION_NOISE_THRESHOLD)
+                deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
                 for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
             ]
         )
