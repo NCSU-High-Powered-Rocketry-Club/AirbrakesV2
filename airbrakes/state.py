@@ -184,8 +184,8 @@ class FreeFallState(State):
 
         data = self.context.data_processor
 
-        # If our altitude is 0, we have landed:
-        if data.current_altitude <= GROUND_ALTITUDE:
+        # If our altitude and speed are around 0, we have landed
+        if data.current_altitude <= GROUND_ALTITUDE and abs(data.vertical_velocity) <= LANDED_SPEED:
             self.next_state()
 
     def next_state(self):
