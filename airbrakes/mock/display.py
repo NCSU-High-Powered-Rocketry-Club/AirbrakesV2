@@ -69,7 +69,7 @@ class FlightDisplay:
         self._thread_target.start()
 
     def stop(self) -> None:
-        """Stops the display thread. Similar to start(), this must be called *before* airbrakes.stop() is called.
+        """Stops the display thread. Similar to start(), this must be called *before* airbrakes.stop() is called
         to prevent psutil from raising a NoSuchProcess exception.
         """
         self._cpu_thread.join()
