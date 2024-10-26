@@ -11,7 +11,7 @@ from msgspec.structs import asdict
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
+from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 
 
 class Logger:
@@ -69,6 +69,13 @@ class Logger:
         """
         return self._log_process.is_alive()
 
+    @property
+    def is_log_buffer_full(self) -> bool:
+        """
+        Returns whether the log buffer is full.
+        """
+        return len(self._log_buffer) == LOG_BUFFER_SIZE
+
     def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
@@ -112,7 +119,7 @@ class Logger:
             # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
             # we could have gigabytes of data in the log file just for when the rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
-                if self._log_counter < LOG_CAPACITY_AT_STANDBY:
+                if self._log_counter < IDLE_LOG_CAPACITY:
                     # add the count:
                     self._log_counter += 1
                 else:

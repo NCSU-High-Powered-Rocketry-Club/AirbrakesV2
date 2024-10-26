@@ -70,8 +70,8 @@ class IMU:
         Stops the process separate from the main process for fetching data from the IMU.
         """
         self._running.value = False
-        # Waits for the process to finish before stopping it
-        self._data_fetch_process.join()
+        # Waits for the process for a maximum of 0.1 seconds to finish before stopping it
+        self._data_fetch_process.join(timeout=0.1)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """

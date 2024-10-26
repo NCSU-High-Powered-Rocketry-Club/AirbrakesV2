@@ -7,10 +7,10 @@ from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnSta
 from constants import (
     AIRBRAKES_AFTER_COASTING,
     GROUND_ALTITUDE,
+    LOG_BUFFER_SIZE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     SERVO_DELAY,
-    SHUTDOWN_DELAY,
     ServoExtension,
 )
 
@@ -252,10 +252,14 @@ class TestLandedState:
         landed_state.update()
         assert airbrakes.logger.is_running
         assert airbrakes.imu.is_running
-        # Test that if more than 5 seconds have passed, the airbrakes system is shut down:
-        time.sleep(SHUTDOWN_DELAY + 0.01)
+        assert not airbrakes.logger.is_log_buffer_full
+        # Test that if our log buffer is full, we shut down the system:
+        airbrakes.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        assert airbrakes.logger.is_log_buffer_full
         landed_state.update()
         assert airbrakes.shutdown_requested
         assert not airbrakes.logger.is_running
         assert not airbrakes.imu.is_running
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert not airbrakes.logger.is_log_buffer_full
+        assert len(airbrakes.logger._log_buffer) == 0

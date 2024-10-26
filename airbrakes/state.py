@@ -10,7 +10,6 @@ from constants import (
     GROUND_ALTITUDE,
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
-    SHUTDOWN_DELAY,
     TAKEOFF_HEIGHT,
     TAKEOFF_SPEED,
 )
@@ -189,19 +188,12 @@ class LandedState(State):
     When the rocket has landed.
     """
 
-    __slots__ = ("start_time",)
-
-    def __init__(self, context: "AirbrakesContext"):
-        super().__init__(context)
-        # The start time is used to calculate how long the rocket was in the landed state:
-        self.start_time = time.time()
+    __slots__ = ()
 
     def update(self):
-        """We use this method to stop the airbrakes system after a certain amount of time."""
+        """We use this method to stop the airbrakes system after we have hit our log buffer."""
 
-        time_in_landed_state = time.time() - self.start_time
-
-        if time_in_landed_state > SHUTDOWN_DELAY:
+        if self.context.logger.is_log_buffer_full:
             self.context.stop()
 
     def next_state(self):

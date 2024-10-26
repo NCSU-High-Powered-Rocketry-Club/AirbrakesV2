@@ -73,7 +73,7 @@ STOP_SIGNAL = "STOP"
 
 
 # Don't log more than x packets for StandbyState and LandedState
-LOG_CAPACITY_AT_STANDBY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
+IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
 LOG_BUFFER_SIZE = 5000
 
@@ -107,10 +107,6 @@ DISTANCE_FROM_APOGEE = 100  # meters
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
 GROUND_ALTITUDE = 15.0  # meters
-
-# Landing to shutdown:
-# The time to wait after landing before shutting down:
-SHUTDOWN_DELAY = 5  # seconds
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
