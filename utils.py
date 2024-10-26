@@ -1,6 +1,7 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
 import argparse
+from pathlib import Path
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
@@ -77,12 +78,20 @@ def arg_parser() -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "-p",
+        "--path",
+        help="Define the pathname of flight data to use in mock simulation. Interest Launch data is used by default",
+        type=Path,
+        default="scripts/imu_data/InterestLaunch-9-28.csv",
+    )
+
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:
-    if any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug]) and not args.mock:
+    if any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug, args.path]) and not args.mock:
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, and `--debug` "
+            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, and `--path` "
             "options are only available in simulation mode. Please pass `-m` or `--mock` "
             "to run in simulation mode."
         )
