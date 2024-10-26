@@ -10,12 +10,15 @@ from constants import (
     MAX_SPEED_THRESHOLD,
     MOTOR_BURN_TIME,
     SERVO_DELAY,
+    SHUTDOWN_DELAY,
     ServoExtension,
 )
 
 
 @pytest.fixture
 def state(airbrakes):
+    """Dummy state class to test the base State class"""
+
     class StateImpl(State):
         __slots__ = ()
 
@@ -42,9 +45,9 @@ def motor_burn_state(airbrakes):
 
 @pytest.fixture
 def coast_state(airbrakes):
-    f = CoastState(airbrakes)
-    f.context.state = f
-    return f
+    c = CoastState(airbrakes)
+    c.context.state = c
+    return c
 
 
 @pytest.fixture
@@ -242,3 +245,17 @@ class TestLandedState:
 
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
+
+    def test_update(self, landed_state, airbrakes):
+        # Test that calling update before shutdown delay does not shut down the system:
+        airbrakes.start()
+        landed_state.update()
+        assert airbrakes.logger.is_running
+        assert airbrakes.imu.is_running
+        # Test that if more than 5 seconds have passed, the airbrakes system is shut down:
+        time.sleep(SHUTDOWN_DELAY + 0.01)
+        landed_state.update()
+        assert airbrakes.shutdown_requested
+        assert not airbrakes.logger.is_running
+        assert not airbrakes.imu.is_running
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION

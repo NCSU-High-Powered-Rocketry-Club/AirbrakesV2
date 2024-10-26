@@ -75,13 +75,17 @@ def main(args: argparse.Namespace) -> None:
                     flight_display.update_display()
                 # Stop the sim when the data is exhausted:
                 if not airbrakes.imu._data_fetch_process.is_alive():
-                    flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
                     break
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # This is run if we press Ctrl+C:
         if args.mock:
             flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
+    else:  # This is run if we have landed and the program is not interrupted (see state.py)
+        if args.mock:
+            # Usually the mock sim will stop itself due to data exhaustion, so we will actually
+            # hit the condition above, but if the data isn't exhausted, we will stop it here.
+            flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
     finally:
-        airbrakes.stop()
+        airbrakes.stop()  # Stop the airbrakes system no matter what path we took
 
 
 if __name__ == "__main__":

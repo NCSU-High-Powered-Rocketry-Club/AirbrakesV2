@@ -108,6 +108,10 @@ DISTANCE_FROM_APOGEE = 100  # meters
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
 GROUND_ALTITUDE = 15.0  # meters
 
+# Landing to shutdown:
+# The time to wait after landing before shutting down:
+SHUTDOWN_DELAY = 5  # seconds
+
 # -------------------------------------------------------
 # Apogee Prediction Configuration
 # -------------------------------------------------------
