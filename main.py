@@ -63,24 +63,29 @@ def main(args: argparse.Namespace) -> None:
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
+
+        # Setup our flight display, only for mock sims:
+        # Don't print the flight data if we are in debug mode
+        if args.mock and not args.debug:
+            # This is what prints the flight data to the console in real time, we only do
+            # it when running the sim because printing a lot of things can significantly slow down the program
+            flight_display.start()
+
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             # Update the airbrakes finite state machine
             airbrakes.update()
 
-            if args.mock:
-                if not args.debug:  # Don't print the flight data if we are in debug mode
-                    # This is what prints the flight data to the console in real time, we only do
-                    # it when running the sim because printing a lot of things can significantly slow down the program
-                    flight_display.update_display()
-                # Stop the sim when the data is exhausted:
-                if not airbrakes.imu._data_fetch_process.is_alive():
-                    flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
-                    break
+            # Stop the sim when the data is exhausted:
+            if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
+                flight_display.end_sim_natural.set()
+                break
     except KeyboardInterrupt:
         if args.mock:
-            flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
+            flight_display.end_sim_interrupted.set()
     finally:
+        if args.mock:
+            flight_display.stop()
         airbrakes.stop()
 
 
