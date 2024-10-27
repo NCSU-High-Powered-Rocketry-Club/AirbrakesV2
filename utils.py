@@ -1,6 +1,7 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
 import argparse
+from pathlib import Path
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
@@ -81,7 +82,7 @@ def arg_parser() -> argparse.Namespace:
         "-p",
         "--path",
         help="Define the pathname of flight data to use in mock simulation. Interest Launch data is used by default",
-        type=str,
+        type=Path,
         default="launch_data/interest_launch_9_28.csv",
     )
 
