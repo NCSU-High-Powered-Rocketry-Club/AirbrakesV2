@@ -264,7 +264,7 @@ class IMUDataProcessor:
             gyro_y = data_packet.estAngularRateY
             gyro_z = data_packet.estAngularRateZ
 
-            # If we are missing the data points, then say we didn't rotate
+            # If we are missing the data points, then say accelerations are zero
             if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
                 return rotated_accelerations
 
