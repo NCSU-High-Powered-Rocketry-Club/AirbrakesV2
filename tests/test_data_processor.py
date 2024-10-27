@@ -2,6 +2,7 @@ import math
 import random
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
@@ -40,8 +41,34 @@ class TestIMUDataProcessor:
     """Tests the IMUDataProcessor class"""
 
     packets = [
-        EstimatedDataPacket(1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20),
-        EstimatedDataPacket(2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21),
+        EstimatedDataPacket(
+            1 * 1e9,
+            estLinearAccelX=1,
+            estLinearAccelY=2,
+            estLinearAccelZ=3,
+            estPressureAlt=20,
+            estOrientQuaternionW=0.1,
+            estOrientQuaternionX=0.2,
+            estOrientQuaternionY=0.3,
+            estOrientQuaternionZ=0.4,
+            estGravityVectorX=0,
+            estGravityVectorY=0,
+            estGravityVectorZ=9.8,
+        ),
+        EstimatedDataPacket(
+            2 * 1e9,
+            estLinearAccelX=2,
+            estLinearAccelY=3,
+            estLinearAccelZ=4,
+            estPressureAlt=21,
+            estOrientQuaternionW=0.1,
+            estOrientQuaternionX=0.2,
+            estOrientQuaternionY=0.3,
+            estOrientQuaternionZ=0.4,
+            estGravityVectorX=0,
+            estGravityVectorY=0,
+            estGravityVectorZ=9.8,
+        ),
     ]
 
     def test_slots(self):
@@ -53,114 +80,145 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
+        """Tests whether the IMUDataProcessor is correctly initialized"""
         d = data_processor
+        # Test attributes on init
         assert d._max_altitude == 0.0
-        assert isinstance(d._previous_velocity, np.ndarray)
-        assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
-        assert d._initial_altitude is None
-        assert isinstance(d._current_altitudes, np.ndarray)
         assert isinstance(d._vertical_velocities, np.ndarray)
         assert list(d._vertical_velocities) == [0.0]
         assert d._max_vertical_velocity == 0.0
-        assert d.upside_down is False
-        assert d.current_altitude == 0.0
+        assert d._previous_vertical_velocity == 0.0
+        assert d._initial_altitude is None
+        assert isinstance(d._current_altitudes, np.ndarray)
         assert list(d._current_altitudes) == [0.0]
-        # See the comment in _calculate_velocitys() for why velocity is 0 during init.
+        assert d._last_data_packet is None
+        assert d._current_orientation_quaternions is None
+        assert isinstance(d._rotated_accelerations, list)
+        assert d._rotated_accelerations == [np.array([0.0]), np.array([0.0]), np.array([0.0])]
+        assert d._data_packets == []
+        assert isinstance(d._time_differences, np.ndarray)
+        assert list(d._time_differences) == [0.0]
+        assert d._gravity_orientation is None
+        assert d._gravity_axis_index == 0
+        assert d._gravity_direction is None
+
+        # Test properties on init
+        assert d.max_altitude == 0.0
+        assert d.current_altitude == 0.0
         assert d.vertical_velocity == 0.0
+        assert d.max_vertical_velocity == 0.0
 
     def test_str(self, data_processor):
-        data_str = (
-            "IMUDataProcessor("
-            "max_altitude=0.0, "
-            "current_altitude=0.0, "
-            # See the comment in _calculate_velocitys() for why velocity is 0 during init.
-            "velocity=0.0, "
-            "max_velocity=0.0, "
-            "rotated_accel=[0. 0. 0.],)"
-        )
+        data_str = "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, " "max_velocity=0.0, "
         assert str(data_processor) == data_str
 
-    def test_calculate_velocity(self, data_processor):
-        """Tests whether the velocity is correctly calculated"""
+    def test_calculate_vertical_velocity(self, data_processor):
+        """Tests whether the vertical velocity is correctly calculated"""
         d = data_processor
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
-        assert (d._previous_velocity == np.array([0.0, 0.0, 0.0])).all()
-
-        d._last_data_point = EstimatedDataPacket(
-            2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=21
-        )
+        assert d._previous_vertical_velocity == 0
 
         d.update(
             [
                 EstimatedDataPacket(
-                    3 * 1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=22
+                    2 * 1e9,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=10,
+                    estPressureAlt=21,
+                    estOrientQuaternionW=0.08,
+                    estOrientQuaternionX=0.0,
+                    estOrientQuaternionY=0.0,
+                    estOrientQuaternionZ=-0.5,
+                    estGravityVectorX=0,
+                    estGravityVectorY=0,
+                    estGravityVectorZ=-9.8,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
                 ),
                 EstimatedDataPacket(
-                    4 * 1e9, estLinearAccelX=4, estLinearAccelY=5, estLinearAccelZ=6, estPressureAlt=23
+                    3 * 1e9,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=15,
+                    estPressureAlt=22,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
+                ),
+                EstimatedDataPacket(
+                    4 * 1e9,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=20,
+                    estPressureAlt=23,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
                 ),
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_velocity == pytest.approx((7.0, 9.0, 11.0))
-        assert d.vertical_velocity == math.sqrt(7.0**2 + 9.0**2 + 11.0**2)
-        assert len(d._vertical_velocities) == 2
-        assert d._max_vertical_velocity == d.vertical_velocity
-
-        d.update(
-            [
-                EstimatedDataPacket(
-                    5 * 1e9, estLinearAccelX=5, estLinearAccelY=6, estLinearAccelZ=7, estPressureAlt=24
-                ),
-                EstimatedDataPacket(
-                    6 * 1e9, estLinearAccelX=6, estLinearAccelY=7, estLinearAccelZ=8, estPressureAlt=25
-                ),
-                EstimatedDataPacket(
-                    7 * 1e9, estLinearAccelX=7, estLinearAccelY=8, estLinearAccelZ=9, estPressureAlt=26
-                ),
-            ]
-        )
-        assert d._previous_velocity == pytest.approx((25.0, 30.0, 35.0))
-        assert d.vertical_velocity == pytest.approx(math.sqrt(25.0**2 + 30.0**2 + 35.0**2))
+        assert d._previous_vertical_velocity == pytest.approx(15.38026)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
+        # This tests that we are now falling (the accel is less than 9.8)
         d.update(
             [
                 EstimatedDataPacket(
-                    8 * 1e9, estLinearAccelX=2, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=27
+                    5 * 1e9,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=30,
+                    estPressureAlt=24,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
                 ),
                 EstimatedDataPacket(
-                    9 * 1e9, estLinearAccelX=1, estLinearAccelY=-2, estLinearAccelZ=-1, estPressureAlt=28
+                    6 * 1e9,
+                    estCompensatedAccelX=6,
+                    estCompensatedAccelY=7,
+                    estCompensatedAccelZ=8,
+                    estPressureAlt=25,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
                 ),
                 EstimatedDataPacket(
-                    10 * 1e9, estLinearAccelX=-1, estLinearAccelY=-4, estLinearAccelZ=-5, estPressureAlt=29
-                ),
-                EstimatedDataPacket(
-                    11 * 1e9, estLinearAccelX=-1, estLinearAccelY=-1, estLinearAccelZ=-1, estPressureAlt=30
+                    7 * 1e9,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=5,
+                    estPressureAlt=26,
+                    estAngularRateX=0.01,
+                    estAngularRateY=0.02,
+                    estAngularRateZ=0.03,
                 ),
             ]
         )
-
-        assert d._previous_velocity == pytest.approx((26.0, 25.0, 31.0))
-        assert d.vertical_velocity == pytest.approx(math.sqrt(26.0**2 + 25.0**2 + 31.0**2))
-        assert d._max_vertical_velocity != d.vertical_velocity
-        # Our max velocity is hit with the first est data packet on this update:
-        assert d._max_vertical_velocity == pytest.approx(math.sqrt(27.0**2 + 32.0**2 + 38.0**2))
+        assert d._previous_vertical_velocity == pytest.approx(28.70443)
+        assert d.vertical_velocity == pytest.approx(28.70443)
+        assert len(d._vertical_velocities) == 3
+        # It's falling now so the max velocity should greater than the current velocity
+        assert d._max_vertical_velocity > d.vertical_velocity
 
     def test_first_update_no_data_packets(self, data_processor):
         """Tests whether the update() method works correctly, when no data packets are passed."""
         d = data_processor
         d.update([])
-        assert d._last_data_point is None
-        assert len(d._data_points) == 0
+        assert d._last_data_packet is None
+        assert len(d._data_packets) == 0
         assert len(d._current_altitudes) == 1
         assert len(d._vertical_velocities) == 1
         assert d.vertical_velocity == 0.0, "velocity should be the same as set in __init__"
         assert d.current_altitude == 0.0, "Current altitude should be the same as set in __init__"
         assert d._initial_altitude is None
         assert d._max_altitude == 0.0
-        assert d._last_data_point is None
+        assert d._last_data_packet is None
 
     @pytest.mark.parametrize(
         (
@@ -172,7 +230,18 @@ class TestIMUDataProcessor:
             (
                 [
                     EstimatedDataPacket(
-                        0 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                        0 * 1e9,
+                        estLinearAccelX=1,
+                        estLinearAccelY=2,
+                        estLinearAccelZ=3,
+                        estPressureAlt=20,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     )
                 ],
                 20.0,
@@ -181,10 +250,32 @@ class TestIMUDataProcessor:
             (
                 [
                     EstimatedDataPacket(
-                        1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                        1 * 1e9,
+                        estLinearAccelX=1,
+                        estLinearAccelY=2,
+                        estLinearAccelZ=3,
+                        estPressureAlt=20,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
-                        2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30
+                        2 * 1e9,
+                        estLinearAccelX=2,
+                        estLinearAccelY=3,
+                        estLinearAccelZ=4,
+                        estPressureAlt=30,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     ),
                 ],
                 25.0,
@@ -193,20 +284,53 @@ class TestIMUDataProcessor:
             (
                 [
                     EstimatedDataPacket(
-                        1 * 1e9, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=20
+                        1 * 1e9,
+                        estLinearAccelX=1,
+                        estLinearAccelY=2,
+                        estLinearAccelZ=3,
+                        estPressureAlt=20,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
-                        2 * 1e9, estLinearAccelX=2, estLinearAccelY=3, estLinearAccelZ=4, estPressureAlt=30
+                        2 * 1e9,
+                        estLinearAccelX=2,
+                        estLinearAccelY=3,
+                        estLinearAccelZ=4,
+                        estPressureAlt=30,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
-                        3 * 1e9, estLinearAccelX=3, estLinearAccelY=4, estLinearAccelZ=5, estPressureAlt=40
+                        3 * 1e9,
+                        estLinearAccelX=3,
+                        estLinearAccelY=4,
+                        estLinearAccelZ=5,
+                        estPressureAlt=40,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
                     ),
                 ],
                 30.0,
                 10.0,
             ),
         ],
-        ids=["one_data_point", "two_data_points", "three_data_points"],
+        ids=["one_data_packet", "two_data_packets", "three_data_packets"],
     )
     def test_first_update(self, data_processor, data_packets, init_alt, max_alt):
         """
@@ -216,9 +340,9 @@ class TestIMUDataProcessor:
         d = data_processor
         d.update(data_packets.copy())
         # We should always have a last data point
-        assert d._last_data_point
-        assert d._last_data_point == data_packets[-1]
-        assert len(d._data_points) == len(data_packets)
+        assert d._last_data_packet
+        assert d._last_data_packet == data_packets[-1]
+        assert len(d._data_packets) == len(data_packets)
 
         # the max() is there because if we only process one data packet, we just return early
         # and the variables set at __init__ are used:
@@ -238,48 +362,9 @@ class TestIMUDataProcessor:
         assert len(processed_data) == len(data_packets)
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
-            assert data.velocity == d._vertical_velocities[idx]
-
-    def test_previous_velocity_retained(self, data_processor):
-        """Test that previous velocity is retained correctly between updates."""
-        # Initial data packet
-        x_accel = [1, 2, 3]
-        y_accel = [0, 0, 0]
-        z_accel = [0, 0, 0]
-
-        packets = [
-            EstimatedDataPacket(
-                1.0 * 1e9,
-                estLinearAccelX=x_accel[0],
-                estLinearAccelY=y_accel[0],
-                estLinearAccelZ=z_accel[0],
-                estPressureAlt=0,
-            ),
-            EstimatedDataPacket(
-                2.0 * 1e9,
-                estLinearAccelX=x_accel[1],
-                estLinearAccelY=y_accel[1],
-                estLinearAccelZ=z_accel[1],
-                estPressureAlt=0,
-            ),
-        ]
-        data_processor.update(packets)
-        first_vel = data_processor._previous_velocity
-
-        # Additional data packet
-        new_packets = [
-            EstimatedDataPacket(
-                3.0 * 1e9,
-                estLinearAccelX=x_accel[2],
-                estLinearAccelY=y_accel[2],
-                estLinearAccelZ=z_accel[2],
-                estPressureAlt=0,
-            ),
-        ]
-        data_processor.update(new_packets)
-        second_vel = data_processor._previous_velocity
-
-        assert second_vel[0] > first_vel[0], "Previous velocity should be updated after each data update."
+            assert data.vertical_velocity == d._vertical_velocities[idx]
+            assert data.vertical_acceleration == d._rotated_accelerations[d._gravity_axis_index][idx]
+            assert data.time_since_last_data_packet == d._time_differences[idx]
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
@@ -297,13 +382,37 @@ class TestIMUDataProcessor:
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
-        d._last_data_point = EstimatedDataPacket(
-            0, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=altitude_reading[0]
+        d._last_data_packet = EstimatedDataPacket(
+            0,
+            estLinearAccelX=1,
+            estLinearAccelY=2,
+            estLinearAccelZ=3,
+            estPressureAlt=altitude_reading[0],
+            estOrientQuaternionW=0.1,
+            estOrientQuaternionX=0.2,
+            estOrientQuaternionY=0.3,
+            estOrientQuaternionZ=0.4,
+            estGravityVectorX=0,
+            estGravityVectorY=0,
+            estGravityVectorZ=9.8,
         )
         d._initial_altitude = 20.0
 
         new_packets = [
-            EstimatedDataPacket(idx + 3, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
+            EstimatedDataPacket(
+                idx + 3,
+                estLinearAccelX=1,
+                estLinearAccelY=2,
+                estLinearAccelZ=3,
+                estPressureAlt=alt,
+                estOrientQuaternionW=0.1,
+                estOrientQuaternionX=0.2,
+                estOrientQuaternionY=0.3,
+                estOrientQuaternionZ=0.4,
+                estGravityVectorX=0,
+                estGravityVectorY=0,
+                estGravityVectorZ=9.8,
+            )
             for idx, alt in enumerate(altitude_reading)
         ]
         d.update(new_packets)
@@ -318,7 +427,20 @@ class TestIMUDataProcessor:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [
-                    EstimatedDataPacket(i, estLinearAccelX=1, estLinearAccelY=2, estLinearAccelZ=3, estPressureAlt=alt)
+                    EstimatedDataPacket(
+                        i,
+                        estLinearAccelX=1,
+                        estLinearAccelY=2,
+                        estLinearAccelZ=3,
+                        estPressureAlt=alt,
+                        estOrientQuaternionW=0.1,
+                        estOrientQuaternionX=0.2,
+                        estOrientQuaternionY=0.3,
+                        estOrientQuaternionZ=0.4,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
+                    )
                     for alt in altitudes[i : i + 10]
                 ]
             )
@@ -345,6 +467,9 @@ class TestIMUDataProcessor:
                         estAngularRateY=0.1,
                         estAngularRateZ=2,
                         estPressureAlt=0.0,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=-9.8,
                     ),
                     EstimatedDataPacket(
                         timestamp=1.002 * 1e9,
@@ -369,12 +494,120 @@ class TestIMUDataProcessor:
         ],
     )
     def test_calculate_rotations(self, data_packets, expected_value):
-        d = IMUDataProcessor([])
-        d.update_data(data_packets)
+        d = IMUDataProcessor()
+        d.update(data_packets)
         rotations = d._rotated_accelerations
         assert len(rotations) == 3
-        for rot, expected_val in zip(rotations, expected_value, strict=False):
-            assert rot == pytest.approx(expected_val)
+        # Rotations has 3 arrays in it corresponding to x, y, and z
+        # I just could not understand how to get it to work with zip so I did this instead lol
+        assert rotations[0][-1] == pytest.approx(expected_value[0])
+        assert rotations[1][-1] == pytest.approx(expected_value[1])
+        assert rotations[2][-1] == pytest.approx(expected_value[2])
+
+    def test_initial_orientation_and_gravity(self):
+        """Tests whether the initial orientation and gravity of the rocket is correctly calculated"""
+        d = IMUDataProcessor()
+        d.update(
+            [
+                EstimatedDataPacket(
+                    1 * 1e9,
+                    estLinearAccelX=1,
+                    estLinearAccelY=2,
+                    estLinearAccelZ=3,
+                    estPressureAlt=1,
+                    estOrientQuaternionW=0.1,
+                    estOrientQuaternionX=0.2,
+                    estOrientQuaternionY=0.3,
+                    estOrientQuaternionZ=0.4,
+                    estGravityVectorX=0.1,
+                    estGravityVectorY=-0.6,
+                    estGravityVectorZ=9.8,
+                ),
+            ]
+        )
+
+        npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
+        assert d._gravity_axis_index == 2
+        assert d._gravity_direction == -1
+
+        d = IMUDataProcessor()
+        d.update(
+            [
+                EstimatedDataPacket(
+                    1 * 1e9,
+                    estLinearAccelX=1,
+                    estLinearAccelY=2,
+                    estLinearAccelZ=3,
+                    estPressureAlt=1,
+                    estOrientQuaternionW=0.1,
+                    estOrientQuaternionX=0.2,
+                    estOrientQuaternionY=0.3,
+                    estOrientQuaternionZ=0.4,
+                    estGravityVectorX=-9.6,
+                    estGravityVectorY=-0.6,
+                    estGravityVectorZ=0.5,
+                ),
+            ]
+        )
+
+        assert d._gravity_axis_index == 0
+        assert d._gravity_direction == 1
+
+    @pytest.mark.parametrize(
+        ("q1", "q2", "expected"),
+        [
+            # Random quaternions
+            (np.array([4, 1, 2, 3]), np.array([8, 5, 6, 7]), np.array([-6, 24, 48, 48])),
+            # Test with negative numbers
+            (np.array([2, -1, -2, 1]), np.array([1, 2, -1, 3]), np.array([-1, -2, 1, 12])),
+            # Test with zeros in different positions
+            (np.array([1, 0, 2, 0]), np.array([2, 1, 0, 3]), np.array([2, 7, 4, 1])),
+        ],
+    )
+    def test_multiply_quaternions(self, q1, q2, expected):
+        """
+        Tests whether the quaternion multiplication works correctly for various cases
+        """
+        d = IMUDataProcessor()
+        result = d._multiply_quaternions(q1, q2)
+        npt.assert_array_almost_equal(result, expected)
+
+    @pytest.mark.parametrize(
+        "q",
+        [
+            np.array([2, 3, 4, 5]),  # random quaternion
+            np.array([1, -2, 3, -4]),  # quaternion with mixed signs
+            np.array([0, 1, 0, 1]),  # pure quaternion
+        ],
+    )
+    def test_multiply_by_identity(self, q):
+        """Tests multiplication with identity quaternion [1,0,0,0]"""
+        d = IMUDataProcessor()
+        identity = np.array([1, 0, 0, 0])
+        result = d._multiply_quaternions(q, identity)
+        npt.assert_array_almost_equal(result, q)
+        # Also test right multiplication
+        result = d._multiply_quaternions(identity, q)
+        npt.assert_array_almost_equal(result, q)
+
+    @pytest.mark.parametrize(
+        ("q", "expected"),
+        [
+            # Random quaternion
+            (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.1, -0.2, -0.3, -0.4])),
+            # Pure quaternion (w = 0)
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+            # Quaternion with negative components
+            (np.array([2.0, -1.0, -2.0, 3.0]), np.array([2.0, 1.0, 2.0, -3.0])),
+        ],
+    )
+    def test_calculate_quaternion_conjugate(self, q, expected):
+        """
+        Tests whether the quaternion conjugate is correctly calculated for various cases
+        """
+        d = IMUDataProcessor()
+        result = d._calculate_quaternion_conjugate(q)
+        npt.assert_array_almost_equal(result, expected)
 
 
 """
@@ -444,7 +677,7 @@ it's own file, because it is not in data_processor.
         ],
     )
     def test_apogee_pred(self, data_packets, set_state, expected_values):
-        d = IMUDataProcessor([])
+        d = IMUDataProcessor()
         d.update_data([data_packets[0], data_packets[1]])
         ap_pred = ApogeePredictor(set_state, d, [])
         ap_pred.update([data_packets[0], data_packets[1]])
