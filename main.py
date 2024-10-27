@@ -19,7 +19,6 @@ from constants import (
     LOGS_PATH,
     PORT,
     SERVO_PIN,
-    SIMULATION_LOG_PATH,
     UPSIDE_DOWN,
 )
 from utils import arg_parser
@@ -43,7 +42,7 @@ def main(args: argparse.Namespace) -> None:
         # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
         # to be the real hardware. This is useful for testing the software without having to fly the rocket.
         # MockIMU pretends to be the imu by reading previous flight data from a log file
-        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
+        imu = MockIMU(args.path, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = Servo(SERVO_PIN) if args.real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)

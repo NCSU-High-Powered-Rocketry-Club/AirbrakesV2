@@ -17,10 +17,10 @@ from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = [
-    Path("scripts/imu_data/winter_2023_launch_data.csv"),
-    Path("scripts/imu_data/InterestLaunch-9-28.csv"),
+    Path("launch_data/winter_2023_launch_data.csv"),
+    Path("launch_data/interest_launch_9_28.csv"),
 ]
-LAUNCH_DATA_IDS = ["winter launch", "InterestLaunch-9-28"]
+LAUNCH_DATA_IDS = ["winter launch", "Interest_launch_9_28"]
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 

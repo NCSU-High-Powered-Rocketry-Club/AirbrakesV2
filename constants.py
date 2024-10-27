@@ -4,13 +4,6 @@ from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
-# Main
-# -------------------------------------------------------
-
-# These are used for simulations
-SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
-
-# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 
