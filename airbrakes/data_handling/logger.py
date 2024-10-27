@@ -158,7 +158,7 @@ class Logger:
     def _create_logged_data_packets(
         state: str,
         extension: float,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> deque[LoggedDataPacket]:
@@ -177,7 +177,9 @@ class Logger:
         # data packet
         for data_packet in imu_data_packets:
             logged_data_packet = LoggedDataPacket(
-                state, extension, data_packet.timestamp,
+                state,
+                extension,
+                data_packet.timestamp,
                 invalid_fields=data_packet.invalid_fields,
                 predicted_apogee=f"{predicted_apogee:.8f}",
             )
