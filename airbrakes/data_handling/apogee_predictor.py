@@ -178,7 +178,7 @@ class ApogeePredictor:
 
             for data_packet in data_packets:
                 self._accelerations.append(data_packet.vertical_acceleration)
-                self._time_differences.append(data_packet.time_since_last_data_point)
+                self._time_differences.append(data_packet.time_since_last_data_packet)
                 self._current_altitude = data_packet.current_altitude
                 self._current_velocity = data_packet.vertical_velocity
 
