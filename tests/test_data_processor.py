@@ -153,7 +153,7 @@ class TestIMUDataProcessor:
         d = data_processor
         d.update([])
         assert d._last_data_point is None
-        assert len(d._data_points) == 0
+        assert len(d._data_packets) == 0
         assert len(d._current_altitudes) == 1
         assert len(d._vertical_velocities) == 1
         assert d.vertical_velocity == 0.0, "velocity should be the same as set in __init__"
@@ -218,7 +218,7 @@ class TestIMUDataProcessor:
         # We should always have a last data point
         assert d._last_data_point
         assert d._last_data_point == data_packets[-1]
-        assert len(d._data_points) == len(data_packets)
+        assert len(d._data_packets) == len(data_packets)
 
         # the max() is there because if we only process one data packet, we just return early
         # and the variables set at __init__ are used:
@@ -369,12 +369,59 @@ class TestIMUDataProcessor:
         ],
     )
     def test_calculate_rotations(self, data_packets, expected_value):
-        d = IMUDataProcessor([])
-        d.update_data(data_packets)
+        d = IMUDataProcessor()
+        d.update(data_packets)
         rotations = d._rotated_accelerations
         assert len(rotations) == 3
         for rot, expected_val in zip(rotations, expected_value, strict=False):
             assert rot == pytest.approx(expected_val)
+
+    def test_initial_orientation(self):
+        """Tests whether the initial orientation of the rocket is correctly calculated"""
+        d = IMUDataProcessor()
+        d.update(
+            [
+                EstimatedDataPacket(
+                    1 * 1e9,
+                    estLinearAccelX=1,
+                    estLinearAccelY=2,
+                    estLinearAccelZ=3,
+                    estPressureAlt=1,
+                    estOrientQuaternionW=0.1,
+                    estOrientQuaternionX=0.2,
+                    estOrientQuaternionY=0.3,
+                    estOrientQuaternionZ=0.4,
+                    estGravityVectorX=0.1,
+                    estGravityVectorY=-0.6,
+                    estGravityVectorZ=9.8,
+                ),
+            ]
+        )
+
+        assert d._current_orientation_quaternions == np.array([0.1, 0.2, 0.3, 0.4])
+        assert d._gravity_upwards_index == 2
+
+        d = IMUDataProcessor()
+        d.update(
+            [
+                EstimatedDataPacket(
+                    1 * 1e9,
+                    estLinearAccelX=1,
+                    estLinearAccelY=2,
+                    estLinearAccelZ=3,
+                    estPressureAlt=1,
+                    estOrientQuaternionW=0.1,
+                    estOrientQuaternionX=0.2,
+                    estOrientQuaternionY=0.3,
+                    estOrientQuaternionZ=0.4,
+                    estGravityVectorX=-9.6,
+                    estGravityVectorY=-0.6,
+                    estGravityVectorZ=0.5,
+                ),
+            ]
+        )
+
+        assert d._gravity_upwards_index == 0
 
 
 """
@@ -444,7 +491,7 @@ it's own file, because it is not in data_processor.
         ],
     )
     def test_apogee_pred(self, data_packets, set_state, expected_values):
-        d = IMUDataProcessor([])
+        d = IMUDataProcessor()
         d.update_data([data_packets[0], data_packets[1]])
         ap_pred = ApogeePredictor(set_state, d, [])
         ap_pred.update([data_packets[0], data_packets[1]])
