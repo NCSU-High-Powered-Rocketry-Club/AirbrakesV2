@@ -67,6 +67,8 @@ class AirbrakesContext:
         Handles shutting down the airbrakes. This will cause the main loop to break. It retracts the airbrakes, stops
         the IMU, and stops the logger.
         """
+        if self.shutdown_requested:
+            return
         self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
