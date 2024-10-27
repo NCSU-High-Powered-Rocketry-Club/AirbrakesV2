@@ -120,7 +120,7 @@ class TestAirbrakesContext:
 
         assert mocked_airbrakes.imu._data_queue.qsize() > 0
         assert mocked_airbrakes.state.name == "StandByState"
-        assert mocked_airbrakes.data_processor._last_data_point is None
+        assert mocked_airbrakes.data_processor._last_data_packet is None
 
         monkeypatch.setattr(data_processor.__class__, "update", update)
         monkeypatch.setattr(mocked_airbrakes.state.__class__, "update", state)

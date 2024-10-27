@@ -24,7 +24,7 @@ class ApogeePredictor:
 
     :param: state: airbrakes state class
     :param: data_processor: IMUDataProcessor class
-    :param: data_points: A sequence of EstimatedDataPacket objects to process.
+    :param: data_packets: A sequence of EstimatedDataPacket objects to process.
     """
 
     __slots__ = (
