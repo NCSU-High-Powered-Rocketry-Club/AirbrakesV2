@@ -70,7 +70,12 @@ class IMU:
         Stops the process separate from the main process for fetching data from the IMU.
         """
         self._running.value = False
-        # Waits for the process to finish before stopping it
+        # Fetch all packets which are not yet fetched and discard them, so main() does not get
+        # stuck waiting for the process to finish. A more technical explanation:
+        # .put() is blocking and if the queue is full, it keeps waiting for the queue to be empty, and
+        # thus the process never .joins().
+        self.get_imu_data_packets()
+        self._data_queue.close()
         self._data_fetch_process.join()
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:

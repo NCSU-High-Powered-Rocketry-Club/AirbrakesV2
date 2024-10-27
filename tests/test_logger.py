@@ -13,17 +13,24 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
+from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
-def gen_data_packet(kind: Literal["est", "raw", "processed"]) -> IMUDataPacket:
+def gen_data_packet(kind: Literal["est", "raw", "processed"]) -> IMUDataPacket | ProcessedDataPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
         return EstimatedDataPacket(**{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__})
     if kind == "raw":
         return RawDataPacket(**{k: 1.98765432 for k in RawDataPacket.__struct_fields__})
     return ProcessedDataPacket(**{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__})
+
+
+def patched_stop(self):
+    """Monkeypatched stop method which does not log the buffer."""
+    # Make sure the rest of the code is the same as the original method!
+    self._log_queue.put(STOP_SIGNAL)
+    self._log_process.join()
 
 
 class TestLogger:
@@ -76,6 +83,16 @@ class TestLogger:
             keys = reader.fieldnames
             assert tuple(keys) == LoggedDataPacket.__struct_fields__
 
+    def test_log_buffer_is_full_property(self, logger):
+        """Tests whether the property is_log_buffer_full works correctly."""
+        assert not logger.is_log_buffer_full
+        logger._log_buffer.extend([1] * (LOG_BUFFER_SIZE - 1))
+        assert not logger.is_log_buffer_full
+        logger._log_buffer.clear()
+        assert len(logger._log_buffer) == 0
+        logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        assert logger.is_log_buffer_full
+
     def test_logging_loop_start_stop(self, logger):
         logger.start()
         assert logger.is_running
@@ -83,6 +100,22 @@ class TestLogger:
         logger.stop()
         assert not logger.is_running
         assert logger._log_process.exitcode == 0
+
+    def test_logger_stop_logs_the_buffer(self, logger):
+        logger.start()
+        log_dict = {"state": "S", "extension": "0.0", "timestamp": "4", "invalid_fields": "[]"}
+        logger._log_buffer.appendleft(log_dict)
+        logger.stop()
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            count = 0
+            for idx, row in enumerate(reader):
+                count = idx + 1
+                assert len(row) > 5  # Should have other fields with empty values
+                # Only fetch non-empty values:
+                row_dict = {k: v for k, v in row.items() if v}
+                assert row_dict == log_dict
+            assert count == 1
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
@@ -219,17 +252,21 @@ class TestLogger:
             "EstimatedDataPacket",
         ],
     )
-    def test_log_buffer_exceeded_standby(self, logger, state, extension, imu_data_packets, processed_data_packets):
+    def test_log_capacity_exceeded_standby(
+        self, state, extension, imu_data_packets, processed_data_packets, monkeypatch
+    ):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
 
+        monkeypatch.setattr(Logger, "stop", patched_stop)
+        logger = Logger(LOG_PATH)
         # Test if the buffer works correctly
         logger.start()
         # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(
             state,
             extension,
-            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
-            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
+            processed_data_packets * (IDLE_LOG_CAPACITY + 10),
         )
 
         time.sleep(0.1)  # Give the process time to log to file
@@ -242,9 +279,9 @@ class TestLogger:
             for idx, _ in enumerate(reader):
                 count = idx
 
-            # First row is headers
-            assert count + 1 == LOG_CAPACITY_AT_STANDBY
-            assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
+            # First row index is zero, hence the +1
+            assert count + 1 == IDLE_LOG_CAPACITY
+            assert logger._log_counter == IDLE_LOG_CAPACITY
 
     @pytest.mark.parametrize(
         ("states", "extension", "imu_data_packets", "processed_data_packets"),
@@ -265,14 +302,17 @@ class TestLogger:
         imu_data_packets: list[IMUDataPacket],
         processed_data_packets: list[ProcessedDataPacket],
     ):
-        """Tests if the buffer is logged after Standby state and the counter is reset."""
+        """Tests if the buffer is logged when switching from standby to motor burn and that the counter is reset."""
+        # Note: We are not monkeypatching the stop method here, because we want to test if the entire
+        # buffer is logged when we switch from Standby to MotorBurn. Monkeypatching stop() has no
+        # effect on this test.
         logger.start()
-        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
+        # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after hitting that.
         logger.log(
             states[0],
             extension,
-            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
-            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 10),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
+            processed_data_packets * (IDLE_LOG_CAPACITY + 10),
         )
         time.sleep(0.1)  # Give the process time to log to file
         assert len(logger._log_buffer) == 10  # Since we did +10 above, we should have 10 left in the buffer
@@ -280,7 +320,9 @@ class TestLogger:
         # Let's test that switching to MotorBurn will log those packets:
 
         logger.log(states[1], extension, imu_data_packets * 8, processed_data_packets * 8)
+        assert len(logger._log_buffer) == 0
         logger.stop()
+        assert len(logger._log_buffer) == 0
 
         # Read the file and check if we have LOG_BUFFER_SIZE + 10
         with logger.log_path.open() as f:
@@ -290,17 +332,17 @@ class TestLogger:
             next_state_vals = []  # get the next state values
             for idx, val in enumerate(reader):
                 count = idx
-                if idx + 1 > LOG_CAPACITY_AT_STANDBY:
+                if idx + 1 > IDLE_LOG_CAPACITY:
                     states = val["state"]
                     if states == "S":
                         prev_state_vals.append(True)
                     if states == "M":
                         next_state_vals.append(True)
-            # First row is headers
             assert len(logger._log_buffer) == 0
             assert len(prev_state_vals) == 10
             assert len(next_state_vals) == 8
-            assert count + 1 == LOG_CAPACITY_AT_STANDBY + 10 + 8
+            # First row index is zero, hence the +1
+            assert count + 1 == IDLE_LOG_CAPACITY + 10 + 8
 
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets"),
@@ -314,27 +356,34 @@ class TestLogger:
         ],
     )
     def test_log_buffer_reset_after_landed(self, logger, state, extension, imu_data_packets, processed_data_packets):
+        """Tests if we've hit the idle log capacity when are in LandedState and that it is logged."""
+
+        # Note: We are not monkeypatching the stop method here, because we want to test if the entire
+        # buffer is logged when we are in LandedState and when stop() is called.
         logger.start()
-        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_CAPACITY_AT_STANDBY.
+        # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after adding on to that.
         logger.log(
             state,
             extension,
-            imu_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
-            processed_data_packets * (LOG_CAPACITY_AT_STANDBY + 100),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 100),
+            processed_data_packets * (IDLE_LOG_CAPACITY + 100),
         )
         time.sleep(0.1)
-        logger.stop()
+        assert len(logger._log_buffer) == 100
+        logger.stop()  # Will log the buffer
+        assert len(logger._log_buffer) == 0
 
-        # Read the file and check if we have LOG_BUFFER_SIZE packets
+        # Read the file and check if we have exactly IDLE_LOG_CAPACITY packets
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             count = 0
             for idx, _ in enumerate(reader):
                 count = idx
 
-            # First row is headers
-            assert count + 1 == LOG_CAPACITY_AT_STANDBY
-            assert logger._log_counter == LOG_CAPACITY_AT_STANDBY
+            # First row index is zero, hence the +1
+            assert count + 1 == IDLE_LOG_CAPACITY + 100
+            # We don't reset the log counter after stop() is called:
+            assert logger._log_counter == IDLE_LOG_CAPACITY
 
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "expected_output"),
