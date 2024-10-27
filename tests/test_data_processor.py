@@ -116,7 +116,7 @@ class TestIMUDataProcessor:
                     estOrientQuaternionW=0.08,
                     estOrientQuaternionX=0.0,
                     estOrientQuaternionY=0.0,
-                    estOrientQuaternionZ=-.5,
+                    estOrientQuaternionZ=-0.5,
                     estGravityVectorX=0,
                     estGravityVectorY=0,
                     estGravityVectorZ=-9.8,
