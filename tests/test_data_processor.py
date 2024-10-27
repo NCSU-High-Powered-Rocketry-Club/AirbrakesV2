@@ -80,7 +80,9 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
+        """Tests whether the IMUDataProcessor is correctly initialized"""
         d = data_processor
+        # Test attributes on init
         assert d._max_altitude == 0.0
         assert isinstance(d._vertical_velocities, np.ndarray)
         assert list(d._vertical_velocities) == [0.0]
@@ -88,7 +90,6 @@ class TestIMUDataProcessor:
         assert d._previous_vertical_velocity == 0.0
         assert d._initial_altitude is None
         assert isinstance(d._current_altitudes, np.ndarray)
-        assert d.current_altitude == 0.0
         assert list(d._current_altitudes) == [0.0]
         assert d._last_data_packet is None
         assert d._current_orientation_quaternions is None
@@ -100,15 +101,19 @@ class TestIMUDataProcessor:
         assert d._gravity_orientation is None
         assert d._gravity_axis_index == 0
         assert d._gravity_direction is None
-        # See the comment in _calculate_velocitys() for why velocity is 0 during init.
+
+        # Test properties on init
+        assert d.max_altitude == 0.0
+        assert d.current_altitude == 0.0
         assert d.vertical_velocity == 0.0
+        assert d.max_vertical_velocity == 0.0
 
     def test_str(self, data_processor):
         data_str = "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, " "max_velocity=0.0, "
         assert str(data_processor) == data_str
 
     def test_calculate_velocity(self, data_processor):
-        """Tests whether the velocity is correctly calculated"""
+        """Tests whether the vertical velocity is correctly calculated"""
         d = data_processor
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
@@ -199,7 +204,7 @@ class TestIMUDataProcessor:
         assert d.vertical_velocity == pytest.approx(28.70443)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
-        assert d._max_vertical_velocity != d.vertical_velocity
+        assert d._max_vertical_velocity > d.vertical_velocity
 
     def test_first_update_no_data_packets(self, data_processor):
         """Tests whether the update() method works correctly, when no data packets are passed."""
@@ -358,6 +363,8 @@ class TestIMUDataProcessor:
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
             assert data.vertical_velocity == d._vertical_velocities[idx]
+            assert data.vertical_acceleration == d._rotated_accelerations[d._gravity_axis_index][idx]
+            assert data.time_since_last_data_packet == d._time_differences[idx]
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
@@ -497,8 +504,8 @@ class TestIMUDataProcessor:
         assert rotations[1][-1] == pytest.approx(expected_value[1])
         assert rotations[2][-1] == pytest.approx(expected_value[2])
 
-    def test_initial_orientation(self):
-        """Tests whether the initial orientation of the rocket is correctly calculated"""
+    def test_initial_orientation_and_gravity(self):
+        """Tests whether the initial orientation and gravity of the rocket is correctly calculated"""
         d = IMUDataProcessor()
         d.update(
             [
@@ -545,6 +552,53 @@ class TestIMUDataProcessor:
 
         assert d._gravity_axis_index == 0
         assert d._gravity_direction == 1
+
+    @pytest.mark.parametrize("q1, q2, expected", [
+        # Random quaternions
+        (np.array([4, 1, 2, 3]), np.array([8, 5, 6, 7]), np.array([-6, 24, 48, 48])),
+        # Test with negative numbers
+        (np.array([2, -1, -2, 1]), np.array([1, 2, -1, 3]), np.array([-1, -2, 1, 12])),
+        # Test with zeros in different positions
+        (np.array([1, 0, 2, 0]), np.array([2, 1, 0, 3]), np.array([2, 7, 4, 1])),
+    ])
+    def test_multiply_quaternions(self, q1, q2, expected):
+        """
+        Tests whether the quaternion multiplication works correctly for various cases
+        """
+        d = IMUDataProcessor()
+        result = d._multiply_quaternions(q1, q2)
+        npt.assert_array_almost_equal(result, expected)
+
+    @pytest.mark.parametrize("q", [
+        np.array([2, 3, 4, 5]),  # random quaternion
+        np.array([1, -2, 3, -4]),  # quaternion with mixed signs
+        np.array([0, 1, 0, 1]),  # pure quaternion
+    ])
+    def test_multiply_by_identity(self, q):
+        """Tests multiplication with identity quaternion [1,0,0,0]"""
+        d = IMUDataProcessor()
+        identity = np.array([1, 0, 0, 0])
+        result = d._multiply_quaternions(q, identity)
+        npt.assert_array_almost_equal(result, q)
+        # Also test right multiplication
+        result = d._multiply_quaternions(identity, q)
+        npt.assert_array_almost_equal(result, q)
+
+    @pytest.mark.parametrize("q, expected", [
+        # Random quaternion
+        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.1, -0.2, -0.3, -0.4])),
+        # Pure quaternion (w = 0)
+        (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+        # Quaternion with negative components
+        (np.array([2.0, -1.0, -2.0, 3.0]), np.array([2.0, 1.0, 2.0, -3.0])),
+    ])
+    def test_calculate_quaternion_conjugate(self, q, expected):
+        """
+        Tests whether the quaternion conjugate is correctly calculated for various cases
+        """
+        d = IMUDataProcessor()
+        result = d._calculate_quaternion_conjugate(q)
+        npt.assert_array_almost_equal(result, expected)
 
 
 """
