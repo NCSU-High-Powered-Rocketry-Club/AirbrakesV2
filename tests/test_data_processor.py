@@ -441,7 +441,7 @@ class TestIMUDataProcessor:
                         estGravityVectorY=0,
                         estGravityVectorZ=9.8,
                     )
-                    for alt in altitudes[i: i + 10]
+                    for alt in altitudes[i : i + 10]
                 ]
             )
         assert d.max_altitude + d._initial_altitude == pytest.approx(max(altitudes))
@@ -553,14 +553,17 @@ class TestIMUDataProcessor:
         assert d._gravity_axis_index == 0
         assert d._gravity_direction == 1
 
-    @pytest.mark.parametrize("q1, q2, expected", [
-        # Random quaternions
-        (np.array([4, 1, 2, 3]), np.array([8, 5, 6, 7]), np.array([-6, 24, 48, 48])),
-        # Test with negative numbers
-        (np.array([2, -1, -2, 1]), np.array([1, 2, -1, 3]), np.array([-1, -2, 1, 12])),
-        # Test with zeros in different positions
-        (np.array([1, 0, 2, 0]), np.array([2, 1, 0, 3]), np.array([2, 7, 4, 1])),
-    ])
+    @pytest.mark.parametrize(
+        ("q1", "q2", "expected"),
+        [
+            # Random quaternions
+            (np.array([4, 1, 2, 3]), np.array([8, 5, 6, 7]), np.array([-6, 24, 48, 48])),
+            # Test with negative numbers
+            (np.array([2, -1, -2, 1]), np.array([1, 2, -1, 3]), np.array([-1, -2, 1, 12])),
+            # Test with zeros in different positions
+            (np.array([1, 0, 2, 0]), np.array([2, 1, 0, 3]), np.array([2, 7, 4, 1])),
+        ],
+    )
     def test_multiply_quaternions(self, q1, q2, expected):
         """
         Tests whether the quaternion multiplication works correctly for various cases
@@ -569,11 +572,14 @@ class TestIMUDataProcessor:
         result = d._multiply_quaternions(q1, q2)
         npt.assert_array_almost_equal(result, expected)
 
-    @pytest.mark.parametrize("q", [
-        np.array([2, 3, 4, 5]),  # random quaternion
-        np.array([1, -2, 3, -4]),  # quaternion with mixed signs
-        np.array([0, 1, 0, 1]),  # pure quaternion
-    ])
+    @pytest.mark.parametrize(
+        "q",
+        [
+            np.array([2, 3, 4, 5]),  # random quaternion
+            np.array([1, -2, 3, -4]),  # quaternion with mixed signs
+            np.array([0, 1, 0, 1]),  # pure quaternion
+        ],
+    )
     def test_multiply_by_identity(self, q):
         """Tests multiplication with identity quaternion [1,0,0,0]"""
         d = IMUDataProcessor()
@@ -584,14 +590,17 @@ class TestIMUDataProcessor:
         result = d._multiply_quaternions(identity, q)
         npt.assert_array_almost_equal(result, q)
 
-    @pytest.mark.parametrize("q, expected", [
-        # Random quaternion
-        (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.1, -0.2, -0.3, -0.4])),
-        # Pure quaternion (w = 0)
-        (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
-        # Quaternion with negative components
-        (np.array([2.0, -1.0, -2.0, 3.0]), np.array([2.0, 1.0, 2.0, -3.0])),
-    ])
+    @pytest.mark.parametrize(
+        ("q", "expected"),
+        [
+            # Random quaternion
+            (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.1, -0.2, -0.3, -0.4])),
+            # Pure quaternion (w = 0)
+            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
+            # Quaternion with negative components
+            (np.array([2.0, -1.0, -2.0, 3.0]), np.array([2.0, 1.0, 2.0, -3.0])),
+        ],
+    )
     def test_calculate_quaternion_conjugate(self, q, expected):
         """
         Tests whether the quaternion conjugate is correctly calculated for various cases
