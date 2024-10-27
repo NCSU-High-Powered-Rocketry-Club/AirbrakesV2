@@ -34,7 +34,6 @@ class IMUDataProcessor:
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
-        "upside_down",
     )
 
     def __init__(self):
@@ -108,9 +107,6 @@ class IMUDataProcessor:
         # If we don't have a last data point, we can't calculate the time differences needed
         # for velocity calculation:
         if self._last_data_packet is None:
-            # Setting last data point as the first element, makes it so that the time diff
-            # automatically becomes 0, and the velocity becomes 0
-            self._last_data_packet = self._data_packets[0]
             self._set_up()
 
         self._time_differences = self._calculate_time_differences()
@@ -189,6 +185,10 @@ class IMUDataProcessor:
         altitude, the initial orientation of the rocket, and the initial gravity vector. This should
         only be called once, when the first data packets are passed in.
         """
+        # Setting last data point as the first element, makes it so that the time diff
+        # automatically becomes 0, and the velocity becomes 0
+        self._last_data_packet = self._data_packets[0]
+
         # This is us getting the rocket's initial altitude from the mean of the first data packets
         self._initial_altitude = np.mean(
             np.array([data_packet.estPressureAlt for data_packet in self._data_packets], dtype=np.float64)
@@ -265,7 +265,7 @@ class IMUDataProcessor:
             gyro_z = data_packet.estAngularRateZ
 
             # If we are missing the data points, then say we didn't rotate
-            if not any([x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
+            if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
                 return rotated_accelerations
 
             # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
