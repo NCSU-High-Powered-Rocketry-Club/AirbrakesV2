@@ -2,6 +2,7 @@ import math
 import random
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
@@ -398,7 +399,7 @@ class TestIMUDataProcessor:
             ]
         )
 
-        assert d._current_orientation_quaternions == np.array([0.1, 0.2, 0.3, 0.4])
+        npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
         assert d._gravity_upwards_index == 2
 
         d = IMUDataProcessor()
