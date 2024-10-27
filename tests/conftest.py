@@ -17,7 +17,7 @@ from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = [
-    Path("scripts/imu_data/winter_2023_constGravQuat.csv"),
+    Path("scripts/imu_data/purple-nurple-2023-12-16_with_grav_quat.csv"),
     Path("scripts/imu_data/InterestLaunch-9-28-constantGravity.csv"),
 ]
 LAUNCH_DATA_IDS = ["winter-launch", "InterestLaunch-9-28"]
