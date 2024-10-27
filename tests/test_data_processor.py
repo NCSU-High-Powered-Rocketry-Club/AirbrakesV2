@@ -82,15 +82,24 @@ class TestIMUDataProcessor:
     def test_init(self, data_processor):
         d = data_processor
         assert d._max_altitude == 0.0
-        assert isinstance(d._previous_vertical_velocity, np.float64)
-        assert d._previous_vertical_velocity == 0.0
-        assert d._initial_altitude is None
-        assert isinstance(d._current_altitudes, np.ndarray)
         assert isinstance(d._vertical_velocities, np.ndarray)
         assert list(d._vertical_velocities) == [0.0]
         assert d._max_vertical_velocity == 0.0
+        assert d._previous_vertical_velocity == 0.0
+        assert d._initial_altitude is None
+        assert isinstance(d._current_altitudes, np.ndarray)
         assert d.current_altitude == 0.0
         assert list(d._current_altitudes) == [0.0]
+        assert d._last_data_packet is None
+        assert d._current_orientation_quaternions is None
+        assert isinstance(d._rotated_accelerations, list)
+        assert d._rotated_accelerations == [np.array([0.0]), np.array([0.0]), np.array([0.0])]
+        assert d._data_packets == []
+        assert isinstance(d._time_differences, np.ndarray)
+        assert list(d._time_differences) == [0.0]
+        assert d._gravity_orientation is None
+        assert d._gravity_axis_index == 0
+        assert d._gravity_direction is None
         # See the comment in _calculate_velocitys() for why velocity is 0 during init.
         assert d.vertical_velocity == 0.0
 
@@ -425,7 +434,7 @@ class TestIMUDataProcessor:
                         estGravityVectorY=0,
                         estGravityVectorZ=9.8,
                     )
-                    for alt in altitudes[i : i + 10]
+                    for alt in altitudes[i: i + 10]
                 ]
             )
         assert d.max_altitude + d._initial_altitude == pytest.approx(max(altitudes))
@@ -511,7 +520,7 @@ class TestIMUDataProcessor:
         )
 
         npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
-        assert d._gravity_upwards_index == 2
+        assert d._gravity_axis_index == 2
         assert d._gravity_direction == -1
 
         d = IMUDataProcessor()
@@ -534,7 +543,7 @@ class TestIMUDataProcessor:
             ]
         )
 
-        assert d._gravity_upwards_index == 0
+        assert d._gravity_axis_index == 0
         assert d._gravity_direction == 1
 
 

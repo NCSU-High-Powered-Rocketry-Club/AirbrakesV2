@@ -22,10 +22,9 @@ class IMUDataProcessor:
         "_current_altitudes",
         "_current_orientation_quaternions",
         "_data_packets",
-        "_first_data_packet",
         "_gravity_direction",
         "_gravity_orientation",
-        "_gravity_upwards_index",
+        "_gravity_axis_index",
         "_initial_altitude",
         "_last_data_packet",
         "_max_altitude",
@@ -51,13 +50,12 @@ class IMUDataProcessor:
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_packet: EstimatedDataPacket | None = None
-        self._first_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: npt.NDArray[np.float64] | None = None
         self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._gravity_orientation: npt.NDArray[np.float64] | None = None
-        self._gravity_upwards_index: int | None = 0
+        self._gravity_axis_index: int | None = 0
         self._gravity_direction: np.float64 | None = None
 
     def __str__(self) -> str:
@@ -144,7 +142,7 @@ class IMUDataProcessor:
             ) in zip(
                 self._current_altitudes,
                 self._vertical_velocities,
-                self._rotated_accelerations[self._gravity_upwards_index],
+                self._rotated_accelerations[self._gravity_axis_index],
                 self._time_differences,
                 strict=True,
             )
@@ -179,7 +177,7 @@ class IMUDataProcessor:
         w, x, y, z = quaternion
         return np.array([w, -x, -y, -z])
 
-    def _set_up(self) -> None:
+    def _first_update(self) -> None:
         """
         Sets up the initial values for the data processor. This includes setting the initial
         altitude, the initial orientation of the rocket, and the initial gravity vector. This should
@@ -216,7 +214,7 @@ class IMUDataProcessor:
         )
 
         # Gets the index for the direction (x, y, or z) that is pointing upwards
-        self._gravity_upwards_index = np.argmax(np.abs(gravity_orientation))
+        self._gravity_axis_index = np.argmax(np.abs(gravity_orientation))
 
         # on the physical IMU there is a depiction of the orientation. If a negative direction is
         # pointing to the sky, by convention, we define the gravity direction as negative. Otherwise, if
@@ -224,7 +222,7 @@ class IMUDataProcessor:
         # For purposes of standardizing the sign of accelerations that come out of calculate_rotated_accelerations,
         # we define acceleration from motor burn as positive, acceleration due to drag as negative, and
         # acceleration on the ground to be +9.8.
-        self._gravity_direction = 1 if gravity_orientation[self._gravity_upwards_index] < 0 else -1
+        self._gravity_direction = 1 if gravity_orientation[self._gravity_axis_index] < 0 else -1
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
@@ -312,7 +310,7 @@ class IMUDataProcessor:
         vertical_accelerations = np.array(
             [
                 deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
-                for vertical_acceleration in self._rotated_accelerations[self._gravity_upwards_index]
+                for vertical_acceleration in self._rotated_accelerations[self._gravity_axis_index]
             ]
         )
 
