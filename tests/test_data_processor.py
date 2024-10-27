@@ -112,7 +112,7 @@ class TestIMUDataProcessor:
         data_str = "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, " "max_velocity=0.0, "
         assert str(data_processor) == data_str
 
-    def test_calculate_velocity(self, data_processor):
+    def test_calculate_vertical_velocity(self, data_processor):
         """Tests whether the vertical velocity is correctly calculated"""
         d = data_processor
         assert d.vertical_velocity == 0.0
