@@ -18,7 +18,7 @@ from constants import FREQUENCY, PORT, SERVO_PIN
 LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = [
     Path("launch_data/purple-nurple-2023-12-16_with_grav_quat.csv"),
-    Path("launch_data/InterestLaunch-9-28-constantGravity.csv"),
+    Path("launch_data/interest_launch_9_28_const_grav.csv"),
 ]
 LAUNCH_DATA_IDS = ["winter-launch", "interest-launch-9-28"]
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
