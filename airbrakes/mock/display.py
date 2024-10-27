@@ -1,6 +1,7 @@
 """File to handle the display of real-time flight data in the terminal."""
 
 import multiprocessing
+import threading
 import time
 from typing import TYPE_CHECKING, Literal
 
@@ -29,7 +30,16 @@ class FlightDisplay:
     NATURAL_END = "natural"
     INTERRUPTED_END = "interrupted"
 
-    __slots__ = ("airbrakes", "processes", "start_time")
+    __slots__ = (
+        "_cpu_thread",
+        "_cpu_usages",
+        "_processes",
+        "_thread_target",
+        "airbrakes",
+        "end_sim_interrupted",
+        "end_sim_natural",
+        "start_time",
+    )
 
     def __init__(self, airbrakes: "AirbrakesContext", start_time: float) -> None:
         """
@@ -40,9 +50,60 @@ class FlightDisplay:
         self.airbrakes = airbrakes
         self.start_time = start_time
         # Prepare the processes for monitoring in the simulation:
-        self.processes = self.prepare_process_dict()
+        self._processes: dict[str, psutil.Process] | None = None
+        self._cpu_usages: dict[str, float] | None = None
+        # daemon threads are killed when the main thread exits.
+        self._thread_target = threading.Thread(target=self.update_display, daemon=True, name="Real Time Display Thread")
+        self._cpu_thread = threading.Thread(target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread")
+        # Create events to signal the end of the simulation.
+        self.end_sim_natural = threading.Event()
+        self.end_sim_interrupted = threading.Event()
 
-    def update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
+    def start(self) -> None:
+        """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring in
+        the simulation. This should only be done *after* airbrakes.start() is called, because we need the process IDs.
+        """
+        self._processes = self.prepare_process_dict()
+        self._cpu_usages = {name: 0.0 for name in self._processes}
+        self._cpu_thread.start()
+        self._thread_target.start()
+
+    def stop(self) -> None:
+        """Stops the display thread. Similar to start(), this must be called *before* airbrakes.stop() is called
+        to prevent psutil from raising a NoSuchProcess exception.
+        """
+        self._cpu_thread.join()
+        self._thread_target.join()
+
+    def update_cpu_usage(self, interval: float = 0.3) -> None:
+        """Update CPU usage for each monitored process every `interval` seconds. This is run in
+        another thread because polling for CPU usage is a blocking operation."""
+        cpu_count = psutil.cpu_count()
+        while not self.end_sim_natural.is_set() and not self.end_sim_interrupted.is_set():
+            for name, process in self._processes.items():
+                # interval=None is not recommended and can be inaccurate.
+                # We normalize the CPU usage by the number of CPUs to get average cpu usage, otherwise
+                # it's usually > 100%.
+                try:
+                    self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
+                except psutil.NoSuchProcess:
+                    # The process has ended, so we set the CPU usage to 0.
+                    self._cpu_usages[name] = 0.0
+
+    def update_display(self) -> None:
+        """
+        Updates the display with real-time data. Runs in another thread. Automatically stops when the simulation ends.
+        """
+        while True:
+            if self.end_sim_natural.is_set():
+                self._update_display(self.NATURAL_END)
+                break
+            if self.end_sim_interrupted.is_set():
+                self._update_display(self.INTERRUPTED_END)
+                break
+            self._update_display(False)
+
+    def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
         """
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
@@ -70,10 +131,7 @@ class FlightDisplay:
         ]
 
         # Add CPU usage data with color coding
-        for name, process in self.processes.items():
-            # interval=None can result in inaccurate readings (it might show > 100%), but we don't
-            # need high accuracy
-            cpu_usage = process.cpu_percent(interval=None)
+        for name, cpu_usage in self._cpu_usages.items():
             if cpu_usage < 50:
                 cpu_color = G
             elif cpu_usage < 75:

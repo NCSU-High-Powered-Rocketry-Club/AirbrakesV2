@@ -20,7 +20,6 @@ from constants import (
     LOGS_PATH,
     PORT,
     SERVO_PIN,
-    SIMULATION_LOG_PATH,
 )
 from utils import arg_parser
 
@@ -43,7 +42,7 @@ def main(args: argparse.Namespace) -> None:
         # If we are running a simulation, then we will replace our hardware objects with mock objects that just pretend
         # to be the real hardware. This is useful for testing the software without having to fly the rocket.
         # MockIMU pretends to be the imu by reading previous flight data from a log file
-        imu = MockIMU(SIMULATION_LOG_PATH, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
+        imu = MockIMU(args.path, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = Servo(SERVO_PIN) if args.real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
@@ -64,24 +63,29 @@ def main(args: argparse.Namespace) -> None:
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
+
+        # Setup our flight display, only for mock sims:
+        # Don't print the flight data if we are in debug mode
+        if args.mock and not args.debug:
+            # This is what prints the flight data to the console in real time, we only do
+            # it when running the sim because printing a lot of things can significantly slow down the program
+            flight_display.start()
+
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
             # Update the airbrakes finite state machine
             airbrakes.update()
 
-            if args.mock:
-                if not args.debug:  # Don't print the flight data if we are in debug mode
-                    # This is what prints the flight data to the console in real time, we only do
-                    # it when running the sim because printing a lot of things can significantly slow down the program
-                    flight_display.update_display()
-                # Stop the sim when the data is exhausted:
-                if not airbrakes.imu._data_fetch_process.is_alive():
-                    flight_display.update_display(end_sim=FlightDisplay.NATURAL_END)
-                    break
+            # Stop the sim when the data is exhausted:
+            if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
+                flight_display.end_sim_natural.set()
+                break
     except KeyboardInterrupt:
         if args.mock:
-            flight_display.update_display(end_sim=FlightDisplay.INTERRUPTED_END)
+            flight_display.end_sim_interrupted.set()
     finally:
+        if args.mock:
+            flight_display.stop()
         airbrakes.stop()
 
 

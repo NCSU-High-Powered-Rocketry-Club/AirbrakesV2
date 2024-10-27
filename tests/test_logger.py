@@ -377,6 +377,12 @@ class TestLogger:
     ):
         """Tests whether the _create_logged_data_packets method creates the correct LoggedDataPacket objects."""
 
+        # set some invalid fields to test if they stay as a list
+        invalid_field = ["something"]
+        for imu_packet in imu_data_packets:
+            imu_packet.invalid_fields = invalid_field
+        expected_output[0]["invalid_fields"] = invalid_field  # we need to change the output also
+
         logged_data_packets = logger._create_logged_data_packets(
             state, extension, imu_data_packets, processed_data_packets
         )
@@ -388,15 +394,14 @@ class TestLogger:
             converted = {k: v for k, v in msgspec.structs.asdict(logged_data_packet).items() if v}
             is_raw_data_packet = converted.get("scaledAccelX", False)
             # certain fields are not converted to strings (intentionally. See logged_data_packet.py)
-            assert isinstance(converted["invalid_fields"], float)
+            assert isinstance(converted["invalid_fields"], list)
             assert isinstance(converted["timestamp"], float)
             if not is_raw_data_packet:
-                assert isinstance(converted["velocity"], float)
-                assert isinstance(converted["current_altitude"], float)
+                assert isinstance(converted["velocity"], str)
+                assert isinstance(converted["current_altitude"], str)
             assert isinstance(converted["extension"], float)
 
             # convert the above fields for easy assertion check at the end:
-            converted["invalid_fields"] = str(converted["invalid_fields"])
             converted["timestamp"] = str(converted["timestamp"])
             if not is_raw_data_packet:
                 converted["velocity"] = str(converted["velocity"])
