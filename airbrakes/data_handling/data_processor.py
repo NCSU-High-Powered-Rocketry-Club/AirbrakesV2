@@ -107,7 +107,7 @@ class IMUDataProcessor:
         # If we don't have a last data point, we can't calculate the time differences needed
         # for velocity calculation:
         if self._last_data_packet is None:
-            self._set_up()
+            self._first_update()
 
         self._time_differences = self._calculate_time_differences()
 
