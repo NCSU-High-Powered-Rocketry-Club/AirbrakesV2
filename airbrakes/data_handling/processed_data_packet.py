@@ -13,4 +13,4 @@ class ProcessedDataPacket(msgspec.Struct):
     current_altitude: np.float64  # This is the zeroed-out altitude of the rocket.
     vertical_velocity: np.float64  # This is the velocity of the rocket, in the upward axis (whichever way is up)
     vertical_acceleration: np.float64  # This is the rotated compensated acceleration of the vertical axis
-    time_since_last_data_point: np.float64  # dt is the time difference between the current and previous data point
+    time_since_last_data_packet: np.float64  # dt is the time difference between the current and previous data point
