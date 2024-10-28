@@ -1,8 +1,8 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
+import contextlib
 import csv
 import multiprocessing
-import signal
 import time
 from pathlib import Path
 
@@ -59,18 +59,15 @@ class MockIMU(IMU):
 
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
-    def _fetch_data_loop(
-        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
-    ) -> None:
+    def _read_file(self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_path: the name of the log file to read data from located in logs/
+        :param log_file_path: the name of the log file to read data from located in scripts/imu_data/
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period, or run at full
             speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
-        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignore the KeyboardInterrupt signal
 
         start_index = 0
         if start_after_log_buffer:
@@ -142,3 +139,12 @@ class MockIMU(IMU):
                     # Simulate polling interval
                     end_time = time.time()
                     time.sleep(max(0.0, 0.001 - (end_time - start_time)))
+
+    def _fetch_data_loop(
+        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
+    ) -> None:
+        """A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file."""
+        # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the function
+        # in a context manager to suppress the KeyboardInterrupt
+        with contextlib.suppress(KeyboardInterrupt):
+            self._read_file(log_file_path, real_time_simulation, start_after_log_buffer)
