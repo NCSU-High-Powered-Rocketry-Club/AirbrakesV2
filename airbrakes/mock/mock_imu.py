@@ -20,7 +20,7 @@ class MockIMU(IMU):
 
     __slots__ = ("_log_file_path",)
 
-    def __init__(self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False):
+    def __init__(self, log_file_path: Path | bool, real_time_simulation: bool, start_after_log_buffer: bool = False):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log file.
         :param log_file_path: The path of the log file to read data from.
@@ -31,7 +31,7 @@ class MockIMU(IMU):
         """
         self._log_file_path = log_file_path
         # Check if the launch data file exists:
-        if not log_file_path.exists():
+        if not log_file_path:
             # Just use the first file in the `launch_data` directory:
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
 
