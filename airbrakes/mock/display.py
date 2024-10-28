@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 G = Fore.GREEN
 R = Fore.RED
 Y = Fore.YELLOW
+C = Fore.CYAN
 RESET = Style.RESET_ALL
 
 
@@ -33,6 +34,7 @@ class FlightDisplay:
     __slots__ = (
         "_cpu_thread",
         "_cpu_usages",
+        "_launch_file",
         "_processes",
         "_thread_target",
         "airbrakes",
@@ -58,6 +60,12 @@ class FlightDisplay:
         # Create events to signal the end of the simulation.
         self.end_sim_natural = threading.Event()
         self.end_sim_interrupted = threading.Event()
+
+        try:
+            # Try to get the launch file name (only available in MockIMU)
+            self._launch_file = self.airbrakes.imu._log_file_path.name
+        except AttributeError:  # If it failed, that means we are running a real flight!
+            self._launch_file = "N/A"
 
     def start(self) -> None:
         """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring in
@@ -115,6 +123,8 @@ class FlightDisplay:
 
         # Prepare output
         output = [
+            f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
+            f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             f"Time since sim start:      {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
             f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
