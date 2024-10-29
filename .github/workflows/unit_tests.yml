@@ -30,7 +30,9 @@ jobs:
           python -W ignore -m pip install --upgrade pip
           python -W ignore -m pip install .
           python -W ignore -m pip install .[dev]          
+          pip install coverage  # Install Coverage.py
 
-      - name: Test with pytest
+      - name: Run tests with coverage
         run: |
-            pytest -v tests/
+          coverage run -m pytest -v tests/   # Run tests with coverage tracking
+          coverage report                    # Display coverage report in console
