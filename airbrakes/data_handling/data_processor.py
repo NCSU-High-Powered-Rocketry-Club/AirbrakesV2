@@ -264,7 +264,7 @@ class IMUDataProcessor:
             # Adds the accelerations to our list of rotated accelerations
             rotated_accelerations[0][idx] = accel_rotated_quat[1]
             rotated_accelerations[1][idx] = accel_rotated_quat[2]
-            rotated_accelerations[2][idx] = accel_rotated_quat[3]
+            rotated_accelerations[2][idx] = accel_rotated_quat[3] *-1
 
         return rotated_accelerations
 
