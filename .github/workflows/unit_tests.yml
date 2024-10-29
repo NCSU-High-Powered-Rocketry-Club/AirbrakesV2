@@ -34,5 +34,5 @@
 
         - name: Run tests with coverage
           run: |
-            coverage run --omit "tests/*,tests/test_integration.py" -m pytest -v tests/  # Exclude tests/ and specific file
+            coverage run --omit "tests/*" -m pytest -v tests/  # Exclude tests/ from report
             coverage report                                     # Display coverage report in console
