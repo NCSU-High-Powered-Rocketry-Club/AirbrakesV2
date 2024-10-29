@@ -61,7 +61,6 @@ class LoggedDataPacket(msgspec.Struct):
     current_altitude: str | None = None
     vertical_velocity: str | None = None
     vertical_acceleration: str | None = None
-    # Not logging maxes because they are easily found
 
     # field which is not in any of the data packets:
     predicted_apogee: str | None = None

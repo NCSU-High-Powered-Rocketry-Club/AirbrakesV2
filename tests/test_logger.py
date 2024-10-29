@@ -224,7 +224,7 @@ class TestLogger:
             headers = reader.fieldnames
             assert tuple(headers) == LoggedDataPacket.__struct_fields__
 
-            processed_data_packet_fields = list(ProcessedDataPacket.__struct_fields__)
+            processed_data_packet_fields = {"current_altitude", "vertical_velocity", "vertical_acceleration"}
             # The row with the data packet:
             row: dict[str, str]
             for idx, row in enumerate(reader):
@@ -236,6 +236,7 @@ class TestLogger:
                 assert row == {
                     "state": state,
                     "extension": str(extension),
+                    "predicted_apogee": f"{predicted_apogee:.8f}",
                     **{attr: str(getattr(imu_data_packets[idx], attr, "")) for attr in RawDataPacket.__struct_fields__},
                     **{
                         attr: str(getattr(imu_data_packets[idx], attr, ""))
@@ -458,14 +459,14 @@ class TestLogger:
             assert isinstance(converted["invalid_fields"], list)
             assert isinstance(converted["timestamp"], float)
             if not is_raw_data_packet:
-                assert isinstance(converted["velocity"], str)
+                assert isinstance(converted["vertical_velocity"], str)
                 assert isinstance(converted["current_altitude"], str)
             assert isinstance(converted["extension"], float)
 
             # convert the above fields for easy assertion check at the end:
             converted["timestamp"] = str(converted["timestamp"])
             if not is_raw_data_packet:
-                converted["velocity"] = str(converted["velocity"])
+                converted["velocity"] = str(converted["vertical_velocity"])
                 converted["current_altitude"] = str(converted["current_altitude"])
             converted["extension"] = str(converted["extension"])
 

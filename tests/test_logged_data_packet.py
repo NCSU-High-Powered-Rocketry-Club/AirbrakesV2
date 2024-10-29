@@ -36,9 +36,9 @@ class TestLoggedDataPacket:
         est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
         raw_dp_fields = set(RawDataPacket.__struct_fields__)
         log_dp_fields = set(LoggedDataPacket.__struct_fields__)
-        proc_dp_fields = set(ProcessedDataPacket.__struct_fields__)
+        proc_dp_fields = {"current_altitude", "vertical_velocity", "vertical_acceleration"}
 
-        extra_fields = {"state", "extension", "timestamp"}
+        extra_fields = {"state", "extension", "timestamp", "predicted_apogee"}
 
         assert est_dp_fields.issubset(log_dp_fields), f"Missing fields: {est_dp_fields - log_dp_fields}"
         assert raw_dp_fields.issubset(log_dp_fields), f"Missing fields: {raw_dp_fields - log_dp_fields}"
@@ -88,12 +88,15 @@ class TestLoggedDataPacket:
         packet = logged_data_packet
         proc_data_packet = ProcessedDataPacket(
             current_altitude=1.0923457654,
-            velocity=1.6768972567,
+            vertical_velocity=1.6768972567,
+            vertical_acceleration=0.00000000,
+            time_since_last_data_packet=0.0,
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
         assert packet.current_altitude == "1.09234577"
         assert packet.vertical_velocity == "1.67689726"
+        assert packet.vertical_acceleration == "0.00000000"
         assert packet.timestamp == 0.0
         assert packet.state == "test"
         assert packet.extension == 0.0
