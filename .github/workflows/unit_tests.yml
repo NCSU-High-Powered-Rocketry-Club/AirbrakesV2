@@ -30,9 +30,8 @@
             python -W ignore -m pip install --upgrade pip
             python -W ignore -m pip install .
             python -W ignore -m pip install .[dev]          
-            pip install coverage  # Install Coverage.py
+            pip install pytest-cov
 
         - name: Run tests with coverage
           run: |
-            coverage run --omit "tests/*" -m pytest -v tests/  # Exclude tests/ from report
-            coverage report                                     # Display coverage report in console
+            pytest --cov=airbrakes --cov-report=term --cov-config=.coveragerc -v tests/
