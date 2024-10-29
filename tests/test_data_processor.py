@@ -1,5 +1,7 @@
+import csv
 import math
 import random
+from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
@@ -30,6 +32,40 @@ def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, no
         altitude_value = base_altitude + sine_value + noise
         altitudes.append(altitude_value)
     return altitudes
+
+
+def load_data_packets(csv_path, n_packets):
+    """Reads csv log files containing data packets to use for testing. Will read the first
+    n_packets amount of estimated data packets.
+
+    :param csv_path: The relative path of the csv file to read
+    :param n_packest: Amount of estimated data packets to retrieve
+    :return: list containing n_packets amount of estimated data packets
+    """
+    data_packets = []
+    filepath = Path(csv_path)
+    with filepath.open(newline="") as csvfile:
+        reader = csv.DictReader(csvfile)
+
+        row: tuple[int, dict[str, str]]
+        for row in enumerate(reader):
+            if len(data_packets) >= n_packets:
+                break
+
+            rowdata = row[-1]
+            est_data_packet = None
+            fields_dict = {}
+
+            scaled_accel_x = rowdata.get("scaledAccelX")
+            if scaled_accel_x:
+                continue
+            for key in EstimatedDataPacket.__struct_fields__:
+                val = rowdata.get(key, None)
+                if val:
+                    fields_dict[key] = float(val)
+            est_data_packet = EstimatedDataPacket(**fields_dict)
+            data_packets.append(est_data_packet)
+    return data_packets
 
 
 @pytest.fixture
@@ -93,14 +129,11 @@ class TestIMUDataProcessor:
         assert list(d._current_altitudes) == [0.0]
         assert d._last_data_packet is None
         assert d._current_orientation_quaternions is None
-        assert isinstance(d._rotated_accelerations, list)
-        assert d._rotated_accelerations == [np.array([0.0]), np.array([0.0]), np.array([0.0])]
+        assert isinstance(d._rotated_accelerations, np.ndarray)
+        assert d._rotated_accelerations == np.array([0.0])
         assert d._data_packets == []
         assert isinstance(d._time_differences, np.ndarray)
         assert list(d._time_differences) == [0.0]
-        assert d._gravity_orientation is None
-        assert d._gravity_axis_index == 0
-        assert d._gravity_direction is None
 
         # Test properties on init
         assert d.max_altitude == 0.0
@@ -121,47 +154,48 @@ class TestIMUDataProcessor:
 
         d.update(
             [
+                # reference data is interest launch (very rounded data)
                 EstimatedDataPacket(
                     2 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=10,
-                    estPressureAlt=21,
-                    estOrientQuaternionW=0.08,
-                    estOrientQuaternionX=0.0,
-                    estOrientQuaternionY=0.0,
-                    estOrientQuaternionZ=-0.5,
+                    estCompensatedAccelZ=70,
+                    estPressureAlt=106,
+                    estOrientQuaternionW=0.35,
+                    estOrientQuaternionX=-0.036,
+                    estOrientQuaternionY=-0.039,
+                    estOrientQuaternionZ=0.936,
                     estGravityVectorX=0,
                     estGravityVectorY=0,
-                    estGravityVectorZ=-9.8,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estGravityVectorZ=9.8,
+                    estAngularRateX=-0.17,
+                    estAngularRateY=0.18,
+                    estAngularRateZ=3.7,
                 ),
                 EstimatedDataPacket(
-                    3 * 1e9,
+                    2.1 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=15,
-                    estPressureAlt=22,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estCompensatedAccelZ=-30,
+                    estPressureAlt=110,
+                    estAngularRateX=-0.8,
+                    estAngularRateY=0.05,
+                    estAngularRateZ=3.5,
                 ),
                 EstimatedDataPacket(
-                    4 * 1e9,
+                    2.2 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=20,
-                    estPressureAlt=23,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estCompensatedAccelZ=-10,
+                    estPressureAlt=123,
+                    estAngularRateX=-0.08,
+                    estAngularRateY=-0.075,
+                    estAngularRateZ=3.4,
                 ),
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(15.38026)
+        assert d._previous_vertical_velocity == pytest.approx(1.972033881)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -200,8 +234,8 @@ class TestIMUDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(28.70443)
-        assert d.vertical_velocity == pytest.approx(28.70443)
+        assert d._previous_vertical_velocity == pytest.approx(-138.049496)
+        assert d.vertical_velocity == pytest.approx(-138.049496)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
@@ -363,7 +397,7 @@ class TestIMUDataProcessor:
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
             assert data.vertical_velocity == d._vertical_velocities[idx]
-            assert data.vertical_acceleration == d._rotated_accelerations[d._gravity_axis_index][idx]
+            assert data.vertical_acceleration == d._rotated_accelerations[idx]
             assert data.time_since_last_data_packet == d._time_differences[idx]
 
     @pytest.mark.parametrize(
@@ -447,65 +481,51 @@ class TestIMUDataProcessor:
         assert d.max_altitude + d._initial_altitude == pytest.approx(max(altitudes))
 
     @pytest.mark.parametrize(
-        ("data_packets", "expected_value"),
+        ("csv_path", "expected_value", "n_packets"),
         [
             (
-                [
-                    EstimatedDataPacket(
-                        timestamp=1 * 1e9,
-                        estOrientQuaternionW=0.91,
-                        estOrientQuaternionX=0.1,
-                        estOrientQuaternionY=0.22,
-                        estOrientQuaternionZ=-0.34,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=1,
-                        estCompensatedAccelZ=1,
-                        estLinearAccelX=0.0,
-                        estLinearAccelY=0.0,
-                        estLinearAccelZ=0.0,
-                        estAngularRateX=0.02,
-                        estAngularRateY=0.1,
-                        estAngularRateZ=2,
-                        estPressureAlt=0.0,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=-9.8,
-                    ),
-                    EstimatedDataPacket(
-                        timestamp=1.002 * 1e9,
-                        estOrientQuaternionW=0.92,
-                        estOrientQuaternionX=0.1,
-                        estOrientQuaternionY=0.22,
-                        estOrientQuaternionZ=-0.34,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=1,
-                        estCompensatedAccelZ=1,
-                        estLinearAccelX=0.0,
-                        estLinearAccelY=0.0,
-                        estLinearAccelZ=0.0,
-                        estAngularRateX=0.02,
-                        estAngularRateY=0.1,
-                        estAngularRateZ=2,
-                        estPressureAlt=0.0,
-                    ),
-                ],
-                (1.6658015, -0.14997540, 0.450125221),
-            )
+                "tests/imu_data/xminus.csv",
+                9.85116094,
+                2,
+            ),
+            (
+                "tests/imu_data/yminus.csv",
+                9.83891064,
+                2,
+            ),
+            (
+                "tests/imu_data/zminus.csv",
+                9.82264007,
+                2,
+            ),
+            (
+                "tests/imu_data/xplus.csv",
+                9.75015129,
+                2,
+            ),
+            (
+                "tests/imu_data/yplus.csv",
+                9.61564675,
+                2,
+            ),
+            (
+                "tests/imu_data/zplus.csv",
+                9.81399729,
+                2,
+            ),
         ],
     )
-    def test_calculate_rotations(self, data_packets, expected_value):
+    def test_calculate_rotations(self, csv_path, expected_value, n_packets):
+        data_packets = load_data_packets(csv_path, n_packets)
         d = IMUDataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
-        assert len(rotations) == 3
-        # Rotations has 3 arrays in it corresponding to x, y, and z
-        # I just could not understand how to get it to work with zip so I did this instead lol
-        assert rotations[0][-1] == pytest.approx(expected_value[0])
-        assert rotations[1][-1] == pytest.approx(expected_value[1])
-        assert rotations[2][-1] == pytest.approx(expected_value[2])
+        # assert len(rotations) == 3
 
-    def test_initial_orientation_and_gravity(self):
-        """Tests whether the initial orientation and gravity of the rocket is correctly calculated"""
+        assert rotations[-1] == pytest.approx(expected_value)
+
+    def test_initial_orientation(self):
+        """Tests whether the initial orientation of the rocket is correctly calculated"""
         d = IMUDataProcessor()
         d.update(
             [
@@ -527,8 +547,6 @@ class TestIMUDataProcessor:
         )
 
         npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
-        assert d._gravity_axis_index == 2
-        assert d._gravity_direction == -1
 
         d = IMUDataProcessor()
         d.update(
@@ -549,9 +567,6 @@ class TestIMUDataProcessor:
                 ),
             ]
         )
-
-        assert d._gravity_axis_index == 0
-        assert d._gravity_direction == 1
 
     @pytest.mark.parametrize(
         ("q1", "q2", "expected"),
@@ -608,88 +623,3 @@ class TestIMUDataProcessor:
         d = IMUDataProcessor()
         result = d._calculate_quaternion_conjugate(q)
         npt.assert_array_almost_equal(result, expected)
-
-
-"""
-This is unit tests for apogee prediction. Does not work currently, will most likely be moved to
-it's own file, because it is not in data_processor.
-
-    @pytest.mark.parametrize(
-        ("data_packets", "set_state", "expected_values"),
-        [
-            (
-                [
-                    EstimatedDataPacket(
-                        timestamp=1 * 1e9,
-                        estOrientQuaternionW=0.91,
-                        estOrientQuaternionX=0.1,
-                        estOrientQuaternionY=0.22,
-                        estOrientQuaternionZ=-0.34,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=1,
-                        estCompensatedAccelZ=1,
-                        estLinearAccelX=0.0,
-                        estLinearAccelY=0.0,
-                        estLinearAccelZ=0.0,
-                        estAngularRateX=0.02,
-                        estAngularRateY=0.1,
-                        estAngularRateZ=2,
-                        estPressureAlt=0.0,
-                    ),
-                    EstimatedDataPacket(
-                        timestamp=1.002 * 1e9,
-                        estOrientQuaternionW=0.92,
-                        estOrientQuaternionX=0.1,
-                        estOrientQuaternionY=0.22,
-                        estOrientQuaternionZ=-0.34,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=1,
-                        estCompensatedAccelZ=1,
-                        estLinearAccelX=0.0,
-                        estLinearAccelY=0.0,
-                        estLinearAccelZ=0.0,
-                        estAngularRateX=0.02,
-                        estAngularRateY=0.1,
-                        estAngularRateZ=2,
-                        estPressureAlt=0.0,
-                    ),
-                    EstimatedDataPacket(
-                        timestamp=1.002 * 1e9,
-                        estOrientQuaternionW=0.92,
-                        estOrientQuaternionX=0.1,
-                        estOrientQuaternionY=0.22,
-                        estOrientQuaternionZ=-0.34,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=1,
-                        estCompensatedAccelZ=1,
-                        estLinearAccelX=0.0,
-                        estLinearAccelY=0.0,
-                        estLinearAccelZ=0.0,
-                        estAngularRateX=0.02,
-                        estAngularRateY=0.1,
-                        estAngularRateZ=2,
-                        estPressureAlt=0.0,
-                    ),
-                ],
-                CoastState,
-                [-0.02049625, [0.45012522, 0.03], -0.00010248071212592195],
-            )
-        ],
-    )
-    def test_apogee_pred(self, data_packets, set_state, expected_values):
-        d = IMUDataProcessor()
-        d.update_data([data_packets[0], data_packets[1]])
-        ap_pred = ApogeePredictor(set_state, d, [])
-        ap_pred.update([data_packets[0], data_packets[1]])
-        d.update_data([data_packets[2]])
-        ap_pred.update([data_packets[2]])
-
-        velocity = ap_pred._velocity
-        assert velocity == pytest.approx(expected_values[0])
-
-        params = ap_pred._params
-        assert params == pytest.approx(expected_values[1])
-
-        apogee_pred = ap_pred._apogee_prediction
-        assert apogee_pred == pytest.approx(expected_values[2])
-"""
