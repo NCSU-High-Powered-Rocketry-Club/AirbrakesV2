@@ -82,7 +82,7 @@ class TestAirbrakesContext:
         assert not airbrakes.logger.is_running
         assert airbrakes.shutdown_requested
 
-    def test_airbrakes_update(self, monkeypatch, random_data_mock_imu, servo, logger, data_processor):
+    def test_airbrakes_update(self, monkeypatch, random_data_mock_imu, servo, logger, data_processor, apogee_predictor):
         """Tests whether the Airbrakes update method works correctly by calling the relevant methods.
 
         1. Mock fetching of data packets
@@ -113,7 +113,7 @@ class TestAirbrakesContext:
             asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
 
-        mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor)
+        mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
         mocked_airbrakes.start()
 
         time.sleep(0.01)  # Sleep a bit so that the IMU queue is being filled

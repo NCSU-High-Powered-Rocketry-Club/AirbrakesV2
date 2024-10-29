@@ -30,7 +30,7 @@ class TestIntegration:
 
     # general method of testing this is capturing the state of the system at different points in time and verifying
     # that the state is as expected at each point in time.
-    def test_update(self, logger, mock_imu, data_processor, servo):
+    def test_update(self, logger, mock_imu, data_processor, servo, apogee_predictor):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
@@ -43,7 +43,7 @@ class TestIntegration:
         # }
         states_dict: dict[str, StateInformation] = {}
 
-        ab = AirbrakesContext(servo, mock_imu, logger, data_processor)
+        ab = AirbrakesContext(servo, mock_imu, logger, data_processor, apogee_predictor)
 
         # Start testing!
         snap_start_timer = time.time()

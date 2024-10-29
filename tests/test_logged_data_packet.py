@@ -93,7 +93,7 @@ class TestLoggedDataPacket:
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
         assert packet.current_altitude == "1.09234577"
-        assert packet.velocity == "1.67689726"
+        assert packet.vertical_velocity == "1.67689726"
         assert packet.timestamp == 0.0
         assert packet.state == "test"
         assert packet.extension == 0.0
