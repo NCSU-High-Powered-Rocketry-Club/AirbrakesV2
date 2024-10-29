@@ -77,7 +77,7 @@ class ApogeePredictor:
 
     def stop(self) -> None:
         """
-        Stops the logging process. It will finish logging the current message and then stop.
+        Stops the prediction process.
         """
         # Waits for the process to finish before stopping it
         self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
@@ -162,7 +162,6 @@ class ApogeePredictor:
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # These arrays belong to the prediction process, and are used to store the data packets that are passed in
         last_run_length = 0
-
         # Keep checking for new data packets until the stop signal is received:
         while True:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
@@ -181,7 +180,7 @@ class ApogeePredictor:
 
             # TODO: play around with this value
             # Run apogee prediction every 100 data points:
-            if len(self._accelerations) - last_run_length >= 100:
+            if len(self._accelerations) - last_run_length >= 2:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 params = self._curve_fit()
                 self._apogee_prediction_value.value = self._get_apogee(params)
