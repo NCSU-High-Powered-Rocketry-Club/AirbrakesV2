@@ -1,0 +1,7 @@
+[run]
+omit =
+    test/test_integration.py  # Exclude the specific test file
+
+[report]
+omit =
+    test/*                    # Exclude all files in the test directory from the report

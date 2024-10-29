@@ -25,8 +25,8 @@ class StateInformation(msgspec.Struct):
     max_altitude: float | None = None
 
 
-# This test won't count towards coverage, as it kinda covers everything and we don't break it down into smaller tests/
-class TestIntegration:  # pragma: no cover
+# These test won't count towards coverage, as it kinda covers everything and we don't break it down into smaller tests/
+class TestIntegration:
     """Tests the full integration of the airbrakes system by using previous launch data."""
 
     # general method of testing this is capturing the state of the system at different points in time and verifying
