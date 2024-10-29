@@ -22,9 +22,6 @@ class IMUDataProcessor:
         "_current_altitudes",
         "_current_orientation_quaternions",
         "_data_packets",
-        "_gravity_axis_index",
-        "_gravity_direction",
-        "_gravity_orientation",
         "_initial_altitude",
         "_last_data_packet",
         "_max_altitude",
@@ -54,9 +51,7 @@ class IMUDataProcessor:
         self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
-        self._gravity_orientation: npt.NDArray[np.float64] | None = None
-        self._gravity_axis_index: int | None = 0
-        self._gravity_direction: np.float64 | None = None
+
 
     def __str__(self) -> str:
         return (
@@ -142,7 +137,7 @@ class IMUDataProcessor:
             ) in zip(
                 self._current_altitudes,
                 self._vertical_velocities,
-                self._rotated_accelerations[self._gravity_axis_index],
+                self._rotated_accelerations[2],
                 self._time_differences,
                 strict=True,
             )
@@ -202,27 +197,6 @@ class IMUDataProcessor:
             ]
         )
 
-        # We also get the initial gravity vector to determine which direction is up
-        # Important to note that when the compensated acceleration reads -9.8 when on the
-        # ground, the upwards direction of the gravity vector will be positive, not negative
-        gravity_orientation = np.array(
-            [
-                self._last_data_packet.estGravityVectorX,
-                self._last_data_packet.estGravityVectorY,
-                self._last_data_packet.estGravityVectorZ,
-            ]
-        )
-
-        # Gets the index for the direction (x, y, or z) that is pointing upwards
-        self._gravity_axis_index = np.argmax(np.abs(gravity_orientation))
-
-        # on the physical IMU there is a depiction of the orientation. If a negative direction is
-        # pointing to the sky, by convention, we define the gravity direction as negative. Otherwise, if
-        # a positive direction is pointing to the sky, we define the gravity direction as positive.
-        # For purposes of standardizing the sign of accelerations that come out of calculate_rotated_accelerations,
-        # we define acceleration from motor burn as positive, acceleration due to drag as negative, and
-        # acceleration on the ground to be +9.8.
-        self._gravity_direction = 1 if gravity_orientation[self._gravity_axis_index] < 0 else -1
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
@@ -288,9 +262,6 @@ class IMUDataProcessor:
                 self._multiply_quaternions(self._current_orientation_quaternions, accel_quat),
                 self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
             )
-            # multiplies by gravity direction, so direction of acceleration will be the same sign regarless
-            # of IMU orientation.
-            accel_rotated_quat *= self._gravity_direction
 
             # Adds the accelerations to our list of rotated accelerations
             rotated_accelerations[0][idx] = accel_rotated_quat[1]
@@ -310,7 +281,7 @@ class IMUDataProcessor:
         vertical_accelerations = np.array(
             [
                 deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
-                for vertical_acceleration in self._rotated_accelerations[self._gravity_axis_index]
+                for vertical_acceleration in self._rotated_accelerations[2]
             ]
         )
 
