@@ -34,5 +34,6 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          coverage run -m pytest -v tests/   # Run tests with coverage tracking
-          coverage report                    # Display coverage report in console
+          coverage run --rcfile=.coveragerc -m pytest
+          coverage report
+#          coverage html  uncomment this for a nice looking report
