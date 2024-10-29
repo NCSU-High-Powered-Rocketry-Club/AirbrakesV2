@@ -33,11 +33,8 @@ class ApogeePredictor:
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
-        "_params",
         "_prediction_process",
         "_prediction_queue",
-        "_running",
-        "_start_time",
         "_time_differences",
     )
 
@@ -70,7 +67,7 @@ class ApogeePredictor:
         """
         Returns whether the prediction process is running.
         """
-        return self._running.value
+        return self._prediction_process.is_alive()
 
     def start(self) -> None:
         """
