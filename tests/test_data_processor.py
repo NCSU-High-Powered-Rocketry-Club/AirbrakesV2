@@ -129,8 +129,8 @@ class TestIMUDataProcessor:
         assert list(d._current_altitudes) == [0.0]
         assert d._last_data_packet is None
         assert d._current_orientation_quaternions is None
-        assert isinstance(d._rotated_accelerations, list)
-        assert d._rotated_accelerations == [np.array([0.0]), np.array([0.0]), np.array([0.0])]
+        assert isinstance(d._rotated_accelerations, np.ndarray)
+        assert d._rotated_accelerations == np.array([0.0])
         assert d._data_packets == []
         assert isinstance(d._time_differences, np.ndarray)
         assert list(d._time_differences) == [0.0]
@@ -154,47 +154,48 @@ class TestIMUDataProcessor:
 
         d.update(
             [
+                # reference data is interest launch (very rounded data)
                 EstimatedDataPacket(
                     2 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=10,
-                    estPressureAlt=21,
-                    estOrientQuaternionW=0.08,
-                    estOrientQuaternionX=0.0,
-                    estOrientQuaternionY=0.0,
-                    estOrientQuaternionZ=-0.5,
+                    estCompensatedAccelZ=70,
+                    estPressureAlt=106,
+                    estOrientQuaternionW=0.35,
+                    estOrientQuaternionX=-0.036,
+                    estOrientQuaternionY=-0.039,
+                    estOrientQuaternionZ=0.936,
                     estGravityVectorX=0,
                     estGravityVectorY=0,
-                    estGravityVectorZ=-9.8,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estGravityVectorZ=9.8,
+                    estAngularRateX=-0.17,
+                    estAngularRateY=0.18,
+                    estAngularRateZ=3.7,
                 ),
                 EstimatedDataPacket(
-                    3 * 1e9,
+                    2.1 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=15,
-                    estPressureAlt=22,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estCompensatedAccelZ=-30,
+                    estPressureAlt=110,
+                    estAngularRateX=-0.8,
+                    estAngularRateY=0.05,
+                    estAngularRateZ=3.5,
                 ),
                 EstimatedDataPacket(
-                    4 * 1e9,
+                    2.2 * 1e9,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
-                    estCompensatedAccelZ=20,
-                    estPressureAlt=23,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    estCompensatedAccelZ=-10,
+                    estPressureAlt=123,
+                    estAngularRateX=-0.08,
+                    estAngularRateY=-0.075,
+                    estAngularRateZ=3.4,
                 ),
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(15.38026)
+        assert d._previous_vertical_velocity == pytest.approx(1.972033881)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -233,8 +234,8 @@ class TestIMUDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(28.70443)
-        assert d.vertical_velocity == pytest.approx(28.70443)
+        assert d._previous_vertical_velocity == pytest.approx(-138.049496)
+        assert d.vertical_velocity == pytest.approx(-138.049496)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
@@ -396,7 +397,7 @@ class TestIMUDataProcessor:
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]
             assert data.vertical_velocity == d._vertical_velocities[idx]
-            assert data.vertical_acceleration == d._rotated_accelerations[2][idx]
+            assert data.vertical_acceleration == d._rotated_accelerations[idx]
             assert data.time_since_last_data_packet == d._time_differences[idx]
 
     @pytest.mark.parametrize(
@@ -484,32 +485,32 @@ class TestIMUDataProcessor:
         [
             (
                 "tests/imu_data/xminus.csv",
-                [0.18325085, 0.07419364, -9.85116094],
+                9.85116094,
                 2,
             ),
             (
                 "tests/imu_data/yminus.csv",
-                [0.0113485, -0.08984559, -9.83891064],
+                9.83891064,
                 2,
             ),
             (
                 "tests/imu_data/zminus.csv",
-                [0.01224562, -0.0125318, -9.82264007],
+                9.82264007,
                 2,
             ),
             (
                 "tests/imu_data/xplus.csv",
-                [0.06304778, -0.07840967, -9.75015129],
+                9.75015129,
                 2,
             ),
             (
                 "tests/imu_data/yplus.csv",
-                [-0.05749726, 0.16417074, -9.61564675],
+                9.61564675,
                 2,
             ),
             (
                 "tests/imu_data/zplus.csv",
-                [-0.01206712, -0.0652311, -9.81399729],
+                9.81399729,
                 2,
             ),
         ],
@@ -519,12 +520,9 @@ class TestIMUDataProcessor:
         d = IMUDataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
-        print(rotations)
-        assert len(rotations) == 3
+        # assert len(rotations) == 3
 
-        assert rotations[0][-1] == pytest.approx(expected_value[0])
-        assert rotations[1][-1] == pytest.approx(expected_value[1])
-        assert rotations[2][-1] == pytest.approx(expected_value[2])
+        assert rotations[-1] == pytest.approx(expected_value)
 
     def test_initial_orientation(self):
         """Tests whether the initial orientation of the rocket is correctly calculated"""

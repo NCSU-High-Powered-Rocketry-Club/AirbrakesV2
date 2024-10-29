@@ -48,7 +48,7 @@ class IMUDataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: npt.NDArray[np.float64] | None = None
-        self._rotated_accelerations: list[npt.NDArray[np.float64]] = [np.array([0.0]), np.array([0.0]), np.array([0.0])]
+        self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
 
@@ -136,7 +136,7 @@ class IMUDataProcessor:
             ) in zip(
                 self._current_altitudes,
                 self._vertical_velocities,
-                self._rotated_accelerations[2],
+                self._rotated_accelerations,
                 self._time_differences,
                 strict=True,
             )
@@ -216,12 +216,7 @@ class IMUDataProcessor:
         """
 
         # We pre-allocate the space for our accelerations first
-        len_data_packets = len(self._data_packets)
-        rotated_accelerations = [
-            np.zeros(len_data_packets),
-            np.zeros(len_data_packets),
-            np.zeros(len_data_packets),
-        ]
+        rotated_accelerations = np.zeros(len(self._data_packets))
 
         # Iterates through the data points and time differences between the data points
         for idx, (data_packet, dt) in enumerate(zip(self._data_packets, self._time_differences, strict=True)):
@@ -261,10 +256,10 @@ class IMUDataProcessor:
                 self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
             )
 
-            # Adds the accelerations to our list of rotated accelerations
-            rotated_accelerations[0][idx] = accel_rotated_quat[1]
-            rotated_accelerations[1][idx] = accel_rotated_quat[2]
-            rotated_accelerations[2][idx] = accel_rotated_quat[3] * -1
+            # Vertical acceleration will always be the 4th element of the quaternion, regardless of orientation.
+            # For simplicity, we multiply by -1 so that acceleration during motor burn is positive, and
+            # acceleration due to drag force during coast phase is negative.
+            rotated_accelerations[idx] = accel_rotated_quat[3] * -1
 
         return rotated_accelerations
 
@@ -279,7 +274,7 @@ class IMUDataProcessor:
         vertical_accelerations = np.array(
             [
                 deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
-                for vertical_acceleration in self._rotated_accelerations[2]
+                for vertical_acceleration in self._rotated_accelerations
             ]
         )
 
