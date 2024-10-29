@@ -52,7 +52,6 @@ class IMUDataProcessor:
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
 
-
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}("
@@ -175,7 +174,7 @@ class IMUDataProcessor:
     def _first_update(self) -> None:
         """
         Sets up the initial values for the data processor. This includes setting the initial
-        altitude, the initial orientation of the rocket, and the initial gravity vector. This should
+        altitude, and the initial orientation of the rocket. This should
         only be called once, when the first data packets are passed in.
         """
         # Setting last data point as the first element, makes it so that the time diff
@@ -196,7 +195,6 @@ class IMUDataProcessor:
                 self._last_data_packet.estOrientQuaternionZ,
             ]
         )
-
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """

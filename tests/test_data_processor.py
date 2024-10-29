@@ -33,7 +33,8 @@ def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, no
         altitudes.append(altitude_value)
     return altitudes
 
-def load_data_packets(csv_path,n_packets):
+
+def load_data_packets(csv_path, n_packets):
     """Reads csv log files containing data packets to use for testing. Will read the first
     n_packets amount of estimated data packets.
 
@@ -46,7 +47,7 @@ def load_data_packets(csv_path,n_packets):
     with filepath.open(newline="") as csvfile:
         reader = csv.DictReader(csvfile)
 
-        row: tuple[int,dict[str,str]]
+        row: tuple[int, dict[str, str]]
         for row in enumerate(reader):
             if len(data_packets) >= n_packets:
                 break
@@ -59,12 +60,13 @@ def load_data_packets(csv_path,n_packets):
             if scaled_accel_x:
                 continue
             for key in EstimatedDataPacket.__struct_fields__:
-                val = rowdata.get(key,None)
+                val = rowdata.get(key, None)
                 if val:
                     fields_dict[key] = float(val)
             est_data_packet = EstimatedDataPacket(**fields_dict)
             data_packets.append(est_data_packet)
     return data_packets
+
 
 @pytest.fixture
 def data_processor():
@@ -482,39 +484,38 @@ class TestIMUDataProcessor:
         [
             (
                 "tests/imu_data/xminus.csv",
-                [0.18325085,0.07419364,-9.85116094],
+                [0.18325085, 0.07419364, -9.85116094],
                 2,
             ),
             (
-               "tests/imu_data/yminus.csv",
-               [0.0113485,-0.08984559,-9.83891064],
-               2,
+                "tests/imu_data/yminus.csv",
+                [0.0113485, -0.08984559, -9.83891064],
+                2,
             ),
             (
-               "tests/imu_data/zminus.csv",
-               [0.01224562,-0.0125318,-9.82264007],
-               2,
+                "tests/imu_data/zminus.csv",
+                [0.01224562, -0.0125318, -9.82264007],
+                2,
             ),
             (
-               "tests/imu_data/xplus.csv",
-               [0.06304778,-0.07840967,-9.75015129],
-               2,
+                "tests/imu_data/xplus.csv",
+                [0.06304778, -0.07840967, -9.75015129],
+                2,
             ),
             (
-               "tests/imu_data/yplus.csv",
-               [-0.05749726,0.16417074,-9.61564675],
-               2,
+                "tests/imu_data/yplus.csv",
+                [-0.05749726, 0.16417074, -9.61564675],
+                2,
             ),
             (
-               "tests/imu_data/zplus.csv",
-               [-0.01206712,-0.0652311,-9.81399729],
-               2,
+                "tests/imu_data/zplus.csv",
+                [-0.01206712, -0.0652311, -9.81399729],
+                2,
             ),
-
         ],
     )
     def test_calculate_rotations(self, csv_path, expected_value, n_packets):
-        data_packets = load_data_packets(csv_path,n_packets)
+        data_packets = load_data_packets(csv_path, n_packets)
         d = IMUDataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
@@ -568,7 +569,6 @@ class TestIMUDataProcessor:
                 ),
             ]
         )
-
 
     @pytest.mark.parametrize(
         ("q1", "q2", "expected"),
