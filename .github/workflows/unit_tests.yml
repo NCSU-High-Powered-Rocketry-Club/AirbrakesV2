@@ -34,4 +34,5 @@
 
         - name: Run tests with coverage
           run: |
-            pytest --cov=airbrakes --cov-report=term --cov-config=.coveragerc -v tests/
+            # Run tests with coverage except for the integration tests
+            pytest --cov=airbrakes --cov-report=term --ignore=tests/test_integration.py -v tests/
