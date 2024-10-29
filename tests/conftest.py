@@ -7,6 +7,7 @@ import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logger import Logger
@@ -49,8 +50,13 @@ def servo():
 
 
 @pytest.fixture
-def airbrakes(imu, logger, servo, data_processor):
-    return AirbrakesContext(servo, imu, logger, data_processor)
+def apogee_predictor():
+    return ApogeePredictor()
+
+
+@pytest.fixture
+def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
+    return AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
 
 
 @pytest.fixture
