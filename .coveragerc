@@ -10,6 +10,7 @@ omit =
     */tests/*
     */site-packages/*
     setup.py
+    airbrakes/mock/*
 
 [paths]
 source =
