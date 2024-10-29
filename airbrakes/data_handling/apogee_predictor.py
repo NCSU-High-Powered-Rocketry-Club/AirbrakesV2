@@ -180,7 +180,7 @@ class ApogeePredictor:
 
             # TODO: play around with this value
             # Run apogee prediction every 100 data points:
-            if len(self._accelerations) - last_run_length >= 2:
+            if len(self._accelerations) - last_run_length >= 100:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 params = self._curve_fit()
                 self._apogee_prediction_value.value = self._get_apogee(params)

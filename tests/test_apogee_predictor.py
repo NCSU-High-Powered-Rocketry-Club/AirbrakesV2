@@ -1,6 +1,7 @@
 import multiprocessing
 import multiprocessing.queues
 from collections import deque
+import time
 
 import numpy as np
 import pytest
@@ -19,7 +20,6 @@ class TestApogeePredictor:
 
     def test_slots(self):
         inst = ApogeePredictor()
-        print(inst.__slots__)
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
             if isinstance(val, np.ndarray):
@@ -54,7 +54,7 @@ class TestApogeePredictor:
         assert apogee_predictor.is_running
         apogee_predictor.stop()
         assert not apogee_predictor.is_running
-        assert apogee_predictor._log_process.exitcode == 0
+        assert apogee_predictor._prediction_process.exitcode == 0
 
     def test_apogee_loop_add_to_queue(self,apogee_predictor):
         ap = apogee_predictor
@@ -64,12 +64,10 @@ class TestApogeePredictor:
                             vertical_acceleration=-5,
                             time_since_last_data_packet=0.1,
                         ),]
-        
 
     @pytest.mark.parametrize(
             (
                 "processed_data_packets",
-                "params",
                 "expected_value",
             ),
             [
@@ -77,52 +75,39 @@ class TestApogeePredictor:
                     [
                         ProcessedDataPacket(
                             current_altitude=100,
-                            vertical_velocity=50,
-                            vertical_acceleration=-5,
+                            vertical_velocity=0.0,
+                            vertical_acceleration=9.798,
                             time_since_last_data_packet=0.1,
                         ),
-                        ProcessedDataPacket(
-                            current_altitude=105,
-                            vertical_velocity=49.5,
-                            vertical_acceleration=-5,
-                            time_since_last_data_packet=0.1,
-                        ),
-                    ],
-                    [15.5,0.03],
-                    99999,
+                    ] * 100,
+                    100.0,  # The predicted apogee should be the same if our velocity is 0 and accel
+                    # is gravity, i.e. hovering.
                 ),
                 (
                     [
                         ProcessedDataPacket(
-                            current_altitude=100,
+                            current_altitude=float(100 + (alt * 5)),  # Goes up to 595m
                             vertical_velocity=50,
-                            vertical_acceleration=-5,
+                            vertical_acceleration=9.798,
                             time_since_last_data_packet=0.1,
-                        ),
-                        ProcessedDataPacket(
-                            current_altitude=105,
-                            vertical_velocity=49.5,
-                            vertical_acceleration=-5,
-                            time_since_last_data_packet=0.1,
-                        ),
+                        ) for alt in range(100)
                     ],
-                    None,
-                    0,
+                    1600,  # After 30 seconds, the length of estAccel is 300 (30/0.1 = 300)
+                    # But length of est_vel is 200, i.e. 20 seconds. So estimated apogee should
+                    # be: 600 + (200 * (50 m/s /10)) = 1600
                 ),
             ],
-            ids=["realistic_params","none_params"],
+            ids=["hover_at_altitude","constant_alt_increase"],
     )
-
-
-    def test_get_apogee(self,apogee_predictor,processed_data_packets,params,expected_value):
+    def test_get_apogee_no_mock(self,apogee_predictor,processed_data_packets,expected_value):
         """Tests the _get_apogee method for predicting apogee altitude."""
 
         ap = apogee_predictor
         ap.start()
         ap.update(processed_data_packets.copy())
-        predicted_apogee = ap._get_apogee(params)
-
+        time.sleep(0.01)  # Wait for the prediction to finish
+        predicted_apogee = ap.apogee
         # Verify result is a float and equal to predicted value
         assert isinstance(predicted_apogee, float)
         assert predicted_apogee == pytest.approx(expected_value)
-
+        ap.stop()
