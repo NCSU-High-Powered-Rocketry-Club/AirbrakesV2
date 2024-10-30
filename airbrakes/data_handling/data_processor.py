@@ -206,7 +206,7 @@ class IMUDataProcessor:
         # Zero out the initial altitude
         return altitudes - self._initial_altitude
 
-    def _calculate_rotated_accelerations(self) -> list[npt.NDArray[np.float64]]:
+    def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
         Calculates the rotated acceleration vector. Converts gyroscope data into a delta quaternion, and adds
         onto the last quaternion. Will most likely be replaced by IMU quaternion data in the future, this
@@ -291,7 +291,7 @@ class IMUDataProcessor:
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data point and the previous data point. This cannot
-        be called on the first update as _last_data_packet is None.
+        be called on the first update as _last_data_packet is None. Units are in seconds.
         :return: A numpy array of the time difference between each data point and the previous data point.
         """
         # calculate the time differences between each data point
