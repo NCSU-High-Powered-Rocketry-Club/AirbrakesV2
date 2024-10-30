@@ -123,9 +123,9 @@ class TestIntegration:
         assert states_dict["CoastState"].min_altitude >= states_dict["MotorBurnState"].max_altitude
         assert states_dict["CoastState"].max_altitude <= 2000.0  # arbitrary value
         apogee_pred_list = states_dict["CoastState"].apogee_prediction
-        medianPrediction = sum(apogee_pred_list)/len(apogee_pred_list)
+        medianPrediction = sum(apogee_pred_list) / len(apogee_pred_list)
         max_apogee = states_dict["CoastState"].max_altitude
-        assert max_apogee*0.9 <= medianPrediction <= max_apogee*1.1
+        assert max_apogee * 0.9 <= medianPrediction <= max_apogee * 1.1
 
         # Check if we have extended the airbrakes at least once
         # specially on subscale flights, where coast phase is very short anyway.

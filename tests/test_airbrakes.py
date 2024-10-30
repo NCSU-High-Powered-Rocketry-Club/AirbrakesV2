@@ -120,7 +120,6 @@ class TestAirbrakesContext:
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")
 
-
         mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
         mocked_airbrakes.state = CoastState(mocked_airbrakes)  # Set to coast state to test apogee update
         mocked_airbrakes.start()
