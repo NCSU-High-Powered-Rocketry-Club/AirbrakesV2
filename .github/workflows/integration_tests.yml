@@ -1,0 +1,42 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - '**'  # Matches all branch names, for PRs
+  push:
+    branches:
+      - 'main'  # Run tests on main branch
+
+jobs:
+  integration-tests:
+    name: integration-tests
+    runs-on: ${{matrix.os}}
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        python-version: ['3.12']
+        os: [ubuntu-latest]
+      fail-fast: False
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+
+      - name: Install dependencies
+        run: |
+          python -W ignore -m pip install --upgrade pip
+          python -W ignore -m pip install .
+          python -W ignore -m pip install .[dev]
+          pip install pytest
+
+      - name: Run integration tests
+        timeout-minutes: 3
+        run: |
+          pytest -v tests/test_integration.py

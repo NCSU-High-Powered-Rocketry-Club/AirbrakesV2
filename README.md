@@ -87,12 +87,12 @@ flowchart TD
     Airbrakes --> Servo
 
 ```
-| Type    | Color    | Examples                                                                                                         |
-|---------|----------|------------------------------------------------------------------------------------------------------------------|
-| Entry point |  ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600`   | Main.py
-| Classes | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e`  | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
-| Methods |  ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c`  | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs |  ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728`   | IMU Data Packet, Processed Data Packet, Logged Data Packet    
+| Type        | Color                                                                     | Examples                                                                                                       |
+|-------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
+| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
+| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processed Data Packet, Logged Data Packet                                                     |
 
 ### Launch Data
 
@@ -183,6 +183,12 @@ To run the tests, run this command from the project root directory:
 ```bash
 pytest
 ```
+
+To generate a coverage report from the tests:
+```bash
+pytest --cov=airbrakes --cov-report=term
+```
+
 If you make a change to the code, please make sure to update or add the necessary tests.
 
 ### Running the Linter
