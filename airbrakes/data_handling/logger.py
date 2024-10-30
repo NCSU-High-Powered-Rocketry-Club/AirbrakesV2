@@ -8,7 +8,7 @@ from pathlib import Path
 
 from msgspec.structs import asdict
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
@@ -96,7 +96,7 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
+        imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> None:
@@ -111,7 +111,7 @@ class Logger:
             nor would it correspond to the respective data packet being logged.
         """
         logged_data_packets = self._create_logged_data_packets(
-            state,
+            state[0],  # We only want the first letter of the state to save space
             extension,
             imu_data_packets,
             processed_data_packets,
@@ -173,7 +173,7 @@ class Logger:
     def _create_logged_data_packets(
         state: str,
         extension: float,
-        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
+        imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> deque[LoggedDataPacket]:

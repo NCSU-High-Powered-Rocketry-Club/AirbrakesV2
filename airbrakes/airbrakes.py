@@ -34,6 +34,8 @@ class AirbrakesContext:
         "servo",
         "shutdown_requested",
         "state",
+        "imu_data_packets",
+        "processed_data_packets",
     )
 
     def __init__(
@@ -65,6 +67,8 @@ class AirbrakesContext:
         # The rocket starts in the StandByState
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
+        self.imu_data_packets: deque[IMUDataPacket] = deque()
+        self.processed_data_packets: deque[ProcessedDataPacket] = deque()
 
     def start(self) -> None:
         """
@@ -97,16 +101,16 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        imu_data_packets: deque[IMUDataPacket] = self.imu.get_imu_data_packets()
+        self.imu_data_packets = self.imu.get_imu_data_packets()
 
         # This should never happen, but if it does, we want to not error out and wait for packets
-        if not imu_data_packets:
+        if not self.imu_data_packets:
             return
 
         # Split the data packets into estimated and raw data packets for use in processing and logging
         est_data_packets = [
             data_packet
-            for data_packet in imu_data_packets.copy()
+            for data_packet in self.imu_data_packets.copy()
             if isinstance(data_packet, EstimatedDataPacket)
             # The copy() above is critical to ensure the data here is not modified by the data processor
         ]
@@ -116,24 +120,17 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
-        processed_data_packets: deque[ProcessedDataPacket] = self.data_processor.get_processed_data_packets()
-
-        # Only run apogee prediction for estimated data packets in the coast state
-        state_letter = self.state.name[0]
-        if state_letter == "C" and est_data_packets:
-            # The .copy() below is critical to ensure the data is actually transferred correctly to
-            # the apogee prediction process.
-            self.apogee_predictor.update(processed_data_packets.copy())
+        self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()
 
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
-            state_letter,
+            self.state.name,
             self.current_extension.value,
-            imu_data_packets,
-            processed_data_packets,
+            self.imu_data_packets,
+            self.processed_data_packets,
             self.apogee_predictor.apogee,
         )
 
@@ -150,3 +147,10 @@ class AirbrakesContext:
         """
         self.servo.set_retracted()
         self.current_extension = ServoExtension.MIN_EXTENSION
+
+    def predict_apogee(self) -> None:
+        """
+        Predicts the apogee of the rocket based on the current processed data. This
+        should only be called in the coast state, before we start controlling the airbrakes.
+        """
+        self.apogee_predictor.update(self.processed_data_packets)

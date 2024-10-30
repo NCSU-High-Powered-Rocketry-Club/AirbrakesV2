@@ -147,6 +147,9 @@ class CoastState(State):
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
+        # In Coast State we start predicting the apogee
+        self.context.predict_apogee()
+
         # Check if we are going to overshoot our target apogee, and extend the airbrakes if we are.
         pred_apogee = self.context.apogee_predictor.apogee
 

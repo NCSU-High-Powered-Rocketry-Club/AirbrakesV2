@@ -73,7 +73,7 @@ class LoggedDataPacket(msgspec.Struct):
         This function could be a lot cleaner and just use getattr() and setattr(), but that is
         slower and takes up 15% of the main loop execution time.
 
-        :param estimated_data_packet: The estimated data packet to set the attributes from.
+        :param data_packet: The estimated data packet to set the attributes from.
         """
         # super ugly code, but it results in a 10-14% speedup overall
         # The speed improvements come from not looping through the fields of the data packet

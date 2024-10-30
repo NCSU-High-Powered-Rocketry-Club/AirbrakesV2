@@ -93,7 +93,9 @@ class ApogeePredictor:
 
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
-        self._prediction_queue.put(processed_data_packets)
+        # The .copy() below is critical to ensure the data is actually transferred correctly to
+        # the apogee prediction process.
+        self._prediction_queue.put(processed_data_packets.copy())
 
     def _curve_fit_function(self, t, a, b):
         """
@@ -113,13 +115,13 @@ class ApogeePredictor:
         :return: numpy array with values of A and B
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        popt, _ = curve_fit(
+        popt = curve_fit(
             self._curve_fit_function,
             self._cumulative_time_differences,
             self._accelerations,
             p0=CURVE_FIT_INITIAL,
             maxfev=2000,
-        )
+        )[0]
         a, b = popt
         return np.array([a, b])
 
