@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 import pytest
+import scipy.spatial
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
@@ -195,7 +196,7 @@ class TestIMUDataProcessor:
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(1.972033881)
+        assert d._previous_vertical_velocity == pytest.approx(1.971628)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -234,8 +235,8 @@ class TestIMUDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(-138.049496)
-        assert d.vertical_velocity == pytest.approx(-138.049496)
+        assert d._previous_vertical_velocity == pytest.approx(-138.0245)
+        assert d.vertical_velocity == pytest.approx(-138.0245)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
@@ -372,7 +373,12 @@ class TestIMUDataProcessor:
         assert d._vertical_velocities[0] == 0.0
 
         assert d._initial_altitude == init_alt
-        npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
+        assert isinstance(d._current_orientation_quaternions, scipy.spatial.transform.Rotation)
+        npt.assert_allclose(
+            d._current_orientation_quaternions.as_quat(scalar_first=True),
+            np.array([0.182574, 0.365148, 0.547723, 0.730297]),
+            rtol=1e-5,
+        )
         assert d.current_altitude == (0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt)
         assert d._max_altitude == d.max_altitude == max_alt
 
@@ -489,59 +495,3 @@ class TestIMUDataProcessor:
         assert len(rotations) == n_packets
 
         assert rotations[-1] == pytest.approx(expected_value)
-
-    @pytest.mark.parametrize(
-        ("q1", "q2", "expected"),
-        [
-            # Random quaternions
-            (np.array([4, 1, 2, 3]), np.array([8, 5, 6, 7]), np.array([-6, 24, 48, 48])),
-            # Test with negative numbers
-            (np.array([2, -1, -2, 1]), np.array([1, 2, -1, 3]), np.array([-1, -2, 1, 12])),
-            # Test with zeros in different positions
-            (np.array([1, 0, 2, 0]), np.array([2, 1, 0, 3]), np.array([2, 7, 4, 1])),
-        ],
-    )
-    def test_multiply_quaternions(self, q1, q2, expected):
-        """
-        Tests whether the quaternion multiplication works correctly for various cases
-        """
-        d = IMUDataProcessor()
-        result = d._multiply_quaternions(q1, q2)
-        npt.assert_array_almost_equal(result, expected)
-
-    @pytest.mark.parametrize(
-        "q",
-        [
-            np.array([2, 3, 4, 5]),  # random quaternion
-            np.array([1, -2, 3, -4]),  # quaternion with mixed signs
-            np.array([0, 1, 0, 1]),  # pure quaternion
-        ],
-    )
-    def test_multiply_by_identity(self, q):
-        """Tests multiplication with identity quaternion [1,0,0,0]"""
-        d = IMUDataProcessor()
-        identity = np.array([1, 0, 0, 0])
-        result = d._multiply_quaternions(q, identity)
-        npt.assert_array_almost_equal(result, q)
-        # Also test right multiplication
-        result = d._multiply_quaternions(identity, q)
-        npt.assert_array_almost_equal(result, q)
-
-    @pytest.mark.parametrize(
-        ("q", "expected"),
-        [
-            # Random quaternion
-            (np.array([0.1, 0.2, 0.3, 0.4]), np.array([0.1, -0.2, -0.3, -0.4])),
-            # Pure quaternion (w = 0)
-            (np.array([0.0, 1.0, 2.0, 3.0]), np.array([0.0, -1.0, -2.0, -3.0])),
-            # Quaternion with negative components
-            (np.array([2.0, -1.0, -2.0, 3.0]), np.array([2.0, 1.0, 2.0, -3.0])),
-        ],
-    )
-    def test_calculate_quaternion_conjugate(self, q, expected):
-        """
-        Tests whether the quaternion conjugate is correctly calculated for various cases
-        """
-        d = IMUDataProcessor()
-        result = d._calculate_quaternion_conjugate(q)
-        npt.assert_array_almost_equal(result, expected)
