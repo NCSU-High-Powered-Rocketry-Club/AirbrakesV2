@@ -52,3 +52,21 @@ filterwarnings = [
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
     "ignore:Could not import MSCL",  # ignore warning about MSCL being not installed
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["airbrakes"]
+omit = ["*/tests/*", "*/site-packages/*", "airbrakes/mock/*"]
+
+[tool.coverage.report]
+skip_covered = false
+skip_empty = true
+exclude_lines = [
+    "def __repr__",
+    "if self\\.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+fail_under = 80
