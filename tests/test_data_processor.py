@@ -265,17 +265,15 @@ class TestIMUDataProcessor:
                 [
                     EstimatedDataPacket(
                         0 * 1e9,
-                        estLinearAccelX=1,
-                        estLinearAccelY=2,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estLinearAccelZ=3,
                         estPressureAlt=20,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     )
                 ],
                 20.0,
@@ -285,31 +283,25 @@ class TestIMUDataProcessor:
                 [
                     EstimatedDataPacket(
                         1 * 1e9,
-                        estLinearAccelX=1,
-                        estLinearAccelY=2,
-                        estLinearAccelZ=3,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estPressureAlt=20,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
                         2 * 1e9,
-                        estLinearAccelX=2,
-                        estLinearAccelY=3,
-                        estLinearAccelZ=4,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estPressureAlt=30,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     ),
                 ],
                 25.0,
@@ -319,45 +311,36 @@ class TestIMUDataProcessor:
                 [
                     EstimatedDataPacket(
                         1 * 1e9,
-                        estLinearAccelX=1,
-                        estLinearAccelY=2,
-                        estLinearAccelZ=3,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estPressureAlt=20,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
                         2 * 1e9,
-                        estLinearAccelX=2,
-                        estLinearAccelY=3,
-                        estLinearAccelZ=4,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estPressureAlt=30,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     ),
                     EstimatedDataPacket(
                         3 * 1e9,
-                        estLinearAccelX=3,
-                        estLinearAccelY=4,
-                        estLinearAccelZ=5,
+                        estCompensatedAccelX=1,
+                        estCompensatedAccelY=2,
+                        estCompensatedAccelZ=3,
                         estPressureAlt=40,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     ),
                 ],
                 30.0,
@@ -389,6 +372,7 @@ class TestIMUDataProcessor:
         assert d._vertical_velocities[0] == 0.0
 
         assert d._initial_altitude == init_alt
+        npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
         assert d.current_altitude == (0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt)
         assert d._max_altitude == d.max_altitude == max_alt
 
@@ -418,34 +402,22 @@ class TestIMUDataProcessor:
         # test_first_update tests the initial alt update, so we can skip that here:
         d._last_data_packet = EstimatedDataPacket(
             0,
-            estLinearAccelX=1,
-            estLinearAccelY=2,
-            estLinearAccelZ=3,
             estPressureAlt=altitude_reading[0],
             estOrientQuaternionW=0.1,
             estOrientQuaternionX=0.2,
             estOrientQuaternionY=0.3,
             estOrientQuaternionZ=0.4,
-            estGravityVectorX=0,
-            estGravityVectorY=0,
-            estGravityVectorZ=9.8,
         )
         d._initial_altitude = 20.0
 
         new_packets = [
             EstimatedDataPacket(
                 idx + 3,
-                estLinearAccelX=1,
-                estLinearAccelY=2,
-                estLinearAccelZ=3,
                 estPressureAlt=alt,
                 estOrientQuaternionW=0.1,
                 estOrientQuaternionX=0.2,
                 estOrientQuaternionY=0.3,
                 estOrientQuaternionZ=0.4,
-                estGravityVectorX=0,
-                estGravityVectorY=0,
-                estGravityVectorZ=9.8,
             )
             for idx, alt in enumerate(altitude_reading)
         ]
@@ -463,17 +435,11 @@ class TestIMUDataProcessor:
                 [
                     EstimatedDataPacket(
                         i,
-                        estLinearAccelX=1,
-                        estLinearAccelY=2,
-                        estLinearAccelZ=3,
                         estPressureAlt=alt,
                         estOrientQuaternionW=0.1,
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
-                        estGravityVectorX=0,
-                        estGravityVectorY=0,
-                        estGravityVectorZ=9.8,
                     )
                     for alt in altitudes[i : i + 10]
                 ]
@@ -520,53 +486,9 @@ class TestIMUDataProcessor:
         d = IMUDataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
-        # assert len(rotations) == 3
+        assert len(rotations) == n_packets
 
         assert rotations[-1] == pytest.approx(expected_value)
-
-    def test_initial_orientation(self):
-        """Tests whether the initial orientation of the rocket is correctly calculated"""
-        d = IMUDataProcessor()
-        d.update(
-            [
-                EstimatedDataPacket(
-                    1 * 1e9,
-                    estLinearAccelX=1,
-                    estLinearAccelY=2,
-                    estLinearAccelZ=3,
-                    estPressureAlt=1,
-                    estOrientQuaternionW=0.1,
-                    estOrientQuaternionX=0.2,
-                    estOrientQuaternionY=0.3,
-                    estOrientQuaternionZ=0.4,
-                    estGravityVectorX=0.1,
-                    estGravityVectorY=-0.6,
-                    estGravityVectorZ=9.8,
-                ),
-            ]
-        )
-
-        npt.assert_array_equal(d._current_orientation_quaternions, np.array([0.1, 0.2, 0.3, 0.4]))
-
-        d = IMUDataProcessor()
-        d.update(
-            [
-                EstimatedDataPacket(
-                    1 * 1e9,
-                    estLinearAccelX=1,
-                    estLinearAccelY=2,
-                    estLinearAccelZ=3,
-                    estPressureAlt=1,
-                    estOrientQuaternionW=0.1,
-                    estOrientQuaternionX=0.2,
-                    estOrientQuaternionY=0.3,
-                    estOrientQuaternionZ=0.4,
-                    estGravityVectorX=-9.6,
-                    estGravityVectorY=-0.6,
-                    estGravityVectorZ=0.5,
-                ),
-            ]
-        )
 
     @pytest.mark.parametrize(
         ("q1", "q2", "expected"),
