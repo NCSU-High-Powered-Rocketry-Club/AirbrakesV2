@@ -450,6 +450,7 @@ class TestLogger:
         logged_data_packets = logger._create_logged_data_packets(
             state, extension, imu_data_packets, processed_data_packets, 1800.0
         )
+        # Check that we log every packet:
         assert len(logged_data_packets) == len(expected_output)
 
         for logged_data_packet, expected in zip(logged_data_packets, expected_output, strict=True):
@@ -457,19 +458,23 @@ class TestLogger:
             # we will convert the logged_data_packet to a dict and compare only the non-None values
             converted = {k: v for k, v in msgspec.structs.asdict(logged_data_packet).items() if v}
             is_raw_data_packet = converted.get("scaledAccelX", False)
+
             # certain fields are not converted to strings (intentionally. See logged_data_packet.py)
             assert isinstance(converted["invalid_fields"], list)
             assert isinstance(converted["timestamp"], float)
+            assert isinstance(converted["extension"], float)
+
             if not is_raw_data_packet:
                 assert isinstance(converted["vertical_velocity"], str)
                 assert isinstance(converted["current_altitude"], str)
-            assert isinstance(converted["extension"], float)
+                assert isinstance(converted["vertical_acceleration"], str)
+                assert isinstance(converted["predicted_apogee"], str)
 
             # convert the above fields for easy assertion check at the end:
             converted["timestamp"] = str(converted["timestamp"])
-            if not is_raw_data_packet:
-                converted["velocity"] = str(converted["vertical_velocity"])
-                converted["current_altitude"] = str(converted["current_altitude"])
             converted["extension"] = str(converted["extension"])
+
+            # Remove "time_since_last_data_packet" from the expected output, since we don't log that:
+            expected.pop("time_since_last_data_packet", None)
 
             assert converted == expected

@@ -124,7 +124,6 @@ class MotorBurnState(State):
 
         # =======DISABLED==========
         # if time.time() - self.start_time > MOTOR_BURN_TIME:
-        #     print('fallback switch')
         #     self.next_state()
         #     return
 

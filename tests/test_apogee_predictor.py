@@ -8,6 +8,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from constants import APOGEE_PREDICTION_FREQUENCY
 
 
 @pytest.fixture
@@ -29,7 +30,6 @@ class TestApogeePredictor:
     def test_init(self, apogee_predictor):
         """Tests whether the IMUDataProcessor is correctly initialized"""
         ap = apogee_predictor
-        print(type(ap._prediction_queue))
         # Test attributes on init
         assert ap._apogee_prediction_value.value == 0.0
         assert isinstance(ap._prediction_queue, multiprocessing.queues.Queue)
@@ -41,8 +41,8 @@ class TestApogeePredictor:
         assert len(ap._accelerations) == 0
         assert isinstance(ap._time_differences, deque)
         assert len(ap._time_differences) == 0
-        assert ap._current_altitude == 0.0
-        assert ap._current_velocity == 0.0
+        assert ap._current_altitude == np.float64(0.0)
+        assert ap._current_velocity == np.float64(0.0)
 
         # Test properties on init
         assert ap.apogee == 0.0
@@ -56,14 +56,20 @@ class TestApogeePredictor:
         assert apogee_predictor._prediction_process.exitcode == 0
 
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
-        [
+        """Tests that the predictor adds to the queue when update is called"""
+        packet = [
             ProcessedDataPacket(
                 current_altitude=100,
                 vertical_velocity=50,
                 vertical_acceleration=-5,
                 time_since_last_data_packet=0.1,
-            ),
+            )
         ]
+        # important to not .start() the process, as we don't want it to run as it will fetch
+        # it from the queue and we want to check if it's added to the queue.
+        apogee_predictor.update(packet.copy())
+        assert apogee_predictor._prediction_queue.qsize() == 1
+        assert apogee_predictor._prediction_queue.get() == packet
 
     @pytest.mark.parametrize(
         (
@@ -98,11 +104,14 @@ class TestApogeePredictor:
                 # But length of est_vel is 200, i.e. 20 seconds. So estimated apogee should
                 # be: 600 + (200 * (50 m/s /10)) = 1600
             ),
+            # note we can't test altitude decrease because we take the max() (APOGEE)!
         ],
         ids=["hover_at_altitude", "constant_alt_increase"],
     )
-    def test_get_apogee_no_mock(self, apogee_predictor, processed_data_packets, expected_value):
-        """Tests the _get_apogee method for predicting apogee altitude."""
+    def test_prediction_loop_no_mock(self, apogee_predictor, processed_data_packets, expected_value):
+        """Tests that our predicted apogee works in general, by passing in a few hundred data packets.
+        This does not really represent a real flight, but given that case, it should predict it
+        correctly."""
 
         ap = apogee_predictor
         ap.start()
@@ -112,4 +121,36 @@ class TestApogeePredictor:
         # Verify result is a float and equal to predicted value
         assert isinstance(predicted_apogee, float)
         assert predicted_apogee == pytest.approx(expected_value)
+        ap.stop()
+
+    def test_prediction_loop_every_x_packets(self, apogee_predictor):
+        """Tests that the predictor only runs every 100 packets"""
+        ap = apogee_predictor
+        apogees = []
+        ap.start()
+        NUMBER_OF_PACKETS = 300
+        for i in range(NUMBER_OF_PACKETS):
+            packets = [
+                ProcessedDataPacket(
+                    current_altitude=100 + i,  # add random alt so our prediction is different
+                    vertical_velocity=2.0,
+                    vertical_acceleration=10.798,
+                    time_since_last_data_packet=0.01,
+                )
+            ]
+            ap.update(packets.copy())
+            time.sleep(0.001)  # Give time for the prediction to finish and add to queue
+            apogees.append(ap.apogee)
+
+        # sleep a bit again so the last prediction can finish:
+        time.sleep(0.01)
+        apogees.append(ap.apogee)
+        unique_apogees = set(apogees)
+        # Assert that we have a '0' apogee in our unique apogees, and then remove that:
+        # We get a 0 apogee because we don't start predicting until we have 100 packets.
+        assert 0.0 in unique_apogees
+        unique_apogees.remove(0.0)
+        # 3 different apogees, one for each 100 packets.
+        assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_FREQUENCY
+        assert ap._prediction_queue.qsize() == 0
         ap.stop()
