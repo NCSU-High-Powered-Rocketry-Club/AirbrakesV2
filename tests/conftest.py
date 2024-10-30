@@ -13,7 +13,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import ServoSettings, IMUSettings
+from constants import IMUSettings, ServoSettings
 
 LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = [

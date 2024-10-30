@@ -5,7 +5,7 @@ import time
 
 import gpiozero
 
-from constants import ServoSettings, ServoExtension
+from constants import ServoExtension, ServoSettings
 
 
 class Servo:

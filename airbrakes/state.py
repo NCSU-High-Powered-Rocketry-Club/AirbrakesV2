@@ -4,8 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from constants import ApogeePredictorSettings
-from constants import StateSettings
+from constants import ApogeePredictorSettings, StateSettings
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext

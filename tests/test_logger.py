@@ -361,7 +361,8 @@ class TestLogger:
         # Note: We are not monkeypatching the stop method here, because we want to test if the entire
         # buffer is logged when we are in LandedState and when stop() is called.
         logger.start()
-        # Log more than LoggerSettings.IDLE_LOG_CAPACITY.value packets to test if it stops logging after adding on to that.
+        # Log more than LoggerSettings.IDLE_LOG_CAPACITY.value packets to test if it stops
+        # logging after adding on to that.
         logger.log(
             state,
             extension,
