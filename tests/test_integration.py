@@ -23,6 +23,7 @@ class StateInformation(msgspec.Struct):
     extensions: list[float] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
+    apogee_prediction: list[float] = []
 
 
 @pytest.mark.skip
@@ -67,12 +68,14 @@ class TestIntegration:
                     state_info.max_velocity = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
+                    state_info.apogee_prediction = ab.apogee_predictor.apogee
 
                 state_info.min_velocity = min(ab.data_processor.vertical_velocity, state_info.min_velocity)
                 state_info.min_altitude = min(ab.data_processor.current_altitude, state_info.min_altitude)
                 state_info.extensions.append(ab.current_extension)
                 state_info.max_velocity = max(ab.data_processor.vertical_velocity, state_info.max_velocity)
                 state_info.max_altitude = max(ab.data_processor.current_altitude, state_info.max_altitude)
+                state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 # Update the state information in the dictionary
                 states_dict[ab.state.name] = state_info
@@ -101,6 +104,7 @@ class TestIntegration:
         assert states_dict["StandByState"].max_velocity <= TAKEOFF_VELOCITY
         assert states_dict["StandByState"].min_altitude >= -6.0  # might be negative due to noise/flakiness
         assert states_dict["StandByState"].max_altitude <= TAKEOFF_HEIGHT
+        assert not states_dict["StandByState"].apogee_prediction
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["StandByState"].extensions)
 
         assert states_dict["MotorBurnState"].min_velocity >= TAKEOFF_VELOCITY
@@ -108,6 +112,7 @@ class TestIntegration:
         assert states_dict["MotorBurnState"].min_altitude >= -2.5  # detecting takeoff from velocity data
         assert states_dict["MotorBurnState"].max_altitude >= TAKEOFF_HEIGHT
         assert states_dict["MotorBurnState"].max_altitude <= 500.0  # Our motor burn time isn't usually that long
+        assert not states_dict["MotorBurnState"].apogee_prediction
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["MotorBurnState"].extensions)
 
         # TODO: Fix our current velocity (kalman filter). Currently tests with broken velocity values:
@@ -117,8 +122,12 @@ class TestIntegration:
         assert states_dict["CoastState"].min_velocity <= 50.0  # velocity around apogee should be low
         assert states_dict["CoastState"].min_altitude >= states_dict["MotorBurnState"].max_altitude
         assert states_dict["CoastState"].max_altitude <= 2000.0  # arbitrary value
+        apogee_pred_list = states_dict["CoastState"].apogee_prediction
+        medianPrediction = sum(apogee_pred_list)/len(apogee_pred_list)
+        max_apogee = states_dict["CoastState"].max_altitude
+        assert max_apogee*0.9 <= medianPrediction <= max_apogee*1.1
+
         # Check if we have extended the airbrakes at least once
-        # Unfortunately we read through the file too fast for it to trigger the time-based extension
         # specially on subscale flights, where coast phase is very short anyway.
         # We should hit target apogee, and then deploy airbrakes:
         assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
