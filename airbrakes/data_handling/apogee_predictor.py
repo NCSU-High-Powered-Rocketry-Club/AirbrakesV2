@@ -4,6 +4,7 @@ import multiprocessing
 import signal
 import warnings
 from collections import deque
+from multiprocessing import Event
 from typing import Literal
 
 import numpy as np
@@ -33,6 +34,7 @@ class ApogeePredictor:
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
+        "_prediction_complete",
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
@@ -53,6 +55,7 @@ class ApogeePredictor:
         self._time_differences: deque[np.float64] = deque()
         self._current_altitude: np.float64 = np.float64(0.0)
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
+        self._prediction_complete = Event()
 
     @property
     def apogee(self) -> float:
@@ -176,7 +179,6 @@ class ApogeePredictor:
 
             if data_packets == STOP_SIGNAL:
                 break
-
             for data_packet in data_packets:
                 self._accelerations.append(data_packet.vertical_acceleration)
                 self._time_differences.append(data_packet.time_since_last_data_packet)
@@ -190,3 +192,6 @@ class ApogeePredictor:
                 params = self._curve_fit()
                 self._apogee_prediction_value.value = self._get_apogee(params)
                 last_run_length = len(self._accelerations)
+
+                # notifies tests that prediction is complete
+                self._prediction_complete.set()

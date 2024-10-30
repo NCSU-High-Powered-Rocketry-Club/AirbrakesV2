@@ -116,7 +116,9 @@ class TestApogeePredictor:
         ap = apogee_predictor
         ap.start()
         ap.update(processed_data_packets.copy())
-        time.sleep(0.01)  # Wait for the prediction to finish
+        # waits for process to complete, and fails after 5 seconds to prevent infinite delays
+        ap._prediction_complete.wait(timeout=5)
+
         predicted_apogee = ap.apogee
         # Verify result is a float and equal to predicted value
         assert isinstance(predicted_apogee, float)
@@ -129,6 +131,8 @@ class TestApogeePredictor:
         apogees = []
         ap.start()
         NUMBER_OF_PACKETS = 300
+        # waits for process to complete, and fails after 5 seconds to prevent infinite delays
+        ap._prediction_complete.wait(timeout=5)
         for i in range(NUMBER_OF_PACKETS):
             packets = [
                 ProcessedDataPacket(
