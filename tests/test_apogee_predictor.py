@@ -126,7 +126,7 @@ class TestApogeePredictor:
         ap.stop()
 
     def test_prediction_loop_every_x_packets(self, apogee_predictor):
-        """Tests that the predictor only runs every 100 packets"""
+        """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
         ap = apogee_predictor
         apogees = []
         ap.start()
