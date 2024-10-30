@@ -1,36 +1,45 @@
-name: Unit Tests
+  name: Unit Tests
 
-on:
-  pull_request:
-    branches:
-      - '**'  # Matches all branch names, for PRs
-  push:
-    branches:
-      - 'main'  # Run tests on main branch
+  on:
+    pull_request:
+      branches:
+        - '**'  # Matches all branch names, for PRs
+    push:
+      branches:
+        - 'main'  # Run tests on main branch
 
-jobs:
-  pytest:
-    name: pytest
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        python-version: ['3.12']
-        os: [ubuntu-latest]
-      fail-fast: False
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: '**/requirements*.txt'
-      - name: Install dependencies
-        run: |
-          python -W ignore -m pip install --upgrade pip
-          python -W ignore -m pip install .
-          python -W ignore -m pip install .[dev]          
+  jobs:
+    pytest:
+      name: pytest
+      runs-on: ${{matrix.os}}
+      timeout-minutes: 5
+      strategy:
+        matrix:
+          python-version: ['3.12']
+          os: [ubuntu-latest]
+        fail-fast: False
+      steps:
+        - uses: actions/checkout@v4
+        - name: Set up Python ${{ matrix.python-version }}
+          uses: actions/setup-python@v5
+          with:
+            python-version: ${{ matrix.python-version }}
+            cache: 'pip'
+            cache-dependency-path: '**/requirements*.txt'
+        - name: Install dependencies
+          run: |
+            python -W ignore -m pip install --upgrade pip
+            python -W ignore -m pip install .
+            python -W ignore -m pip install .[dev]          
 
-      - name: Test with pytest
-        run: |
-            pytest -v tests/
+        - name: Run tests with coverage
+          run: |
+            # Run tests with coverage except for the integration tests
+            pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
+
+        # Add this new step to upload the coverage report as an artifact
+        - name: Upload coverage report
+          uses: actions/upload-artifact@v4
+          with:
+            name: coverage-report
+            path: htmlcov/
