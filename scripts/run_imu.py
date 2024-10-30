@@ -4,13 +4,13 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import FREQUENCY, PORT, TEST_LOGS_PATH
+from constants import IMUSettings,LoggerSettings
 from airbrakes.hardware.imu import IMU
 from airbrakes.data_handling.logger import Logger
 
 
-imu = IMU(PORT, FREQUENCY)
-logger = Logger(TEST_LOGS_PATH)
+imu = IMU(IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
+logger = Logger(LoggerSettings.TEST_LOGS_PATH.value)
 
 try:
     imu.start()

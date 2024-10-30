@@ -16,10 +16,9 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from constants import (
-    FREQUENCY,
-    LOGS_PATH,
-    PORT,
-    SERVO_PIN,
+    IMUSettings,
+    LoggerSettings,
+    ServoSettings,
 )
 from utils import arg_parser
 
@@ -44,13 +43,17 @@ def main(args: argparse.Namespace) -> None:
         # MockIMU pretends to be the imu by reading previous flight data from a log file
         imu = MockIMU(args.path, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
-        servo = Servo(SERVO_PIN) if args.real_servo else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
-        logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
+        servo = (
+            Servo(ServoSettings.SERVO_PIN.value)
+            if args.real_servo
+            else Servo(ServoSettings.SERVO_PIN.value, pin_factory=MockFactory(pin_class=MockPWMPin))
+        )
+        logger = MockLogger(LoggerSettings.LOGS_PATH.value, delete_log_file=not args.keep_log_file)
     else:
         # If we are not running a simulation, then we will use the real hardware objects
-        servo = Servo(SERVO_PIN)
-        imu = IMU(PORT, FREQUENCY)
-        logger = Logger(LOGS_PATH)
+        servo = Servo(ServoSettings.SERVO_PIN.value)
+        imu = IMU(IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
+        logger = Logger(LoggerSettings.LOGS_PATH.value)
 
     # Our data processing and apogee prediction stay the same regardless of whether we are running a simulation or not
     data_processor = IMUDataProcessor()

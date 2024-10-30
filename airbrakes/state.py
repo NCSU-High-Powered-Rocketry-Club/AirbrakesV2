@@ -4,14 +4,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from constants import (
-    DISTANCE_FROM_APOGEE,
-    GROUND_ALTITUDE,
-    MAX_VELOCITY_THRESHOLD,
-    TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE,
-)
+from constants import ApogeePredictorSettings
+from constants import StateSettings
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -83,11 +77,11 @@ class StandByState(State):
 
         data = self.context.data_processor
 
-        if data.vertical_velocity > TAKEOFF_VELOCITY:
+        if data.vertical_velocity > StateSettings.TAKEOFF_VELOCITY:
             self.next_state()
             return
 
-        if data.current_altitude > TAKEOFF_HEIGHT:
+        if data.current_altitude > StateSettings.TAKEOFF_HEIGHT:
             self.next_state()
             return
 
@@ -116,7 +110,10 @@ class MotorBurnState(State):
         # This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
         # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if (
+            data.vertical_velocity
+            < data.max_vertical_velocity - data.max_vertical_velocity * StateSettings.MAX_VELOCITY_THRESHOLD
+        ):
             self.next_state()
             return
 
@@ -151,7 +148,7 @@ class CoastState(State):
         # Check if we are going to overshoot our target apogee, and extend the airbrakes if we are.
         pred_apogee = self.context.apogee_predictor.apogee
 
-        if pred_apogee is not None and pred_apogee >= TARGET_ALTITUDE:
+        if pred_apogee is not None and pred_apogee >= ApogeePredictorSettings.TARGET_ALTITUDE.value:
             self.context.extend_airbrakes()
 
         data = self.context.data_processor
@@ -163,7 +160,7 @@ class CoastState(State):
 
         # fallback condition:
         # if our altitude has started to decrease, we have reached apogee:
-        if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
+        if data.max_altitude - data.current_altitude > StateSettings.DISTANCE_FROM_APOGEE:
             self.next_state()
             return
 
@@ -185,7 +182,7 @@ class FreeFallState(State):
         data = self.context.data_processor
 
         # If our altitude is 0, we have landed:
-        if data.current_altitude <= GROUND_ALTITUDE:
+        if data.current_altitude <= StateSettings.GROUND_ALTITUDE:
             self.next_state()
 
     def next_state(self):

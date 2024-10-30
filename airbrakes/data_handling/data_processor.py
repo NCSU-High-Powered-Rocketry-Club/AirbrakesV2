@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
+from constants import ApogeePredictorSettings, StateSettings
 from utils import deadband
 
 
@@ -309,7 +309,9 @@ class IMUDataProcessor:
         # subtracted from vertical acceleration, Then deadbanded.
         vertical_accelerations = np.array(
             [
-                deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
+                deadband(
+                    vertical_acceleration - ApogeePredictorSettings.GRAVITY.value, StateSettings.ACCELERATION_NOISE_THRESHOLD
+                )
                 for vertical_acceleration in self._rotated_accelerations[self._gravity_axis_index]
             ]
         )

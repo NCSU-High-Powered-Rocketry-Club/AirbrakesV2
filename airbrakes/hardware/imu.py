@@ -12,7 +12,7 @@ with contextlib.suppress(ImportError):
     # We should print a warning, but that messes with how the sim display looks
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
+from constants import IMUSettings
 
 
 class IMU:
@@ -39,10 +39,10 @@ class IMU:
         :param port: the port that the IMU is connected to
         :param frequency: the frequency that the IMU is set to poll at (this can be checked in SensorConnect)
         """
-        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
+        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE.value is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(MAX_QUEUE_SIZE)
+        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(IMUSettings.MAX_QUEUE_SIZE.value)
         self._running = multiprocessing.Value("b", False)  # Makes a boolean value that is shared between processes
 
         # Starts the process that fetches data from the IMU
@@ -132,9 +132,9 @@ class IMU:
                 timestamp = packet.collectedTimestamp().nanoseconds()
 
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
-                if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
+                if packet.descriptorSet() == IMUSettings.ESTIMATED_DESCRIPTOR_SET.value:
                     imu_data_packet = EstimatedDataPacket(timestamp)
-                elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+                elif packet.descriptorSet() == IMUSettings.RAW_DESCRIPTOR_SET.value:
                     imu_data_packet = RawDataPacket(timestamp)
                 else:
                     # This is an unknown packet, so we skip it

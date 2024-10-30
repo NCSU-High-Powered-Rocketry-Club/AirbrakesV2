@@ -61,7 +61,7 @@ class AirbrakesContext:
         self.apogee_predictor = apogee_predictor
 
         # Placeholder for the current airbrake extension until they are set
-        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
+        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION.value
         # The rocket starts in the StandByState
         self.state: State = StandByState(self)
         self.shutdown_requested = False
@@ -142,11 +142,11 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
-        self.current_extension = ServoExtension.MAX_EXTENSION
+        self.current_extension = ServoExtension.MAX_EXTENSION.value
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the airbrakes to the minimum extension.
         """
         self.servo.set_retracted()
-        self.current_extension = ServoExtension.MIN_EXTENSION
+        self.current_extension = ServoExtension.MIN_EXTENSION.value

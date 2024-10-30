@@ -4,14 +4,14 @@ import time
 from collections import deque
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from constants import TEST_LOGS_PATH
+from constants import LoggerSettings
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.data_handling.logger import Logger
 
 
 def main():
     # Initialize the logger
-    logger = Logger(TEST_LOGS_PATH)
+    logger = Logger(LoggerSettings.TEST_LOGS_PATH.value)
     data_processor = IMUDataProcessor(False)
 
     # Log for 5 seconds, and automatically stops logging

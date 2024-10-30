@@ -1,17 +1,22 @@
 """Contains the constants used in the airbrakes module"""
 
-from enum import Enum
-from pathlib import Path
 import typing
+from enum import Enum, IntEnum
+from pathlib import Path
+
 
 # -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
+class ServoSettings(Enum):
+    """
+    Settings the servo will use.
+    """
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
-SERVO_PIN = 12
-# This is how long the servo approximately takes to move from one extreme to the other
-SERVO_DELAY = 0.3
+    # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
+    SERVO_PIN = 12
+    # This is how long the servo approximately takes to move from one extreme to the other
+    SERVO_DELAY = 0.3
 
 
 class ServoExtension(Enum):
@@ -34,6 +39,7 @@ class IMUSettings(Enum):
     """
     Enum that represents settings of IMU
     """
+
     # The port that the IMU is connected to
     PORT = "/dev/ttyACM0"
 
@@ -57,6 +63,7 @@ class LoggerSettings(Enum):
     """
     Enum that represents the settings the logger will use.
     """
+
     # The path of the folder to hold the log files in
     LOGS_PATH = Path("logs")
     TEST_LOGS_PATH = Path("test_logs")
@@ -65,28 +72,30 @@ class LoggerSettings(Enum):
     # see stop() and _logging_loop() for more details.
     STOP_SIGNAL = "STOP"
 
-
     # Don't log more than x packets for StandbyState and LandedState
     IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
     # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be
     #  logged to make sure we don't lose data
     LOG_BUFFER_SIZE = 5000  # noqa:PIE796
 
+
 # -------------------------------------------------------
 # State Machine Configuration
 # -------------------------------------------------------
 
+
 # Arbitrarily set values for transition between states:
-class StateSettings(Enum):
+class StateSettings(IntEnum):
     """
     Enum that represents the settings the state changes will use.
     """
+
     # Standby to MotorBurn:
     ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
     # We will take the magnitude of acceleration for this
     TAKEOFF_HEIGHT = 10  # meters
-    TAKEOFF_VELOCITY = 10  # m/s #noqa:PIE796
+    TAKEOFF_VELOCITY = 10  # m/s
 
     # MotorBurn to Coasting:
 
@@ -107,6 +116,7 @@ class StateSettings(Enum):
     # Consider the rocket to have landed if it is within 15 meters of the launch site height.
     GROUND_ALTITUDE = 15.0  # meters
 
+
 # -------------------------------------------------------
 # Apogee Prediction Configuration
 # -------------------------------------------------------
@@ -114,6 +124,7 @@ class ApogeePredictorSettings(Enum):
     """
     Enum that represents the settings the apogee predictor will use.
     """
+
     # This is the standard gravity on Earth, in m/s^2
     GRAVITY = 9.798
 

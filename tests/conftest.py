@@ -13,7 +13,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import FREQUENCY, PORT, SERVO_PIN
+from constants import ServoSettings, IMUSettings
 
 LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = [
@@ -40,12 +40,12 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=PORT, frequency=FREQUENCY)
+    return IMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
 
 
 @pytest.fixture
 def servo():
-    return Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
+    return Servo(ServoSettings.SERVO_PIN.value, pin_factory=MockFactory(pin_class=MockPWMPin))
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def airbrakes(imu, logger, servo, data_processor):
 
 @pytest.fixture
 def random_data_mock_imu():
-    return RandomDataIMU(port=PORT, frequency=FREQUENCY)
+    return RandomDataIMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)

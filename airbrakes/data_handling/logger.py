@@ -11,7 +11,7 @@ from msgspec.structs import asdict
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
+from constants import LoggerSettings
 
 
 class Logger:
@@ -45,7 +45,7 @@ class Logger:
 
         # Buffer for StandbyState and LandedState
         self._log_counter = 0
-        self._log_buffer = deque(maxlen=LOG_BUFFER_SIZE)
+        self._log_buffer = deque(maxlen=LoggerSettings.LOG_BUFFER_SIZE.value)
 
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
@@ -74,7 +74,7 @@ class Logger:
         """
         Returns whether the log buffer is full.
         """
-        return len(self._log_buffer) == LOG_BUFFER_SIZE
+        return len(self._log_buffer) == LoggerSettings.LOG_BUFFER_SIZE.value
 
     def start(self) -> None:
         """
@@ -88,7 +88,7 @@ class Logger:
         """
         # Log the buffer before stopping the process
         self._log_the_buffer()
-        self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._log_queue.put(LoggerSettings.STOP_SIGNAL.value)  # Put the stop signal in the queue
         # Waits for the process to finish before stopping it
         self._log_process.join()
 
@@ -127,7 +127,7 @@ class Logger:
             # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
             # we could have gigabytes of data in the log file just for when the rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
-                if self._log_counter < IDLE_LOG_CAPACITY:
+                if self._log_counter < LoggerSettings.IDLE_LOG_CAPACITY.value:
                     # add the count:
                     self._log_counter += 1
                 else:
@@ -165,7 +165,7 @@ class Logger:
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 message_fields = self._log_queue.get()
                 # If the message is the stop signal, break out of the loop
-                if message_fields == STOP_SIGNAL:
+                if message_fields == LoggerSettings.STOP_SIGNAL.value:
                     break
                 writer.writerow(message_fields)
 

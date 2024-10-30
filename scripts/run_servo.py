@@ -4,10 +4,10 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import ServoExtension, SERVO_PIN
+from constants import ServoExtension, ServoSettings
 from airbrakes.hardware.servo import Servo
 
-servo = Servo(SERVO_PIN)
+servo = Servo(ServoSettings.SERVO_PIN.value)
 
 print("0 for testing exending/retracting, 1 for testing positions")
 if int(input()) == 0:
@@ -22,13 +22,13 @@ else:
     while True:
         match int(input()):
             case 0:
-                servo._set_extension(ServoExtension.MIN_EXTENSION)
+                servo._set_extension(ServoExtension.MIN_EXTENSION.value)
             case 1:
-                servo._set_extension(ServoExtension.MIN_NO_BUZZ)
+                servo._set_extension(ServoExtension.MIN_NO_BUZZ.value)
             case 2:
-                servo._set_extension(ServoExtension.MAX_EXTENSION)
+                servo._set_extension(ServoExtension.MAX_EXTENSION.value)
             case 3:
-                servo._set_extension(ServoExtension.MAX_NO_BUZZ)
+                servo._set_extension(ServoExtension.MAX_NO_BUZZ.value)
             case _:
                 print("Invalid input")
                 continue

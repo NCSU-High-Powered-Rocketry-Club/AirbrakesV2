@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
-from constants import FREQUENCY, PORT
+from constants import IMUSettings
 
 
 class TestIMU:
@@ -43,14 +43,14 @@ class TestIMU:
             values.put((port, frequency))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
         imu.start()
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
         time.sleep(0.01)  # Give the process time to start and put the values
         assert values.qsize() == 1
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
 
     def test_imu_stop(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
@@ -60,7 +60,7 @@ class TestIMU:
             self._data_queue.put(EstimatedDataPacket(timestamp=0))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
         imu.start()
         time.sleep(0.01)  # Sleep a bit to let the process start and put the data
         assert imu._data_queue.qsize() == 1
@@ -82,7 +82,7 @@ class TestIMU:
             values.put((port, frequency))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
         imu.start()
         assert imu._running.value
         assert imu.is_running
@@ -98,7 +98,7 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         assert values.qsize() == 1
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
 
     def test_imu_fetch_loop_exception(self, monkeypatch):
         """Tests whether the IMU's _fetch_loop propogates unknown exceptions."""
@@ -110,16 +110,16 @@ class TestIMU:
             raise ValueError("some error")
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMUSettings.PORT.value, frequency=IMUSettings.FREQUENCY.value)
         imu.start()
         with pytest.raises(ValueError, match="some error") as excinfo:
-            imu._fetch_data_loop(PORT, FREQUENCY)
+            imu._fetch_data_loop(IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
         imu.stop()
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         assert values.qsize() == 2
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMUSettings.PORT.value, IMUSettings.FREQUENCY.value)
         assert "some error" in str(excinfo.value)
 
     def test_data_packets_fetch(self, random_data_mock_imu):

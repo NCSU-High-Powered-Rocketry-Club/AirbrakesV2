@@ -5,7 +5,7 @@ import pytest
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.state import StandByState
-from constants import SERVO_DELAY, ServoExtension
+from constants import ServoExtension, ServoSettings
 
 
 class TestAirbrakesContext:
@@ -20,22 +20,22 @@ class TestAirbrakesContext:
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
-        assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION
+        assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION.value
         assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandByState)
         assert not airbrakes.shutdown_requested
 
     def test_set_extension(self, airbrakes):
-        # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
+        # Hardcoded calculated values, based on MIN_EXTENSION.value and MAX_EXTENSION.value in constants.py
         airbrakes.extend_airbrakes()
-        assert airbrakes.servo.current_extension == ServoExtension.MAX_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MAX_NO_BUZZ
+        assert airbrakes.servo.current_extension == ServoExtension.MAX_EXTENSION.value
+        time.sleep(ServoSettings.SERVO_DELAY.value + 0.1)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MAX_NO_BUZZ.value
         airbrakes.retract_airbrakes()
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value
+        time.sleep(ServoSettings.SERVO_DELAY.value + 0.1)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ.value
 
     def test_start(self, airbrakes):
         airbrakes.start()
@@ -51,7 +51,7 @@ class TestAirbrakesContext:
         assert not airbrakes.imu._running.value
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value  # set to "0"
         assert airbrakes.shutdown_requested
 
     def test_airbrakes_ctrl_c_clean_exit(self, airbrakes):

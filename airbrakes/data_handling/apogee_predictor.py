@@ -11,7 +11,7 @@ import numpy.typing as npt
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import CURVE_FIT_INITIAL, GRAVITY, STOP_SIGNAL
+from constants import ApogeePredictorSettings, LoggerSettings
 
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
@@ -83,7 +83,7 @@ class ApogeePredictor:
         Stops the logging process. It will finish logging the current message and then stop.
         """
         # Waits for the process to finish before stopping it
-        self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._prediction_queue.put(LoggerSettings.STOP_SIGNAL.value)  # Put the stop signal in the queue
         self._prediction_process.join()
 
     def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
@@ -117,7 +117,7 @@ class ApogeePredictor:
             self._curve_fit_function,
             self._cumulative_time_differences,
             self._accelerations,
-            p0=CURVE_FIT_INITIAL,
+            p0=ApogeePredictorSettings.CURVE_FIT_INITIAL.value,
             maxfev=2000,
         )
         a, b = popt
@@ -152,7 +152,7 @@ class ApogeePredictor:
         if params is None:
             return 0.0
 
-        estAccel = (params[0] * (1 - params[1] * xvec) ** 4) - GRAVITY
+        estAccel = (params[0] * (1 - params[1] * xvec) ** 4) - ApogeePredictorSettings.GRAVITY.value
         estVel = np.cumsum(estAccel[current_vec_point:-1]) * avg_dt + self._current_velocity
         estAlt = np.cumsum(estVel) * avg_dt + self._current_altitude
         return np.max(estAlt)
@@ -173,7 +173,7 @@ class ApogeePredictor:
             # prediction process will get the data packets from the queue and add them to its own arrays.
             data_packets = self._prediction_queue.get()
 
-            if data_packets == STOP_SIGNAL:
+            if data_packets == LoggerSettings.STOP_SIGNAL.value:
                 break
 
             for data_packet in data_packets:

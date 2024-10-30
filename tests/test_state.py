@@ -4,15 +4,7 @@ from abc import ABC
 import pytest
 
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
-from constants import (
-    AIRBRAKES_AFTER_COASTING,
-    GROUND_ALTITUDE,
-    LOG_BUFFER_SIZE,
-    MAX_VELOCITY_THRESHOLD,
-    MOTOR_BURN_TIME,
-    SERVO_DELAY,
-    ServoExtension,
-)
+from constants import ServoExtension, StateSettings
 
 
 @pytest.fixture
@@ -74,9 +66,9 @@ class TestState:
 
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value
+        time.sleep(StateSettings.SERVO_DELAY.value + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ.value
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -93,9 +85,9 @@ class TestStandByState:
 
     def test_init(self, stand_by_state, airbrakes):
         assert stand_by_state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value
+        time.sleep(StateSettings.SERVO_DELAY.value + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ.value
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
@@ -129,9 +121,9 @@ class TestMotorBurnState:
 
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value
+        time.sleep(StateSettings.SERVO_DELAY.value + 0.1)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ.value
         assert issubclass(motor_burn_state.__class__, State)
 
     def test_name(self, motor_burn_state):
@@ -143,8 +135,13 @@ class TestMotorBurnState:
             (0.0, 0.0, MotorBurnState, 0.0),
             (100.0, 100.0, MotorBurnState, 0.00),
             (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
-            (53.999 - 54.0 * MAX_VELOCITY_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
-            (60.0, 60.0, CoastState, MOTOR_BURN_TIME + 0.1),
+            (
+                53.999 - 54.0 * StateSettings.MAX_VELOCITY_THRESHOLD,
+                54.0,
+                CoastState,
+                0.00,
+            ),  # tests that the threshold works
+            (60.0, 60.0, CoastState, StateSettings.MOTOR_BURN_TIME + 0.1),
         ],
         ids=[
             "at_launchpad",
@@ -160,7 +157,7 @@ class TestMotorBurnState:
         time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION.value
 
 
 class TestCoastState:
@@ -173,7 +170,7 @@ class TestCoastState:
 
     def test_init(self, coast_state, airbrakes):
         assert coast_state.context == airbrakes
-        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION.value
         assert issubclass(coast_state.__class__, State)
 
     def test_name(self, coast_state):
@@ -182,10 +179,10 @@ class TestCoastState:
     @pytest.mark.parametrize(
         ("current_altitude", "max_altitude", "expected_state", "coast_time", "airbrakes_ext"),
         [
-            (200.0, 200.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
-            (100.0, 150.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
-            (100.0, 150.0, CoastState, AIRBRAKES_AFTER_COASTING + 0.01, ServoExtension.MAX_EXTENSION),
-            (100.0, 400.0, FreeFallState, 0.0, ServoExtension.MIN_EXTENSION),
+            (200.0, 200.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION.value),
+            (100.0, 150.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION.value),
+            (100.0, 150.0, CoastState, StateSettings.AIRBRAKES_AFTER_COASTING + 0.01, ServoExtension.MAX_EXTENSION.value),
+            (100.0, 400.0, FreeFallState, 0.0, ServoExtension.MIN_EXTENSION.value),
         ],
         ids=["climbing", "just_descent", "airbrakes_long_coast", "apogee_threshold"],
     )
@@ -208,7 +205,7 @@ class TestFreeFallState:
 
     def test_init(self, free_fall_state, airbrakes):
         assert free_fall_state.context == airbrakes
-        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION.value
         assert issubclass(free_fall_state.__class__, State)
 
     def test_name(self, free_fall_state):
@@ -219,7 +216,7 @@ class TestFreeFallState:
         [
             (50.0, FreeFallState),
             (19.0, FreeFallState),
-            (GROUND_ALTITUDE - 5, LandedState),
+            (StateSettings.GROUND_ALTITUDE - 5, LandedState),
         ],
         ids=["falling", "almost_landed", "landed"],
     )
@@ -227,7 +224,7 @@ class TestFreeFallState:
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION.value
 
 
 class TestLandedState:
@@ -240,7 +237,7 @@ class TestLandedState:
 
     def test_init(self, landed_state, airbrakes):
         assert landed_state.context == airbrakes
-        assert landed_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert landed_state.context.current_extension == ServoExtension.MIN_EXTENSION.value
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):
@@ -254,12 +251,12 @@ class TestLandedState:
         assert airbrakes.imu.is_running
         assert not airbrakes.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
-        airbrakes.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        airbrakes.logger._log_buffer.extend([1] * StateSettings.LOG_BUFFER_SIZE.value)
         assert airbrakes.logger.is_log_buffer_full
         landed_state.update()
         assert airbrakes.shutdown_requested
         assert not airbrakes.logger.is_running
         assert not airbrakes.imu.is_running
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION.value
         assert not airbrakes.logger.is_log_buffer_full
         assert len(airbrakes.logger._log_buffer) == 0
