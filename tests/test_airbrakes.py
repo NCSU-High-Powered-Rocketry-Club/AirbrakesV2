@@ -114,7 +114,8 @@ class TestAirbrakesContext:
             asserts.append(state == "C")
             asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
-            # asserts.append()
+            asserts.append(processed_data_packets[0].current_altitude == 0.0)
+            asserts.append(apogee == 0.0)
 
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")
