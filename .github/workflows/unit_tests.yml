@@ -33,6 +33,8 @@
             python -W ignore -m pip install .[dev]          
 
         - name: Run tests with coverage
+          env:
+            COVERAGE_RCFILE: pyproject.toml
           run: |
             pytest --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
 
