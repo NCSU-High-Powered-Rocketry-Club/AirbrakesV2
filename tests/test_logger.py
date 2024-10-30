@@ -411,6 +411,7 @@ class TestLogger:
                         "state": "S",
                         "extension": "0.1",
                         **{k: "1.98765432" for k in RawDataPacket.__struct_fields__},
+                        "predicted_apogee": "1800.00000000",
                     }
                 ],
             ),
@@ -425,6 +426,7 @@ class TestLogger:
                         "extension": "0.1",
                         **{k: "1.12345678" for k in EstimatedDataPacket.__struct_fields__},
                         **{k: "1.88776655" for k in ProcessedDataPacket.__struct_fields__},
+                        "predicted_apogee": "1800.00000000",
                     }
                 ],
             ),

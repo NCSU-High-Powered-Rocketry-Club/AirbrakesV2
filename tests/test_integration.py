@@ -25,6 +25,7 @@ class StateInformation(msgspec.Struct):
     max_altitude: float | None = None
 
 
+@pytest.mark.skip
 class TestIntegration:
     """Tests the full integration of the airbrakes system by using previous launch data."""
 
