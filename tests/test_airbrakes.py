@@ -4,7 +4,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.state import CoastState, StandByState
+from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY, ServoExtension
 
 
@@ -23,7 +23,7 @@ class TestAirbrakesContext:
         assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION
         assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
-        assert isinstance(airbrakes.state, StandByState)
+        assert isinstance(airbrakes.state, StandbyState)
         assert not airbrakes.shutdown_requested
 
     def test_set_extension(self, airbrakes):

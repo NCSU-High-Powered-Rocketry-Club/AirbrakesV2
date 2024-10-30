@@ -8,7 +8,7 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU, IMUDataPacket
 from airbrakes.hardware.servo import Servo
-from airbrakes.state import StandByState, State
+from airbrakes.state import StandbyState, State
 from constants import ServoExtension
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ class AirbrakesContext:
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
         # The rocket starts in the StandByState
-        self.state: State = StandByState(self)
+        self.state: State = StandbyState(self)
         self.shutdown_requested = False
 
     def start(self) -> None:

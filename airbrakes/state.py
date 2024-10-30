@@ -63,7 +63,7 @@ class State(ABC):
         """
 
 
-class StandByState(State):
+class StandbyState(State):
     """
     When the rocket is on the rail on the ground.
     """

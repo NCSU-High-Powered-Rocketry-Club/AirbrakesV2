@@ -3,7 +3,7 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandbyState, State
 from constants import (
     GROUND_ALTITUDE,
     LOG_BUFFER_SIZE,
@@ -32,7 +32,7 @@ def state(airbrakes):
 
 @pytest.fixture
 def stand_by_state(airbrakes):
-    return StandByState(airbrakes)
+    return StandbyState(airbrakes)
 
 
 @pytest.fixture
@@ -103,9 +103,9 @@ class TestStandByState:
     @pytest.mark.parametrize(
         ("current_velocity", "current_altitude", "expected_state"),
         [
-            (0.0, 0.0, StandByState),
+            (0.0, 0.0, StandbyState),
             (0.0, 100.0, MotorBurnState),
-            (5.0, 0.3, StandByState),
+            (5.0, 0.3, StandbyState),
             (11, 7, MotorBurnState),
             (20, 15, MotorBurnState),
         ],
