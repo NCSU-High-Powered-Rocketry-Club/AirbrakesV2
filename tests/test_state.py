@@ -181,7 +181,13 @@ class TestCoastState:
         [
             (200.0, 200.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION.value),
             (100.0, 150.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION.value),
-            (100.0, 150.0, CoastState, StateSettings.AIRBRAKES_AFTER_COASTING + 0.01, ServoExtension.MAX_EXTENSION.value),
+            (
+                100.0,
+                150.0,
+                CoastState,
+                StateSettings.AIRBRAKES_AFTER_COASTING + 0.01,
+                ServoExtension.MAX_EXTENSION.value,
+            ),
             (100.0, 400.0, FreeFallState, 0.0, ServoExtension.MIN_EXTENSION.value),
         ],
         ids=["climbing", "just_descent", "airbrakes_long_coast", "apogee_threshold"],

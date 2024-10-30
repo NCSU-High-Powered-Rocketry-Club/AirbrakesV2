@@ -310,7 +310,8 @@ class IMUDataProcessor:
         vertical_accelerations = np.array(
             [
                 deadband(
-                    vertical_acceleration - ApogeePredictorSettings.GRAVITY.value, StateSettings.ACCELERATION_NOISE_THRESHOLD
+                    vertical_acceleration - ApogeePredictorSettings.GRAVITY.value,
+                    StateSettings.ACCELERATION_NOISE_THRESHOLD,
                 )
                 for vertical_acceleration in self._rotated_accelerations[self._gravity_axis_index]
             ]
