@@ -116,7 +116,7 @@ class TestApogeePredictor:
         ap = apogee_predictor
         ap.start()
         ap.update(processed_data_packets.copy())
-        # waits for process to complete, and fails after 5 seconds to prevent infinite delays
+        # waits for process to complete, continues regardless after 5 seconds
         ap._prediction_complete.wait(timeout=5)
 
         predicted_apogee = ap.apogee
@@ -131,8 +131,6 @@ class TestApogeePredictor:
         apogees = []
         ap.start()
         NUMBER_OF_PACKETS = 300
-        # waits for process to complete, and fails after 5 seconds to prevent infinite delays
-        ap._prediction_complete.wait(timeout=5)
         for i in range(NUMBER_OF_PACKETS):
             packets = [
                 ProcessedDataPacket(
@@ -143,9 +141,11 @@ class TestApogeePredictor:
                 )
             ]
             ap.update(packets.copy())
-            time.sleep(0.001)  # Give time for the prediction to finish and add to queue
-            apogees.append(ap.apogee)
 
+            # allows update to finish, will continue regardless after timeout period
+            ap._prediction_complete.wait(timeout=0.05)
+            time.sleep(0.001)
+            apogees.append(ap.apogee)
         # sleep a bit again so the last prediction can finish:
         time.sleep(0.01)
         apogees.append(ap.apogee)

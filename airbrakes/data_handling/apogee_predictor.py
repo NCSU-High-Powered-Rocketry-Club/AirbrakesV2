@@ -192,6 +192,5 @@ class ApogeePredictor:
                 params = self._curve_fit()
                 self._apogee_prediction_value.value = self._get_apogee(params)
                 last_run_length = len(self._accelerations)
-
-                # notifies tests that prediction is complete
-                self._prediction_complete.set()
+            # notifies tests that prediction is complete
+            self._prediction_complete.set()
