@@ -12,6 +12,7 @@
     pytest:
       name: pytest
       runs-on: ${{matrix.os}}
+      timeout-minutes: 5
       strategy:
         matrix:
           python-version: ['3.12']
