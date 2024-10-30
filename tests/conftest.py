@@ -17,11 +17,10 @@ from airbrakes.mock.mock_imu import MockIMU
 from constants import FREQUENCY, PORT, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
-LAUNCH_DATA = [
-    Path("launch_data/winter_2023_launch_data.csv"),
-    Path("launch_data/interest_launch_9_28.csv"),
-]
-LAUNCH_DATA_IDS = ["winter launch", "Interest_launch_9_28"]
+# Get all csv files in the launch_data directory:
+LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
+# Use the filenames as the ids for the fixtures:
+LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 

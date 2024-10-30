@@ -20,7 +20,7 @@ class Logger:
     logging process is I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
     running it in a separate process, we can continue to log data while the main loop is running.
 
-    It uses the Python logging module to append the airbrake's current state, extension, and IMU data to our logs in
+    It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our logs in
     real time.
 
     :param log_dir: The directory where the log files will be.
