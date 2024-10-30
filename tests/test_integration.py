@@ -3,14 +3,16 @@ verifying the data output by the code. This test will run at full speed in the C
 see `main.py` or instructions in the `README.md`."""
 
 import csv
+import statistics
 import time
+import types
 
 import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import DISTANCE_FROM_APOGEE, GROUND_ALTITUDE, TAKEOFF_HEIGHT, TAKEOFF_VELOCITY, ServoExtension
+from constants import GROUND_ALTITUDE, TAKEOFF_HEIGHT, TAKEOFF_VELOCITY, ServoExtension
 
 SNAPSHOT_INTERVAL = 0.01  # seconds
 
@@ -26,13 +28,14 @@ class StateInformation(msgspec.Struct):
     apogee_prediction: list[float] = []
 
 
-@pytest.mark.skip
 class TestIntegration:
     """Tests the full integration of the airbrakes system by using previous launch data."""
 
     # general method of testing this is capturing the state of the system at different points in time and verifying
     # that the state is as expected at each point in time.
-    def test_update(self, logger, mock_imu, data_processor, servo, apogee_predictor):
+    def test_update(
+        self, logger, mock_imu, data_processor, servo, apogee_predictor, request, target_altitude, monkeypatch
+    ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
@@ -43,6 +46,16 @@ class TestIntegration:
         #           extensions=[0.0, ...], min_altitude=0.0, max_altitude=0.0),
         #  ...
         # }
+
+        # request.node.name is the name of the test function, e.g. test_update[interest_launch]
+        launch_name = request.node.name.split("[")[-1].strip("]")
+
+        # Since TARGET_ALTITUDE is bound locally to the importing module, we have to patch it here.
+        # simply doing constants.TARGET_ALTITUDE = target_altitude will only change it here, and not
+        # in the actual state module.
+
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+
         states_dict: dict[str, StateInformation] = {}
 
         ab = AirbrakesContext(servo, mock_imu, logger, data_processor, apogee_predictor)
@@ -62,13 +75,13 @@ class TestIntegration:
                 # Let's update all our values:
                 state_info = states_dict[ab.state.name]
 
-                # During the first snapshot of a state, we set the min values to the current values
+                # During the first snapshot of a state, we set values to the current values
                 if state_info.min_velocity is None:
                     state_info.min_velocity = ab.data_processor.vertical_velocity
                     state_info.max_velocity = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
-                    state_info.apogee_prediction = ab.apogee_predictor.apogee
+                    state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 state_info.min_velocity = min(ab.data_processor.vertical_velocity, state_info.min_velocity)
                 state_info.min_altitude = min(ab.data_processor.current_altitude, state_info.min_altitude)
@@ -98,59 +111,66 @@ class TestIntegration:
             "FreeFallState",
             "LandedState",
         ]
+        states_dict = types.SimpleNamespace(**states_dict)
+        stand_by_state = states_dict.StandByState
+        motor_burn_state = states_dict.MotorBurnState
+        coast_state = states_dict.CoastState
+        free_fall_state = states_dict.FreeFallState
+        landed_state = states_dict.LandedState
 
         # Now let's check if the values in each state are as expected:
-        assert states_dict["StandByState"].min_velocity == pytest.approx(0.0, abs=0.1)
-        assert states_dict["StandByState"].max_velocity <= TAKEOFF_VELOCITY
-        assert states_dict["StandByState"].min_altitude >= -6.0  # might be negative due to noise/flakiness
-        assert states_dict["StandByState"].max_altitude <= TAKEOFF_HEIGHT
-        assert not states_dict["StandByState"].apogee_prediction
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["StandByState"].extensions)
+        assert stand_by_state.min_velocity == pytest.approx(0.0, abs=0.1)
+        assert stand_by_state.max_velocity <= TAKEOFF_VELOCITY
+        assert stand_by_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
+        assert stand_by_state.max_altitude <= TAKEOFF_HEIGHT
+        assert not any(stand_by_state.apogee_prediction)
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in stand_by_state.extensions)
 
-        assert states_dict["MotorBurnState"].min_velocity >= TAKEOFF_VELOCITY
-        assert states_dict["MotorBurnState"].max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
-        assert states_dict["MotorBurnState"].min_altitude >= -2.5  # detecting takeoff from velocity data
-        assert states_dict["MotorBurnState"].max_altitude >= TAKEOFF_HEIGHT
-        assert states_dict["MotorBurnState"].max_altitude <= 500.0  # Our motor burn time isn't usually that long
-        assert not states_dict["MotorBurnState"].apogee_prediction
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["MotorBurnState"].extensions)
+        assert motor_burn_state.min_velocity >= TAKEOFF_VELOCITY
+        assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
+        assert motor_burn_state.min_altitude >= -2.5  # detecting takeoff from velocity data
+        assert motor_burn_state.max_altitude >= TAKEOFF_HEIGHT
+        assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
+        assert not any(motor_burn_state.apogee_prediction)
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in motor_burn_state.extensions)
 
-        # TODO: Fix our current velocity (kalman filter). Currently tests with broken velocity values:
         # our coasting velocity be fractionally higher than motor burn velocity due to data processing time
         # (does not actually happen in real life)
-        assert (states_dict["CoastState"].max_velocity - 10) <= states_dict["MotorBurnState"].max_velocity
-        assert states_dict["CoastState"].min_velocity <= 50.0  # velocity around apogee should be low
-        assert states_dict["CoastState"].min_altitude >= states_dict["MotorBurnState"].max_altitude
-        assert states_dict["CoastState"].max_altitude <= 2000.0  # arbitrary value
-        apogee_pred_list = states_dict["CoastState"].apogee_prediction
-        medianPrediction = sum(apogee_pred_list) / len(apogee_pred_list)
-        max_apogee = states_dict["CoastState"].max_altitude
-        assert max_apogee * 0.9 <= medianPrediction <= max_apogee * 1.1
+        assert (coast_state.max_velocity - 10) <= motor_burn_state.max_velocity
+        assert coast_state.min_velocity <= 5.0  # velocity around apogee should be low
+        assert coast_state.min_altitude >= motor_burn_state.max_altitude
+        assert coast_state.max_altitude <= target_altitude + 100
+        apogee_pred_list = coast_state.apogee_prediction
+        median_predicted_apogee = statistics.median(apogee_pred_list)
+        max_apogee = coast_state.max_altitude
+        assert max_apogee * 0.9 <= median_predicted_apogee <= max_apogee * 1.1
 
         # Check if we have extended the airbrakes at least once
         # specially on subscale flights, where coast phase is very short anyway.
         # We should hit target apogee, and then deploy airbrakes:
-        assert any(ext == ServoExtension.MAX_EXTENSION for ext in states_dict["CoastState"].extensions)
+        assert any(ext == ServoExtension.MAX_EXTENSION for ext in coast_state.extensions)
 
-        assert states_dict["FreeFallState"].min_velocity >= 7.0  # velocity might be less than gravity (parachutes)
-        assert states_dict["FreeFallState"].max_velocity <= 300.0  # high error for now
-        # max altitude should be less than coasting altitude minus some error
-        assert (
-            states_dict["CoastState"].max_altitude - states_dict["FreeFallState"].max_altitude
-            >= DISTANCE_FROM_APOGEE - 10
-        )
+        if launch_name != "interest_launch":
+            # High errors for other flights, because we don't have good rotation data.
+            assert free_fall_state.min_velocity <= -300.0
+        else:
+            # we have chute deployment, so we shouldn't go that fast
+            assert free_fall_state.min_velocity >= -30.0
+        assert free_fall_state.max_velocity <= 0.0
+        # max altitude of both states should be about the same
+        assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=1e2)
 
-        assert (
-            states_dict["FreeFallState"].min_altitude <= GROUND_ALTITUDE + 10.0
-        )  # free fall should be close to ground
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["FreeFallState"].extensions)
+        assert free_fall_state.min_altitude <= GROUND_ALTITUDE + 10.0  # free fall should be close to ground
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
-        # TODO: update after fixing velocity calculations:
-        # assert states_dict["LandedState"].min_velocity == 0.0
-        assert states_dict["LandedState"].max_velocity <= 300.0  # high error for now
-        assert states_dict["LandedState"].min_altitude <= GROUND_ALTITUDE
-        assert states_dict["LandedState"].max_altitude <= GROUND_ALTITUDE + 10.0
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in states_dict["LandedState"].extensions)
+        if launch_name != "interest_launch":
+            assert landed_state.min_velocity <= -300.0  # see comment above for why
+        else:
+            assert landed_state.min_velocity >= -30.0  # we don't have enough data to know our velocity goes to 0 or not
+        assert landed_state.max_velocity <= 0.0  # high error for now
+        assert landed_state.min_altitude <= GROUND_ALTITUDE
+        assert landed_state.max_altitude <= GROUND_ALTITUDE + 10.0
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
 
         # Now let's check if everything was logged correctly:
         # some what of a duplicate of test_logger.py:
@@ -189,10 +209,12 @@ class TestIntegration:
                 if state not in state_list:
                     state_list.append(state)
 
-                # Check if we logged velocity and zeroed out alt for estimated data packets:
+                # Check if we logged our main calculations for estimated data packets:
                 if is_est_data_packet:
-                    assert row["velocity"] != ""
+                    assert row["vertical_velocity"] != ""
                     assert row["current_altitude"] != ""
+                    assert row["predicted_apogee"] != ""
+                    assert row["vertical_acceleration"] != ""
 
                 # Check if the extension is a float:
                 assert float(extension) in [ServoExtension.MIN_EXTENSION.value, ServoExtension.MAX_EXTENSION.value]

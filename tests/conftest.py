@@ -66,7 +66,23 @@ def random_data_mock_imu():
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):
     """Fixture that returns a MockIMU object with the specified log file."""
-    return MockIMU(log_file_path=request.param, real_time_simulation=False)
+    # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is False.
+    return MockIMU(log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True)
+
+
+@pytest.fixture
+def target_altitude(request):
+    """Fixture to return the target altitude based on the mock IMU log file name."""
+    # This will be used to set the constants for the test, since they change for different flights:
+    # request.node.name is the name of the test function, e.g. test_update[interest_launch]
+    launch_name = request.node.name.split("[")[-1].strip("]")
+    # We set the target altitude about 50m less than its actual value, since we want to test
+    # that the airbrakes deploy before it hits its true apogee.
+    if launch_name == "purple_launch":
+        return 750.0  # actual apogee was about 794m
+    if launch_name == "interest_launch":
+        return 1800.0  # actual apogee was about 1854m
+    return 1000.0  # Default altitude
 
 
 class RandomDataIMU(IMU):
