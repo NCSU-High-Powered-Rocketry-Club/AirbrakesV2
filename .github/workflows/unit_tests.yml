@@ -33,10 +33,9 @@
             python -W ignore -m pip install .[dev]          
 
         - name: Run tests with coverage
-          env:
-            COVERAGE_RCFILE: pyproject.toml
           run: |
-            pytest --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
+            # Run tests with coverage except for the integration tests
+            pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
 
         # Add this new step to upload the coverage report as an artifact
         - name: Upload coverage report
