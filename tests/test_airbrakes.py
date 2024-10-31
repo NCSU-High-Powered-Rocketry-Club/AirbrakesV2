@@ -106,7 +106,7 @@ class TestAirbrakesContext:
         def state(self):
             # monkeypatched method of State
             calls.append("state update called")
-            if isinstance(self.context.state,CoastState):
+            if isinstance(self.context.state, CoastState):
                 self.context.predict_apogee()
 
         def log(self, state, extension, imu_data_packets, processed_data_packets, apogee):
