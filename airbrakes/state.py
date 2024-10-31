@@ -9,8 +9,9 @@ from constants import (
     GROUND_ALTITUDE,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY,
+    TAKEOFF_VELOCITY, MOTOR_BURN_TIME,
 )
+from utils import convert_to_nanoseconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -103,13 +104,17 @@ class MotorBurnState(State):
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = time.time()
+        self.start_time = None
 
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
         burned out."""
 
         data = self.context.data_processor
+
+        # This will only be called once, when the motor starts burning
+        if self.start_time is None:
+            self.start_time = data.current_timestamp
 
         # If our current velocity is less than our max velocity, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
@@ -120,11 +125,8 @@ class MotorBurnState(State):
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-
-        # =======DISABLED==========
-        # if time.time() - self.start_time > MOTOR_BURN_TIME:
-        #     self.next_state()
-        #     return
+        if convert_to_nanoseconds(data.current_timestamp - self.start_time) > MOTOR_BURN_TIME:
+            self.next_state()
 
     def next_state(self):
         self.context.state = CoastState(self.context)

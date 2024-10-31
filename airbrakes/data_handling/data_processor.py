@@ -84,6 +84,11 @@ class IMUDataProcessor:
         """The maximum vertical velocity the rocket has attained during the flight, in m/s."""
         return float(self._max_vertical_velocity)
 
+    @property
+    def current_timestamp(self) -> int:
+        """The timestamp of the last data point in nanoseconds."""
+        return self._data_packets[-1].timestamp
+
     def update(self, data_packets: list[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all information such as altitude,
