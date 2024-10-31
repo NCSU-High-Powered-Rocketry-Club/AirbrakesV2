@@ -265,8 +265,8 @@ class IMUDataProcessor:
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the velocity of the rocket based on the linear acceleration. Integrates the
-        linear acceleration to get the velocity.
+        Calculates the velocity of the rocket based on the rotated compensated acceleration. Integrates
+        that acceleration to get the velocity.
         :return: A numpy array of the velocity of the rocket at each data point
         """
         # Gets the vertical accelerations from the rotated acceleration vectors. gravity needs to be
