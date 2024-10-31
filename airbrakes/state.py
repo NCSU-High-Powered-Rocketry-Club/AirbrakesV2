@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    DISTANCE_FROM_APOGEE,
     GROUND_ALTITUDE,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
@@ -153,10 +152,8 @@ class CoastState(State):
 
         data = self.context.data_processor
 
-        # This will detect the state change a good while after apogee, to avoid false positives
-        # While it will be very, very far off of true free fall, it's good enough for our purposes
-        # and a false positive would be incredibly detrimental.
-        if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
+        # if our velocity is close to zero or negative, we are in free fall.
+        if data.vertical_velocity <= 0:
             self.next_state()
             return
 

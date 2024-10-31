@@ -88,13 +88,6 @@ TAKEOFF_VELOCITY = 10  # m/s
 MAX_VELOCITY_THRESHOLD = 0.03
 MOTOR_BURN_TIME = 2.6  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 
-# Coasting to Free fall:
-AIRBRAKES_AFTER_COASTING = 1.5  # seconds  (time to wait while coasting before extending the airbrakes)
-
-# Basically we don't care about switching from flight to free fall state very quickly, so if the
-# current altitude is 50 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 50  # meters
-
 # Free fall to Landing:
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height.
