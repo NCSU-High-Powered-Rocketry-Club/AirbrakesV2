@@ -42,7 +42,7 @@ class TestIntegration:
         apogee_predictor,
         request,
         # target_altitude,
-        monkeypatch,
+        # monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
         # We will be inspecting the state of the system at different points in time.
@@ -50,7 +50,7 @@ class TestIntegration:
         # values being StateInformation, which will note information about that state.
         # Example:
         # {
-        # "StandByState": StateInformation(min_velocity=0.0, max_velocity=0.0,
+        # "StandbyState": StateInformation(min_velocity=0.0, max_velocity=0.0,
         #           extensions=[0.0, ...], min_altitude=0.0, max_altitude=0.0),
         #  ...
         # }
@@ -113,14 +113,14 @@ class TestIntegration:
         assert len(states_dict) == 5
         # Order of states matters!
         assert list(states_dict.keys()) == [
-            "StandByState",
+            "StandbyState",
             "MotorBurnState",
             "CoastState",
             "FreeFallState",
             "LandedState",
         ]
         states_dict = types.SimpleNamespace(**states_dict)
-        stand_by_state = states_dict.StandByState
+        stand_by_state = states_dict.StandbyState
         motor_burn_state = states_dict.MotorBurnState
         coast_state = states_dict.CoastState
         free_fall_state = states_dict.FreeFallState
