@@ -220,7 +220,7 @@ class IMUDataProcessor:
 
             # Rotate the acceleration vector using the updated orientation
             rotated_accel = current_orientation.apply([x_accel, y_accel, z_accel])
-            # Vertical acceleration will always be the 4th element of the quaternion, regardless of orientation.
+            # Vertical acceleration will always be the 3rd element of the rotated vector, regardless of orientation.
             # For simplicity, we multiply by -1 so that acceleration during motor burn is positive, and
             # acceleration due to drag force during coast phase is negative.
             rotated_accelerations[idx] = -rotated_accel[2]
