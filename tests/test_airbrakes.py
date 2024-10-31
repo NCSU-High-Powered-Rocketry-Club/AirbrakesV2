@@ -106,12 +106,14 @@ class TestAirbrakesContext:
         def state(self):
             # monkeypatched method of State
             calls.append("state update called")
+            if isinstance(self.context.state,CoastState):
+                self.context.predict_apogee()
 
         def log(self, state, extension, imu_data_packets, processed_data_packets, apogee):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
-            asserts.append(state == "C")
+            asserts.append(state == "CoastState")
             asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
@@ -139,7 +141,7 @@ class TestAirbrakesContext:
         mocked_airbrakes.update()
 
         assert len(calls) == 4
-        assert calls == ["update called", "apogee update called", "state update called", "log called"]
+        assert calls == ["update called", "state update called", "apogee update called", "log called"]
         assert all(asserts)
 
         mocked_airbrakes.stop()
