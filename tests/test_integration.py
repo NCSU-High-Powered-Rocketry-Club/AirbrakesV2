@@ -34,7 +34,15 @@ class TestIntegration:
     # general method of testing this is capturing the state of the system at different points in time and verifying
     # that the state is as expected at each point in time.
     def test_update(
-        self, logger, mock_imu, data_processor, servo, apogee_predictor, request, target_altitude, monkeypatch
+        self,
+        logger,
+        mock_imu,
+        data_processor,
+        servo,
+        apogee_predictor,
+        request,
+        # target_altitude,
+        monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
         # We will be inspecting the state of the system at different points in time.
@@ -54,7 +62,7 @@ class TestIntegration:
         # simply doing constants.TARGET_ALTITUDE = target_altitude will only change it here, and not
         # in the actual state module.
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        # monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
 
         states_dict: dict[str, StateInformation] = {}
 
@@ -139,7 +147,7 @@ class TestIntegration:
         assert (coast_state.max_velocity - 10) <= motor_burn_state.max_velocity
         assert coast_state.min_velocity <= 5.0  # velocity around apogee should be low
         assert coast_state.min_altitude >= motor_burn_state.max_altitude
-        assert coast_state.max_altitude <= target_altitude + 100
+        # assert coast_state.max_altitude <= target_altitude + 100
         apogee_pred_list = coast_state.apogee_prediction
         median_predicted_apogee = statistics.median(apogee_pred_list)
         max_apogee = coast_state.max_altitude

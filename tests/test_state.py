@@ -82,8 +82,8 @@ class TestState:
         assert state.name == "StateImpl"
 
 
-class TestStandByState:
-    """Tests the StandByState class"""
+class TestStandbyState:
+    """Tests the StandbyState class"""
 
     def test_slots(self, stand_by_state):
         inst = stand_by_state
@@ -98,7 +98,7 @@ class TestStandByState:
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
-        assert stand_by_state.name == "StandByState"
+        assert stand_by_state.name == "StandbyState"
 
     @pytest.mark.parametrize(
         ("current_velocity", "current_altitude", "expected_state"),

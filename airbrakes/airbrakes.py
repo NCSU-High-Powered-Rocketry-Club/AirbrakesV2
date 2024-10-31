@@ -48,7 +48,7 @@ class AirbrakesContext:
     ) -> None:
         """
         Initializes the airbrakes context with the specified hardware objects, logger, and data processor. The state
-        machine starts in the StandByState, which is the initial state of the airbrakes system.
+        machine starts in the StandbyState, which is the initial state of the airbrakes system.
         :param servo: The servo object that controls the extension of the airbrakes. This can be a real servo or a mock
         servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or a mock IMU.
@@ -64,7 +64,7 @@ class AirbrakesContext:
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
-        # The rocket starts in the StandByState
+        # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()

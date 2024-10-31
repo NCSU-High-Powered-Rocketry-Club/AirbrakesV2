@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING
 from constants import (
     GROUND_ALTITUDE,
     MAX_VELOCITY_THRESHOLD,
+    MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY, MOTOR_BURN_TIME,
+    TAKEOFF_VELOCITY,
 )
 from utils import convert_to_nanoseconds
 
