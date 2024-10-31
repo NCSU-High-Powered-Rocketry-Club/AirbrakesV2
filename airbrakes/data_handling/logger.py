@@ -8,7 +8,7 @@ from pathlib import Path
 
 from msgspec.structs import asdict
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket, IMUDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL

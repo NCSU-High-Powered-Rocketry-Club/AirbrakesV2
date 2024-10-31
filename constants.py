@@ -49,8 +49,6 @@ SIMULATION_MAX_QUEUE_SIZE = 15
 # Data Processing Configuration
 # -------------------------------------------------------
 
-# Should be checked before launch
-Z_DOWN = (1, 1, -1)
 
 # -------------------------------------------------------
 # Logging Configuration
@@ -94,8 +92,8 @@ MOTOR_BURN_TIME = 2.6  # seconds (this is slightly higher than the actual burn t
 AIRBRAKES_AFTER_COASTING = 1.5  # seconds  (time to wait while coasting before extending the airbrakes)
 
 # Basically we don't care about switching from flight to free fall state very quickly, so if the
-# current altitude is 250 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 100  # meters
+# current altitude is 50 meters less than our max, then we switch
+DISTANCE_FROM_APOGEE = 50  # meters
 
 # Free fall to Landing:
 

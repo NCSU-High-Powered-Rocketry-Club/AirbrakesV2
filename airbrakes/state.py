@@ -10,7 +10,6 @@ from constants import (
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE,
 )
 
 if TYPE_CHECKING:
@@ -150,21 +149,11 @@ class CoastState(State):
         # In Coast State we start predicting the apogee
         self.context.predict_apogee()
 
-        # Check if we are going to overshoot our target apogee, and extend the airbrakes if we are.
-        pred_apogee = self.context.apogee_predictor.apogee
-
-        if pred_apogee is not None and pred_apogee >= TARGET_ALTITUDE:
-            self.context.extend_airbrakes()
-
         data = self.context.data_processor
 
-        # if our velocity is close to zero or negative, we are in free fall.
-        if data.vertical_velocity <= 0:
-            self.next_state()
-            return
-
-        # fallback condition:
-        # if our altitude has started to decrease, we have reached apogee:
+        # This will detect the state change a good while after apogee, to avoid false positives
+        # While it will be very, very far off of true free fall, it's good enough for our purposes
+        # and a false positive would be incredibly detrimental.
         if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
             self.next_state()
             return

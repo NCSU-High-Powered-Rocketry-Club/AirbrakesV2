@@ -296,6 +296,6 @@ class IMUDataProcessor:
         """
         # calculate the time differences between each data point
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
-        # We are using the last data point to calculate the time difference  between the last data point from the
+        # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
         return np.diff([data_packet.timestamp for data_packet in [self._last_data_packet, *self._data_packets]]) * 1e-9
