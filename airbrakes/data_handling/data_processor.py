@@ -4,6 +4,7 @@ from collections import deque
 
 import numpy as np
 import numpy.typing as npt
+from scipy.spatial.transform import Rotation as R
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
@@ -47,7 +48,7 @@ class IMUDataProcessor:
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
         self._last_data_packet: EstimatedDataPacket | None = None
-        self._current_orientation_quaternions: npt.NDArray[np.float64] | None = None
+        self._current_orientation_quaternions: R | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
@@ -147,35 +148,6 @@ class IMUDataProcessor:
             )
         )
 
-    @staticmethod
-    def _multiply_quaternions(
-        first_quaternion: npt.NDArray[np.float64], second_quaternion: npt.NDArray[np.float64]
-    ) -> npt.NDArray[np.float64]:
-        """
-        Calculates the quaternion multiplication. quaternion multiplication is not commutative, e.g. q1q2 =/= q2q1
-        :param first_quaternion: numpy array with the first quaternion in row form
-        :param second_quaternion: numpy array with the second quaternion in row form
-        :return: numpy array with the multiplied quaternion
-        """
-        w1, x1, y1, z1 = first_quaternion
-        w2, x2, y2, z2 = second_quaternion
-
-        w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
-        x = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
-        y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
-        z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
-        return np.array([w, x, y, z])
-
-    @staticmethod
-    def _calculate_quaternion_conjugate(quaternion: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        """
-        Calculates the conjugate of a quaternion
-        :param quaternion: numpy array with a quaternion in row form
-        :return: numpy array with the quaternion conjugate
-        """
-        w, x, y, z = quaternion
-        return np.array([w, -x, -y, -z])
-
     def _first_update(self) -> None:
         """
         Sets up the initial values for the data processor. This includes setting the initial
@@ -192,13 +164,18 @@ class IMUDataProcessor:
         )
 
         # This is us getting the rocket's initial orientation
-        self._current_orientation_quaternions = np.array(
-            [
-                self._last_data_packet.estOrientQuaternionW,
-                self._last_data_packet.estOrientQuaternionX,
-                self._last_data_packet.estOrientQuaternionY,
-                self._last_data_packet.estOrientQuaternionZ,
-            ]
+        # Convert initial orientation quaternion array to a scipy Rotation object
+        # This will automatically normalize the quaternion as well:
+        self._current_orientation_quaternions = R.from_quat(
+            np.array(
+                [
+                    self._last_data_packet.estOrientQuaternionW,
+                    self._last_data_packet.estOrientQuaternionX,
+                    self._last_data_packet.estOrientQuaternionY,
+                    self._last_data_packet.estOrientQuaternionZ,
+                ]
+            ),
+            scalar_first=True,  # This means the order is w, x, y, z.
         )
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
@@ -223,6 +200,7 @@ class IMUDataProcessor:
         # We pre-allocate the space for our accelerations first
         rotated_accelerations = np.zeros(len(self._data_packets))
 
+        current_orientation = self._current_orientation_quaternions
         # Iterates through the data points and time differences between the data points
         for idx, (data_packet, dt) in enumerate(zip(self._data_packets, self._time_differences, strict=True)):
             # Accelerations are in m/s^2
@@ -234,37 +212,26 @@ class IMUDataProcessor:
             gyro_y = data_packet.estAngularRateY
             gyro_z = data_packet.estAngularRateZ
 
-            # If we are missing the data points, then say accelerations are zero
+            # Check for missing data points
             if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
                 return rotated_accelerations
 
-            # rotation matrix for rate of change quaternion, with epsilon and K used to drive the norm to 1
-            # explained at the bottom of this page: https://www.mathworks.com/help/aeroblks/6dofquaternion.html
-            gyro_to_quaternion_matrix = np.array(
-                [
-                    [0, -gyro_x, -gyro_y, -gyro_z],
-                    [gyro_x, 0, gyro_z, -gyro_y],
-                    [gyro_y, -gyro_z, 0, gyro_x],
-                    [gyro_z, gyro_y, -gyro_x, 0],
-                ]
-            )
+            # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
+            # Calculate the delta quaternion from the angular rates
+            delta_rotation = R.from_rotvec([gyro_x * dt, gyro_y * dt, gyro_z * dt])
 
-            delta_quat = 0.5 * np.matmul(gyro_to_quaternion_matrix, np.transpose(self._current_orientation_quaternions))
-            # Updates quaternion by adding delta quaternion, and rotates acceleration vector
-            self._current_orientation_quaternions += np.transpose(delta_quat) * dt
-            # Normalize quaternion
-            self._current_orientation_quaternions /= np.linalg.norm(self._current_orientation_quaternions)
-            # Rotate acceleration by quaternion
-            accel_quat = np.array([0, x_accel, y_accel, z_accel])
-            accel_rotated_quat = self._multiply_quaternions(
-                self._multiply_quaternions(self._current_orientation_quaternions, accel_quat),
-                self._calculate_quaternion_conjugate(self._current_orientation_quaternions),
-            )
+            # Update the current orientation by applying the delta rotation
+            current_orientation = current_orientation * delta_rotation
 
-            # Vertical acceleration will always be the 4th element of the quaternion, regardless of orientation.
+            # Rotate the acceleration vector using the updated orientation
+            rotated_accel = current_orientation.apply([x_accel, y_accel, z_accel])
+            # Vertical acceleration will always be the 3rd element of the rotated vector, regardless of orientation.
             # For simplicity, we multiply by -1 so that acceleration during motor burn is positive, and
             # acceleration due to drag force during coast phase is negative.
-            rotated_accelerations[idx] = accel_rotated_quat[3] * -1
+            rotated_accelerations[idx] = -rotated_accel[2]
+
+        # Update the class attribute with the latest quaternion orientation
+        self._current_orientation_quaternions = current_orientation
 
         return rotated_accelerations
 
@@ -282,6 +249,8 @@ class IMUDataProcessor:
                 for vertical_acceleration in self._rotated_accelerations
             ]
         )
+        # Technical notes: Trying to vectorize the deadband function via np.vectorize() or np.frompyfunc() is
+        # slower than this approach.
 
         # Integrate the accelerations to get the velocities
         vertical_velocities = self._previous_vertical_velocity + np.cumsum(
@@ -303,4 +272,4 @@ class IMUDataProcessor:
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
-        return np.diff([data_packet.timestamp for data_packet in [self._last_data_packet, *self._data_packets]]) * 1e-9
+        return np.diff([data_packet.timestamp * 1e-9 for data_packet in [self._last_data_packet, *self._data_packets]])
