@@ -10,6 +10,7 @@ from constants import (
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
+    TARGET_ALTITUDE,
 )
 from utils import convert_to_nanoseconds
 
@@ -125,7 +126,7 @@ class MotorBurnState(State):
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if convert_to_nanoseconds(data.current_timestamp - self.start_time) > MOTOR_BURN_TIME:
+        if convert_to_nanoseconds(data.current_timestamp - self.start_time) > MOTOR_BURN_TIME * 1e9:
             self.next_state()
 
     def next_state(self):
@@ -153,8 +154,17 @@ class CoastState(State):
 
         data = self.context.data_processor
 
+        # if our prediction is overshooting our target altitude, extend the airbrakes
+        if self.context.apogee_predictor._apogee_prediction_value.value > TARGET_ALTITUDE:
+            self.context.extend_airbrakes()
+
         # if our velocity is close to zero or negative, we are in free fall.
         if data.vertical_velocity <= 0:
+            self.next_state()
+            return
+
+        # As backup in case of error, if our current altitude is less than 90% of max altitude, we are in free fall.
+        if data.current_altitude <= data.max_altitude * 0.9:
             self.next_state()
             return
 

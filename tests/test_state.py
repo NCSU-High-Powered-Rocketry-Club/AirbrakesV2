@@ -3,6 +3,7 @@ from abc import ABC
 
 import pytest
 
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandbyState, State
 from constants import (
     GROUND_ALTITUDE,
@@ -154,6 +155,7 @@ class TestMotorBurnState:
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
+        motor_burn_state.context.data_processor._data_packets = [EstimatedDataPacket(1e9)]
         time.sleep(burn_time)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
