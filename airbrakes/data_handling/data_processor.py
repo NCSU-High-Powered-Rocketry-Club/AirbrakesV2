@@ -244,6 +244,8 @@ class IMUDataProcessor:
                 for vertical_acceleration in self._rotated_accelerations
             ]
         )
+        # Technical notes: Trying to vectorize the deadband function via np.vectorize() or np.frompyfunc() is
+        # slower than this approach.
 
         # Integrate the accelerations to get the velocities
         vertical_velocities = self._previous_vertical_velocity + np.cumsum(
@@ -265,4 +267,4 @@ class IMUDataProcessor:
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
         # We are using the last data point to calculate the time difference  between the last data point from the
         # previous loop, and the first data point from the current loop
-        return np.diff([data_packet.timestamp for data_packet in [self._last_data_packet, *self._data_packets]]) * 1e-9
+        return np.diff([data_packet.timestamp * 1e-9 for data_packet in [self._last_data_packet, *self._data_packets]])
