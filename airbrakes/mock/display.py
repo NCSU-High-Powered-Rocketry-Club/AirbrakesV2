@@ -35,6 +35,7 @@ class FlightDisplay:
         "_cpu_thread",
         "_cpu_usages",
         "_launch_file",
+        "_launch_time",
         "_processes",
         "_thread_target",
         "airbrakes",
@@ -51,6 +52,7 @@ class FlightDisplay:
         init(autoreset=True)  # Automatically reset colors after each print
         self.airbrakes = airbrakes
         self.start_time = start_time
+        self._launch_time: int = 0  # Launch time from MotorBurnState
         # Prepare the processes for monitoring in the simulation:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -121,14 +123,25 @@ class FlightDisplay:
         except NotImplementedError:  # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
+        # Set the launch time if it hasn't been set yet:
+        if not self._launch_time and self.airbrakes.state.name == "MotorBurnState":
+            self._launch_time = self.airbrakes.state.start_time_ns
+
+        if self._launch_time:
+            current_time = (self.airbrakes.data_processor.current_timestamp - self._launch_time) * 1e-9
+        else:
+            current_time = 0
+
         # Prepare output
         data_processor = self.airbrakes.data_processor
         apogee_predictor = self.airbrakes.apogee_predictor
         output = [
             f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
             f"Sim file:                  {C}{self._launch_file}{RESET}",
+            f"Time since sim start:      {C}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
-            f"Time since sim start:      {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
+            # Format time as MM:SS:
+            f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(current_time))}{RESET}",
             f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
             f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
