@@ -46,11 +46,9 @@ MAX_QUEUE_SIZE = 100000
 SIMULATION_MAX_QUEUE_SIZE = 15
 
 # -------------------------------------------------------
-# Orientation Configuration
+# Data Processing Configuration
 # -------------------------------------------------------
 
-# Should be checked before launch
-UPSIDE_DOWN = False
 
 # -------------------------------------------------------
 # Logging Configuration
@@ -81,20 +79,14 @@ ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_SPEED = 10  # m/s
+TAKEOFF_VELOCITY = 10  # m/s
 
 # MotorBurn to Coasting:
 
-# We will only say that the motor has stopped burning if the current speed <= Max Speed * (1 - MAX_SPEED_THRESHOLD)
-MAX_SPEED_THRESHOLD = 0.03
-MOTOR_BURN_TIME = 2.25  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
-
-# Coasting to Free fall:
-AIRBRAKES_AFTER_COASTING = 1.5  # seconds  (time to wait while coasting before extending the airbrakes)
-
-# Basically we don't care about switching from flight to free fall state very quickly, so if the
-# current altitude is 250 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 100  # meters
+# We will only say that the motor has stopped burning if the
+# current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
+MAX_VELOCITY_THRESHOLD = 0.03
+MOTOR_BURN_TIME = 2.6  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 
 # Free fall to Landing:
 
@@ -105,5 +97,10 @@ GROUND_ALTITUDE = 15.0  # meters
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+# This is the standard gravity on Earth, in m/s^2
+GRAVITY = 9.798
+
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 1554  # m (5,100 ft)
+TARGET_ALTITUDE = 1700  # m (5,100 ft)
+CURVE_FIT_INITIAL = [-10.5, 0.03]
+APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz

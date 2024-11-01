@@ -59,8 +59,11 @@ class LoggedDataPacket(msgspec.Struct):
 
     # Processed Data Packet Fields
     current_altitude: str | None = None
-    speed: str | None = None
-    # Not logging maxes because they are easily found
+    vertical_velocity: str | None = None
+    vertical_acceleration: str | None = None
+
+    # field which is not in any of the data packets:
+    predicted_apogee: str | None = None
 
     def set_estimated_data_packet_attributes(self, data_packet: EstimatedDataPacket) -> None:
         """
@@ -70,7 +73,7 @@ class LoggedDataPacket(msgspec.Struct):
         This function could be a lot cleaner and just use getattr() and setattr(), but that is
         slower and takes up 15% of the main loop execution time.
 
-        :param estimated_data_packet: The estimated data packet to set the attributes from.
+        :param data_packet: The estimated data packet to set the attributes from.
         """
         # super ugly code, but it results in a 10-14% speedup overall
         # The speed improvements come from not looping through the fields of the data packet
@@ -155,4 +158,5 @@ class LoggedDataPacket(msgspec.Struct):
         Sets the attributes of the data packet corresponding to the processed data packet.
         """
         self.current_altitude = f"{processed_data_packet.current_altitude:.8f}"
-        self.speed = f"{processed_data_packet.speed:.8f}"
+        self.vertical_velocity = f"{processed_data_packet.vertical_velocity:.8f}"
+        self.vertical_acceleration = f"{processed_data_packet.vertical_acceleration:.8f}"

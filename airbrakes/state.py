@@ -5,13 +5,12 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    AIRBRAKES_AFTER_COASTING,
-    DISTANCE_FROM_APOGEE,
     GROUND_ALTITUDE,
-    MAX_SPEED_THRESHOLD,
+    MAX_VELOCITY_THRESHOLD,
     MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
-    TAKEOFF_SPEED,
+    TAKEOFF_VELOCITY,
+    TARGET_ALTITUDE,
 )
 
 if TYPE_CHECKING:
@@ -64,7 +63,7 @@ class State(ABC):
         """
 
 
-class StandByState(State):
+class StandbyState(State):
     """
     When the rocket is on the rail on the ground.
     """
@@ -73,18 +72,18 @@ class StandByState(State):
 
     def update(self):
         """
-        Checks if the rocket has launched, based on our speed and altitude.
+        Checks if the rocket has launched, based on our velocity and altitude.
         """
         # We need to check if the rocket has launched, if it has, we move to the next state.
         # For that we can check:
-        # 1) Speed - If the speed of the rocket is above a threshold, the rocket has
+        # 1) Velocity - If the velocity of the rocket is above a threshold, the rocket has
         # launched.
         # 2) Altitude - If the altitude is above a threshold, the rocket has launched.
         # Ideally we would directly communicate with the motor, but we don't have that capability.
 
         data = self.context.data_processor
 
-        if data.speed > TAKEOFF_SPEED:
+        if data.vertical_velocity > TAKEOFF_VELOCITY:
             self.next_state()
             return
 
@@ -101,11 +100,12 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ("start_time",)
+    __slots__ = ("start_time_ns",)
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = time.time()
+        # This will only be called once, when the motor starts burning
+        self.start_time_ns = context.data_processor.current_timestamp
 
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
@@ -113,18 +113,17 @@ class MotorBurnState(State):
 
         data = self.context.data_processor
 
-        # If our current speed is less than our max speed, that means we have stopped accelerating
+        # If our current velocity is less than our max velocity, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
-        # We make sure that it is not just a temporary fluctuation by checking if the speed is a bit less than the max
-        # speed
-        if data.speed < data.max_speed - data.max_speed * MAX_SPEED_THRESHOLD:
+        # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
+        # bit less than the max velocity
+        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
             self.next_state()
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if time.time() - self.start_time > MOTOR_BURN_TIME:
+        if data.current_timestamp - self.start_time_ns > MOTOR_BURN_TIME * 1e9:
             self.next_state()
-            return
 
     def next_state(self):
         self.context.state = CoastState(self.context)
@@ -146,15 +145,22 @@ class CoastState(State):
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
 
-        # We extend the airbrakes after 1.5 seconds of coasting:
-        if time.time() - self.start_time > AIRBRAKES_AFTER_COASTING and not self.airbrakes_extended:
-            self.context.extend_airbrakes()
-            self.airbrakes_extended = True
+        # In Coast State we start predicting the apogee
+        self.context.predict_apogee()
 
         data = self.context.data_processor
 
-        # if our altitude has started to decrease, we have reached apogee:
-        if data.max_altitude - data.current_altitude > DISTANCE_FROM_APOGEE:
+        # if our prediction is overshooting our target altitude, extend the airbrakes
+        if self.context.apogee_predictor.apogee > TARGET_ALTITUDE:
+            self.context.extend_airbrakes()
+
+        # if our velocity is close to zero or negative, we are in free fall.
+        if data.vertical_velocity <= 0:
+            self.next_state()
+            return
+
+        # As backup in case of error, if our current altitude is less than 90% of max altitude, we are in free fall.
+        if data.current_altitude <= data.max_altitude * 0.9:
             self.next_state()
             return
 

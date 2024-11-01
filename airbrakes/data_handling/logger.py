@@ -8,7 +8,7 @@ from pathlib import Path
 
 from msgspec.structs import asdict
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
@@ -96,8 +96,9 @@ class Logger:
         self,
         state: str,
         extension: float,
-        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
+        imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -105,9 +106,16 @@ class Logger:
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
+        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched from
+            the apogee predictor, which runs in a separate process, it may not be the most recent value,
+            nor would it correspond to the respective data packet being logged.
         """
         logged_data_packets = self._create_logged_data_packets(
-            state, extension, imu_data_packets, processed_data_packets
+            state[0],  # We only want the first letter of the state to save space
+            extension,
+            imu_data_packets,
+            processed_data_packets,
+            predicted_apogee,
         )
 
         # Loop through all the IMU data packets
@@ -143,40 +151,6 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
-    def _create_logged_data_packets(
-        self,
-        state: str,
-        extension: float,
-        imu_data_packets: deque[EstimatedDataPacket | RawDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
-    ) -> deque[LoggedDataPacket]:
-        """
-        Creates a data packet representing a row of data to be logged.
-        :param state: The current state of the airbrakes.
-        :param extension: The current extension of the airbrakes.
-        :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :return: A deque of LoggedDataPacket objects.
-        """
-        logged_data_packets: deque[LoggedDataPacket] = deque()
-
-        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
-        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
-        # data packet
-        for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(
-                state, extension, data_packet.timestamp, invalid_fields=data_packet.invalid_fields
-            )
-            if isinstance(data_packet, EstimatedDataPacket):
-                # For every estimated data packet, we have a corresponding processed data packet
-                logged_data_packet.set_estimated_data_packet_attributes(data_packet)
-                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
-            else:
-                logged_data_packet.set_raw_data_packet_attributes(data_packet)
-
-            logged_data_packets.append(logged_data_packet)
-        return logged_data_packets
-
     def _logging_loop(self) -> None:
         """
         The loop that saves data to the logs. It runs in parallel with the main loop.
@@ -194,3 +168,42 @@ class Logger:
                 if message_fields == STOP_SIGNAL:
                     break
                 writer.writerow(message_fields)
+
+    @staticmethod
+    def _create_logged_data_packets(
+        state: str,
+        extension: float,
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
+    ) -> deque[LoggedDataPacket]:
+        """
+        Creates a data packet representing a row of data to be logged.
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
+        :return: A deque of LoggedDataPacket objects.
+        """
+        logged_data_packets: deque[LoggedDataPacket] = deque()
+
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
+        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
+        # data packet
+        for data_packet in imu_data_packets:
+            logged_data_packet = LoggedDataPacket(
+                state,
+                extension,
+                data_packet.timestamp,
+                invalid_fields=data_packet.invalid_fields,
+                predicted_apogee=f"{predicted_apogee:.8f}",
+            )
+            if isinstance(data_packet, EstimatedDataPacket):
+                # For every estimated data packet, we have a corresponding processed data packet
+                logged_data_packet.set_estimated_data_packet_attributes(data_packet)
+                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
+            else:
+                logged_data_packet.set_raw_data_packet_attributes(data_packet)
+
+            logged_data_packets.append(logged_data_packet)
+        return logged_data_packets
