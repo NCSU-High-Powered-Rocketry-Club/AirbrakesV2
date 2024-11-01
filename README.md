@@ -37,6 +37,7 @@ flowchart TD
     Airbrakes --> Update[update]:::bubble
     %% IMU Data Packet Flow
     IMUDataPacket --> Update
+    Apogee_Predictor --> Update
     
     %% States as individual nodes
     State((State)):::circular
@@ -59,18 +60,20 @@ flowchart TD
     %% Connections with Labels
     Airbrakes ---|Child Process| Logger((Logger)):::circular
     Airbrakes ---|Child Process| IMU((IMU)):::circular
+    Airbrakes ---|Child Process| Apogee_Predictor((Apogee Predictor)):::circular
     IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
 
     %% IMU Data Processing
     IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
-    %%IMUDataProcessor --> ProcessedData[(Processed Data Packet)]:::outputSquare
     IMUDataProcessor --> Velocity[(Velocity)]:::outputSquare
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
+    IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
     Velocity -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Rotated_Accel -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     
-     ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
+    ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
 
     %% Logging Mechanism
     Logger --> LogFunction[log]:::bubble
