@@ -4,7 +4,14 @@ from abc import ABC
 import pytest
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandbyState, State
+from airbrakes.state import (
+    CoastState,
+    FreeFallState,
+    LandedState,
+    MotorBurnState,
+    StandbyState,
+    State,
+)
 from constants import (
     GROUND_ALTITUDE,
     LOG_BUFFER_SIZE,
@@ -111,7 +118,13 @@ class TestStandbyState:
             (11, 7, MotorBurnState),
             (20, 15, MotorBurnState),
         ],
-        ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_velocity"],
+        ids=[
+            "at_launchpad",
+            "only_alt_update",
+            "slow_alt_update",
+            "optimal_condition",
+            "high_velocity",
+        ],
     )
     def test_update(self, stand_by_state, current_velocity, current_altitude, expected_state):
         stand_by_state.context.data_processor._vertical_velocities = [current_velocity]
@@ -145,7 +158,12 @@ class TestMotorBurnState:
             (0.0, 0.0, MotorBurnState, 0.0),
             (100.0, 100.0, MotorBurnState, 0.00),
             (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
-            (53.999 - 54.0 * MAX_VELOCITY_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
+            (
+                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
+                54.0,
+                CoastState,
+                0.00,
+            ),  # tests that the threshold works
             (600.2, 600.2, CoastState, MOTOR_BURN_TIME + 0.1),
             (600.2, 600.2, MotorBurnState, MOTOR_BURN_TIME - 0.1),
         ],
@@ -158,10 +176,14 @@ class TestMotorBurnState:
             "faulty_velocity_below_motor_burn_time",
         ],
     )
-    def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time):
+    def test_update(
+        self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time
+    ):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(burn_time * 1e9)
+        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(
+            burn_time * 1e9
+        )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION

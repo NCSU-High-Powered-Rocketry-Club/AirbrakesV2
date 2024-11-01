@@ -6,7 +6,11 @@ from collections import deque
 
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
+)
 from airbrakes.hardware.imu import IMU
 from constants import FREQUENCY, PORT
 

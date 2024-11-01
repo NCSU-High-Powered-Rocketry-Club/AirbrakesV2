@@ -55,8 +55,12 @@ class FlightDisplay:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
         # daemon threads are killed when the main thread exits.
-        self._thread_target = threading.Thread(target=self.update_display, daemon=True, name="Real Time Display Thread")
-        self._cpu_thread = threading.Thread(target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread")
+        self._thread_target = threading.Thread(
+            target=self.update_display, daemon=True, name="Real Time Display Thread"
+        )
+        self._cpu_thread = threading.Thread(
+            target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread"
+        )
         # Create events to signal the end of the simulation.
         self.end_sim_natural = threading.Event()
         self.end_sim_interrupted = threading.Event()
@@ -68,8 +72,9 @@ class FlightDisplay:
             self._launch_file = "N/A"
 
     def start(self) -> None:
-        """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring in
-        the simulation. This should only be done *after* airbrakes.start() is called, because we need the process IDs.
+        """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring
+        in the simulation. This should only be done *after* airbrakes.start() is called, because we
+        need the process IDs.
         """
         self._processes = self.prepare_process_dict()
         self._cpu_usages = {name: 0.0 for name in self._processes}
@@ -77,8 +82,8 @@ class FlightDisplay:
         self._thread_target.start()
 
     def stop(self) -> None:
-        """Stops the display thread. Similar to start(), this must be called *before* airbrakes.stop() is called
-        to prevent psutil from raising a NoSuchProcess exception.
+        """Stops the display thread. Similar to start(), this must be called *before*
+        airbrakes.stop() is called to prevent psutil from raising a NoSuchProcess exception.
         """
         self._cpu_thread.join()
         self._thread_target.join()
@@ -90,8 +95,8 @@ class FlightDisplay:
         while not self.end_sim_natural.is_set() and not self.end_sim_interrupted.is_set():
             for name, process in self._processes.items():
                 # interval=None is not recommended and can be inaccurate.
-                # We normalize the CPU usage by the number of CPUs to get average cpu usage, otherwise
-                # it's usually > 100%.
+                # We normalize the CPU usage by the number of CPUs to get average cpu usage,
+                # otherwise it's usually > 100%.
                 try:
                     self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
                 except psutil.NoSuchProcess:
@@ -100,7 +105,8 @@ class FlightDisplay:
 
     def update_display(self) -> None:
         """
-        Updates the display with real-time data. Runs in another thread. Automatically stops when the simulation ends.
+        Updates the display with real-time data. Runs in another thread. Automatically stops when
+        the simulation ends.
         """
         while True:
             if self.end_sim_natural.is_set():
@@ -118,7 +124,8 @@ class FlightDisplay:
         """
         try:
             current_queue_size = self.airbrakes.imu._data_queue.qsize()
-        except NotImplementedError:  # Returns NotImplementedError on arm architecture (Raspberry Pi)
+        except NotImplementedError:
+            # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
         # Prepare output
@@ -128,12 +135,12 @@ class FlightDisplay:
             f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
-            f"Time since sim start:      {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",
+            f"Time since sim start:      {G}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
-            f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
-            f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",
-            f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",
-            f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",
+            f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
+            f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
+            f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+            f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
