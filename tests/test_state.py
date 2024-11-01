@@ -144,19 +144,22 @@ class TestMotorBurnState:
             (100.0, 100.0, MotorBurnState, 0.00),
             (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
             (53.999 - 54.0 * MAX_VELOCITY_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
+            (53.9, 54.0, CoastState, 3.00),  # tests that we switch states if over the motor burn time constant
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
             "decreasing_velocity_under_threshold",
             "decreasing_velocity_over_threshold",
+            "over_burnout_time",
         ],
     )
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._data_packets = [EstimatedDataPacket(1e9)]
+        motor_burn_state.start_time = 0
         time.sleep(burn_time)
+        motor_burn_state.context.data_processor._data_packets = [EstimatedDataPacket(burn_time * 1e9)]
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
