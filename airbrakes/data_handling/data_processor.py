@@ -87,8 +87,11 @@ class IMUDataProcessor:
 
     @property
     def current_timestamp(self) -> int:
-        """The timestamp of the last data point in nanoseconds."""
-        return self._data_packets[-1].timestamp
+        """The timestamp of the last data packet in nanoseconds."""
+        try:
+            return self._last_data_packet.timestamp
+        except AttributeError:  # If we don't have a last data packet
+            return 0
 
     def update(self, data_packets: list[EstimatedDataPacket]) -> None:
         """

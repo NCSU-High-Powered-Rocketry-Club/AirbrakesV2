@@ -9,6 +9,7 @@ from constants import (
     GROUND_ALTITUDE,
     LOG_BUFFER_SIZE,
     MAX_VELOCITY_THRESHOLD,
+    MOTOR_BURN_TIME,
     SERVO_DELAY,
     TARGET_ALTITUDE,
     ServoExtension,
@@ -133,6 +134,7 @@ class TestMotorBurnState:
         time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
+        assert motor_burn_state.start_time_ns == 0
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
@@ -144,22 +146,22 @@ class TestMotorBurnState:
             (100.0, 100.0, MotorBurnState, 0.00),
             (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
             (53.999 - 54.0 * MAX_VELOCITY_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
-            (53.9, 54.0, CoastState, 3.00),  # tests that we switch states if over the motor burn time constant
+            (600.2, 600.2, CoastState, MOTOR_BURN_TIME + 0.1),
+            (600.2, 600.2, MotorBurnState, MOTOR_BURN_TIME - 0.1),
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
             "decreasing_velocity_under_threshold",
             "decreasing_velocity_over_threshold",
-            "over_burnout_time",
+            "faulty_velocity_above_motor_burn_time",
+            "faulty_velocity_below_motor_burn_time",
         ],
     )
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.start_time = 0
-        time.sleep(burn_time)
-        motor_burn_state.context.data_processor._data_packets = [EstimatedDataPacket(burn_time * 1e9)]
+        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(burn_time * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION

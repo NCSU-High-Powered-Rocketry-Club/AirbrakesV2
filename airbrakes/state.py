@@ -101,21 +101,18 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ("start_time",)
+    __slots__ = ("start_time_ns",)
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = None
+        # This will only be called once, when the motor starts burning
+        self.start_time_ns = context.data_processor.current_timestamp
 
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
         burned out."""
 
         data = self.context.data_processor
-
-        # This will only be called once, when the motor starts burning
-        if self.start_time is None:
-            self.start_time = data.current_timestamp
 
         # If our current velocity is less than our max velocity, that means we have stopped accelerating
         # This is the same thing as checking if our accel sign has flipped
@@ -126,7 +123,7 @@ class MotorBurnState(State):
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if convert_to_nanoseconds(data.current_timestamp - self.start_time) > MOTOR_BURN_TIME * 1e9:
+        if data.current_timestamp - self.start_time_ns > MOTOR_BURN_TIME * 1e9:
             self.next_state()
 
     def next_state(self):
