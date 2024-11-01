@@ -29,6 +29,7 @@ class AirbrakesContext:
         "apogee_predictor",
         "current_extension",
         "data_processor",
+        "est_data_packets",
         "imu",
         "imu_data_packets",
         "logger",
@@ -69,6 +70,7 @@ class AirbrakesContext:
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processed_data_packets: deque[ProcessedDataPacket] = deque()
+        self.est_data_packets: list[EstimatedDataPacket] = []
 
     def start(self) -> None:
         """
@@ -108,7 +110,7 @@ class AirbrakesContext:
             return
 
         # Split the data packets into estimated and raw data packets for use in processing and logging
-        est_data_packets = [
+        self.est_data_packets = [
             data_packet
             for data_packet in self.imu_data_packets.copy()
             if isinstance(data_packet, EstimatedDataPacket)
@@ -116,7 +118,7 @@ class AirbrakesContext:
         ]
 
         # Update the processed data with the new data packets. We only care about EstimatedDataPackets
-        self.data_processor.update(est_data_packets)
+        self.data_processor.update(self.est_data_packets)
 
         # Get the processed data packets from the data processor, this will have the same length as the number of
         # EstimatedDataPackets in data_packets
@@ -133,6 +135,10 @@ class AirbrakesContext:
             self.processed_data_packets,
             self.apogee_predictor.apogee,
         )
+        # CAUTION: You would need to copy() self.processed_data_packets in the log line above
+        # if you want to reference it anywhere else after update(), because it would be modified 
+        # by the logger. e.g. in tests. For tests, the workaround would be to monkeypatch
+        # the log() method to not modify the processed_data_packets.
 
     def extend_airbrakes(self) -> None:
         """
@@ -153,4 +159,8 @@ class AirbrakesContext:
         Predicts the apogee of the rocket based on the current processed data. This
         should only be called in the coast state, before we start controlling the airbrakes.
         """
-        self.apogee_predictor.update(self.processed_data_packets)
+        # We have to only only run this for estimated data packets, otherwise we send duplicate
+        # data to the predictor (because for a raw data packet, we still have the 'old' processed_data_packets)
+        # This would result in a very slow convergence and inaccurate predictions.
+        if self.est_data_packets:
+            self.apogee_predictor.update(self.processed_data_packets)

@@ -239,7 +239,7 @@ class IMUDataProcessor:
         """
         Calculates the velocity of the rocket based on the rotated compensated acceleration. Integrates
         that acceleration to get the velocity.
-        :return: A numpy array of the velocity of the rocket at each data point
+        :return: A numpy array of the velocity of the rocket at each data packet
         """
         # Gets the vertical accelerations from the rotated acceleration vectors. gravity needs to be
         # subtracted from vertical acceleration, Then deadbanded.
@@ -264,11 +264,11 @@ class IMUDataProcessor:
 
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the time difference between each data point and the previous data point. This cannot
+        Calculates the time difference between each data packet and the previous data packet. This cannot
         be called on the first update as _last_data_packet is None. Units are in seconds.
-        :return: A numpy array of the time difference between each data point and the previous data point.
+        :return: A numpy array of the time difference between each data packet and the previous data packet.
         """
-        # calculate the time differences between each data point
+        # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
         # We are using the last data point to calculate the time difference between the last data point from the
         # previous loop, and the first data point from the current loop
