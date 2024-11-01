@@ -208,8 +208,11 @@ class ApogeePredictor:
         if len(self._predicted_apogees) < NUMBER_OF_PREDICTIONS:
             return False  # Not enough data to check convergence
 
-        # Convert the last 5 apogees to a NumPy array
+        # Because we return 0.0 if apogee hasn't been predicted, we don't want to say it's converged if there's any 0s
+        if np.any(self._predicted_apogees == 0):
+            return False
+
         avg_apogee = np.mean(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:])
 
         # Check if each apogee is within 3% of the average
-        return np.abs(self._predicted_apogees[-1] - avg_apogee) <= CONVERGENCE_THRESHOLD
+        return bool(np.abs(self._predicted_apogees[-1] - avg_apogee) / avg_apogee <= CONVERGENCE_THRESHOLD)

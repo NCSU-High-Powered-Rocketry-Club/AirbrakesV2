@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY
+from constants import APOGEE_PREDICTION_FREQUENCY, CONVERGENCE_THRESHOLD, NUMBER_OF_PREDICTIONS
 
 
 @pytest.fixture
@@ -158,3 +158,22 @@ class TestApogeePredictor:
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_FREQUENCY
         assert ap._prediction_queue.qsize() == 0
         ap.stop()
+
+    @pytest.mark.parametrize(
+        "predicted_apogees, expected_convergence",
+        [
+            ([], False),  # Case with no predicted apogees
+            ([1] * (NUMBER_OF_PREDICTIONS - 1), False),  # Not enough apogees for convergence
+            ([1, 1, 0, 1, 1], False),  # Contains a zero, so not converged
+            ([1800.2, 1799.4, 1801.5, 1803.2, 1801.2], True),  # Values within 3%, should be converged
+        ]
+    )
+    def test_has_apogee_converged(self, apogee_predictor, predicted_apogees, expected_convergence):
+        """
+        Test _has_apogee_converged with different lists of predicted apogees and expected results.
+        """
+        # Set up the apogee predictor with the test data
+        apogee_predictor._predicted_apogees = np.array(predicted_apogees)
+
+        # Check if the convergence result matches the expected value
+        assert apogee_predictor._has_apogee_converged() == expected_convergence
