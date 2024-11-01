@@ -12,7 +12,6 @@ from constants import (
     TAKEOFF_VELOCITY,
     TARGET_ALTITUDE,
 )
-from utils import convert_to_nanoseconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
