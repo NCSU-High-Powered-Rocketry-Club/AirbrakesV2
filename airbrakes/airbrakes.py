@@ -136,7 +136,7 @@ class AirbrakesContext:
             self.apogee_predictor.apogee,
         )
         # CAUTION: You would need to copy() self.processed_data_packets in the log line above
-        # if you want to reference it anywhere else after update(), because it would be modified 
+        # if you want to reference it anywhere else after update(), because it would be modified
         # by the logger. e.g. in tests. For tests, the workaround would be to monkeypatch
         # the log() method to not modify the processed_data_packets.
 
