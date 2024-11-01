@@ -12,7 +12,8 @@ import numpy.typing as npt
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY, CURVE_FIT_INITIAL, GRAVITY, STOP_SIGNAL
+from constants import APOGEE_PREDICTION_FREQUENCY, CURVE_FIT_INITIAL, GRAVITY, STOP_SIGNAL, NUMBER_OF_PREDICTIONS, \
+    CONVERGENCE_THRESHOLD
 
 # TODO: See why this warning is being thrown for curve_fit:
 warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
@@ -38,6 +39,7 @@ class ApogeePredictor:
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
+        "_predicted_apogees",
     )
 
     def __init__(self):
@@ -56,6 +58,7 @@ class ApogeePredictor:
         self._current_altitude: np.float64 = np.float64(0.0)
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
         self._prediction_complete = Event()
+        self._predicted_apogees: npt.NDArray[np.float64] = np.array([])
 
     @property
     def apogee(self) -> float:
@@ -137,7 +140,7 @@ class ApogeePredictor:
         avg_dt = np.mean(self._time_differences)
 
         # to calculate the predicted apogee, we are integrating the acceleration function. The most
-        # straightfoward way to do this is to use the function with fitted parameters for A and B, and
+        # straightforward way to do this is to use the function with fitted parameters for A and B, and
         # a large incremental vector, with small uniform steps for the dependent variable of the function, t.
         # Then we can evaluate the function at every point in t, and use cumulative trapezoids to integrate
         # for velocity, and repeat with velocity to integrate for altitude.
@@ -152,7 +155,7 @@ class ApogeePredictor:
         current_vec_point = np.int64(np.floor(self._cumulative_time_differences[-1] / avg_dt))
 
         if params is None:
-            return 0.0
+            return np.float64(0.0)
 
         est_accels = (params[0] * (1 - params[1] * xvec) ** 4) - GRAVITY
         est_velocities = np.cumsum(est_accels[current_vec_point:-1]) * avg_dt + self._current_velocity
@@ -187,12 +190,26 @@ class ApogeePredictor:
                 self._current_altitude = data_packet.current_altitude
                 self._current_velocity = data_packet.vertical_velocity
 
-            # TODO: play around with this value
-            # Run apogee prediction every 100 data points:
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 params = self._curve_fit()
-                self._apogee_prediction_value.value = self._get_apogee(params)
+                predicted_apogee = self._get_apogee(params)
+                self._apogee_prediction_value.value = predicted_apogee
+                self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)
             # notifies tests that prediction is complete
             self._prediction_complete.set()
+
+    def _has_apogee_converged(self) -> bool:
+        """
+        Checks if the last 5 apogees are within 3% of each other.
+        :return: True if the last 5 apogees are within 3% of each other, otherwise False.
+        """
+        if len(self._predicted_apogees) < NUMBER_OF_PREDICTIONS:
+            return False  # Not enough data to check convergence
+
+        # Convert the last 5 apogees to a NumPy array
+        avg_apogee = np.mean(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:])
+
+        # Check if each apogee is within 3% of the average
+        return np.abs(self._predicted_apogees[-1] - avg_apogee) <= CONVERGENCE_THRESHOLD
