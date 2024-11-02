@@ -5,10 +5,12 @@ import signal
 import warnings
 from collections import deque
 from multiprocessing import Event
-from typing import Literal
+from typing import Literal, Tuple, Any
 
 import numpy as np
 import numpy.typing as npt
+from numpy import floating, ndarray, dtype
+from numpy._typing import _64Bit
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
@@ -128,12 +130,10 @@ class ApogeePredictor:
         a, b = popt
         return np.array([a, b])
 
-    def _get_apogee(self, params: npt.NDArray[np.float64]) -> np.float64:
+    def _generate_prediction(self, curve_coefficients: npt.NDArray[np.float64]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
-        Uses curve fit and current velocity and altitude to predict the apogee
-
-        :param: params: A length 2 array, containing the A and B values from curve fit function
-
+        Curve fits the acceleration data and uses the curve fit to make a lookup table of velocity vs Δheight
+        :param: curve_coefficients: A length 2 array, containing the A and B values from curve fit function
         :return: predicted altitude at apogee
         """
         # average time diff between estimated data packets
@@ -154,18 +154,20 @@ class ApogeePredictor:
         # during the time between the current time, and 30 seconds (well after apogee, to be safe)
         current_vec_point = np.int64(np.floor(self._cumulative_time_differences[-1] / avg_dt))
 
-        if params is None:
+        if curve_coefficients is None:
             return np.float64(0.0)
 
-        est_accels = (params[0] * (1 - params[1] * xvec) ** 4) - GRAVITY
-        est_velocities = np.cumsum(est_accels[current_vec_point:-1]) * avg_dt + self._current_velocity
-        est_altitudes = np.cumsum(est_velocities) * avg_dt + self._current_altitude
+        predicted_accelerations = (curve_coefficients[0] * (1 - curve_coefficients[1] * xvec) ** 4) - GRAVITY
+        predicted_velocities = np.cumsum(predicted_accelerations[current_vec_point:-1]) * avg_dt + self._current_velocity
+        predicted_altitudes = np.cumsum(predicted_velocities) * avg_dt + self._current_altitude
+
+        predicted_apogee = np.max(predicted_altitudes)
+
+        return predicted_velocities, predicted_apogee - predicted_altitudes
 
         # TODO: Do something about this problem:
-        # if not est_altitudes.size:  # Sanity check - if our dt is too big, est_alt will be empty, failing max()
+        # if not predicted_altitudes.size:  # Sanity check - if our dt is too big, est_alt will be empty, failing max()
         #     return 0.0
-
-        return np.max(est_altitudes)
 
     def _prediction_loop(self) -> None:
         """
@@ -175,11 +177,18 @@ class ApogeePredictor:
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # These arrays belong to the prediction process, and are used to store the data packets that are passed in
         last_run_length = 0
+
+        # Initial lookup table, will be updated with the first prediction, these are just dummy values that ensure no
+        # division by zero errors
+        lookup_table: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] = (np.array([0.0, 0.1]), np.array([0.1, 0.1]))
+
         # Keep checking for new data packets until the stop signal is received:
         while True:
             # Rather than having the queue store all the data packets, it is only used to communicate between the main
             # process and the prediction process. The main process will add the data packets to the queue, and the
             # prediction process will get the data packets from the queue and add them to its own arrays.
+
+            # TODO: make it so _prediction_queue is a queue of data packets, not a queue of lists of data packets
             data_packets = self._prediction_queue.get()
 
             if data_packets == STOP_SIGNAL:
@@ -191,9 +200,13 @@ class ApogeePredictor:
                 self._current_velocity = data_packet.vertical_velocity
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
+                # We only want to keep curve fitting if the curve fit hasn't converged yet
+                if not self._has_apogee_converged():
+                    curve_coefficients = self._curve_fit()
+                    lookup_table = self._generate_prediction(curve_coefficients)
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
-                params = self._curve_fit()
-                predicted_apogee = self._get_apogee(params)
+                # Predicts the apogee using the lookup table and linear interpolation
+                predicted_apogee = np.interp(self._current_velocity, lookup_table[0], lookup_table[1])
                 self._apogee_prediction_value.value = predicted_apogee
                 self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)
