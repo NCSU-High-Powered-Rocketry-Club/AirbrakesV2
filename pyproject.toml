@@ -20,6 +20,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
+    "pre-commit",
 ]
 
 [tool.setuptools]
