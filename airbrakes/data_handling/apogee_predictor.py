@@ -20,8 +20,8 @@ warnings.filterwarnings("ignore", message="Covariance of the parameters could no
 
 class ApogeePredictor:
     """
-    Class that performs the calculations to predict the apogee of the rocket during flight, will be used to determine
-    servo extension. Will use multiprocessing in the future.
+    Class that performs the calculations to predict the apogee of the rocket during flight, will
+    be used to determine servo extension. Will use multiprocessing in the future.
 
     :param: state: airbrakes state class
     :param: data_processor: IMUDataProcessor class
@@ -42,9 +42,9 @@ class ApogeePredictor:
 
     def __init__(self):
         self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
-        self._prediction_queue: multiprocessing.Queue[deque[ProcessedDataPacket] | Literal["STOP"]] = (
-            multiprocessing.Queue()
-        )
+        self._prediction_queue: multiprocessing.Queue[
+            deque[ProcessedDataPacket] | Literal["STOP"]
+        ] = multiprocessing.Queue()
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
@@ -109,9 +109,6 @@ class ApogeePredictor:
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
 
-        :param: accel: rotated compensated acceleration of the vertical axis
-        :param: cumulative_time_differences: an array of the cumulative time differences. E.g. 0.002, 0.004, 0.006, etc
-
         :return: numpy array with values of A and B
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
@@ -137,29 +134,33 @@ class ApogeePredictor:
         avg_dt = np.mean(self._time_differences)
 
         # to calculate the predicted apogee, we are integrating the acceleration function. The most
-        # straightfoward way to do this is to use the function with fitted parameters for A and B, and
-        # a large incremental vector, with small uniform steps for the dependent variable of the function, t.
-        # Then we can evaluate the function at every point in t, and use cumulative trapezoids to integrate
-        # for velocity, and repeat with velocity to integrate for altitude.
+        # straightfoward way to do this is to use the function with fitted parameters for A and B,
+        # and a large incremental vector, with small uniform steps for the dependent variable of
+        # the function, t. Then we can evaluate the function at every point in t, and use
+        # cumsum to integrate for velocity, and repeat with velocity to integrate for altitude.
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
         xvec = np.arange(0, 30.02, avg_dt)
         # sums up the time differences to get a vector with all the timestamps of each data packet,
         # from the start of coast phase. This determines what point in xvec the current time lines
         # up with. This is used as the start of the integral and the 30 seconds at the end of xvec
-        # is the end of the integral. The idea is to integrate the acceleration and velocity functions
-        # during the time between the current time, and 30 seconds (well after apogee, to be safe)
+        # is the end of the integral. The idea is to integrate the acceleration and velocity
+        # functions during the time between the current time, and 30 seconds (well after apogee,
+        # to be safe)
         current_vec_point = np.int64(np.floor(self._cumulative_time_differences[-1] / avg_dt))
 
         if params is None:
             return 0.0
 
         est_accels = (params[0] * (1 - params[1] * xvec) ** 4) - GRAVITY
-        est_velocities = np.cumsum(est_accels[current_vec_point:-1]) * avg_dt + self._current_velocity
+        est_velocities = (
+            np.cumsum(est_accels[current_vec_point:-1]) * avg_dt + self._current_velocity
+        )
         est_altitudes = np.cumsum(est_velocities) * avg_dt + self._current_altitude
 
         # TODO: Do something about this problem:
-        # if not est_altitudes.size:  # Sanity check - if our dt is too big, est_alt will be empty, failing max()
+        # if not est_altitudes.size:  # Sanity check - if our dt is too big, est_alt will be empty,
+        # failing max()
         #     return 0.0
 
         return np.max(est_altitudes)
@@ -170,13 +171,13 @@ class ApogeePredictor:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-        # These arrays belong to the prediction process, and are used to store the data packets that are passed in
         last_run_length = 0
         # Keep checking for new data packets until the stop signal is received:
         while True:
-            # Rather than having the queue store all the data packets, it is only used to communicate between the main
-            # process and the prediction process. The main process will add the data packets to the queue, and the
-            # prediction process will get the data packets from the queue and add them to its own arrays.
+            # Rather than having the queue store all the data packets, it is only used to
+            # communicate between the main process and the prediction process. The main process
+            # will add the data packets to the queue, and the prediction process will get the data
+            # packets from the queue and add them to its own arrays.
             data_packets = self._prediction_queue.get()
 
             if data_packets == STOP_SIGNAL:

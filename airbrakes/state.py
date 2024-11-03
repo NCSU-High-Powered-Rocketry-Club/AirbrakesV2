@@ -26,9 +26,10 @@ class State(ABC):
     For Airbrakes, we will have 4 states:
     1. Stand By - when the rocket is on the rail on the ground
     2. Motor Burn - when the motor is burning and the rocket is accelerating
-    3. Flight - when the motor has burned out and the rocket is coasting, this is when air brakes will be deployed
-    4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air brakes will be
-    retracted
+    3. Flight - when the motor has burned out and the rocket is coasting, this is when air brakes
+        will be deployed.
+    4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air
+        brakes will be retracted.
     """
 
     __slots__ = ("context",)
@@ -51,8 +52,8 @@ class State(ABC):
     @abstractmethod
     def update(self):
         """
-        Called every loop iteration. Uses the context to interact with the hardware and decides when to move to the
-        next state.
+        Called every loop iteration. Uses the context to interact with the hardware and decides
+        when to move to the next state.
         """
 
     @abstractmethod
@@ -113,11 +114,14 @@ class MotorBurnState(State):
 
         data = self.context.data_processor
 
-        # If our current velocity is less than our max velocity, that means we have stopped accelerating
-        # This is the same thing as checking if our accel sign has flipped
+        # If our current velocity is less than our max velocity, that means we have stopped
+        # accelerating. This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
         # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if (
+            data.vertical_velocity
+            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
+        ):
             self.next_state()
             return
 
@@ -159,7 +163,8 @@ class CoastState(State):
             self.next_state()
             return
 
-        # As backup in case of error, if our current altitude is less than 90% of max altitude, we are in free fall.
+        # As backup in case of error, if our current altitude is less than 90% of max altitude, we
+        # are in free fall.
         if data.current_altitude <= data.max_altitude * 0.9:
             self.next_state()
             return

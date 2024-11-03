@@ -7,7 +7,8 @@ from pathlib import Path
 # Servo Configuration
 # -------------------------------------------------------
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
+# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
+# for PWM
 SERVO_PIN = 12
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
@@ -15,9 +16,10 @@ SERVO_DELAY = 0.3
 
 class ServoExtension(Enum):
     """
-    Enum that represents the extension of the servo motor. First we set it to an extreme, then to the actual position.
-    This is to ensure that the servo will move fast enough and with enough power to actually make it to the position,
-    but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
+    Enum that represents the extension of the servo motor. First we set it to an extreme, then to
+    the actual position. This is to ensure that the servo will move fast enough and with enough
+    power to actually make it to the position, but then once it's there, we don't want it to keep
+    straining past the physical bounds of the air brakes.
     """
 
     MIN_EXTENSION = -0.5
@@ -65,7 +67,8 @@ STOP_SIGNAL = "STOP"
 
 # Don't log more than x packets for StandbyState and LandedState
 IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
-# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
+# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
+# sure we don't lose data
 LOG_BUFFER_SIZE = 5000
 
 # -------------------------------------------------------
@@ -86,7 +89,8 @@ TAKEOFF_VELOCITY = 10  # m/s
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
 MAX_VELOCITY_THRESHOLD = 0.03
-MOTOR_BURN_TIME = 2.6  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
+# seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
+MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
 
