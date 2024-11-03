@@ -32,7 +32,8 @@ class TestLoggedDataPacket:
             LoggedDataPacket()
 
     def test_logged_data_packet_has_all_fields_of_imu_data_packet(self):
-        """Tests whether the LoggedDataPacket class has all the fields of the IMUDataPacket classes."""
+        """Tests whether the LoggedDataPacket class has all the fields of the IMUDataPacket
+        classes."""
         est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
         raw_dp_fields = set(RawDataPacket.__struct_fields__)
         log_dp_fields = set(LoggedDataPacket.__struct_fields__)
@@ -40,12 +41,22 @@ class TestLoggedDataPacket:
 
         extra_fields = {"state", "extension", "timestamp", "predicted_apogee"}
 
-        assert est_dp_fields.issubset(log_dp_fields), f"Missing fields: {est_dp_fields - log_dp_fields}"
-        assert raw_dp_fields.issubset(log_dp_fields), f"Missing fields: {raw_dp_fields - log_dp_fields}"
-        assert proc_dp_fields.issubset(log_dp_fields), f"Missing fields: {proc_dp_fields - log_dp_fields}"
+        assert est_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {est_dp_fields - log_dp_fields}"
+        assert raw_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {raw_dp_fields - log_dp_fields}"
+        assert proc_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {proc_dp_fields - log_dp_fields}"
 
-        available_fields = est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
-        assert log_dp_fields == available_fields, f"Extra fields: {log_dp_fields - available_fields}"
+        available_fields = (
+            est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
+        )
+        assert (
+            log_dp_fields == available_fields
+        ), f"Extra fields: {log_dp_fields - available_fields}"
 
     @pytest.mark.parametrize(
         "imu_data_packet",
@@ -84,7 +95,8 @@ class TestLoggedDataPacket:
             assert getattr(packet, i) == "1.23456789", f"{i} is not set correctly"
 
     def test_set_processed_data_packet_attributes(self, logged_data_packet):
-        """Tests whether the set_processed_data_packet_attributes method sets the attributes correctly"""
+        """Tests whether the set_processed_data_packet_attributes method sets the attributes
+        correctly"""
         packet = logged_data_packet
         proc_data_packet = ProcessedDataPacket(
             current_altitude=1.0923457654,

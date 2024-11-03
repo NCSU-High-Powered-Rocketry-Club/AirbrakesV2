@@ -50,15 +50,27 @@ def arg_parser() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-m", "--mock", help="Run in simulation mode with mock data and mock servo", action="store_true", default=False
+        "-m",
+        "--mock",
+        help="Run in simulation mode with mock data and mock servo",
+        action="store_true",
+        default=False,
     )
 
     parser.add_argument(
-        "-r", "--real-servo", help="Run the mock sim with the real servo", action="store_true", default=False
+        "-r",
+        "--real-servo",
+        help="Run the mock sim with the real servo",
+        action="store_true",
+        default=False,
     )
 
     parser.add_argument(
-        "-l", "--keep-log-file", help="Keep the log file after the mock sim stops", action="store_true", default=False
+        "-l",
+        "--keep-log-file",
+        help="Keep the log file after the mock sim stops",
+        action="store_true",
+        default=False,
     )
 
     parser.add_argument(
@@ -81,7 +93,8 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "-p",
         "--path",
-        help="Define the pathname of flight data to use in mock simulation. Interest Launch data is used by default",
+        help="Define the pathname of flight data to use in mock simulation. Interest Launch data"
+        " is used by default",
         type=Path,
         default=False,
     )
@@ -89,7 +102,10 @@ def arg_parser() -> argparse.Namespace:
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:
-    if any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug, args.path]) and not args.mock:
+    if (
+        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug, args.path])
+        and not args.mock
+    ):
         parser.error(
             "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, and `--path` "
             "options are only available in simulation mode. Please pass `-m` or `--mock` "

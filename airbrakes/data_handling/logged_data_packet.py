@@ -8,9 +8,9 @@ from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 class LoggedDataPacket(msgspec.Struct):
     """
-    Represents a collection of all data that the logger can log in a line. Not every field will be filled in every
-    packet. While maybe not the sleekest solution, it is very easy to implement, and allows us to see exactly what data
-    we are logging.
+    Represents a collection of all data that the logger can log in a line. Not every field will be
+    filled in every packet. While maybe not the sleekest solution, it is very easy to implement,
+    and allows us to see exactly what data we are logging.
     """
 
     state: str
@@ -67,8 +67,8 @@ class LoggedDataPacket(msgspec.Struct):
 
     def set_estimated_data_packet_attributes(self, data_packet: EstimatedDataPacket) -> None:
         """
-        Sets the attributes of the data packet corresponding to the estimated data packet. Rounds the
-        float values to 8 decimal places, if the value is a float.
+        Sets the attributes of the data packet corresponding to the estimated data packet. Rounds
+        the float values to 8 decimal places, if the value is a float.
 
         This function could be a lot cleaner and just use getattr() and setattr(), but that is
         slower and takes up 15% of the main loop execution time.
@@ -153,7 +153,9 @@ class LoggedDataPacket(msgspec.Struct):
         if data_packet.deltaThetaZ is not None:
             self.deltaThetaZ = f"{data_packet.deltaThetaZ:.8f}"
 
-    def set_processed_data_packet_attributes(self, processed_data_packet: ProcessedDataPacket) -> None:
+    def set_processed_data_packet_attributes(
+        self, processed_data_packet: ProcessedDataPacket
+    ) -> None:
         """
         Sets the attributes of the data packet corresponding to the processed data packet.
         """

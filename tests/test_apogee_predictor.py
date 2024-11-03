@@ -108,10 +108,12 @@ class TestApogeePredictor:
         ],
         ids=["hover_at_altitude", "constant_alt_increase"],
     )
-    def test_prediction_loop_no_mock(self, apogee_predictor, processed_data_packets, expected_value):
-        """Tests that our predicted apogee works in general, by passing in a few hundred data packets.
-        This does not really represent a real flight, but given that case, it should predict it
-        correctly."""
+    def test_prediction_loop_no_mock(
+        self, apogee_predictor, processed_data_packets, expected_value
+    ):
+        """Tests that our predicted apogee works in general, by passing in a few hundred data
+        packets. This does not really represent a real flight, but given that case, it should
+        predict it correctly."""
 
         ap = apogee_predictor
         ap.start()

@@ -161,6 +161,11 @@ pip install .[dev]
 ```
 _There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
+```
+pre-commit install
+```
+This will install a pre-commit hook that will run the linter before you commit your changes.
+
 ## Local Usage
 
 ### Running Mock Launches
