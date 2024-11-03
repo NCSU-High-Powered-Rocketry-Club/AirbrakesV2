@@ -148,3 +148,37 @@ class MockIMU(IMU):
         # in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
             self._read_file(log_file_path, real_time_simulation, start_after_log_buffer)
+
+    def get_launch_time(self) -> int:
+        """Gets the launch time, from reading the csv file.
+
+        :return int: The corresponding launch time in nanoseconds. Returns 0 if the launch time 
+            could not be found.
+        """
+
+        # Read the file, and check when the "state" field shows "M", or when the magnitude of the
+        # estimated linear acceleration is greater than 3 m/s^2:
+
+        with self._log_file_path.open(newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+
+            # Reads each row as a dictionary
+            row: dict[str, str]
+            for row in reader:
+                state = row.get("state")
+                if state == "M":
+                    return convert_to_nanoseconds(row["timestamp"])
+
+                # Check the magnitude of the estimated linear acceleration
+                est_linear_accel_x = row.get("estLinearAccelX")
+                est_linear_accel_y = row.get("estLinearAccelY")
+                est_linear_accel_z = row.get("estLinearAccelZ")
+
+                if est_linear_accel_x and est_linear_accel_y and est_linear_accel_z:
+                    est_linear_accel_x = convert_to_float(est_linear_accel_x)
+                    est_linear_accel_y = convert_to_float(est_linear_accel_y)
+                    est_linear_accel_z = convert_to_float(est_linear_accel_z)
+
+                    if (est_linear_accel_x ** 2 + est_linear_accel_y ** 2 + est_linear_accel_z ** 2) ** 0.5 > 3:
+                        return convert_to_nanoseconds(row["timestamp"])
+        return 0
