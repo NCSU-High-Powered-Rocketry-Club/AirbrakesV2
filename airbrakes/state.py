@@ -12,7 +12,6 @@ from constants import (
     TAKEOFF_VELOCITY,
     TARGET_ALTITUDE,
 )
-from utils import convert_to_nanoseconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -27,9 +26,10 @@ class State(ABC):
     For Airbrakes, we will have 4 states:
     1. Stand By - when the rocket is on the rail on the ground
     2. Motor Burn - when the motor is burning and the rocket is accelerating
-    3. Flight - when the motor has burned out and the rocket is coasting, this is when air brakes will be deployed
-    4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air brakes will be
-    retracted
+    3. Flight - when the motor has burned out and the rocket is coasting, this is when air brakes
+        will be deployed.
+    4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air
+        brakes will be retracted.
     """
 
     __slots__ = ("context",)
@@ -52,8 +52,8 @@ class State(ABC):
     @abstractmethod
     def update(self):
         """
-        Called every loop iteration. Uses the context to interact with the hardware and decides when to move to the
-        next state.
+        Called every loop iteration. Uses the context to interact with the hardware and decides
+        when to move to the next state.
         """
 
     @abstractmethod
@@ -101,11 +101,12 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ("start_time",)
+    __slots__ = ("start_time_ns",)
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = None
+        # This will only be called once, when the motor starts burning
+        self.start_time_ns = context.data_processor.current_timestamp
 
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
@@ -113,20 +114,19 @@ class MotorBurnState(State):
 
         data = self.context.data_processor
 
-        # This will only be called once, when the motor starts burning
-        if self.start_time is None:
-            self.start_time = data.current_timestamp
-
-        # If our current velocity is less than our max velocity, that means we have stopped accelerating
-        # This is the same thing as checking if our accel sign has flipped
+        # If our current velocity is less than our max velocity, that means we have stopped
+        # accelerating. This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
         # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if (
+            data.vertical_velocity
+            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
+        ):
             self.next_state()
             return
 
         # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if convert_to_nanoseconds(data.current_timestamp - self.start_time) > MOTOR_BURN_TIME * 1e9:
+        if data.current_timestamp - self.start_time_ns > MOTOR_BURN_TIME * 1e9:
             self.next_state()
 
     def next_state(self):
@@ -163,7 +163,8 @@ class CoastState(State):
             self.next_state()
             return
 
-        # As backup in case of error, if our current altitude is less than 90% of max altitude, we are in free fall.
+        # As backup in case of error, if our current altitude is less than 90% of max altitude, we
+        # are in free fall.
         if data.current_altitude <= data.max_altitude * 0.9:
             self.next_state()
             return

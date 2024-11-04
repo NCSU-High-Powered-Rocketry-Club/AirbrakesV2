@@ -63,11 +63,19 @@ def random_data_mock_imu():
     return RandomDataIMU(port=PORT, frequency=FREQUENCY)
 
 
+@pytest.fixture
+def idle_mock_imu():
+    return IdleIMU(port=PORT, frequency=FREQUENCY)
+
+
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):
     """Fixture that returns a MockIMU object with the specified log file."""
-    # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is False.
-    return MockIMU(log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True)
+    # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is
+    # False.
+    return MockIMU(
+        log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True
+    )
 
 
 @pytest.fixture
@@ -110,3 +118,11 @@ class RandomDataIMU(IMU):
 
             # Sleep a little to prevent busy-waiting
             time.sleep(0.001)
+
+
+class IdleIMU(IMU):
+    """Mocks the IMU data fetch loop, but doesn't output any data packets."""
+
+    def _fetch_data_loop(self, _: str, __: int) -> None:
+        while self._running.value:
+            time.sleep(0.1)

@@ -16,12 +16,13 @@ from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 
 class Logger:
     """
-    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process. This is because the
-    logging process is I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
-    running it in a separate process, we can continue to log data while the main loop is running.
+    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process.
+    This is because the logging process is I/O-bound, meaning that it spends most of its time
+    waiting for the file to be written to. By running it in a separate process, we can continue to
+    log data while the main loop is running.
 
-    It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our logs in
-    real time.
+    It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
+    our logs in real time.
 
     :param log_dir: The directory where the log files will be.
     """
@@ -30,10 +31,11 @@ class Logger:
 
     def __init__(self, log_dir: Path) -> None:
         """
-        Initializes the logger object. It creates a new log file in the specified directory. Like the IMU class, it
-        creates a queue to store log messages, and starts a separate process to handle the logging. We are logging a lot
-        of data, and logging is I/O-bound, so running it in a separate process allows the main loop to continue running
-        without waiting for the log file to be written to.
+        Initializes the logger object. It creates a new log file in the specified directory. Like
+        the IMU class, it creates a queue to store log messages, and starts a separate process to
+        handle the logging. We are logging a lot of data, and logging is I/O-bound, so running it
+        in a separate process allows the main loop to continue running without waiting for the log
+        file to be written to.
         :param log_dir: The directory where the log files will be.
         """
         # Create the log directory if it doesn't exist
@@ -41,7 +43,9 @@ class Logger:
 
         # Get all existing log files and find the highest suffix number
         existing_logs = list(log_dir.glob("log_*.csv"))
-        max_suffix = max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
+        max_suffix = (
+            max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
+        )
 
         # Buffer for StandbyState and LandedState
         self._log_counter = 0
@@ -60,7 +64,9 @@ class Logger:
         self._log_queue: multiprocessing.Queue[dict[str, str] | str] = multiprocessing.Queue()
 
         # Start the logging process
-        self._log_process = multiprocessing.Process(target=self._logging_loop, name="Logger Process")
+        self._log_process = multiprocessing.Process(
+            target=self._logging_loop, name="Logger Process"
+        )
 
     @property
     def is_running(self) -> bool:
@@ -106,9 +112,9 @@ class Logger:
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
-        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched from
-            the apogee predictor, which runs in a separate process, it may not be the most recent value,
-            nor would it correspond to the respective data packet being logged.
+        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched
+            from the apogee predictor, which runs in a separate process, it may not be the most
+            recent value, nor would it correspond to the respective data packet being logged.
         """
         logged_data_packets = self._create_logged_data_packets(
             state[0],  # We only want the first letter of the state to save space
@@ -124,8 +130,9 @@ class Logger:
             # We are populating a dictionary with the fields of the logged data packet
             message_dict = asdict(logged_data_packet)
 
-            # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
-            # we could have gigabytes of data in the log file just for when the rocket is on the ground.
+            # If the state is StandbyState or LandedState, we create a buffer for data packets
+            # because otherwise we could have gigabytes of data in the log file just for when the
+            # rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
                 if self._log_counter < IDLE_LOG_CAPACITY:
                     # add the count:
@@ -187,9 +194,9 @@ class Logger:
         """
         logged_data_packets: deque[LoggedDataPacket] = deque()
 
-        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
-        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
-        # data packet
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state
+        # and extension for it. Then, if the imu data packet is an estimated data packet, it adds
+        # the data from the corresponding processed data packet
         for data_packet in imu_data_packets:
             logged_data_packet = LoggedDataPacket(
                 state,
@@ -201,7 +208,9 @@ class Logger:
             if isinstance(data_packet, EstimatedDataPacket):
                 # For every estimated data packet, we have a corresponding processed data packet
                 logged_data_packet.set_estimated_data_packet_attributes(data_packet)
-                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
+                logged_data_packet.set_processed_data_packet_attributes(
+                    processed_data_packets.popleft()
+                )
             else:
                 logged_data_packet.set_raw_data_packet_attributes(data_packet)
 

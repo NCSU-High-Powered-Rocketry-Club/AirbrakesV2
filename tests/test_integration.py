@@ -1,6 +1,6 @@
-"""Tests the full integration of the airbrakes system. This is done by reading data from a previous launch and manually
-verifying the data output by the code. This test will run at full speed in the CI. To run it in real time,
-see `main.py` or instructions in the `README.md`."""
+"""Tests the full integration of the airbrakes system. This is done by reading data from a previous
+launch and manually verifying the data output by the code. This test will run at full speed in the
+CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 
 import csv
 import statistics
@@ -31,8 +31,8 @@ class StateInformation(msgspec.Struct):
 class TestIntegration:
     """Tests the full integration of the airbrakes system by using previous launch data."""
 
-    # general method of testing this is capturing the state of the system at different points in time and verifying
-    # that the state is as expected at each point in time.
+    # general method of testing this is capturing the state of the system at different points in
+    # time and verifying that the state is as expected at each point in time.
     def test_update(
         self,
         logger,
@@ -91,11 +91,19 @@ class TestIntegration:
                     state_info.min_altitude = ab.data_processor.current_altitude
                     state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
-                state_info.min_velocity = min(ab.data_processor.vertical_velocity, state_info.min_velocity)
-                state_info.min_altitude = min(ab.data_processor.current_altitude, state_info.min_altitude)
+                state_info.min_velocity = min(
+                    ab.data_processor.vertical_velocity, state_info.min_velocity
+                )
+                state_info.min_altitude = min(
+                    ab.data_processor.current_altitude, state_info.min_altitude
+                )
                 state_info.extensions.append(ab.current_extension)
-                state_info.max_velocity = max(ab.data_processor.vertical_velocity, state_info.max_velocity)
-                state_info.max_altitude = max(ab.data_processor.current_altitude, state_info.max_altitude)
+                state_info.max_velocity = max(
+                    ab.data_processor.vertical_velocity, state_info.max_velocity
+                )
+                state_info.max_altitude = max(
+                    ab.data_processor.current_altitude, state_info.max_altitude
+                )
                 state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 # Update the state information in the dictionary
@@ -142,8 +150,8 @@ class TestIntegration:
         assert not any(motor_burn_state.apogee_prediction)
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in motor_burn_state.extensions)
 
-        # our coasting velocity be fractionally higher than motor burn velocity due to data processing time
-        # (does not actually happen in real life)
+        # our coasting velocity be fractionally higher than motor burn velocity due to data
+        # processing time (does not actually happen in real life)
         assert (coast_state.max_velocity - 10) <= motor_burn_state.max_velocity
         assert coast_state.min_velocity <= 5.0  # velocity around apogee should be low
         assert coast_state.min_altitude >= motor_burn_state.max_altitude
@@ -167,14 +175,14 @@ class TestIntegration:
         assert free_fall_state.max_velocity <= 0.0
         # max altitude of both states should be about the same
         assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=1e2)
-
-        assert free_fall_state.min_altitude <= GROUND_ALTITUDE + 10.0  # free fall should be close to ground
+        # free fall should be close to ground:
+        assert free_fall_state.min_altitude <= GROUND_ALTITUDE + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
         if launch_name != "interest_launch":
             assert landed_state.min_velocity <= -300.0  # see comment above for why
-        else:
-            assert landed_state.min_velocity >= -30.0  # we don't have enough data to know our velocity goes to 0 or not
+        else:  # we don't have enough data to know our velocity goes to 0 or not
+            assert landed_state.min_velocity >= -30.0
         assert landed_state.max_velocity <= 0.0  # high error for now
         assert landed_state.min_altitude <= GROUND_ALTITUDE
         assert landed_state.max_altitude <= GROUND_ALTITUDE + 10.0
@@ -225,10 +233,14 @@ class TestIntegration:
                     assert row["vertical_acceleration"] != ""
 
                 # Check if the extension is a float:
-                assert float(extension) in [ServoExtension.MIN_EXTENSION.value, ServoExtension.MAX_EXTENSION.value]
+                assert float(extension) in [
+                    ServoExtension.MIN_EXTENSION.value,
+                    ServoExtension.MAX_EXTENSION.value,
+                ]
 
             # Check if we have a lot of lines in the log file:
-            assert line_number > 80_000  # arbitrary value, depends on length of log buffer and flight data.
+            # arbitrary value, depends on length of log buffer and flight data.
+            assert line_number > 80_000
 
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]

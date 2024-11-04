@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY, CONVERGENCE_THRESHOLD, NUMBER_OF_PREDICTIONS
+from constants import APOGEE_PREDICTION_FREQUENCY, NUMBER_OF_PREDICTIONS
 
 
 @pytest.fixture
@@ -108,10 +108,12 @@ class TestApogeePredictor:
         ],
         ids=["hover_at_altitude", "constant_alt_increase"],
     )
-    def test_prediction_loop_no_mock(self, apogee_predictor, processed_data_packets, expected_value):
-        """Tests that our predicted apogee works in general, by passing in a few hundred data packets.
-        This does not really represent a real flight, but given that case, it should predict it
-        correctly."""
+    def test_prediction_loop_no_mock(
+        self, apogee_predictor, processed_data_packets, expected_value
+    ):
+        """Tests that our predicted apogee works in general, by passing in a few hundred data
+        packets. This does not really represent a real flight, but given that case, it should
+        predict it correctly."""
 
         ap = apogee_predictor
         ap.start()
@@ -160,13 +162,16 @@ class TestApogeePredictor:
         ap.stop()
 
     @pytest.mark.parametrize(
-        "predicted_apogees, expected_convergence",
+        ("predicted_apogees", "expected_convergence"),
         [
             ([], False),  # Case with no predicted apogees
             ([1] * (NUMBER_OF_PREDICTIONS - 1), False),  # Not enough apogees for convergence
             ([1, 1, 0, 1, 1], False),  # Contains a zero, so not converged
-            ([1800.2, 1799.4, 1801.5, 1803.2, 1801.2], True),  # Values within 3%, should be converged
-        ]
+            (
+                [1800.2, 1799.4, 1801.5, 1803.2, 1801.2],
+                True,
+            ),  # Values within 3%, should be converged
+        ],
     )
     def test_has_apogee_converged(self, apogee_predictor, predicted_apogees, expected_convergence):
         """

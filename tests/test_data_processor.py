@@ -12,7 +12,9 @@ from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 
 
-def simulate_altitude_sine_wave(n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20):
+def simulate_altitude_sine_wave(
+    n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
+):
     """Generates a random distribution of altitudes that follow a sine wave pattern, with some
     noise added to simulate variations in the readings.
 
@@ -141,9 +143,13 @@ class TestIMUDataProcessor:
         assert d.current_altitude == 0.0
         assert d.vertical_velocity == 0.0
         assert d.max_vertical_velocity == 0.0
+        assert d.current_timestamp == 0
 
     def test_str(self, data_processor):
-        data_str = "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, " "max_velocity=0.0, "
+        data_str = (
+            "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, "
+            "max_velocity=0.0, "
+        )
         assert str(data_processor) == data_str
 
     def test_calculate_vertical_velocity(self, data_processor):
@@ -254,6 +260,7 @@ class TestIMUDataProcessor:
         assert d._initial_altitude is None
         assert d._max_altitude == 0.0
         assert d._last_data_packet is None
+        assert d.current_timestamp == 0
 
     @pytest.mark.parametrize(
         (
@@ -361,14 +368,15 @@ class TestIMUDataProcessor:
         assert d._last_data_packet
         assert d._last_data_packet == data_packets[-1]
         assert len(d._data_packets) == len(data_packets)
+        assert d.current_timestamp == data_packets[-1].timestamp
 
         # the max() is there because if we only process one data packet, we just return early
         # and the variables set at __init__ are used:
         assert len(d._current_altitudes) == max(len(data_packets), 1)
         assert len(d._vertical_velocities) == max(len(data_packets), 1)
         assert len(d._vertical_velocities) == len(d._current_altitudes)
-        # Our initial velocity should always be zero, since we set the previous data point to the first
-        # data point, giving a time difference of zero, and hence a velocity of zero, and thus
+        # Our initial velocity should always be zero, since we set the previous data point to the
+        # first data point, giving a time difference of zero, and hence a velocity of zero, and thus
         # implicitly testing it.
         assert d._vertical_velocities[0] == 0.0
 
@@ -379,7 +387,9 @@ class TestIMUDataProcessor:
             np.array([0.182574, 0.365148, 0.547723, 0.730297]),
             rtol=1e-5,
         )
-        assert d.current_altitude == (0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt)
+        assert d.current_altitude == (
+            0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt
+        )
         assert d._max_altitude == d.max_altitude == max_alt
 
         processed_data = d.get_processed_data_packets()
@@ -402,7 +412,9 @@ class TestIMUDataProcessor:
         ],
         ids=["increasing_altitude", "increasing_altitude_2", "negative_altitude"],
     )
-    def test_altitude_zeroing(self, data_processor, altitude_reading, current_altitude, max_altitude):
+    def test_altitude_zeroing(
+        self, data_processor, altitude_reading, current_altitude, max_altitude
+    ):
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:

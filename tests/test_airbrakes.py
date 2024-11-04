@@ -4,6 +4,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY, ServoExtension
 
@@ -25,6 +26,7 @@ class TestAirbrakesContext:
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandbyState)
         assert not airbrakes.shutdown_requested
+        assert not airbrakes.est_data_packets
 
     def test_set_extension(self, airbrakes):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
@@ -82,8 +84,10 @@ class TestAirbrakesContext:
         assert not airbrakes.logger.is_running
         assert airbrakes.shutdown_requested
 
-    def test_airbrakes_update(self, monkeypatch, random_data_mock_imu, servo, logger, data_processor, apogee_predictor):
-        """Tests whether the Airbrakes update method works correctly by calling the relevant methods.
+    def test_airbrakes_update(
+        self, monkeypatch, random_data_mock_imu, servo, logger, data_processor, apogee_predictor
+    ):
+        """Tests whether the Airbrakes update method works correctly by calling the relevant methods
 
         1. Mock fetching of data packets
         2. Test whether the data processor gets only estimated data packets
@@ -122,8 +126,12 @@ class TestAirbrakesContext:
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")
 
-        mocked_airbrakes = AirbrakesContext(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
-        mocked_airbrakes.state = CoastState(mocked_airbrakes)  # Set to coast state to test apogee update
+        mocked_airbrakes = AirbrakesContext(
+            servo, random_data_mock_imu, logger, data_processor, apogee_predictor
+        )
+        mocked_airbrakes.state = CoastState(
+            mocked_airbrakes
+        )  # Set to coast state to test apogee update
         mocked_airbrakes.start()
 
         time.sleep(0.01)  # Sleep a bit so that the IMU queue is being filled
@@ -141,7 +149,114 @@ class TestAirbrakesContext:
         mocked_airbrakes.update()
 
         assert len(calls) == 4
-        assert calls == ["update called", "state update called", "apogee update called", "log called"]
+        assert calls == [
+            "update called",
+            "state update called",
+            "apogee update called",
+            "log called",
+        ]
         assert all(asserts)
 
         mocked_airbrakes.stop()
+
+    def test_airbrakes_predict_apogee(
+        self, monkeypatch, idle_mock_imu, servo, logger, data_processor, apogee_predictor
+    ):
+        """Tests whether the airbrakes predict_apogee method works correctly by calling the
+        relevant methods.
+
+        1. Mock fetching of data packets
+        2. Test whether the apogee predictor gets only estimated data packets and not duplicated
+            data.
+        """
+        calls = []
+        packets = []
+
+        def fake_log(self, *args, **kwargs):
+            pass
+
+        def apogee_update(self, processed_data_packets):
+            packets.extend(processed_data_packets)
+            calls.append("apogee update called")
+
+        airbrakes = AirbrakesContext(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
+        airbrakes.start()
+
+        time.sleep(0.01)
+
+        assert not airbrakes.imu._data_queue.qsize()
+        assert airbrakes.state.name == "StandbyState"
+        assert airbrakes.data_processor._last_data_packet is None
+
+        monkeypatch.setattr(airbrakes.apogee_predictor.__class__, "update", apogee_update)
+        monkeypatch.setattr(logger.__class__, "log", fake_log)
+
+        # Insert 1 raw, then 2 estimated, then 1 raw data packet:
+        raw_1 = RawDataPacket(timestamp=time.time())
+        airbrakes.imu._data_queue.put(raw_1)
+        time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
+        airbrakes.update()
+        # Check if we processed the raw data packet:
+        assert list(airbrakes.imu_data_packets) == [raw_1]
+        assert not airbrakes.est_data_packets
+        # We will have an ProcessedDataPacket with all 0s, since we don't have any data to process:
+        assert len(airbrakes.processed_data_packets) == 1
+        assert airbrakes.processed_data_packets[0].current_altitude == 0.0
+        assert airbrakes.processed_data_packets[0].time_since_last_data_packet == 0.0
+        # Let's call .predict_apogee() and check if stuff was called and/or changed:
+        airbrakes.predict_apogee()
+        assert not calls
+        assert not packets
+
+        # Insert 2 estimated data packet:
+        # first_update():
+        est_1 = EstimatedDataPacket(
+            timestamp=1.0 + 1e9,
+            estPressureAlt=20.0,
+            estOrientQuaternionW=0.99,
+            estOrientQuaternionX=0.1,
+            estOrientQuaternionY=0.2,
+            estOrientQuaternionZ=0.3,
+        )
+        est_2 = EstimatedDataPacket(timestamp=3.0 + 1e9, estPressureAlt=24.0)
+        airbrakes.imu._data_queue.put(est_1)
+        airbrakes.imu._data_queue.put(est_2)
+        time.sleep(0.001)
+        airbrakes.update()
+        time.sleep(0.01)
+        # Check if we processed the estimated data packet:
+        assert list(airbrakes.imu_data_packets) == [est_1, est_2]
+        assert airbrakes.est_data_packets == [est_1, est_2]
+        assert len(airbrakes.processed_data_packets) == 2
+        assert airbrakes.processed_data_packets[-1].current_altitude == 2.0
+        assert float(
+            airbrakes.processed_data_packets[-1].time_since_last_data_packet
+        ) == pytest.approx(2.0 + 1e-9, rel=1e1)
+        # Let's call .predict_apogee() and check if stuff was called and/or changed:
+        airbrakes.predict_apogee()
+        assert len(calls) == 1
+        assert calls == ["apogee update called"]
+        assert len(packets) == 2
+        assert packets[-1].current_altitude == 2.0
+
+        # Insert 1 raw data packet:
+        raw_2 = RawDataPacket(timestamp=time.time())
+        airbrakes.imu._data_queue.put(raw_2)
+        time.sleep(0.001)
+        airbrakes.update()
+        # Check if we processed the raw data packet:
+        assert list(airbrakes.imu_data_packets) == [raw_2]
+        assert not airbrakes.est_data_packets
+        assert airbrakes.processed_data_packets[-1].current_altitude == 2.0
+        assert float(
+            airbrakes.processed_data_packets[-1].time_since_last_data_packet
+        ) == pytest.approx(2.0 + 1e-9, rel=1e1)
+        # Let's call .predict_apogee() and check if stuff was called and/or changed:
+        airbrakes.predict_apogee()
+        assert len(calls) == 1
+        assert calls == ["apogee update called"]
+        assert len(packets) == 2
+        assert packets[-1].current_altitude == 2.0
+        # That ensures that we don't send duplicate data to the predictor.
+
+        airbrakes.stop()
