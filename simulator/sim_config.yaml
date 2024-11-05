@@ -1,0 +1,6 @@
+# config file for simulator
+
+sim_apogee: 1800 # The simulator will generate a dataset where the apogee will be around this value (in meters)
+time_step: 0.002 # The time step between data points the simulator will generate (in seconds)
+motor_thrust_curve: 0 # placeholder
+drag_coefficient: 0.4 # coefficient of drag for the rocket

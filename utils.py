@@ -99,17 +99,35 @@ def arg_parser() -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "-s",
+        "--sim",
+        help="runs the data simulator alongside the mock simulator, to randomly generate a dataset",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:
     if (
-        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug, args.path])
+        any([
+            args.real_servo,
+            args.keep_log_file,
+            args.fast_simulation,
+            args.debug,
+            args.path,
+            args.sim,
+            ])
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, and `--path` "
-            "options are only available in simulation mode. Please pass `-m` or `--mock` "
-            "to run in simulation mode."
+            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, `--path`, "
+            "and `--sim` options are only available in simulation mode. Please pass `-m` or "
+            "`--mock` to run in simulation mode."
         )
+
+    if args.sim and args.path:
+        parser.error("The `--path` option is not able to be used with the `--sim` option")
 
     return args

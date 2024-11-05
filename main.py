@@ -21,6 +21,7 @@ from constants import (
     PORT,
     SERVO_PIN,
 )
+from simulator.sim_imu import SimIMU
 from utils import arg_parser
 
 
@@ -41,13 +42,20 @@ def main(args: argparse.Namespace) -> None:
     sim_time_start = time.time()
 
     if args.mock:
-        # If we are running a simulation, then we will replace our hardware objects with mock
+        # If we are running a mock simulation, then we will replace our hardware objects with mock
         # objects that just pretend to be the real hardware. This is useful for testing the
         # software without having to fly the rocket. MockIMU pretends to be the imu by reading
         # previous flight data from a log file
-        imu = MockIMU(
-            args.path, real_time_simulation=not args.fast_simulation, start_after_log_buffer=True
-        )
+        if not args.sim:
+            imu = MockIMU(
+                args.path,
+                real_time_simulation=not args.fast_simulation,
+                start_after_log_buffer=True
+            )
+        # If we are running the simulator for generating datasets, we will replace our IMU object
+        # with a sim variant, similar to running a mock simulation.
+        else:
+            imu = SimIMU()
         # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = (
             Servo(SERVO_PIN)
