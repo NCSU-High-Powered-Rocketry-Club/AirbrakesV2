@@ -2,7 +2,6 @@
 
 import multiprocessing
 import signal
-import warnings
 from collections import deque
 from typing import Literal
 
@@ -20,9 +19,6 @@ from constants import (
     STOP_SIGNAL,
     UNCERTAINITY_THRESHOLD,
 )
-
-# TODO: See why this warning is being thrown for curve_fit:
-warnings.filterwarnings("ignore", message="Covariance of the parameters could not be estimated")
 
 
 class ApogeePredictor:
@@ -178,7 +174,8 @@ class ApogeePredictor:
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
         predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
         predicted_apogee = np.max(predicted_altitudes)
-        # We need to flip the lookup table because the velocities are in descending order, not ascending order
+        # We need to flip the lookup table because the velocities are in descending order, not
+        # ascending order
         return np.flip(predicted_velocities), np.flip(predicted_apogee - predicted_altitudes)
 
         # TODO: Do something about this problem:
