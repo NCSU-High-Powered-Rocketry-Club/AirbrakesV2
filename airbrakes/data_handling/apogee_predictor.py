@@ -18,7 +18,7 @@ from constants import (
     CURVE_FIT_INITIAL,
     GRAVITY,
     NUMBER_OF_PREDICTIONS,
-    STOP_SIGNAL,
+    STOP_SIGNAL, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP,
 )
 
 # TODO: See why this warning is being thrown for curve_fit:
@@ -140,7 +140,7 @@ class ApogeePredictor:
         Curve fits the acceleration data and uses the curve fit to make a lookup table of velocity
         vs Δheight.
         :param: curve_coefficients: A length 2 array, containing the A and B values from curve fit
-            function.
+        function.
         :return: predicted altitude at apogee
         """
 
@@ -149,46 +149,28 @@ class ApogeePredictor:
         if self._initial_velocity is None:
             self._initial_velocity = self._current_velocity
 
-        # average time diff between estimated data packets
-        avg_dt = np.mean(self._time_differences)
-
-        # to calculate the predicted apogee, we are integrating the acceleration function. The most
-        # straightfoward way to do this is to use the function with fitted parameters for A and B,
+        # To calculate the predicted apogee, we are integrating the acceleration function. The most
+        # straightforward way to do this is to use the function with fitted parameters for A and B,
         # and a large incremental vector, with small uniform steps for the dependent variable of
         # the function, t. Then we can evaluate the function at every point in t, and use
-        # cumsum to integrate for velocity, and repeat with velocity to integrate for altitude.
+        # cumulative sum to integrate for velocity, and repeat with velocity to integrate for altitude.
 
-        # arbitrary vector that just simulates a time from 0 to 30 seconds
-        xvec = np.arange(0, 15.00, avg_dt)
-        # sums up the time differences to get a vector with all the timestamps of each data packet,
-        # from the start of coast phase. This determines what point in xvec the current time lines
-        # up with. This is used as the start of the integral and the 30 seconds at the end of xvec
-        # is the end of the integral. The idea is to integrate the acceleration and velocity
-        # functions during the time between the current time, and 30 seconds (well after apogee,
-        # to be safe)
-        # TODO: just rewrite this shit, its ass
-        current_vec_point = np.int64(np.floor(self._cumulative_time_differences[-1] / avg_dt))
+        # This is all the x values that we will use to integrate the acceleration function
+        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
 
-        # if curve_coefficients is None:
-        #     return np.float64(0.0)
-
+        # Makes sure that the curve coefficients are not None, sets them to the guessed initial values if they are
         curve_coefficients = curve_coefficients if curve_coefficients is not None else CURVE_FIT_INITIAL
 
         predicted_accelerations = (
-            curve_coefficients[0] * (1 - curve_coefficients[1] * xvec) ** 4
+            curve_coefficients[0] * (1 - curve_coefficients[1] * predicted_coast_timestamps) ** 4
         ) - GRAVITY
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * avg_dt
+            np.cumsum(predicted_accelerations) * predicted_coast_timestamps
             + self._initial_velocity
         )
-
-        predicted_altitudes = np.cumsum(predicted_velocities) * avg_dt + self._current_altitude
-        # Step 1: Filter out values in predicted_velocities that are less than 0
+        # We don't care about velocity values less than 0 as those correspond with the rocket falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
-
-        # Step 2: Trim predicted_altitudes to match the length of filtered_predicted_velocities
-        predicted_altitudes = predicted_altitudes[:len(predicted_velocities)]
-
+        predicted_altitudes = np.cumsum(predicted_velocities) * predicted_coast_timestamps + self._current_altitude
         predicted_apogee = np.max(predicted_altitudes)
 
         return predicted_velocities, predicted_apogee - predicted_altitudes
@@ -240,10 +222,11 @@ class ApogeePredictor:
                 # It gets the change in height from the lookup table, and adds it to the current height, thus
                 # giving you the predicted apogee.
                 predicted_apogee = np.interp(
-                        self._current_velocity,
-                        np.flip(lookup_table[0]),
-                        np.flip(lookup_table[1])
-                    ) + self._current_altitude
+                    self._current_velocity,
+                    # We need to flip the lookup table because the velocities are in descending order
+                    np.flip(lookup_table[0]),
+                    np.flip(lookup_table[1])
+                ) + self._current_altitude
                 self._apogee_prediction_value.value = predicted_apogee
                 self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)

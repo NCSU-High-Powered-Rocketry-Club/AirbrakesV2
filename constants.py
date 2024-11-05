@@ -101,6 +101,11 @@ GROUND_ALTITUDE = 15.0  # meters
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+# This needs to be checked/changed before flights
+FLIGHT_LENGTH_SECONDS = 22.0
+
+INTEGRATION_TIME_STEP = 1.0 / 500.0
+
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
 
