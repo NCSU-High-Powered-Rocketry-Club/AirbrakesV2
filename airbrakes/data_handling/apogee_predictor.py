@@ -165,14 +165,14 @@ class ApogeePredictor:
             curve_coefficients[0] * (1 - curve_coefficients[1] * predicted_coast_timestamps) ** 4
         ) - GRAVITY
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * predicted_coast_timestamps
+            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP
             + self._initial_velocity
         )
         # We don't care about velocity values less than 0 as those correspond with the rocket falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
-        predicted_altitudes = np.cumsum(predicted_velocities) * predicted_coast_timestamps + self._current_altitude
+        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
         predicted_apogee = np.max(predicted_altitudes)
-
+        # print(f"Predicted apogee: {predicted_apogee}", "Current Altitude: ", self._current_altitude)
         return predicted_velocities, predicted_apogee - predicted_altitudes
 
         # TODO: Do something about this problem:
