@@ -32,12 +32,12 @@ class FlightDisplay:
     INTERRUPTED_END = "interrupted"
 
     __slots__ = (
+        "_coast_time",
+        "_convergence_time",
         "_cpu_thread",
         "_cpu_usages",
         "_launch_file",
         "_launch_time",
-        "_coast_time",
-        "_convergence_time",
         "_processes",
         "_thread_target",
         "airbrakes",
@@ -148,7 +148,11 @@ class FlightDisplay:
         else:
             current_time = 0
 
-        if self._coast_time and self._convergence_time == 0 and self.airbrakes.apogee_predictor.apogee != 0.0:
+        if (
+            self._coast_time
+            and self._convergence_time == 0
+            and self.airbrakes.apogee_predictor.apogee != 0.0
+        ):
             self._convergence_time = (
                 self.airbrakes.data_processor.current_timestamp - self._coast_time
             ) * 1e-9
