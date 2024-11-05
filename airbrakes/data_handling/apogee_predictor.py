@@ -215,14 +215,15 @@ class ApogeePredictor:
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
+                self._cumulative_time_differences = np.cumsum(self._time_differences)
                 if not self._has_apogee_converged():
                     curve_coefficients = self._curve_fit()
                     lookup_table = self._generate_prediction(curve_coefficients)
-                self._cumulative_time_differences = np.cumsum(self._time_differences)
                 # Predicts the apogee using the lookup table and linear interpolation
+                print(lookup_table)
                 predicted_apogee = np.interp(
                     self._current_velocity, lookup_table[0], lookup_table[1]
-                )
+                ) + self._current_altitude
                 self._apogee_prediction_value.value = predicted_apogee
                 self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)

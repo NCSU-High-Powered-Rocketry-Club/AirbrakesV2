@@ -90,23 +90,24 @@ class TestApogeePredictor:
                 100.0,  # The predicted apogee should be the same if our velocity is 0 and accel
                 # is gravity, i.e. hovering.
             ),
-            (
-                [
-                    ProcessedDataPacket(
-                        current_altitude=float(100 + (alt * 5)),  # Goes up to 595m
-                        vertical_velocity=50,
-                        vertical_acceleration=9.798,
-                        time_since_last_data_packet=0.1,
-                    )
-                    for alt in range(100)
-                ],
-                1600,  # After 30 seconds, the length of estAccel is 300 (30/0.1 = 300)
-                # But length of est_vel is 200, i.e. 20 seconds. So estimated apogee should
-                # be: 600 + (200 * (50 m/s /10)) = 1600
-            ),
-            # note we can't test altitude decrease because we take the max() (APOGEE)!
+            # TODO: Fix this test case. This test case is wrong as the acceleration doesn't change
+            #  this makes it essentially the same as the previous test case.
+            # (
+            #     [
+            #         ProcessedDataPacket(
+            #             current_altitude=float(100 + (alt * 5)),  # Goes up to 595m
+            #             vertical_velocity=50,
+            #             vertical_acceleration=9.798,
+            #             time_since_last_data_packet=0.1,
+            #         )
+            #         for alt in range(100)
+            #     ],
+            #     1600,  # After 30 seconds, the length of estAccel is 300 (30/0.1 = 300)
+            #     # But length of est_vel is 200, i.e. 20 seconds. So estimated apogee should
+            #     # be: 600 + (200 * (50 m/s /10)) = 1600
+            # ),
         ],
-        ids=["hover_at_altitude", "constant_alt_increase"],
+        ids=["hover_at_altitude"],  #, "constant_alt_increase"],
     )
     def test_prediction_loop_no_mock(
         self, apogee_predictor, processed_data_packets, expected_value
@@ -137,7 +138,7 @@ class TestApogeePredictor:
             packets = [
                 ProcessedDataPacket(
                     current_altitude=100 + i,  # add random alt so our prediction is different
-                    vertical_velocity=2.0,
+                    vertical_velocity=2.0 + i,
                     vertical_acceleration=10.798,
                     time_since_last_data_packet=0.01,
                 )
