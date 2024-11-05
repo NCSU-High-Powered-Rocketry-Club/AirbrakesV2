@@ -4,7 +4,6 @@ import multiprocessing
 import signal
 import warnings
 from collections import deque
-from multiprocessing import Event
 from typing import Literal
 
 import numpy as np
@@ -45,7 +44,6 @@ class ApogeePredictor:
         "_has_apogee_converged",
         "_initial_velocity",
         "_predicted_apogees",
-        "_prediction_complete",
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
@@ -67,7 +65,6 @@ class ApogeePredictor:
         self._current_altitude: np.float64 = np.float64(0.0)
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
         self._has_apogee_converged: bool = False
-        self._prediction_complete = Event()
         self._predicted_apogees: npt.NDArray[np.float64] = np.array([])
         self._initial_velocity = None
 
@@ -227,8 +224,6 @@ class ApogeePredictor:
                 if not self._has_apogee_converged:
                     curve_coefficients = self._curve_fit()
                     lookup_table = self._create_prediction_lookup_table(curve_coefficients)
-                    # notifies tests that prediction is complete
-                    self._prediction_complete.set()
                 else:
                     # Predicts the apogee using the lookup table and linear interpolation
                     # It gets the change in height from the lookup table, and adds it to the
