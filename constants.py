@@ -113,4 +113,4 @@ APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50
 NUMBER_OF_PREDICTIONS = 5
 # If the difference between the last few apogee predictions is less than this, apogee prediction
 # has converged
-CONVERGENCE_THRESHOLD = 0.03
+CONVERGENCE_THRESHOLD = 10  # meters

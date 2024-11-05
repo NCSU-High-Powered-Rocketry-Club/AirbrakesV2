@@ -171,7 +171,7 @@ class TestApogeePredictor:
             (
                 [1800.2, 1799.4, 1801.5, 1803.2, 1801.2],
                 True,
-            ),  # Values within 3%, should be converged
+            ),  # Values within 30 meters, should be converged
         ],
     )
     def test_has_apogee_converged(self, apogee_predictor, predicted_apogees, expected_convergence):

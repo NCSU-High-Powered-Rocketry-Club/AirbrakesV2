@@ -46,6 +46,7 @@ class ApogeePredictor:
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
+        "_initial_velocity"
     )
 
     def __init__(self):
@@ -65,6 +66,7 @@ class ApogeePredictor:
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
         self._prediction_complete = Event()
         self._predicted_apogees: npt.NDArray[np.float64] = np.array([])
+        self._initial_velocity = None
 
     @property
     def apogee(self) -> float:
@@ -141,6 +143,12 @@ class ApogeePredictor:
             function.
         :return: predicted altitude at apogee
         """
+
+        # We need to store the velocity for when we start the prediction, so we can use it to
+        # as the plus C in the integration of the acceleration function
+        if self._initial_velocity is None:
+            self._initial_velocity = self._current_velocity
+
         # average time diff between estimated data packets
         avg_dt = np.mean(self._time_differences)
 
@@ -151,26 +159,35 @@ class ApogeePredictor:
         # cumsum to integrate for velocity, and repeat with velocity to integrate for altitude.
 
         # arbitrary vector that just simulates a time from 0 to 30 seconds
-        xvec = np.arange(0, 30.02, avg_dt)
+        xvec = np.arange(0, 15.00, avg_dt)
         # sums up the time differences to get a vector with all the timestamps of each data packet,
         # from the start of coast phase. This determines what point in xvec the current time lines
         # up with. This is used as the start of the integral and the 30 seconds at the end of xvec
         # is the end of the integral. The idea is to integrate the acceleration and velocity
         # functions during the time between the current time, and 30 seconds (well after apogee,
         # to be safe)
+        # TODO: just rewrite this shit, its ass
         current_vec_point = np.int64(np.floor(self._cumulative_time_differences[-1] / avg_dt))
 
-        if curve_coefficients is None:
-            return np.float64(0.0)
+        # if curve_coefficients is None:
+        #     return np.float64(0.0)
+
+        curve_coefficients = curve_coefficients if curve_coefficients is not None else CURVE_FIT_INITIAL
 
         predicted_accelerations = (
             curve_coefficients[0] * (1 - curve_coefficients[1] * xvec) ** 4
         ) - GRAVITY
         predicted_velocities = (
-            np.cumsum(predicted_accelerations[current_vec_point:-1]) * avg_dt
-            + self._current_velocity
+            np.cumsum(predicted_accelerations) * avg_dt
+            + self._initial_velocity
         )
+
         predicted_altitudes = np.cumsum(predicted_velocities) * avg_dt + self._current_altitude
+        # Step 1: Filter out values in predicted_velocities that are less than 0
+        predicted_velocities = predicted_velocities[predicted_velocities >= 0]
+
+        # Step 2: Trim predicted_altitudes to match the length of filtered_predicted_velocities
+        predicted_altitudes = predicted_altitudes[:len(predicted_velocities)]
 
         predicted_apogee = np.max(predicted_altitudes)
 
@@ -220,10 +237,13 @@ class ApogeePredictor:
                     curve_coefficients = self._curve_fit()
                     lookup_table = self._generate_prediction(curve_coefficients)
                 # Predicts the apogee using the lookup table and linear interpolation
-                print(lookup_table)
+                # It gets the change in height from the lookup table, and adds it to the current height, thus
+                # giving you the predicted apogee.
                 predicted_apogee = np.interp(
-                    self._current_velocity, lookup_table[0], lookup_table[1]
-                ) + self._current_altitude
+                        self._current_velocity,
+                        np.flip(lookup_table[0]),
+                        np.flip(lookup_table[1])
+                    ) + self._current_altitude
                 self._apogee_prediction_value.value = predicted_apogee
                 self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)
@@ -245,7 +265,8 @@ class ApogeePredictor:
 
         avg_apogee = np.mean(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:])
 
-        # Check if each apogee is within 3% of the average
-        return bool(
-            np.abs(self._predicted_apogees[-1] - avg_apogee) / avg_apogee <= CONVERGENCE_THRESHOLD
-        )
+        # # Check if each apogee is within 3% of the average
+        # return bool(
+        #     np.all(np.abs(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:] - avg_apogee) <= CONVERGENCE_THRESHOLD)
+        # )
+        return False
