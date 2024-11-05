@@ -1,6 +1,5 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
