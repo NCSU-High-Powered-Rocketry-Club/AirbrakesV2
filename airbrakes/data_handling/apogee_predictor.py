@@ -122,7 +122,6 @@ class ApogeePredictor:
         """
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
-
         :return: numpy array with values of A and B
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
@@ -134,14 +133,12 @@ class ApogeePredictor:
             maxfev=2000,
         )
         uncertainties = np.sqrt(np.diag(pcov))
-        # print(f"The uncertainity is: {uncertainties}")
         if np.all(uncertainties < UNCERTAINITY_THRESHOLD):
             self._has_apogee_converged = True
-            # print("Fit has converged")
         a, b = popt
         return np.array([a, b])
 
-    def _generate_prediction(
+    def _create_prediction_lookup_table(
         self, curve_coefficients: npt.NDArray[np.float64]
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
@@ -184,7 +181,8 @@ class ApogeePredictor:
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
         predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
         predicted_apogee = np.max(predicted_altitudes)
-        return predicted_velocities, predicted_apogee - predicted_altitudes
+        # We need to flip the lookup table because the velocities are in descending order, not ascending order
+        return np.flip(predicted_velocities), np.flip(predicted_apogee - predicted_altitudes)
 
         # TODO: Do something about this problem:
         # if not predicted_altitudes.size:  # Sanity check - if our dt is too big, max() will fail
@@ -228,7 +226,7 @@ class ApogeePredictor:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 if not self._has_apogee_converged:
                     curve_coefficients = self._curve_fit()
-                    lookup_table = self._generate_prediction(curve_coefficients)
+                    lookup_table = self._create_prediction_lookup_table(curve_coefficients)
                     # notifies tests that prediction is complete
                     self._prediction_complete.set()
                 else:
@@ -238,10 +236,8 @@ class ApogeePredictor:
                     predicted_apogee = (
                         np.interp(
                             self._current_velocity,
-                            # We need to flip the lookup table because the velocities are in
-                            # descending order
-                            np.flip(lookup_table[0]),
-                            np.flip(lookup_table[1]),
+                            lookup_table[0],
+                            lookup_table[1],
                         )
                         + self._current_altitude
                     )

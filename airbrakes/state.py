@@ -139,11 +139,10 @@ class CoastState(State):
     we actually extend the airbrakes.
     """
 
-    __slots__ = ("airbrakes_extended", "start_time")
+    __slots__ = ("airbrakes_extended",)
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = time.time()
         self.airbrakes_extended = False
 
     def update(self):
