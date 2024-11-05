@@ -36,6 +36,8 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_launch_time",
+        "_coast_time",
+        "_convergence_time",
         "_processes",
         "_thread_target",
         "airbrakes",
@@ -53,6 +55,8 @@ class FlightDisplay:
         self.airbrakes = airbrakes
         self.start_time = start_time
         self._launch_time: int = 0  # Launch time from MotorBurnState
+        self._coast_time: int = 0  # Coast time from CoastState
+        self._convergence_time: int = 0
         # Prepare the processes for monitoring in the simulation:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -134,12 +138,20 @@ class FlightDisplay:
         if not self._launch_time and self.airbrakes.state.name == "MotorBurnState":
             self._launch_time = self.airbrakes.state.start_time_ns
 
+        if not self._coast_time and self.airbrakes.state.name == "CoastState":
+            self._coast_time = self.airbrakes.state.start_time_ns
+
         if self._launch_time:
             current_time = (
                 self.airbrakes.data_processor.current_timestamp - self._launch_time
             ) * 1e-9
         else:
             current_time = 0
+
+        if self._coast_time and self._convergence_time == 0 and self.airbrakes.apogee_predictor.apogee != 0.0:
+            self._convergence_time = (
+                self.airbrakes.data_processor.current_timestamp - self._coast_time
+            ) * 1e-9
 
         # Prepare output
         data_processor = self.airbrakes.data_processor
@@ -157,6 +169,7 @@ class FlightDisplay:
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
+            f"Convergence Time:          {G}{self._convergence_time:.2f}{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",

@@ -32,7 +32,7 @@ class State(ABC):
         brakes will be retracted.
     """
 
-    __slots__ = ("context",)
+    __slots__ = ("context", "start_time_ns")
 
     def __init__(self, context: "AirbrakesContext"):
         """
@@ -41,6 +41,7 @@ class State(ABC):
         self.context = context
         # At the very beginning of each state, we retract the airbrakes
         self.context.retract_airbrakes()
+        self.start_time_ns = context.data_processor.current_timestamp
 
     @property
     def name(self):
@@ -100,13 +101,6 @@ class MotorBurnState(State):
     """
     When the motor is burning and the rocket is accelerating.
     """
-
-    __slots__ = ("start_time_ns",)
-
-    def __init__(self, context: "AirbrakesContext"):
-        super().__init__(context)
-        # This will only be called once, when the motor starts burning
-        self.start_time_ns = context.data_processor.current_timestamp
 
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
