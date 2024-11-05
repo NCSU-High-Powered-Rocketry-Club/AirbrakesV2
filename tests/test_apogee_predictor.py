@@ -107,7 +107,7 @@ class TestApogeePredictor:
             #     # be: 600 + (200 * (50 m/s /10)) = 1600
             # ),
         ],
-        ids=["hover_at_altitude"],  #, "constant_alt_increase"],
+        ids=["hover_at_altitude"],  # , "constant_alt_increase"],
     )
     def test_prediction_loop_no_mock(
         self, apogee_predictor, processed_data_packets, expected_value

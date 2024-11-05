@@ -14,11 +14,12 @@ from scipy.optimize import curve_fit
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import (
     APOGEE_PREDICTION_FREQUENCY,
-    CONVERGENCE_THRESHOLD,
     CURVE_FIT_INITIAL,
+    FLIGHT_LENGTH_SECONDS,
     GRAVITY,
-    NUMBER_OF_PREDICTIONS,
-    STOP_SIGNAL, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP,
+    INTEGRATION_TIME_STEP,
+    STOP_SIGNAL,
+    UNCERTAINITY_THRESHOLD,
 )
 
 # TODO: See why this warning is being thrown for curve_fit:
@@ -41,12 +42,13 @@ class ApogeePredictor:
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
+        "_has_apogee_converged",
+        "_initial_velocity",
         "_predicted_apogees",
         "_prediction_complete",
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
-        "_initial_velocity"
     )
 
     def __init__(self):
@@ -64,6 +66,7 @@ class ApogeePredictor:
         self._time_differences: deque[np.float64] = deque()
         self._current_altitude: np.float64 = np.float64(0.0)
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
+        self._has_apogee_converged: bool = False
         self._prediction_complete = Event()
         self._predicted_apogees: npt.NDArray[np.float64] = np.array([])
         self._initial_velocity = None
@@ -123,13 +126,18 @@ class ApogeePredictor:
         :return: numpy array with values of A and B
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
-        popt = curve_fit(
+        popt, pcov = curve_fit(
             self._curve_fit_function,
             self._cumulative_time_differences,
             self._accelerations,
             p0=CURVE_FIT_INITIAL,
             maxfev=2000,
-        )[0]
+        )
+        uncertainties = np.sqrt(np.diag(pcov))
+        # print(f"The uncertainity is: {uncertainties}")
+        if np.all(uncertainties < UNCERTAINITY_THRESHOLD):
+            self._has_apogee_converged = True
+            # print("Fit has converged")
         a, b = popt
         return np.array([a, b])
 
@@ -153,26 +161,29 @@ class ApogeePredictor:
         # straightforward way to do this is to use the function with fitted parameters for A and B,
         # and a large incremental vector, with small uniform steps for the dependent variable of
         # the function, t. Then we can evaluate the function at every point in t, and use
-        # cumulative sum to integrate for velocity, and repeat with velocity to integrate for altitude.
+        # cumulative sum to integrate for velocity, and repeat with velocity to integrate for
+        # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
         predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
 
-        # Makes sure that the curve coefficients are not None, sets them to the guessed initial values if they are
-        curve_coefficients = curve_coefficients if curve_coefficients is not None else CURVE_FIT_INITIAL
+        # Makes sure that the curve coefficients are not None, sets them to the guessed initial
+        # values if they are
+        curve_coefficients = (
+            curve_coefficients if curve_coefficients is not None else CURVE_FIT_INITIAL
+        )
 
         predicted_accelerations = (
             curve_coefficients[0] * (1 - curve_coefficients[1] * predicted_coast_timestamps) ** 4
         ) - GRAVITY
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP
-            + self._initial_velocity
+            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP + self._initial_velocity
         )
-        # We don't care about velocity values less than 0 as those correspond with the rocket falling
+        # We don't care about velocity values less than 0 as those correspond with the rocket
+        # falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
         predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
         predicted_apogee = np.max(predicted_altitudes)
-        # print(f"Predicted apogee: {predicted_apogee}", "Current Altitude: ", self._current_altitude)
         return predicted_velocities, predicted_apogee - predicted_altitudes
 
         # TODO: Do something about this problem:
@@ -215,41 +226,25 @@ class ApogeePredictor:
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
-                if not self._has_apogee_converged():
+                if not self._has_apogee_converged:
                     curve_coefficients = self._curve_fit()
                     lookup_table = self._generate_prediction(curve_coefficients)
-                # Predicts the apogee using the lookup table and linear interpolation
-                # It gets the change in height from the lookup table, and adds it to the current height, thus
-                # giving you the predicted apogee.
-                predicted_apogee = np.interp(
-                    self._current_velocity,
-                    # We need to flip the lookup table because the velocities are in descending order
-                    np.flip(lookup_table[0]),
-                    np.flip(lookup_table[1])
-                ) + self._current_altitude
-                self._apogee_prediction_value.value = predicted_apogee
-                self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
+                    # notifies tests that prediction is complete
+                    self._prediction_complete.set()
+                else:
+                    # Predicts the apogee using the lookup table and linear interpolation
+                    # It gets the change in height from the lookup table, and adds it to the
+                    # current height, thus giving you the predicted apogee.
+                    predicted_apogee = (
+                        np.interp(
+                            self._current_velocity,
+                            # We need to flip the lookup table because the velocities are in
+                            # descending order
+                            np.flip(lookup_table[0]),
+                            np.flip(lookup_table[1]),
+                        )
+                        + self._current_altitude
+                    )
+                    self._apogee_prediction_value.value = predicted_apogee
+                    self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)
-            # notifies tests that prediction is complete
-            self._prediction_complete.set()
-
-    def _has_apogee_converged(self) -> bool:
-        """
-        Checks if the last 5 apogees are within 3% of each other.
-        :return: True if the last 5 apogees are within 3% of each other, otherwise False.
-        """
-        if len(self._predicted_apogees) < NUMBER_OF_PREDICTIONS:
-            return False  # Not enough data to check convergence
-
-        # Because we return 0.0 if apogee hasn't been predicted, we don't want to say it's
-        # converged if there's any 0s
-        if np.any(self._predicted_apogees == 0):
-            return False
-
-        avg_apogee = np.mean(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:])
-
-        # # Check if each apogee is within 3% of the average
-        # return bool(
-        #     np.all(np.abs(self._predicted_apogees[-NUMBER_OF_PREDICTIONS:] - avg_apogee) <= CONVERGENCE_THRESHOLD)
-        # )
-        return False

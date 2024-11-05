@@ -114,8 +114,5 @@ TARGET_ALTITUDE = 1700  # m (5,100 ft)
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
 
-# The number of predictions to make before checking for convergence
-NUMBER_OF_PREDICTIONS = 5
-# If the difference between the last few apogee predictions is less than this, apogee prediction
-# has converged
-CONVERGENCE_THRESHOLD = 10  # meters
+# The uncertainity from the curve fit, below which we will say that our apogee has converged:
+UNCERTAINITY_THRESHOLD = [0.0259, 0.00065]
