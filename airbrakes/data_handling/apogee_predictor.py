@@ -17,7 +17,7 @@ from constants import (
     GRAVITY,
     INTEGRATION_TIME_STEP,
     STOP_SIGNAL,
-    UNCERTAINITY_THRESHOLD,
+    UNCERTAINTY_THRESHOLD,
 )
 
 
@@ -79,6 +79,14 @@ class ApogeePredictor:
         """
         return self._prediction_process.is_alive()
 
+    @staticmethod
+    def _curve_fit_function(t: float, a: float, b: float) -> float:
+        """
+        This function is only used internally by scipy curve_fit function
+        Defines the function that the curve fit will use
+        """
+        return a * (1 - b * t) ** 4
+
     def start(self) -> None:
         """
         Starts the prediction process. This is called before the main while loop starts.
@@ -104,13 +112,6 @@ class ApogeePredictor:
         # the apogee prediction process.
         self._prediction_queue.put(processed_data_packets.copy())
 
-    def _curve_fit_function(self, t, a, b):
-        """
-        This function is only used internally by scipy curve_fit function
-        Defines the function that the curve fit will use
-        """
-        return a * (1 - b * t) ** 4
-
     def _curve_fit(self) -> npt.NDArray[np.float64]:
         """
         Calculates the curve fit function of rotated compensated acceleration
@@ -126,7 +127,7 @@ class ApogeePredictor:
             maxfev=2000,
         )
         uncertainties = np.sqrt(np.diag(pcov))
-        if np.all(uncertainties < UNCERTAINITY_THRESHOLD):
+        if np.all(uncertainties < UNCERTAINTY_THRESHOLD):
             self._has_apogee_converged = True
         a, b = popt
         return np.array([a, b])
