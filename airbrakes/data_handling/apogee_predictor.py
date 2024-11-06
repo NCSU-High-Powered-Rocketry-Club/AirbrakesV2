@@ -116,10 +116,6 @@ class ApogeePredictor:
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
         :return: numpy array with values of A and B
         """
-        # if there is zero or one data points, we can't curve fit. Returning none is handled
-        # in _create_prediction_lookup_table()
-        if any([len(self._cumulative_time_differences) <=2, len(self._accelerations)<=2]):
-            return None
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
         popt, pcov = curve_fit(
             self._curve_fit_function,
