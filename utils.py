@@ -111,14 +111,16 @@ def arg_parser() -> argparse.Namespace:
 
     # Check if the user has passed any options that are only available in simulation mode:
     if (
-        any([
-            args.real_servo,
-            args.keep_log_file,
-            args.fast_simulation,
-            args.debug,
-            args.path,
-            args.sim,
-            ])
+        any(
+            [
+                args.real_servo,
+                args.keep_log_file,
+                args.fast_simulation,
+                args.debug,
+                args.path,
+                args.sim,
+            ]
+        )
         and not args.mock
     ):
         parser.error(

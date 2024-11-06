@@ -50,7 +50,7 @@ def main(args: argparse.Namespace) -> None:
             imu = MockIMU(
                 args.path,
                 real_time_simulation=not args.fast_simulation,
-                start_after_log_buffer=True
+                start_after_log_buffer=True,
             )
         # If we are running the simulator for generating datasets, we will replace our IMU object
         # with a sim variant, similar to running a mock simulation.
