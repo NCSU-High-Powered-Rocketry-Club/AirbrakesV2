@@ -138,7 +138,6 @@ class ApogeePredictor:
             (uncertainties < UNCERTAINTY_THRESHOLD) &
             (len(self._cumulative_time_differences) >= min_length)
             ):
-            print('should be set to true')
             self._has_apogee_converged = True
 
         a, b = popt
