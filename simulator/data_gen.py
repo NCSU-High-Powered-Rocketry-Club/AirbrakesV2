@@ -165,13 +165,19 @@ class DataGenerator:
         # just as a short-hand
         orientation = self._config["rocket_orientation"]
 
-        # finds acceleration from thrust curve data, if the timestamp is before the cutoff time
+        # initializes the net force, drag force and thrust (if applicable) will be added
+        net_force = 0
+        # finds force from thrust curve data, if the timestamp is before the cutoff time
         # of the motor
         if next_timestamp <= self._thrust_data[0][-1]:
-            interpreted_thrust = np.interp(
+            net_force = np.interp(
                 next_timestamp, self._thrust_data[0], self._thrust_data[1]
             )
-            vertical_linear_accel = interpreted_thrust / self._config["rocket_mass"]
+        # subtracts drag force from net force
+        net_force -= self._calculate_drag_force(self._last_velocity)
+        # subtracts weight force from net force
+        net_force -= GRAVITY*self._config["rocket_mass"]
+        vertical_linear_accel = net_force / self._config["rocket_mass"]
 
         new_packets = np.array([None, None])
 
@@ -317,3 +323,10 @@ class DataGenerator:
         # This would happen if the input current timestamp is not a multiple of the raw
         # or estimated time steps, or if there is a rounding/floating point error.
         raise ValueError("Could not update timestamp, time stamp is invalid")
+
+    def _calculate_drag_force(self,velocity):
+        # we could probably actually calculate this, maybe we can set temp as a constant?
+        roe = 1.1
+        reference_area = self._config["reference_area"]
+        drag_coefficient = self._config["drag_coefficient"]
+        return 0.5 * roe * reference_area * drag_coefficient * velocity**2

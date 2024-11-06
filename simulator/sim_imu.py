@@ -54,7 +54,7 @@ class SimIMU(IMU):
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            for _ in range(2000):
+            for _ in range(21000):
                 packets = self._data_generator.generate_data_packet()
                 timestamp = 0
                 if packets[0] is not None:

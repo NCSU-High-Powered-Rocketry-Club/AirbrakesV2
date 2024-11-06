@@ -8,7 +8,8 @@ est_time_step: 0.002 # Time step between estimated data packets the simulator wi
 # with the ".csv" removed
 motor: "AeroTech_L1940X" 
 drag_coefficient: 0.4 # coefficient of drag for the rocket
-rocket_mass: 16 # mass of rocket (in kg)
+rocket_mass: 14.5 # mass of rocket (in kg)
+reference_area: 0.01929 # reference area (in meters squared)
 
 # vertical orientation of the rocket on the launch pad. only one value should be non-zero.
 # Non-zero values should either be -1 (negative axis is vertical) or 1 (positive axis is vertical)
