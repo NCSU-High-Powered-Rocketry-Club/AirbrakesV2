@@ -128,9 +128,9 @@ class ApogeePredictor:
         # determines the minimum amount of data points before we can declare apogee converged or not
         min_length = np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY)
         if np.all(
-            (uncertainties < UNCERTAINTY_THRESHOLD) &
-            (len(self._cumulative_time_differences) >= min_length)
-            ):
+            (uncertainties < UNCERTAINTY_THRESHOLD)
+            & (len(self._cumulative_time_differences) >= min_length)
+        ):
             self._has_apogee_converged = True
 
         a, b = popt
