@@ -3,10 +3,11 @@
 import contextlib
 import multiprocessing
 import time
+from typing import TYPE_CHECKING
 
-from airbrakes.data_handling.imu_data_packet import (
-    IMUDataPacket,
-)
+if TYPE_CHECKING:
+    from airbrakes.data_handling.imu_data_packet import IMUDataPacket
+
 from airbrakes.hardware.imu import IMU
 from constants import MAX_QUEUE_SIZE
 from simulator.data_gen import DataGenerator
@@ -53,7 +54,7 @@ class SimIMU(IMU):
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            for i in range(2000):
+            for _ in range(2000):
                 packets = self._data_generator.generate_data_packet()
                 timestamp = 0
                 if packets[0] is not None:
