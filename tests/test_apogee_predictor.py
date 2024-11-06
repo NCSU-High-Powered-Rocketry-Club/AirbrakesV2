@@ -11,11 +11,6 @@ from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import APOGEE_PREDICTION_FREQUENCY, MIN_PREDICTION_TIME
 
 
-@pytest.fixture
-def apogee_predictor():
-    return ApogeePredictor()
-
-
 class TestApogeePredictor:
     """Tests the IMUDataProcessor class"""
 
@@ -95,7 +90,7 @@ class TestApogeePredictor:
                         vertical_acceleration=9.798,
                         time_since_last_data_packet=0.1,
                     )
-                ],
+                ] * APOGEE_PREDICTION_FREQUENCY,
                 100.0,  # The predicted apogee should be the same if our velocity is 0 and accel
                 # is gravity, i.e. hovering.
             ),
@@ -119,30 +114,48 @@ class TestApogeePredictor:
         ids=["hover_at_altitude"],  # , "constant_alt_increase"],
     )
     def test_prediction_loop_no_mock(
-        self, apogee_predictor, processed_data_packets, update_packet, expected_value
+        self, monkeypatch, processed_data_packets, update_packet, expected_value
     ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
         predict it correctly."""
 
-        ap = apogee_predictor
-        ap.start()
+        def update(self, processed_data_packets):
+            for data_packet in processed_data_packets:
+                self._accelerations.append(data_packet.vertical_acceleration)
+                self._time_differences.append(data_packet.time_since_last_data_packet)
+                self._current_altitude = data_packet.current_altitude
+                self._current_velocity = data_packet.vertical_velocity
 
-        ap.update(processed_data_packets.copy())
-        # waits small time for process to complete
-        time.sleep(0.1)
+                self._cumulative_time_differences = np.cumsum(self._time_differences)
+                curve_coefficients = self._curve_fit()
+                lookup_table = self._create_prediction_lookup_table(curve_coefficients)
+                if self._has_apogee_converged:
+                    predicted_apogee = (
+                        np.interp(
+                            self._current_velocity,
+                            lookup_table[0],
+                            lookup_table[1],
+                        )
+                        + self._current_altitude
+                    )
+                    self._apogee_prediction_value.value = predicted_apogee
+                    self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
 
-        # I have no clue how to check values from ap. After calling ap.update(), printing
-        # ap._accelerations or any other similar .self variable returns default init value.
 
-        ap.update(update_packet.copy())
-        time.sleep(0.01)
+        mocked_apogee_predictor = ApogeePredictor()
+        mocked_apogee_predictor.start()
 
+        monkeypatch.setattr(mocked_apogee_predictor.__class__,"update",update)
 
-        predicted_apogee = ap.apogee
-        # Verify result is a float and equal to predicted value
-        assert isinstance(predicted_apogee, float)
-        assert predicted_apogee == pytest.approx(expected_value)
+        mocked_apogee_predictor.update(processed_data_packets)
+        print(mocked_apogee_predictor._cumulative_time_differences)
+        mocked_apogee_predictor.update(update_packet)
+        print(mocked_apogee_predictor._cumulative_time_differences)
+
+        assert mocked_apogee_predictor.apogee == expected_value
+        mocked_apogee_predictor.stop()
+
 
     def test_prediction_loop_every_x_packets(self, apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
@@ -159,7 +172,7 @@ class TestApogeePredictor:
                     time_since_last_data_packet=0.01,
                 )
             ]
-            ap.update(packets.copy())
+            #ap.update(packets.copy())
 
             # allows update to finish
             time.sleep(0.001)

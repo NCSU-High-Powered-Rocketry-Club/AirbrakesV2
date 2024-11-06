@@ -26,10 +26,6 @@ class ApogeePredictor:
     """
     Class that performs the calculations to predict the apogee of the rocket during flight, will
     be used to determine servo extension. Will use multiprocessing in the future.
-
-    :param: state: airbrakes state class
-    :param: data_processor: IMUDataProcessor class
-    :param: data_packets: A sequence of EstimatedDataPacket objects to process.
     """
 
     __slots__ = (
@@ -111,6 +107,7 @@ class ApogeePredictor:
         """
         # The .copy() below is critical to ensure the data is actually transferred correctly to
         # the apogee prediction process.
+
         self._prediction_queue.put(processed_data_packets.copy())
 
     def _curve_fit(self) -> npt.NDArray[np.float64]:
