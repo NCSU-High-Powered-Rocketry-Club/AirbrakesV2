@@ -16,6 +16,7 @@ from constants import (
     FLIGHT_LENGTH_SECONDS,
     GRAVITY,
     INTEGRATION_TIME_STEP,
+    MIN_PREDICTION_TIME,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -118,6 +119,10 @@ class ApogeePredictor:
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
         :return: numpy array with values of A and B
         """
+        # if there is zero or one data points, we can't curve fit. Returning none is handled
+        # in _create_prediction_lookup_table()
+        if any([len(self._cumulative_time_differences) <=2, len(self._accelerations)<=2]):
+            return None
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
         popt, pcov = curve_fit(
             self._curve_fit_function,
@@ -127,8 +132,15 @@ class ApogeePredictor:
             maxfev=2000,
         )
         uncertainties = np.sqrt(np.diag(pcov))
-        if np.all(uncertainties < UNCERTAINTY_THRESHOLD):
+        # determines the minimum amount of data points before we can declare apogee converged or not
+        min_length = np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY)
+        if np.all(
+            (uncertainties < UNCERTAINTY_THRESHOLD) &
+            (len(self._cumulative_time_differences) >= min_length)
+            ):
+            print('should be set to true')
             self._has_apogee_converged = True
+
         a, b = popt
         return np.array([a, b])
 

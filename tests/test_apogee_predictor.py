@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY, NUMBER_OF_PREDICTIONS
+from constants import APOGEE_PREDICTION_FREQUENCY, MIN_PREDICTION_TIME
 
 
 @pytest.fixture
@@ -74,6 +74,7 @@ class TestApogeePredictor:
     @pytest.mark.parametrize(
         (
             "processed_data_packets",
+            "update_packet",
             "expected_value",
         ),
         [
@@ -87,6 +88,14 @@ class TestApogeePredictor:
                     ),
                 ]
                 * 100,
+                [
+                    ProcessedDataPacket(
+                        current_altitude=100,
+                        vertical_velocity=0.0,
+                        vertical_acceleration=9.798,
+                        time_since_last_data_packet=0.1,
+                    )
+                ],
                 100.0,  # The predicted apogee should be the same if our velocity is 0 and accel
                 # is gravity, i.e. hovering.
             ),
@@ -110,7 +119,7 @@ class TestApogeePredictor:
         ids=["hover_at_altitude"],  # , "constant_alt_increase"],
     )
     def test_prediction_loop_no_mock(
-        self, apogee_predictor, processed_data_packets, expected_value
+        self, apogee_predictor, processed_data_packets, update_packet, expected_value
     ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
@@ -118,15 +127,22 @@ class TestApogeePredictor:
 
         ap = apogee_predictor
         ap.start()
+
         ap.update(processed_data_packets.copy())
-        # waits for process to complete, continues regardless after 5 seconds
-        ap._prediction_complete.wait(timeout=5)
+        # waits small time for process to complete
+        time.sleep(0.1)
+
+        # I have no clue how to check values from ap. After calling ap.update(), printing
+        # ap._accelerations or any other similar .self variable returns default init value.
+
+        ap.update(update_packet.copy())
+        time.sleep(0.01)
+
 
         predicted_apogee = ap.apogee
         # Verify result is a float and equal to predicted value
         assert isinstance(predicted_apogee, float)
         assert predicted_apogee == pytest.approx(expected_value)
-        ap.stop()
 
     def test_prediction_loop_every_x_packets(self, apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
@@ -145,8 +161,7 @@ class TestApogeePredictor:
             ]
             ap.update(packets.copy())
 
-            # allows update to finish, will continue regardless after timeout period
-            ap._prediction_complete.wait(timeout=0.05)
+            # allows update to finish
             time.sleep(0.001)
             apogees.append(ap.apogee)
         # sleep a bit again so the last prediction can finish:
@@ -163,23 +178,40 @@ class TestApogeePredictor:
         ap.stop()
 
     @pytest.mark.parametrize(
-        ("predicted_apogees", "expected_convergence"),
+        ("cumulative_time_differences", "accelerations", "expected_convergence"),
         [
-            ([], False),  # Case with no predicted apogees
-            ([1] * (NUMBER_OF_PREDICTIONS - 1), False),  # Not enough apogees for convergence
-            ([1, 1, 0, 1, 1], False),  # Contains a zero, so not converged
-            (
-                [1800.2, 1799.4, 1801.5, 1803.2, 1801.2],
+            ([],[], False), # case with no data
+
+            ( # case with not enough data
+                [1] * int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY) - 1),
+                [1] * int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY) - 1),
+                False,
+                ),
+
+            ( # valid case within the uncertainty range
+                [],
+                [],
                 True,
-            ),  # Values within 30 meters, should be converged
+            ),
         ],
+        ids=["no_data","not_enough_data","within_30m"]
     )
-    def test_has_apogee_converged(self, apogee_predictor, predicted_apogees, expected_convergence):
+    def test_has_apogee_converged(
+        self,
+        apogee_predictor,
+        cumulative_time_differences,
+        accelerations,
+        expected_convergence,
+        ):
         """
         Test _has_apogee_converged with different lists of predicted apogees and expected results.
         """
         # Set up the apogee predictor with the test data
-        apogee_predictor._predicted_apogees = np.array(predicted_apogees)
+        ap = apogee_predictor
+        ap._cumulative_time_differences = cumulative_time_differences
+        ap._accelerations = accelerations
+        ap._curve_fit()
 
         # Check if the convergence result matches the expected value
-        assert apogee_predictor._has_apogee_converged() == expected_convergence
+
+        assert apogee_predictor._has_apogee_converged == expected_convergence
