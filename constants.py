@@ -88,7 +88,7 @@ TAKEOFF_VELOCITY = 10  # m/s
 
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
-MAX_VELOCITY_THRESHOLD = 0.03
+MAX_VELOCITY_THRESHOLD = 0.04
 # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 MOTOR_BURN_TIME = 2.6
 
