@@ -29,6 +29,7 @@ class DataGenerator:
         "_last_est_packet",
         "_last_raw_packet",
         "_last_velocity",
+        "_rotation_manager",
         "_thrust_data",
         "_vertical_index",
     )
@@ -48,20 +49,14 @@ class DataGenerator:
         self._thrust_data: npt.NDArray = self._load_thrust_curve()
 
         # initializes the rotation manager with the launch pad conditions
-        self._rotation_manager = self._get_rotation_manager()
+        self._rotation_manager = RotationManager(
+            self._config["orientation"],
+            self._get_random("launch_rod_angle"),
+            self._get_random("launch_rod_direction"),
+        )
         # finds the vertical index of the orientation. For example, if -y is vertical, the index
         # will be 1.
         self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
-
-    def _get_rotation_manager(self) -> RotationManager:
-        # gets angle of attack and wind direction for the rocket
-        rod_angle_of_attack = self._get_random("launch_rod_angle")
-        wind_direction = self._get_random("wind_direction")
-        # points the rocket into the wind, with some amount of error
-        rod_direction = self._get_random("rod_direction_error") + (wind_direction-180)
-
-        # initializes the rotation manager
-        return RotationManager()
 
     def _get_random(self,identifier: str) -> np.float64:
         """
