@@ -1,14 +1,28 @@
 import multiprocessing
 import multiprocessing.queues
+import threading
 import time
 from collections import deque
 
 import numpy as np
 import pytest
 
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import APOGEE_PREDICTION_FREQUENCY
+
+
+@pytest.fixture
+def threaded_apogee_predictor(monkeypatch):
+    """Modifies the ApogeePredictor to run in a separate thread instead of a process."""
+    ap = ApogeePredictor()
+    # Cannot use signals from child threads, so we need to monkeypatch it:
+    monkeypatch.setattr("signal.signal", lambda _, __: None)
+    target = threading.Thread(target=ap._prediction_loop)
+    ap._prediction_process = target
+    ap.start()
+    yield ap
+    ap.stop()
 
 
 class TestApogeePredictor:
@@ -38,6 +52,10 @@ class TestApogeePredictor:
         assert len(ap._time_differences) == 0
         assert ap._current_altitude == np.float64(0.0)
         assert ap._current_velocity == np.float64(0.0)
+        assert not ap._has_apogee_converged
+        assert isinstance(ap.lookup_table, LookupTable)
+        assert ap.lookup_table.velocities.size == 2
+        assert ap.lookup_table.delta_heights.size == 2
 
         # Test properties on init
         assert ap.apogee == 0.0
@@ -108,74 +126,24 @@ class TestApogeePredictor:
                 1167.8157033639814,
             ),
         ],
-        ids=["hover_at_altitude", "constant_alt_increase"],
+        ids=["hover_at_altitude", "coast_phase_sim"],
     )
-    def test_prediction_loop_no_mock(self, monkeypatch, processed_data_packets, expected_value):
+    def test_prediction_loop_no_mock(
+        self, threaded_apogee_predictor, processed_data_packets, expected_value
+    ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
         predict it correctly."""
 
-        def update(self, processed_data_packets):
-            for data_packet in processed_data_packets:
-                self._accelerations.append(data_packet.vertical_acceleration)
-                self._time_differences.append(data_packet.time_since_last_data_packet)
-                self._current_altitude = data_packet.current_altitude
-                self._current_velocity = data_packet.vertical_velocity
+        threaded_apogee_predictor.update(processed_data_packets)
 
-            # simplified update loop code, because this test only tests for the accuracy of
-            # the prediction.
-            self._cumulative_time_differences = np.cumsum(self._time_differences)
-            curve_coefficients = self._curve_fit()
-            lookup_table = self._create_prediction_lookup_table(curve_coefficients)
-            predicted_apogee = (
-                np.interp(
-                    self._current_velocity,
-                    lookup_table[0],
-                    lookup_table[1],
-                )
-                + self._current_altitude
-            )
-            self._apogee_prediction_value.value = predicted_apogee
+        time.sleep(0.01)  # Wait for the prediction loop to finish
+        assert threaded_apogee_predictor._has_apogee_converged
+        assert threaded_apogee_predictor.apogee == expected_value
 
-        mocked_apogee_predictor = ApogeePredictor()
-        mocked_apogee_predictor.start()
-
-        monkeypatch.setattr(mocked_apogee_predictor.__class__, "update", update)
-
-        mocked_apogee_predictor.update(processed_data_packets)
-
-        assert mocked_apogee_predictor.apogee == expected_value
-        mocked_apogee_predictor.stop()
-
-    def test_prediction_loop_every_x_packets(self, monkeypatch):
+    def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
 
-        def update(self, processed_data_packets):
-            for data_packet in processed_data_packets:
-                self._accelerations.append(data_packet.vertical_acceleration)
-                self._time_differences.append(data_packet.time_since_last_data_packet)
-                self._current_altitude = data_packet.current_altitude
-                self._current_velocity = data_packet.vertical_velocity
-
-            # simplified update loop code
-            if len(self._accelerations) % APOGEE_PREDICTION_FREQUENCY == 0:
-                self._cumulative_time_differences = np.cumsum(self._time_differences)
-                curve_coefficients = self._curve_fit()
-                lookup_table = self._create_prediction_lookup_table(curve_coefficients)
-                predicted_apogee = (
-                    np.interp(
-                        self._current_velocity,
-                        lookup_table[0],
-                        lookup_table[1],
-                    )
-                    + self._current_altitude
-                )
-                self._apogee_prediction_value.value = predicted_apogee
-
-        mocked_apogee_predictor = ApogeePredictor()
-        mocked_apogee_predictor.start()
-
-        monkeypatch.setattr(mocked_apogee_predictor.__class__, "update", update)
         apogees = []
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
@@ -187,10 +155,12 @@ class TestApogeePredictor:
                     time_since_last_data_packet=0.01,
                 )
             ]
-            mocked_apogee_predictor.update(packets)
+            threaded_apogee_predictor.update(packets)
             time.sleep(0.001)  # allows update to finish
-            apogees.append(mocked_apogee_predictor.apogee)
+            apogees.append(threaded_apogee_predictor.apogee)
 
+        # Assert that apogees are ascending:
+        assert all(apogees[i] <= apogees[i + 1] for i in range(len(apogees) - 1))
         unique_apogees = set(apogees)
         # Assert that we have a '0' apogee in our unique apogees, and then remove that:
         # We get a 0 apogee because we don't start predicting until we have a certain amount
@@ -199,8 +169,10 @@ class TestApogeePredictor:
         unique_apogees.remove(0.0)
         # amount of apogees we have is number of packets, divided by the frequency
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_FREQUENCY
-        assert mocked_apogee_predictor._prediction_queue.qsize() == 0
-        mocked_apogee_predictor.stop()
+        assert threaded_apogee_predictor._prediction_queue.qsize() == 0
+        assert threaded_apogee_predictor._has_apogee_converged
+        assert threaded_apogee_predictor.apogee == max(apogees)
+        assert threaded_apogee_predictor.is_running
 
     @pytest.mark.parametrize(
         ("cumulative_time_differences", "accelerations", "expected_convergence"),
@@ -235,5 +207,4 @@ class TestApogeePredictor:
         ap._curve_fit()
 
         # Check if the convergence result matches the expected value
-
         assert apogee_predictor._has_apogee_converged == expected_convergence

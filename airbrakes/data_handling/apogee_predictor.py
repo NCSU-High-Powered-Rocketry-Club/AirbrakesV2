@@ -5,6 +5,7 @@ import signal
 from collections import deque
 from typing import Literal
 
+import msgspec
 import numpy as np
 import numpy.typing as npt
 from scipy.optimize import curve_fit
@@ -21,6 +22,23 @@ from constants import (
 )
 
 
+class LookupTable(msgspec.Struct):
+    """The lookup table for the apogee predictor. This will store the respective velocities and
+    delta heights for the lookup table. Updated every time the curve fit is run, until it
+    converges."""
+
+    velocities: npt.NDArray[np.float64] = np.array([0.0, 0.1])
+    delta_heights: npt.NDArray[np.float64] = np.array([0.1, 0.1])
+
+
+class CurveCoefficients(msgspec.Struct):
+    """The curve coefficients for the apogee predictor. This will store the respective A and B
+    values for the curve fit function."""
+
+    A: np.float64 = np.float64(0.0)
+    B: np.float64 = np.float64(0.0)
+
+
 class ApogeePredictor:
     """
     Class that performs the calculations to predict the apogee of the rocket during flight, will
@@ -35,10 +53,10 @@ class ApogeePredictor:
         "_current_velocity",
         "_has_apogee_converged",
         "_initial_velocity",
-        "_predicted_apogees",
         "_prediction_process",
         "_prediction_queue",
         "_time_differences",
+        "lookup_table",
     )
 
     def __init__(self):
@@ -57,8 +75,8 @@ class ApogeePredictor:
         self._current_altitude: np.float64 = np.float64(0.0)
         self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
         self._has_apogee_converged: bool = False
-        self._predicted_apogees: npt.NDArray[np.float64] = np.array([])
         self._initial_velocity = None
+        self.lookup_table: LookupTable = LookupTable()
 
     @property
     def apogee(self) -> float:
@@ -76,10 +94,12 @@ class ApogeePredictor:
         return self._prediction_process.is_alive()
 
     @staticmethod
-    def _curve_fit_function(t: float, a: float, b: float) -> float:
+    def _curve_fit_function(
+        t: npt.NDArray[np.float64], a: np.float64, b: np.float64
+    ) -> npt.NDArray:
         """
-        This function is only used internally by scipy curve_fit function
-        Defines the function that the curve fit will use
+        The function which we fit the acceleration data to. Used by scipy.optimize.curve_fit and
+        while creating the lookup table.
         """
         return a * (1 - b * t) ** 4
 
@@ -109,7 +129,7 @@ class ApogeePredictor:
 
         self._prediction_queue.put(processed_data_packets.copy())
 
-    def _curve_fit(self) -> npt.NDArray[np.float64]:
+    def _curve_fit(self) -> CurveCoefficients:
         """
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
@@ -121,25 +141,23 @@ class ApogeePredictor:
             self._cumulative_time_differences,
             self._accelerations,
             p0=CURVE_FIT_INITIAL,
-            maxfev=2000,
+            maxfev=2000,  # Maximum number of iterations
         )
+        # Calculate the uncertainties of the curve fit, which is just the standard deviation of the
+        # covariance matrix, which are the "errors" in the curve fit.
         uncertainties = np.sqrt(np.diag(pcov))
-        # determines the minimum amount of data points before we can declare apogee converged or not
         if np.all(uncertainties < UNCERTAINTY_THRESHOLD):
             self._has_apogee_converged = True
 
         a, b = popt
-        return np.array([a, b])
+        return CurveCoefficients(A=a, B=b)
 
-    def _create_prediction_lookup_table(
-        self, curve_coefficients: npt.NDArray[np.float64]
-    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    def _update_prediction_lookup_table(self, curve_coefficients: CurveCoefficients):
         """
         Curve fits the acceleration data and uses the curve fit to make a lookup table of velocity
         vs Δheight.
-        :param: curve_coefficients: A length 2 array, containing the A and B values from curve fit
-        function.
-        :return: predicted altitude at apogee
+        :param: curve_coefficients: The CurveCoefficients class, containing the A and B values
+            from curve fit function.
         """
 
         # We need to store the velocity for when we start the prediction, so we can use it to
@@ -157,15 +175,12 @@ class ApogeePredictor:
         # This is all the x values that we will use to integrate the acceleration function
         predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
 
-        # Makes sure that the curve coefficients are not None, sets them to the guessed initial
-        # values if they are
-        curve_coefficients = (
-            curve_coefficients if curve_coefficients is not None else CURVE_FIT_INITIAL
-        )
-
         predicted_accelerations = (
-            curve_coefficients[0] * (1 - curve_coefficients[1] * predicted_coast_timestamps) ** 4
-        ) - GRAVITY
+            self._curve_fit_function(
+                predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
+            )
+            - GRAVITY
+        )
         predicted_velocities = (
             np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP + self._initial_velocity
         )
@@ -175,12 +190,9 @@ class ApogeePredictor:
         predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
         predicted_apogee = np.max(predicted_altitudes)
         # We need to flip the lookup table because the velocities are in descending order, not
-        # ascending order
-        return np.flip(predicted_velocities), np.flip(predicted_apogee - predicted_altitudes)
-
-        # TODO: Do something about this problem:
-        # if not predicted_altitudes.size:  # Sanity check - if our dt is too big, max() will fail
-        #     return 0.0
+        # ascending order. We need them to be in ascending order for the interpolation to work.
+        self.lookup_table.velocities = np.flip(predicted_velocities)
+        self.lookup_table.delta_heights = np.flip(predicted_apogee - predicted_altitudes)
 
     def _prediction_loop(self) -> None:
         """
@@ -189,13 +201,6 @@ class ApogeePredictor:
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         last_run_length = 0
-
-        # Initial lookup table, will be updated with the first prediction, these are just dummy
-        # values that ensure no division by zero errors
-        lookup_table: tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]] = (
-            np.array([0.0, 0.1]),
-            np.array([0.1, 0.1]),
-        )
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
@@ -211,27 +216,29 @@ class ApogeePredictor:
             for data_packet in data_packets:
                 self._accelerations.append(data_packet.vertical_acceleration)
                 self._time_differences.append(data_packet.time_since_last_data_packet)
-                self._current_altitude = data_packet.current_altitude
-                self._current_velocity = data_packet.vertical_velocity
+
+            self._current_altitude = data_packets[-1].current_altitude
+            self._current_velocity = data_packets[-1].vertical_velocity
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 if not self._has_apogee_converged:
                     curve_coefficients = self._curve_fit()
-                    lookup_table = self._create_prediction_lookup_table(curve_coefficients)
-                else:
+                    self._update_prediction_lookup_table(curve_coefficients)
+
+                # Get the predicted apogee if the curve fit has converged:
+                if self._has_apogee_converged:
                     # Predicts the apogee using the lookup table and linear interpolation
                     # It gets the change in height from the lookup table, and adds it to the
                     # current height, thus giving you the predicted apogee.
                     predicted_apogee = (
                         np.interp(
                             self._current_velocity,
-                            lookup_table[0],
-                            lookup_table[1],
+                            self.lookup_table.velocities,
+                            self.lookup_table.delta_heights,
                         )
                         + self._current_altitude
                     )
                     self._apogee_prediction_value.value = predicted_apogee
-                    self._predicted_apogees = np.append(self._predicted_apogees, predicted_apogee)
                 last_run_length = len(self._accelerations)
