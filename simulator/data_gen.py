@@ -1,6 +1,7 @@
 """Module that creates randomly generated data to sent to the simulator IMU"""
 
 import csv
+import random
 from pathlib import Path
 
 import numpy as np
@@ -10,10 +11,10 @@ from scipy.spatial.transform import Rotation as R
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
-    IMUDataPacket,
     RawDataPacket,
 )
 from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
+from simulator.rotation_manager import RotationManager
 from utils import deadband
 
 
@@ -43,10 +44,43 @@ class DataGenerator:
         with config_path.open(mode="r", newline="") as file:
             self._config: dict = yaml.safe_load(file)
 
+        # loads thrust curve
+        self._thrust_data: npt.NDArray = self._load_thrust_curve()
+
+        # initializes the rotation manager with the launch pad conditions
+        self._rotation_manager = self._get_rotation_manager()
         # finds the vertical index of the orientation. For example, if -y is vertical, the index
         # will be 1.
         self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
-        self._thrust_data: npt.NDArray = self._load_thrust_curve()
+
+    def _get_rotation_manager(self) -> RotationManager:
+        # gets angle of attack and wind direction for the rocket
+        rod_angle_of_attack = self._get_random("launch_rod_angle")
+        wind_direction = self._get_random("wind_direction")
+        # points the rocket into the wind, with some amount of error
+        rod_direction = self._get_random("rod_direction_error") + (wind_direction-180)
+
+        # initializes the rotation manager
+        return RotationManager()
+
+    def _get_random(self,identifier: str) -> np.float64:
+        """
+        Gets a random value for the selected identifier, using the standard deviation if given.
+
+        :param identifier: string that matches a config variable in sim_config.yaml
+
+        :return: float containing a random value for the selected identfier, between
+            the bounds specified in the config
+        """
+        parameters = self._config[identifier]
+        if len(parameters) == 3:
+            # uses standard deviation to get random number
+            mean = np.mean([parameters[0],parameters[1]])
+            val = random.gauss(mean,parameters[2])
+            # restricts the value to the bounds
+            return np.max(parameters[0], np.min(parameters[1], val))
+        # if no standard deviation is given, just return a uniform distribution
+        return random.uniform(parameters[0],parameters[1])
 
     def _load_thrust_curve(self) -> npt.NDArray:
         """
@@ -98,8 +132,6 @@ class DataGenerator:
         :return: data packet of the specified type with launch pad conditions.
         """
         orientation = self._config["rocket_orientation"]
-        initial_quaternion, _ = R.align_vectors([0, 0, -1], [orientation])
-        initial_quaternion = R.as_quat(initial_quaternion, scalar_first=True)
 
         packet = None
         if packet_type == RawDataPacket:
@@ -119,6 +151,8 @@ class DataGenerator:
                 deltaThetaZ=0.0,
             )
         else:
+            initial_quaternion, _ = R.align_vectors([0, 0, -1], [orientation])
+            initial_quaternion = R.as_quat(initial_quaternion, scalar_first=True)
             packet =  EstimatedDataPacket(
                 0,
                 estOrientQuaternionW=initial_quaternion[0],
