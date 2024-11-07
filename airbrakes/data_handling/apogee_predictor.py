@@ -203,8 +203,7 @@ class ApogeePredictor:
             # communicate between the main process and the prediction process. The main process
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
-            # TODO: make it so _prediction_queue is a queue of data packets, not a queue of lists
-            # of data packets
+
             data_packets = self._prediction_queue.get()
 
             if data_packets == STOP_SIGNAL:
