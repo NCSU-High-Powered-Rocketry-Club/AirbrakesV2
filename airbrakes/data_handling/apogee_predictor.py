@@ -120,7 +120,6 @@ class ApogeePredictor:
         """
         # The .copy() below is critical to ensure the data is actually transferred correctly to
         # the apogee prediction process.
-
         self._prediction_queue.put(processed_data_packets.copy())
 
     # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
@@ -138,7 +137,7 @@ class ApogeePredictor:
         """
         Calculates the curve fit function of rotated compensated acceleration
         Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
-        :return: numpy array with values of A and B
+        :return: The CurveCoefficients class, containing the A and B values from curve fit function
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
         popt, pcov = curve_fit(
@@ -201,7 +200,10 @@ class ApogeePredictor:
 
     def _prediction_loop(self) -> None:
         """
-        The loop that will run the prediction process. It runs in parallel with the main loop.
+        Responsible for fetching data packets, curve fitting, updating our lookup table, and
+        finally predicting the apogee.
+
+        Runs in a separate process.
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
