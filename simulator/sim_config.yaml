@@ -18,7 +18,5 @@ rocket_orientation: [0, 0, -1]
 #---------------------
 # CONFIG FOR RANDOMNESS
 #---------------------
-wind_direction: [0,360] # min and max for wind direction (in degrees)
-wind_speed: [0.5,8.5] # min and max for wind speed (in meters per second)
 launch_rod_angle: [2,10] # min and max values for the launch rod angle of attack (in degrees)
-rod_direction_error: [-10,10] # how far off (in degrees) the launch rod will be pointed into wind
+rod_direction_direction: [0,360] # how far off (in degrees) the launch rod will be pointed into wind

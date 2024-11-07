@@ -32,7 +32,7 @@ class SimIMU(IMU):
         "_timestamp",
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
