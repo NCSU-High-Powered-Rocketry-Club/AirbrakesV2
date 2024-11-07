@@ -16,7 +16,6 @@ from constants import (
     FLIGHT_LENGTH_SECONDS,
     GRAVITY,
     INTEGRATION_TIME_STEP,
-    MIN_PREDICTION_TIME,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -126,11 +125,7 @@ class ApogeePredictor:
         )
         uncertainties = np.sqrt(np.diag(pcov))
         # determines the minimum amount of data points before we can declare apogee converged or not
-        min_length = np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY)
-        if np.all(
-            (uncertainties < UNCERTAINTY_THRESHOLD)
-            & (len(self._cumulative_time_differences) >= min_length)
-        ):
+        if np.all(uncertainties < UNCERTAINTY_THRESHOLD):
             self._has_apogee_converged = True
 
         a, b = popt

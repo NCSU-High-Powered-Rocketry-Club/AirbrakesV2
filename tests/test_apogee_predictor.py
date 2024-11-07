@@ -8,7 +8,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY, MIN_PREDICTION_TIME
+from constants import APOGEE_PREDICTION_FREQUENCY
 
 
 class TestApogeePredictor:
@@ -207,18 +207,18 @@ class TestApogeePredictor:
         [
             ([0, 1], [5, 10], False),  # case with not enough data to be accurate
             (  # case with not enough data
-                [1] * int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY) - 1),
-                [1] * int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY) - 1),
+                [1,2,3,4],
+                [1,5,3,7],
                 False,
             ),
             (  # valid case within the uncertainty range
                 [
                     i / 10
-                    for i in range(int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY)))
+                    for i in range(20)
                 ],
                 [
                     15.5 * (1 - 0.03 * i) ** 4
-                    for i in range(int(np.ceil(MIN_PREDICTION_TIME * APOGEE_PREDICTION_FREQUENCY)))
+                    for i in range(20)
                 ],
                 True,
             ),
