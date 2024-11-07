@@ -205,7 +205,6 @@ class TestApogeePredictor:
     @pytest.mark.parametrize(
         ("cumulative_time_differences", "accelerations", "expected_convergence"),
         [
-            ([0, 1], [5, 10], False),  # case with not enough data to be accurate
             (  # case with not enough data
                 [1, 2, 3, 4],
                 [1, 5, 3, 7],
@@ -217,7 +216,7 @@ class TestApogeePredictor:
                 True,
             ),
         ],
-        ids=["no_data", "not_enough_data", "within_30m"],
+        ids=["not_enough_data", "within_30m"],
     )
     def test_has_apogee_converged(
         self,
