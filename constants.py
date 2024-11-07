@@ -116,4 +116,3 @@ APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
 UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]
-
