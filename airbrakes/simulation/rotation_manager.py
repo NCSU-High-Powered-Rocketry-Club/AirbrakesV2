@@ -1,5 +1,7 @@
 """Module that contains methods for rotation operations"""
 
+from collections import deque
+
 import numpy as np
 import numpy.typing as npt
 
@@ -12,9 +14,9 @@ class RotationManager:
     """
 
     __slots__ = (
-        "_azimuth",
+        "_azimuths",
         "_vertical",
-        "_zenith",
+        "_zeniths",
     )
 
     def __init__(
@@ -27,13 +29,21 @@ class RotationManager:
         :param orientation: the vertical orientation of the rocket
         """
         self._vertical: npt.NDArray = orientation
-        self._zenith: np.float64 = (rod_angle_of_attack * np.pi) / 180
-        self._azimuth: np.float64 = (rod_direction * np.pi) / 180
+        self._zeniths: deque = deque[(rod_angle_of_attack * np.pi) / 180]
+        self._azimuths: deque = deque[(rod_direction * np.pi) / 180]
 
-    def update_orientation(self, time_step: np.float64) -> None:
+    def update_orientation(self, time_step: np.float64, vertical_velocity: np.float64) -> None:
         """
-        Updates the baseline vehicle-frame orientation
+        Updates the baseline vehicle-frame orientation, based on how close the velocity
+        is to zero. This accounts for the velocity being zero at the start of launch
 
         :param time_step: how much time has passed between updates
-        :param apogee_progress: current altitude divided by the target apogee
+        :param vertical_velocity: current vertical velocity of the rocket
         """
+        # we dont want to change angle if in motor burn phase, for simplicity
+        if self._zeniths[-1] is not self._zeniths[0] or vertical_velocity >= 100:
+            self._zeniths.append(
+                (np.pi / 2 - self._zeniths[0]) * np.exp(-0.035 * vertical_velocity)
+                + self._zeniths[0]
+            )
+        _ = time_step

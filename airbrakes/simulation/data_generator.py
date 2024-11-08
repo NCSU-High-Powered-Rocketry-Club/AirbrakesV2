@@ -41,7 +41,7 @@ class DataGenerator:
         self._last_velocity: np.float64 = np.float64(0.0)
 
         # loads the sim_config.yaml file
-        config_path = Path("simulation/sim_config.yaml")
+        config_path = Path("airbrakes/simulation/sim_config.yaml")
         with config_path.open(mode="r", newline="") as file:
             self._config: dict = yaml.safe_load(file)
 
@@ -50,7 +50,7 @@ class DataGenerator:
 
         # initializes the rotation manager with the launch pad conditions
         self._rotation_manager = RotationManager(
-            self._config["orientation"],
+            self._config["rocket_orientation"],
             self._get_random("launch_rod_angle"),
             self._get_random("launch_rod_direction"),
         )
@@ -86,7 +86,7 @@ class DataGenerator:
         :return: numpy array containing tuples with the time and thrust at that time.
         """
         # gets the path of the csv based on the config file
-        csv_path = Path(f"simulation/thrust_curves/{self._config["motor"]}.csv")
+        csv_path = Path(f"airbrakes/simulation/thrust_curves/{self._config["motor"]}.csv")
 
         # initializes the list for timestamps and thrust values
         motor_timestamps = [0]

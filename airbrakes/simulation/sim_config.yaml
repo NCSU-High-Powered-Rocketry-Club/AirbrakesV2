@@ -1,6 +1,5 @@
 # config file for simulation
 
-sim_apogee: 1800 # Simulator will generate data with the apogee around this value (in meters)
 raw_time_step: 0.001 # Time step between raw data packets the simulation will generate (in seconds)
 est_time_step: 0.002 # Time step between estimated data packets the simulation will generate (in seconds)
 
@@ -19,4 +18,4 @@ rocket_orientation: [0, 0, -1]
 # CONFIG FOR RANDOMNESS
 #---------------------
 launch_rod_angle: [2,10] # min and max values for the launch rod angle of attack (in degrees)
-rod_direction_direction: [0,360] # how far off (in degrees) the launch rod will be pointed into wind
+launch_rod_direction: [0,360] # how far off (in degrees) the launch rod will be pointed into wind
