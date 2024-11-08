@@ -15,13 +15,13 @@ from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.simulation.sim_imu import SimIMU
 from constants import (
     FREQUENCY,
     LOGS_PATH,
     PORT,
     SERVO_PIN,
 )
-from simulator.sim_imu import SimIMU
 from utils import arg_parser
 
 
@@ -52,7 +52,7 @@ def main(args: argparse.Namespace) -> None:
                 real_time_simulation=not args.fast_simulation,
                 start_after_log_buffer=True,
             )
-        # If we are running the simulator for generating datasets, we will replace our IMU object
+        # If we are running the simulation for generating datasets, we will replace our IMU object
         # with a sim variant, similar to running a mock simulation.
         else:
             imu = SimIMU()

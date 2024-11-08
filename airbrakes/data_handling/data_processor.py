@@ -204,7 +204,6 @@ class IMUDataProcessor:
         Calculates the rotated acceleration vector. Converts gyroscope data into a delta
         quaternion, and adds onto the last quaternion. Will most likely be replaced by IMU
         quaternion data in the future, this is a work-around due to bad datasets.
-
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
 
@@ -229,7 +228,8 @@ class IMUDataProcessor:
             if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
                 return rotated_accelerations
 
-            # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
+            # scipy docs for more info:
+            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
             # Calculate the delta quaternion from the angular rates
             delta_rotation = R.from_rotvec([gyro_x * dt, gyro_y * dt, gyro_z * dt])
 
@@ -282,7 +282,7 @@ class IMUDataProcessor:
         This cannot be called on the first update as _last_data_packet is None. Units are in
         seconds.
         :return: A numpy array of the time difference between each data packet and the previous
-            data packet.
+        data packet.
         """
         # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2

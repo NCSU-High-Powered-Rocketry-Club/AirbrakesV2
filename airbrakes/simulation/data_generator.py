@@ -1,4 +1,4 @@
-"""Module that creates randomly generated data to sent to the simulator IMU"""
+"""Module that creates randomly generated data to sent to the simulation IMU"""
 
 import csv
 import random
@@ -13,8 +13,8 @@ from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
+from airbrakes.simulation.rotation_manager import RotationManager
 from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
-from simulator.rotation_manager import RotationManager
 from utils import deadband
 
 
@@ -41,7 +41,7 @@ class DataGenerator:
         self._last_velocity: np.float64 = np.float64(0.0)
 
         # loads the sim_config.yaml file
-        config_path = Path("simulator/sim_config.yaml")
+        config_path = Path("simulation/sim_config.yaml")
         with config_path.open(mode="r", newline="") as file:
             self._config: dict = yaml.safe_load(file)
 
@@ -58,41 +58,39 @@ class DataGenerator:
         # will be 1.
         self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
 
-    def _get_random(self,identifier: str) -> np.float64:
+    @property
+    def velocity(self) -> np.float64:
+        """Returns the last calculated velocity of the rocket"""
+        return self._last_velocity
+
+    def _get_random(self, identifier: str) -> np.float64:
         """
         Gets a random value for the selected identifier, using the standard deviation if given.
-
         :param identifier: string that matches a config variable in sim_config.yaml
-
-        :return: float containing a random value for the selected identfier, between
-            the bounds specified in the config
+        :return: float containing a random value for the selected identifier, between
+        the bounds specified in the config
         """
         parameters = self._config[identifier]
         if len(parameters) == 3:
             # uses standard deviation to get random number
-            mean = np.mean([parameters[0],parameters[1]])
-            val = random.gauss(mean,parameters[2])
+            mean = float(np.mean([parameters[0], parameters[1]]))
+            val = random.gauss(mean, parameters[2])
             # restricts the value to the bounds
             return np.max(parameters[0], np.min(parameters[1], val))
         # if no standard deviation is given, just return a uniform distribution
-        return random.uniform(parameters[0],parameters[1])
+        return random.uniform(parameters[0], parameters[1])
 
     def _load_thrust_curve(self) -> npt.NDArray:
         """
         Loads the thrust curve from the motor specified in the configs.
-
         :return: numpy array containing tuples with the time and thrust at that time.
         """
         # gets the path of the csv based on the config file
-        csv_path = Path(f"simulator/thrust_curves/{self._config["motor"]}.csv")
+        csv_path = Path(f"simulation/thrust_curves/{self._config["motor"]}.csv")
 
         # initializes the list for timestamps and thrust values
-        motor_timestamps = [
-            0,
-        ]
-        motor_thrusts = [
-            0,
-        ]
+        motor_timestamps = [0]
+        motor_thrusts = [0]
 
         start_flag = False  # flag to identify when the metadata/header rows are skipped
 
@@ -115,8 +113,8 @@ class DataGenerator:
         return np.array([motor_timestamps, motor_thrusts])
 
     def _get_first_packet(
-            self,packet_type: RawDataPacket | EstimatedDataPacket
-            ) -> RawDataPacket | EstimatedDataPacket:
+        self, packet_type: RawDataPacket | EstimatedDataPacket
+    ) -> RawDataPacket | EstimatedDataPacket:
         """
         Sets up the initial values for the estimated and raw data packets. This should
         only be called once, and all values will be approximate launch pad conditions.
@@ -130,7 +128,7 @@ class DataGenerator:
 
         packet = None
         if packet_type == RawDataPacket:
-            packet =  RawDataPacket(
+            packet = RawDataPacket(
                 0,
                 scaledAccelX=orientation[0],
                 scaledAccelY=orientation[1],
@@ -148,7 +146,7 @@ class DataGenerator:
         else:
             initial_quaternion, _ = R.align_vectors([0, 0, -1], [orientation])
             initial_quaternion = R.as_quat(initial_quaternion, scalar_first=True)
-            packet =  EstimatedDataPacket(
+            packet = EstimatedDataPacket(
                 0,
                 estOrientQuaternionW=initial_quaternion[0],
                 estOrientQuaternionX=initial_quaternion[1],
@@ -185,17 +183,17 @@ class DataGenerator:
             return self._last_raw_packet
 
         # calculates the timestamp for this packet (in seconds)
-        next_timestamp = (self._last_raw_packet.timestamp/1e9) + time_step
+        next_timestamp = (self._last_raw_packet.timestamp / 1e9) + time_step
 
         # calculates the net force and vertical scaled acceleration
-        net_force = self._calculate_net_force(next_timestamp,self._last_velocity)
+        net_force = self._calculate_net_force(next_timestamp, self._last_velocity)
         vertical_scaled_accel = net_force / (self._config["rocket_mass"] * GRAVITY)
 
         # calculates vertical delta velocity
         last_vertical_scaled_accel = self._get_vertical_data_point("scaledAccel")
         vert_delta_v = (vertical_scaled_accel - last_vertical_scaled_accel) * GRAVITY * time_step
 
-        packet =  RawDataPacket(
+        packet = RawDataPacket(
             next_timestamp * 1e9,
             scaledAccelX=vertical_scaled_accel * orientation[0],
             scaledAccelY=vertical_scaled_accel * orientation[1],
@@ -233,10 +231,10 @@ class DataGenerator:
             return self._last_raw_packet
 
         # calculates the timestamp for this packet (in seconds)
-        next_timestamp = (self._last_est_packet.timestamp/1e9) + time_step
+        next_timestamp = (self._last_est_packet.timestamp / 1e9) + time_step
 
         # calculates the net force and vertical accelerations
-        net_force = self._calculate_net_force(next_timestamp,self._last_velocity)
+        net_force = self._calculate_net_force(next_timestamp, self._last_velocity)
         vertical_linear_accel = net_force / self._config["rocket_mass"]
         vertical_comp_accel = vertical_linear_accel + GRAVITY
 
@@ -251,7 +249,8 @@ class DataGenerator:
                 self._last_est_packet.estOrientQuaternionX,
                 self._last_est_packet.estOrientQuaternionY,
                 self._last_est_packet.estOrientQuaternionZ,
-            ])
+            ]
+        )
 
         packet = EstimatedDataPacket(
             next_timestamp * 1e9,
@@ -280,7 +279,6 @@ class DataGenerator:
         """
         Calculates the velocity of the rocket based on the compensated acceleration.
         Integrates that acceleration to get the velocity.
-
         :return: the velocity of the rocket
         """
         # deadbands the acceleration
@@ -309,25 +307,21 @@ class DataGenerator:
         drag_coefficient = self._config["drag_coefficient"]
         rocket_mass = self._config["rocket_mass"]
 
-        drag_force =  0.5 * air_density * reference_area * drag_coefficient * velocity**2
+        drag_force = 0.5 * air_density * reference_area * drag_coefficient * velocity**2
         weight_force = GRAVITY * rocket_mass
         thrust_force = 0.0
 
         # thrust force is non-zero if the timestamp is within the timeframe of
         # the motor burn
         if timestamp <= self._thrust_data[0][-1]:
-            thrust_force = np.interp(
-                timestamp, self._thrust_data[0], self._thrust_data[1]
-            )
+            thrust_force = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
         return thrust_force - weight_force - drag_force
 
-    def _get_vertical_data_point(self,string_identifier: str) -> np.float64:
+    def _get_vertical_data_point(self, string_identifier: str) -> np.float64:
         """
         gets the last vertical data point specified from a vector data attribute by using IMU
         orientation in config
-
-        :param string_identfier: a string representing the exact attribute name of the data packet
-
+        :param string_identifier: a string representing the exact attribute name of the data packet
         :return: float containing the specified data point
         """
         # Dynamically retrieve x, y, z components based on the identifier
@@ -341,6 +335,6 @@ class DataGenerator:
         if any(value is None for value in values):
             raise AttributeError(
                 f"Could not find all components for identifier '{string_identifier}'."
-                )
+            )
 
         return values[self._vertical_index]

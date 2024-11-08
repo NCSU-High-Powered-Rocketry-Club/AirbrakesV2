@@ -1,10 +1,10 @@
-# config file for simulator
+# config file for simulation
 
 sim_apogee: 1800 # Simulator will generate data with the apogee around this value (in meters)
-raw_time_step: 0.001 # Time step between raw data packets the simulator will generate (in seconds)
-est_time_step: 0.002 # Time step between estimated data packets the simulator will generate (in seconds)
+raw_time_step: 0.001 # Time step between raw data packets the simulation will generate (in seconds)
+est_time_step: 0.002 # Time step between estimated data packets the simulation will generate (in seconds)
 
-# selects the motor to use, this is the name of the csv file located in /simulator/thrust_curves
+# selects the motor to use, this is the name of the csv file located in /simulation/thrust_curves
 # with the ".csv" removed
 motor: "AeroTech_L1940X" 
 drag_coefficient: 0.4 # coefficient of drag for the rocket
