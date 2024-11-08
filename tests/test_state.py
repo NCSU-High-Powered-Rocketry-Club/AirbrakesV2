@@ -262,16 +262,18 @@ class TestFreeFallState:
         assert free_fall_state.name == "FreeFallState"
 
     @pytest.mark.parametrize(
-        ("current_altitude", "expected_state"),
+        ("current_altitude", "vertical_velocity", "expected_state"),
         [
-            (50.0, FreeFallState),
-            (19.0, FreeFallState),
-            (GROUND_ALTITUDE - 5, LandedState),
+            (50.0, -20.0, FreeFallState),
+            (19.0, -10.0, FreeFallState),
+            (GROUND_ALTITUDE - 5, -20.0, FreeFallState),
+            (GROUND_ALTITUDE - 5, 0.0, LandedState),
         ],
-        ids=["falling", "almost_landed", "landed"],
+        ids=["falling", "almost_landed", "close_to_ground_but_falling", "landed"],
     )
-    def test_update(self, free_fall_state, current_altitude, expected_state):
+    def test_update(self, free_fall_state, current_altitude, vertical_velocity, expected_state):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
+        free_fall_state.context.data_processor._vertical_velocities = [vertical_velocity]
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
