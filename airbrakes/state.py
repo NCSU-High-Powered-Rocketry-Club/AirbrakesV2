@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 
 from constants import (
     GROUND_ALTITUDE,
+    LANDED_SPEED,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
     TARGET_ALTITUDE,
-    LANDED_SPEED,
 )
 
 if TYPE_CHECKING:

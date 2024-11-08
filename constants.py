@@ -94,7 +94,8 @@ MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
 
-# Consider the rocket to have landed if it is within 15 meters of the launch site height and the speed is low.
+# Consider the rocket to have landed if it is within 15 meters of the launch site height
+# and the speed is low.
 GROUND_ALTITUDE = 10.0  # meters
 LANDED_SPEED = 5.0  # m/s
 
