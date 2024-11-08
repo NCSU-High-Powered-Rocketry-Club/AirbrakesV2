@@ -115,7 +115,6 @@ class IMUDataProcessor:
         self._time_differences = self._calculate_time_differences()
 
         self._rotated_accelerations = self._calculate_rotated_accelerations()
-        # print(f"The final rotated acceleration is: {self._rotated_accelerations[-1]}")
         self._vertical_velocities = self._calculate_vertical_velocity()
         self._max_vertical_velocity = max(
             self._vertical_velocities.max(), self._max_vertical_velocity
