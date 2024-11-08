@@ -39,7 +39,7 @@ class SimIMU(IMU):
         """
         self._timestamp: np.float64 = np.float64(0.0)
         # loads the sim_config.yaml file
-        config_path = Path("simulation/sim_config.yaml")
+        config_path = Path("airbrakes/simulation/sim_config.yaml")
         with config_path.open(mode="r", newline="") as file:
             self._config: dict = yaml.safe_load(file)
 
