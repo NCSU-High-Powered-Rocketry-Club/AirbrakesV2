@@ -88,7 +88,7 @@ TAKEOFF_VELOCITY = 10  # m/s
 
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
-MAX_VELOCITY_THRESHOLD = 0.03
+MAX_VELOCITY_THRESHOLD = 0.04
 # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 MOTOR_BURN_TIME = 2.6
 
@@ -101,6 +101,11 @@ GROUND_ALTITUDE = 15.0  # meters
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+# This needs to be checked/changed before flights
+FLIGHT_LENGTH_SECONDS = 22.0
+
+INTEGRATION_TIME_STEP = 1.0 / 500.0
+
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
 
@@ -108,3 +113,6 @@ GRAVITY = 9.798
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
+
+# The uncertainty from the curve fit, below which we will say that our apogee has converged:
+UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]

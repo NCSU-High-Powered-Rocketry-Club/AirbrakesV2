@@ -32,6 +32,9 @@ class FlightDisplay:
     INTERRUPTED_END = "interrupted"
 
     __slots__ = (
+        "_coast_time",
+        "_convergence_height",
+        "_convergence_time",
         "_cpu_thread",
         "_cpu_usages",
         "_launch_file",
@@ -53,6 +56,9 @@ class FlightDisplay:
         self.airbrakes = airbrakes
         self.start_time = start_time
         self._launch_time: int = 0  # Launch time from MotorBurnState
+        self._coast_time: int = 0  # Coast time from CoastState
+        self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
+        self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
         # Prepare the processes for monitoring in the simulation:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -130,35 +136,51 @@ class FlightDisplay:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
+        data_processor = self.airbrakes.data_processor
+        apogee_predictor = self.airbrakes.apogee_predictor
+
         # Set the launch time if it hasn't been set yet:
         if not self._launch_time and self.airbrakes.state.name == "MotorBurnState":
             self._launch_time = self.airbrakes.state.start_time_ns
 
+        elif not self._coast_time and self.airbrakes.state.name == "CoastState":
+            self._coast_time = self.airbrakes.state.start_time_ns
+
         if self._launch_time:
-            current_time = (
+            time_since_launch = (
                 self.airbrakes.data_processor.current_timestamp - self._launch_time
             ) * 1e-9
         else:
-            current_time = 0
+            time_since_launch = 0
+
+        if (
+            self._coast_time
+            and not self._convergence_time
+            and self.airbrakes.apogee_predictor.apogee
+        ):
+            self._convergence_time = (
+                self.airbrakes.data_processor.current_timestamp - self._coast_time
+            ) * 1e-9
+            self._convergence_height = data_processor.current_altitude
 
         # Prepare output
-        data_processor = self.airbrakes.data_processor
-        apogee_predictor = self.airbrakes.apogee_predictor
         output = [
             f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"Time since sim start:      {C}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             # Format time as MM:SS:
-            f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(current_time))}{RESET}",  # noqa: E501
+            f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(time_since_launch))}{RESET}",  # noqa: E501
             f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
             f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
+            f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
+            f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
             f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
-            f"IMU Data Queue Size:       {G}{current_queue_size}{RESET}",
+            f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 
