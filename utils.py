@@ -102,7 +102,7 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "-s",
         "--sim",
-        help="runs the data simulator alongside the mock simulator, to randomly generate a dataset",
+        help="runs the data simulation alongside the mock simulation, to randomly generate a dataset",
         action="store_true",
         default=False,
     )

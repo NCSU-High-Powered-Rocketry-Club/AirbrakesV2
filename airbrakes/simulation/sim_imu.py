@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.imu_data_packet import IMUDataPacket
 
 from airbrakes.hardware.imu import IMU
+from airbrakes.simulation.data_generator import DataGenerator
 from constants import MAX_QUEUE_SIZE
-from simulator.data_gen import DataGenerator
 
 
 class SimIMU(IMU):
@@ -39,12 +39,12 @@ class SimIMU(IMU):
         """
         self._timestamp: np.float64 = np.float64(0.0)
         # loads the sim_config.yaml file
-        config_path = Path("simulator/sim_config.yaml")
+        config_path = Path("simulation/sim_config.yaml")
         with config_path.open(mode="r", newline="") as file:
             self._config: dict = yaml.safe_load(file)
 
         # This limits the queue size to a very high limit, because the data generator will
-        # generate all of the data before the imu reads it
+        # generate all the data before the imu reads it
         self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
             MAX_QUEUE_SIZE
         )
@@ -64,9 +64,7 @@ class SimIMU(IMU):
         """
         Updates the current timestamp of the data generator, based off time step defined in config.
         Will also determine if the next timestamp will be a raw packet, estimated packet, or both.
-
         :param current_timestamp: the current timestamp of the simulation
-
         :return: the updated current timestamp, rounded to 3 decimals
         """
 
@@ -79,7 +77,7 @@ class SimIMU(IMU):
         at_high = any(np.isclose(current_timestamp % highest_dt, [0, highest_dt]))
 
         # If current timestamp is a multiple of both, the next timestamp will be the
-        # the current timestamp + the lower time steps
+        # current timestamp + the lower time steps
         if all([at_low, at_high]):
             return np.round(current_timestamp + lowest_dt, 3)
 
@@ -108,7 +106,7 @@ class SimIMU(IMU):
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            while self._data_generator._last_velocity > -1:
+            while self._data_generator.velocity > -1:
                 # starts timer
                 start_time = time.time()
 
@@ -125,4 +123,3 @@ class SimIMU(IMU):
                 self._timestamp += time_step
                 end_time = time.time()
                 time.sleep(max(0.0, time_step - (end_time - start_time)))
-
