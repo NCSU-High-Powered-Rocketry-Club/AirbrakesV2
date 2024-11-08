@@ -16,7 +16,6 @@ from constants import (
     GROUND_ALTITUDE,
     LOG_BUFFER_SIZE,
     MAX_VELOCITY_THRESHOLD,
-    MOTOR_BURN_TIME,
     SERVO_DELAY,
     TARGET_ALTITUDE,
     ServoExtension,
@@ -153,7 +152,11 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("current_velocity", "max_velocity", "expected_state",),
+        (
+            "current_velocity",
+            "max_velocity",
+            "expected_state",
+        ),
         [
             (0.0, 0.0, MotorBurnState),
             (100.0, 100.0, MotorBurnState),
@@ -171,14 +174,10 @@ class TestMotorBurnState:
             "decreasing_velocity_over_threshold",
         ],
     )
-    def test_update(
-        self, motor_burn_state, current_velocity, max_velocity, expected_state
-    ):
+    def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(
-            1.0 * 1e9
-        )
+        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
