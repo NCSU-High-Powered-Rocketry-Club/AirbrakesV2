@@ -22,8 +22,6 @@ class MockIMU(IMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_log_file_path",)
-
     def __init__(
         self,
         log_file_path: Path | bool,
@@ -32,19 +30,17 @@ class MockIMU(IMU):
     ):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a
-            log file.
+        log file.
         :param log_file_path: The path of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set
-            period, or run at full
-            speed, e.g. for using it in the CI.
+        period, or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
-        self._log_file_path = log_file_path
         # Check if the launch data file exists:
         if not log_file_path:
             # Just use the first file in the `launch_data` directory:
-            self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
+            log_file_path = next(iter(Path("launch_data").glob("*.csv")))
 
         # We don't call the parent constructor as the IMU class has different parameters, so we
         # manually start the process that fetches data from the log file
@@ -61,7 +57,7 @@ class MockIMU(IMU):
         self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(
-                self._log_file_path,
+                log_file_path,
                 real_time_simulation,
                 start_after_log_buffer,
             ),
