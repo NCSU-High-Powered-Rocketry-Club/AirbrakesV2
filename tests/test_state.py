@@ -3,19 +3,29 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.state import CoastState, FreeFallState, LandedState, MotorBurnState, StandByState, State
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.state import (
+    CoastState,
+    FreeFallState,
+    LandedState,
+    MotorBurnState,
+    StandbyState,
+    State,
+)
 from constants import (
-    AIRBRAKES_AFTER_COASTING,
     GROUND_ALTITUDE,
-    MAX_SPEED_THRESHOLD,
-    MOTOR_BURN_TIME,
+    LOG_BUFFER_SIZE,
+    MAX_VELOCITY_THRESHOLD,
     SERVO_DELAY,
+    TARGET_ALTITUDE,
     ServoExtension,
 )
 
 
 @pytest.fixture
 def state(airbrakes):
+    """Dummy state class to test the base State class"""
+
     class StateImpl(State):
         __slots__ = ()
 
@@ -30,7 +40,7 @@ def state(airbrakes):
 
 @pytest.fixture
 def stand_by_state(airbrakes):
-    return StandByState(airbrakes)
+    return StandbyState(airbrakes)
 
 
 @pytest.fixture
@@ -42,9 +52,9 @@ def motor_burn_state(airbrakes):
 
 @pytest.fixture
 def coast_state(airbrakes):
-    f = CoastState(airbrakes)
-    f.context.state = f
-    return f
+    c = CoastState(airbrakes)
+    c.context.state = c
+    return c
 
 
 @pytest.fixture
@@ -80,8 +90,8 @@ class TestState:
         assert state.name == "StateImpl"
 
 
-class TestStandByState:
-    """Tests the StandByState class"""
+class TestStandbyState:
+    """Tests the StandbyState class"""
 
     def test_slots(self, stand_by_state):
         inst = stand_by_state
@@ -96,21 +106,27 @@ class TestStandByState:
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
-        assert stand_by_state.name == "StandByState"
+        assert stand_by_state.name == "StandbyState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "current_altitude", "expected_state"),
+        ("current_velocity", "current_altitude", "expected_state"),
         [
-            (0.0, 0.0, StandByState),
+            (0.0, 0.0, StandbyState),
             (0.0, 100.0, MotorBurnState),
-            (5.0, 0.3, StandByState),
+            (5.0, 0.3, StandbyState),
             (11, 7, MotorBurnState),
             (20, 15, MotorBurnState),
         ],
-        ids=["at_launchpad", "only_alt_update", "slow_alt_update", "optimal_condition", "high_speed"],
+        ids=[
+            "at_launchpad",
+            "only_alt_update",
+            "slow_alt_update",
+            "optimal_condition",
+            "high_velocity",
+        ],
     )
-    def test_update(self, stand_by_state, current_speed, current_altitude, expected_state):
-        stand_by_state.context.data_processor._vertical_velocities = [current_speed]
+    def test_update(self, stand_by_state, current_velocity, current_altitude, expected_state):
+        stand_by_state.context.data_processor._vertical_velocities = [current_velocity]
         stand_by_state.context.data_processor._current_altitudes = [current_altitude]
         stand_by_state.update()
         assert isinstance(stand_by_state.context.state, expected_state)
@@ -130,31 +146,38 @@ class TestMotorBurnState:
         time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
+        assert motor_burn_state.start_time_ns == 0
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("current_speed", "max_speed", "expected_state", "burn_time"),
+        (
+            "current_velocity",
+            "max_velocity",
+            "expected_state",
+        ),
         [
-            (0.0, 0.0, MotorBurnState, 0.0),
-            (100.0, 100.0, MotorBurnState, 0.00),
-            (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
-            (53.999 - 54.0 * MAX_SPEED_THRESHOLD, 54.0, CoastState, 0.00),  # tests that the threshold works
-            (60.0, 60.0, CoastState, MOTOR_BURN_TIME + 0.1),
+            (0.0, 0.0, MotorBurnState),
+            (100.0, 100.0, MotorBurnState),
+            (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
+            (
+                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
+                54.0,
+                CoastState,
+            ),  # tests that the threshold works
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
-            "decreasing_speed_under_threshold",
-            "decreasing_speed_over_threshold",
-            "faulty_speed",
+            "decreasing_velocity_under_threshold",
+            "decreasing_velocity_over_threshold",
         ],
     )
-    def test_update(self, motor_burn_state, current_speed, max_speed, expected_state, burn_time):
-        motor_burn_state.context.data_processor._vertical_velocities = [current_speed]
-        motor_burn_state.context.data_processor._max_vertical_velocity = max_speed
-        time.sleep(burn_time)
+    def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
+        motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
+        motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
+        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
@@ -177,21 +200,48 @@ class TestCoastState:
         assert coast_state.name == "CoastState"
 
     @pytest.mark.parametrize(
-        ("current_altitude", "max_altitude", "expected_state", "coast_time", "airbrakes_ext"),
+        (
+            "current_altitude",
+            "max_altitude",
+            "vertical_velocity",
+            "predicted_apogee",
+            "expected_state",
+            "airbrakes_ext",
+        ),
         [
-            (200.0, 200.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
-            (100.0, 150.0, CoastState, 0.0, ServoExtension.MIN_EXTENSION),
-            (100.0, 150.0, CoastState, AIRBRAKES_AFTER_COASTING + 0.01, ServoExtension.MAX_EXTENSION),
-            (100.0, 400.0, FreeFallState, 0.0, ServoExtension.MIN_EXTENSION),
+            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_EXTENSION),
+            (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_EXTENSION),
+            (
+                TARGET_ALTITUDE - 5,
+                TARGET_ALTITUDE - 2,
+                40.0,
+                TARGET_ALTITUDE + 2,
+                CoastState,
+                ServoExtension.MAX_EXTENSION,
+            ),
+            (100.0, 400.0, 140.1, 5000.1, FreeFallState, ServoExtension.MIN_EXTENSION),
+            (200.1, 200.1, 0.0, 200.1, FreeFallState, ServoExtension.MIN_EXTENSION),
         ],
-        ids=["climbing", "just_descent", "airbrakes_long_coast", "apogee_threshold"],
+        ids=["climbing", "just_descent", "overshoot_apogee", "faulty_speed", "at_apogee"],
     )
-    def test_update(self, coast_state, current_altitude, max_altitude, expected_state, coast_time, airbrakes_ext):
+    def test_update(
+        self,
+        coast_state,
+        current_altitude,
+        max_altitude,
+        vertical_velocity,
+        predicted_apogee,
+        expected_state,
+        airbrakes_ext,
+    ):
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
-        time.sleep(coast_time)
+        coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
+        coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         coast_state.update()
-        assert isinstance(coast_state.context.state, expected_state)
+        assert isinstance(
+            coast_state.context.state, expected_state
+        ), f"Got {coast_state.context.state.name}, expected {expected_state!r}"
         assert coast_state.context.current_extension == airbrakes_ext
 
 
@@ -242,3 +292,21 @@ class TestLandedState:
 
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
+
+    def test_update(self, landed_state, airbrakes):
+        # Test that calling update before shutdown delay does not shut down the system:
+        airbrakes.start()
+        landed_state.update()
+        assert airbrakes.logger.is_running
+        assert airbrakes.imu.is_running
+        assert not airbrakes.logger.is_log_buffer_full
+        # Test that if our log buffer is full, we shut down the system:
+        airbrakes.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        assert airbrakes.logger.is_log_buffer_full
+        landed_state.update()
+        assert airbrakes.shutdown_requested
+        assert not airbrakes.logger.is_running
+        assert not airbrakes.imu.is_running
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert not airbrakes.logger.is_log_buffer_full
+        assert len(airbrakes.logger._log_buffer) == 0

@@ -4,18 +4,11 @@ from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
-# Main
-# -------------------------------------------------------
-
-# These are used for simulations
-SIMULATION_LOG_PATH = Path("scripts/imu_data/InterestLaunch-9-28.csv")
-#SIMULATION_LOG_PATH = Path("scripts/imu_data/winter_2023_Gyro_Comp.csv")
-
-# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used for PWM
+# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
+# for PWM
 SERVO_PIN = 12
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
@@ -23,9 +16,10 @@ SERVO_DELAY = 0.3
 
 class ServoExtension(Enum):
     """
-    Enum that represents the extension of the servo motor. First we set it to an extreme, then to the actual position.
-    This is to ensure that the servo will move fast enough and with enough power to actually make it to the position,
-    but then once it's there, we don't want it to keep straining past the physical bounds of the air brakes.
+    Enum that represents the extension of the servo motor. First we set it to an extreme, then to
+    the actual position. This is to ensure that the servo will move fast enough and with enough
+    power to actually make it to the position, but then once it's there, we don't want it to keep
+    straining past the physical bounds of the air brakes.
     """
 
     MIN_EXTENSION = -0.5
@@ -57,8 +51,6 @@ SIMULATION_MAX_QUEUE_SIZE = 15
 # Data Processing Configuration
 # -------------------------------------------------------
 
-# Should be checked before launch
-Z_DOWN = (1, 1, -1)
 
 # -------------------------------------------------------
 # Logging Configuration
@@ -74,8 +66,9 @@ STOP_SIGNAL = "STOP"
 
 
 # Don't log more than x packets for StandbyState and LandedState
-LOG_CAPACITY_AT_STANDBY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
-# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make sure we don't lose data
+IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
+# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
+# sure we don't lose data
 LOG_BUFFER_SIZE = 5000
 
 # -------------------------------------------------------
@@ -89,20 +82,15 @@ ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_SPEED = 10  # m/s
+TAKEOFF_VELOCITY = 10  # m/s
 
 # MotorBurn to Coasting:
 
-# We will only say that the motor has stopped burning if the current speed <= Max Speed * (1 - MAX_SPEED_THRESHOLD)
-MAX_SPEED_THRESHOLD = 0.03
-MOTOR_BURN_TIME = 2.6  # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
-
-# Coasting to Free fall:
-AIRBRAKES_AFTER_COASTING = 1.5  # seconds  (time to wait while coasting before extending the airbrakes)
-
-# Basically we don't care about switching from flight to free fall state very quickly, so if the
-# current altitude is 250 meters less than our max, then we switch
-DISTANCE_FROM_APOGEE = 100  # meters
+# We will only say that the motor has stopped burning if the
+# current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
+MAX_VELOCITY_THRESHOLD = 0.04
+# seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
+MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
 
@@ -114,9 +102,18 @@ LANDED_SPEED = 5.0  # m/s
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+# This needs to be checked/changed before flights
+FLIGHT_LENGTH_SECONDS = 22.0
+
+INTEGRATION_TIME_STEP = 1.0 / 500.0
+
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
 CURVE_FIT_INITIAL = [-10.5, 0.03]
+APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
+
+# The uncertainty from the curve fit, below which we will say that our apogee has converged:
+UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]

@@ -11,17 +11,18 @@ from msgspec.structs import asdict
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import LOG_BUFFER_SIZE, LOG_CAPACITY_AT_STANDBY, STOP_SIGNAL
+from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 
 
 class Logger:
     """
-    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process. This is because the
-    logging process is I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
-    running it in a separate process, we can continue to log data while the main loop is running.
+    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process.
+    This is because the logging process is I/O-bound, meaning that it spends most of its time
+    waiting for the file to be written to. By running it in a separate process, we can continue to
+    log data while the main loop is running.
 
-    It uses the Python logging module to append the airbrake's current state, extension, and IMU data to our logs in
-    real time.
+    It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
+    our logs in real time.
 
     :param log_dir: The directory where the log files will be.
     """
@@ -30,10 +31,11 @@ class Logger:
 
     def __init__(self, log_dir: Path) -> None:
         """
-        Initializes the logger object. It creates a new log file in the specified directory. Like the IMU class, it
-        creates a queue to store log messages, and starts a separate process to handle the logging. We are logging a lot
-        of data, and logging is I/O-bound, so running it in a separate process allows the main loop to continue running
-        without waiting for the log file to be written to.
+        Initializes the logger object. It creates a new log file in the specified directory. Like
+        the IMU class, it creates a queue to store log messages, and starts a separate process to
+        handle the logging. We are logging a lot of data, and logging is I/O-bound, so running it
+        in a separate process allows the main loop to continue running without waiting for the log
+        file to be written to.
         :param log_dir: The directory where the log files will be.
         """
         # Create the log directory if it doesn't exist
@@ -41,7 +43,9 @@ class Logger:
 
         # Get all existing log files and find the highest suffix number
         existing_logs = list(log_dir.glob("log_*.csv"))
-        max_suffix = max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
+        max_suffix = (
+            max(int(log.stem.split("_")[-1]) for log in existing_logs) if existing_logs else 0
+        )
 
         # Buffer for StandbyState and LandedState
         self._log_counter = 0
@@ -60,7 +64,9 @@ class Logger:
         self._log_queue: multiprocessing.Queue[dict[str, str] | str] = multiprocessing.Queue()
 
         # Start the logging process
-        self._log_process = multiprocessing.Process(target=self._logging_loop, name="Logger Process")
+        self._log_process = multiprocessing.Process(
+            target=self._logging_loop, name="Logger Process"
+        )
 
     @property
     def is_running(self) -> bool:
@@ -68,6 +74,13 @@ class Logger:
         Returns whether the logging process is running.
         """
         return self._log_process.is_alive()
+
+    @property
+    def is_log_buffer_full(self) -> bool:
+        """
+        Returns whether the log buffer is full.
+        """
+        return len(self._log_buffer) == LOG_BUFFER_SIZE
 
     def start(self) -> None:
         """
@@ -79,6 +92,8 @@ class Logger:
         """
         Stops the logging process. It will finish logging the current message and then stop.
         """
+        # Log the buffer before stopping the process
+        self._log_the_buffer()
         self._log_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         # Waits for the process to finish before stopping it
         self._log_process.join()
@@ -89,6 +104,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -96,9 +112,16 @@ class Logger:
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
+        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched
+            from the apogee predictor, which runs in a separate process, it may not be the most
+            recent value, nor would it correspond to the respective data packet being logged.
         """
         logged_data_packets = self._create_logged_data_packets(
-            state, extension, imu_data_packets, processed_data_packets
+            state[0],  # We only want the first letter of the state to save space
+            extension,
+            imu_data_packets,
+            processed_data_packets,
+            predicted_apogee,
         )
 
         # Loop through all the IMU data packets
@@ -107,10 +130,11 @@ class Logger:
             # We are populating a dictionary with the fields of the logged data packet
             message_dict = asdict(logged_data_packet)
 
-            # If the state is StandbyState or LandedState, we create a buffer for data packets because otherwise
-            # we could have gigabytes of data in the log file just for when the rocket is on the ground.
+            # If the state is StandbyState or LandedState, we create a buffer for data packets
+            # because otherwise we could have gigabytes of data in the log file just for when the
+            # rocket is on the ground.
             if logged_data_packet.state in ["S", "L"]:  # S: StandbyState, L: LandedState
-                if self._log_counter < LOG_CAPACITY_AT_STANDBY:
+                if self._log_counter < IDLE_LOG_CAPACITY:
                     # add the count:
                     self._log_counter += 1
                 else:
@@ -119,14 +143,20 @@ class Logger:
             else:
                 if self._log_buffer:
                     # Log the buffer before logging the new message
-                    for buffered_message in self._log_buffer:
-                        self._log_queue.put(buffered_message)
-                    self._log_buffer.clear()
+                    self._log_the_buffer()
 
                 self._log_counter = 0  # Reset the counter for other states
 
             # Put the message in the queue
             self._log_queue.put(message_dict)
+
+    def _log_the_buffer(self):
+        """
+        Adds the log buffer to the queue, so it can be logged to file.
+        """
+        for buffered_message in self._log_buffer:
+            self._log_queue.put(buffered_message)
+        self._log_buffer.clear()
 
     def _logging_loop(self) -> None:
         """
@@ -152,6 +182,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
     ) -> deque[LoggedDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -163,15 +194,25 @@ class Logger:
         """
         logged_data_packets: deque[LoggedDataPacket] = deque()
 
-        # Makes a logged data packet for every imu data packet (raw or est), and sets the state and extension for it
-        # Then, if the imu data packet is an estimated data packet, it adds the data from the corresponding processed
-        # data packet
+        # Makes a logged data packet for every imu data packet (raw or est), and sets the state
+        # and extension for it. Then, if the imu data packet is an estimated data packet, it adds
+        # the data from the corresponding processed data packet
         for data_packet in imu_data_packets:
-            logged_data_packet = LoggedDataPacket(state, extension, data_packet.timestamp)
-            logged_data_packet.set_imu_data_packet_attributes(data_packet)
+            logged_data_packet = LoggedDataPacket(
+                state,
+                extension,
+                data_packet.timestamp,
+                invalid_fields=data_packet.invalid_fields,
+                predicted_apogee=f"{predicted_apogee:.8f}",
+            )
             if isinstance(data_packet, EstimatedDataPacket):
                 # For every estimated data packet, we have a corresponding processed data packet
-                logged_data_packet.set_processed_data_packet_attributes(processed_data_packets.popleft())
+                logged_data_packet.set_estimated_data_packet_attributes(data_packet)
+                logged_data_packet.set_processed_data_packet_attributes(
+                    processed_data_packets.popleft()
+                )
+            else:
+                logged_data_packet.set_raw_data_packet_attributes(data_packet)
 
             logged_data_packets.append(logged_data_packet)
         return logged_data_packets

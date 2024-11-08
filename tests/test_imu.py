@@ -6,7 +6,11 @@ from collections import deque
 
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
+)
 from airbrakes.hardware.imu import IMU
 from constants import FREQUENCY, PORT
 
@@ -57,14 +61,18 @@ class TestIMU:
 
         def _fetch_data_loop(self, port: str, frequency: int):
             """Monkeypatched method for testing."""
+            self._data_queue.put(EstimatedDataPacket(timestamp=0))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
         imu = IMU(port=PORT, frequency=FREQUENCY)
         imu.start()
+        time.sleep(0.01)  # Sleep a bit to let the process start and put the data
+        assert imu._data_queue.qsize() == 1
         imu.stop()
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
+        assert not imu._data_queue.qsize()
 
     def test_imu_ctrl_c_handling(self, monkeypatch):
         """Tests whether the IMU's stop() handles Ctrl+C fine."""
@@ -123,7 +131,6 @@ class TestIMU:
         imu = random_data_mock_imu
         imu.start()
         time.sleep(0.3)
-        imu.stop()
         # Theoretical number of packets in 0.3s:
         # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 450
         assert imu._data_queue.qsize() > 400, "Queue should have more than 400 packets in 0.3s"
@@ -134,6 +141,7 @@ class TestIMU:
         assert isinstance(packets, deque)
         assert isinstance(packets[0], IMUDataPacket)
         assert imu._data_queue.empty()
+        imu.stop()
 
         # Assert ratio of EstimatedDataPackets to RawDataPackets is roughly 2:1:
         est_count = 0

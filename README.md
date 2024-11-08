@@ -11,7 +11,7 @@ _A video of our air brakes extending and retracting_
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
 
 1. **Gets data from the IMU**
-2. **Processes the data** in the Data Processor (calculates speed, averages, maximums, etc.)
+2. **Processes the data** in the Data Processor (calculates velocity, averages, maximums, etc.)
 3. **Updates the current state** with the processed data
 4. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
 5. **Logs all data** from the IMU, Data Processor, Servo, and States
@@ -37,6 +37,7 @@ flowchart TD
     Airbrakes --> Update[update]:::bubble
     %% IMU Data Packet Flow
     IMUDataPacket --> Update
+    Apogee_Predictor --> Update
     
     %% States as individual nodes
     State((State)):::circular
@@ -59,18 +60,20 @@ flowchart TD
     %% Connections with Labels
     Airbrakes ---|Child Process| Logger((Logger)):::circular
     Airbrakes ---|Child Process| IMU((IMU)):::circular
+    Airbrakes ---|Child Process| Apogee_Predictor((Apogee Predictor)):::circular
     IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
 
     %% IMU Data Processing
     IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
-    %%IMUDataProcessor --> ProcessedData[(Processed Data Packet)]:::outputSquare
-    IMUDataProcessor --> Speed[(Speed)]:::outputSquare
+    IMUDataProcessor --> Velocity[(Velocity)]:::outputSquare
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
+    IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
-    Speed -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Velocity -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Rotated_Accel -->  ProcessedData[(Processed Data Packet)]:::outputSquare
     
-     ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
+    ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
 
     %% Logging Mechanism
     Logger --> LogFunction[log]:::bubble
@@ -87,12 +90,12 @@ flowchart TD
     Airbrakes --> Servo
 
 ```
-| Type    | Color    | Examples                                                                                                         |
-|---------|----------|------------------------------------------------------------------------------------------------------------------|
-| Entry point |  ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600`   | Main.py
-| Classes | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e`  | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
-| Methods |  ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c`  | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs |  ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728`   | IMU Data Packet, Processed Data Packet, Logged Data Packet    
+| Type        | Color                                                                     | Examples                                                                                                       |
+|-------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
+| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
+| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processed Data Packet, Logged Data Packet                                                     |
 
 ### Launch Data
 
@@ -158,6 +161,11 @@ pip install .[dev]
 ```
 _There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
+```
+pre-commit install
+```
+This will install a pre-commit hook that will run the linter before you commit your changes.
+
 ## Local Usage
 
 ### Running Mock Launches
@@ -183,6 +191,12 @@ To run the tests, run this command from the project root directory:
 ```bash
 pytest
 ```
+
+To generate a coverage report from the tests:
+```bash
+pytest --cov=airbrakes --cov-report=term
+```
+
 If you make a change to the code, please make sure to update or add the necessary tests.
 
 ### Running the Linter

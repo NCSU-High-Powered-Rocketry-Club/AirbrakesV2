@@ -32,26 +32,37 @@ class TestLoggedDataPacket:
             LoggedDataPacket()
 
     def test_logged_data_packet_has_all_fields_of_imu_data_packet(self):
-        """Tests whether the LoggedDataPacket class has all the fields of the IMUDataPacket classes."""
+        """Tests whether the LoggedDataPacket class has all the fields of the IMUDataPacket
+        classes."""
         est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
         raw_dp_fields = set(RawDataPacket.__struct_fields__)
         log_dp_fields = set(LoggedDataPacket.__struct_fields__)
-        proc_dp_fields = set(ProcessedDataPacket.__struct_fields__)
+        proc_dp_fields = {"current_altitude", "vertical_velocity", "vertical_acceleration"}
 
-        extra_fields = {"state", "extension", "timestamp"}
+        extra_fields = {"state", "extension", "timestamp", "predicted_apogee"}
 
-        assert est_dp_fields.issubset(log_dp_fields), f"Missing fields: {est_dp_fields - log_dp_fields}"
-        assert raw_dp_fields.issubset(log_dp_fields), f"Missing fields: {raw_dp_fields - log_dp_fields}"
-        assert proc_dp_fields.issubset(log_dp_fields), f"Missing fields: {proc_dp_fields - log_dp_fields}"
+        assert est_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {est_dp_fields - log_dp_fields}"
+        assert raw_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {raw_dp_fields - log_dp_fields}"
+        assert proc_dp_fields.issubset(
+            log_dp_fields
+        ), f"Missing fields: {proc_dp_fields - log_dp_fields}"
 
-        available_fields = est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
-        assert log_dp_fields == available_fields, f"Extra fields: {log_dp_fields - available_fields}"
+        available_fields = (
+            est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
+        )
+        assert (
+            log_dp_fields == available_fields
+        ), f"Extra fields: {log_dp_fields - available_fields}"
 
     @pytest.mark.parametrize(
         "imu_data_packet",
         [
-            EstimatedDataPacket(timestamp=3.0 + 1e9, invalid_fields=["test_1"]),
-            RawDataPacket(timestamp=4.0 + 1e9, invalid_fields=["test_2"]),
+            EstimatedDataPacket(timestamp=3 * 1e9),
+            RawDataPacket(timestamp=4 * 1e9),
         ],
         ids=["EstimatedDataPacket", "RawDataPacket"],
     )
@@ -66,12 +77,10 @@ class TestLoggedDataPacket:
                 continue  # this is not set in set_imu_data_packet_attributes
             setattr(imu_data_packet, i, 1.2345678910)
 
-        packet.set_imu_data_packet_attributes(imu_data_packet)
-
         if isinstance(imu_data_packet, EstimatedDataPacket):
-            assert packet.invalid_fields == ["test_1"]
+            packet.set_estimated_data_packet_attributes(imu_data_packet)
         else:
-            assert packet.invalid_fields == ["test_2"]
+            packet.set_raw_data_packet_attributes(imu_data_packet)
 
         assert packet.state == "test"
         assert packet.extension == 0.0
@@ -86,16 +95,20 @@ class TestLoggedDataPacket:
             assert getattr(packet, i) == "1.23456789", f"{i} is not set correctly"
 
     def test_set_processed_data_packet_attributes(self, logged_data_packet):
-        """Tests whether the set_processed_data_packet_attributes method sets the attributes correctly"""
+        """Tests whether the set_processed_data_packet_attributes method sets the attributes
+        correctly"""
         packet = logged_data_packet
         proc_data_packet = ProcessedDataPacket(
             current_altitude=1.0923457654,
-            speed=1.6768972567,
+            vertical_velocity=1.6768972567,
+            vertical_acceleration=0.00000000,
+            time_since_last_data_packet=0.0,
         )
 
         packet.set_processed_data_packet_attributes(proc_data_packet)
-        assert packet.current_altitude == 1.0923457654
-        assert packet.speed == 1.6768972567
+        assert packet.current_altitude == "1.09234577"
+        assert packet.vertical_velocity == "1.67689726"
+        assert packet.vertical_acceleration == "0.00000000"
         assert packet.timestamp == 0.0
         assert packet.state == "test"
         assert packet.extension == 0.0
