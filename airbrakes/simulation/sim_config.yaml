@@ -18,4 +18,4 @@ rocket_orientation: [0, 0, -1]
 # CONFIG FOR RANDOMNESS
 #---------------------
 launch_rod_angle: [10] # min and max values for the launch rod angle of attack (in degrees)
-launch_rod_direction: [90] # min and max values for what direction the launch rod will point in (in degrees)
+launch_rod_direction: [0] # min and max values for what direction the launch rod will point in (in degrees)

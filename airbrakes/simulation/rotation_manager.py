@@ -93,8 +93,10 @@ class RotationManager:
         # the ground.
         compensated_accel = self._scalar_to_vector(thrust_drag_accel)
         if thrust_drag_accel <= GRAVITY and thrust_drag_accel != 0.0:
-            normal_force_accel_vector = self._orientation.apply([0, 0, GRAVITY])
-            compensated_accel += normal_force_accel_vector
+            normal_force_vector = np.array([0, 0, GRAVITY])
+            rotated_normal_vector = self._orientation.apply(normal_force_vector)
+
+            compensated_accel += rotated_normal_vector
         return compensated_accel
 
     def calculate_linear_accel(
@@ -120,8 +122,13 @@ class RotationManager:
 
         :return: numpy array containing the delta thetas, in [x, y, z] format.
         """
+        # first have to take the current orientation and the last orientation that is in
+        # Earth -> vehicle reference and convert to vehicle -> Earth reference
+        imu_adjusted_orientation = self._orientation.inv()
+        imu_adjusted_last_orientation = self._last_orientation.inv()
+
         # Calculate the relative rotation from last orientation to the current orientation
-        relative_rotation = self._last_orientation.inv() * self._orientation
+        relative_rotation = imu_adjusted_last_orientation.inv() * imu_adjusted_orientation
 
         # Converts the relative rotation to a rotation vector
         return relative_rotation.as_rotvec()
@@ -135,13 +142,10 @@ class RotationManager:
 
         :return: float containing vertical acceleration with respect to Earth.
         """
-        # # Define the rotation needed to align the IMU
-        # imu_alignment_rotation = R.align_vectors([[0, 0, -1]], [[0, 0, 1]])[0]
-        # # Apply this alignment rotation to the given orientation
-        # imu_adjusted_orientation = imu_alignment_rotation * self._orientation
+        # rotation needed to align the IMU
+        imu_adjusted_orientation = self._orientation.inv()
 
-        # return imu_adjusted_orientation.apply([compensated_acceleration])[0]
-        return self._orientation.apply([compensated_acceleration])[0]
+        return imu_adjusted_orientation.apply([compensated_acceleration])[0]
 
     def calculate_imu_quaternions(self) -> npt.NDArray:
         """
