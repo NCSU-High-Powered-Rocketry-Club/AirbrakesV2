@@ -7,14 +7,13 @@ from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 import yaml
-from scipy.spatial.transform import Rotation as R
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
 from airbrakes.simulation.rotation_manager import RotationManager
-from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
+from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY, MAX_VELOCITY_THRESHOLD
 from utils import deadband
 
 
@@ -26,10 +25,12 @@ class DataGenerator:
 
     __slots__ = (
         "_config",
+        "_est_rotation_manager",
         "_last_est_packet",
         "_last_raw_packet",
-        "_last_velocity",
-        "_rotation_manager",
+        "_last_velocities",
+        "_max_velocity",
+        "_raw_rotation_manager",
         "_thrust_data",
         "_vertical_index",
     )
@@ -38,7 +39,8 @@ class DataGenerator:
         """Initializes the data generator object"""
         self._last_est_packet: EstimatedDataPacket | None = None
         self._last_raw_packet: RawDataPacket | None = None
-        self._last_velocity: np.float64 = np.float64(0.0)
+        self._last_velocities: npt.NDArray = np.array([0.0, 0.0, 0.0])
+        self._max_velocity: np.float64 = np.float64(0.1)
 
         # loads the sim_config.yaml file
         config_path = Path("airbrakes/simulation/sim_config.yaml")
@@ -49,19 +51,18 @@ class DataGenerator:
         self._thrust_data: npt.NDArray = self._load_thrust_curve()
 
         # initializes the rotation manager with the launch pad conditions
-        self._rotation_manager = RotationManager(
-            self._config["rocket_orientation"],
-            self._get_random("launch_rod_angle"),
-            self._get_random("launch_rod_direction"),
-        )
+        raw_manager, est_manager = self._get_rotation_managers()
+        self._raw_rotation_manager: RotationManager = raw_manager
+        self._est_rotation_manager: RotationManager = est_manager
+
         # finds the vertical index of the orientation. For example, if -y is vertical, the index
         # will be 1.
         self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
 
     @property
-    def velocity(self) -> np.float64:
+    def velocities(self) -> np.float64:
         """Returns the last calculated velocity of the rocket"""
-        return self._last_velocity
+        return self._last_velocities
 
     def _get_random(self, identifier: str) -> np.float64:
         """
@@ -112,6 +113,28 @@ class DataGenerator:
 
         return np.array([motor_timestamps, motor_thrusts])
 
+    def _get_rotation_managers(self) -> npt.NDArray:
+        """
+        Creates and initializes both rotation managers that will be used to contain any rotation
+        related math and methods for the raw and estimated data.
+
+        :return: a 2 element array containing the raw rotation manager and the estimated rotation
+        manager, respectively.
+        """
+        launch_rod_angle = self._get_random("launch_rod_angle")
+        launch_rod_direction = self._get_random("launch_rod_direction")
+        raw_manager = RotationManager(
+            self._config["rocket_orientation"],
+            launch_rod_angle,
+            launch_rod_direction,
+        )
+        est_manager = RotationManager(
+            self._config["rocket_orientation"],
+            launch_rod_angle,
+            launch_rod_direction,
+        )
+        return np.array([raw_manager, est_manager])
+
     def _get_first_packet(
         self, packet_type: RawDataPacket | EstimatedDataPacket
     ) -> RawDataPacket | EstimatedDataPacket:
@@ -124,15 +147,17 @@ class DataGenerator:
 
         :return: data packet of the specified type with launch pad conditions.
         """
-        orientation = self._config["rocket_orientation"]
 
         packet = None
         if packet_type == RawDataPacket:
+            scaled_accel = (
+                self._raw_rotation_manager.calculate_compensated_accel(0.0, 0.0) / GRAVITY
+            )
             packet = RawDataPacket(
                 0,
-                scaledAccelX=orientation[0],
-                scaledAccelY=orientation[1],
-                scaledAccelZ=orientation[2],
+                scaledAccelX=scaled_accel[0],
+                scaledAccelY=scaled_accel[1],
+                scaledAccelZ=scaled_accel[2],
                 scaledGyroX=0.0,
                 scaledGyroY=0.0,
                 scaledGyroZ=0.0,
@@ -144,24 +169,29 @@ class DataGenerator:
                 deltaThetaZ=0.0,
             )
         else:
-            initial_quaternion, _ = R.align_vectors([0, 0, -1], [orientation])
-            initial_quaternion = R.as_quat(initial_quaternion, scalar_first=True)
+            initial_quaternion = self._est_rotation_manager.quaternion
+            compensated_accel = self._est_rotation_manager.calculate_compensated_accel(0.0, 0.0)
+            linear_accel = self._est_rotation_manager.calculate_linear_accel(0.0, 0.0)
+            gravity_vector = self._est_rotation_manager.gravity_vector
             packet = EstimatedDataPacket(
                 0,
                 estOrientQuaternionW=initial_quaternion[0],
                 estOrientQuaternionX=initial_quaternion[1],
                 estOrientQuaternionY=initial_quaternion[2],
                 estOrientQuaternionZ=initial_quaternion[3],
-                estCompensatedAccelX=GRAVITY * orientation[0],
-                estCompensatedAccelY=GRAVITY * orientation[1],
-                estCompensatedAccelZ=GRAVITY * orientation[2],
                 estPressureAlt=0,
-                estGravityVectorX=-GRAVITY * orientation[0],
-                estGravityVectorY=-GRAVITY * orientation[1],
-                estGravityVectorZ=-GRAVITY * orientation[2],
                 estAngularRateX=0,
                 estAngularRateY=0,
                 estAngularRateZ=0,
+                estCompensatedAccelX=compensated_accel[0],
+                estCompensatedAccelY=compensated_accel[1],
+                estCompensatedAccelZ=compensated_accel[2],
+                estLinearAccelX=linear_accel[0],
+                estLinearAccelY=linear_accel[1],
+                estLinearAccelZ=linear_accel[2],
+                estGravityVectorX=gravity_vector[0],
+                estGravityVectorY=gravity_vector[1],
+                estGravityVectorZ=gravity_vector[2],
             )
 
         return packet
@@ -174,7 +204,6 @@ class DataGenerator:
         """
         # creating shorthand variables from config
         time_step = self._config["raw_time_step"]
-        orientation = self._config["rocket_orientation"]
 
         # If the simulation has just started, we want to just generate the initial raw packet
         # and initialize "self._last_" variables
@@ -182,31 +211,53 @@ class DataGenerator:
             self._last_raw_packet = self._get_first_packet(RawDataPacket)
             return self._last_raw_packet
 
+        # updates the raw rotation manager, if we are after motor burn phase
+        if (
+            self._last_velocities[2]
+            < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+        ):
+            velocity_ratio = self._last_velocities[2] / self._max_velocity
+            self._raw_rotation_manager.update_orientation(time_step, velocity_ratio)
+
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_raw_packet.timestamp / 1e9) + time_step
 
-        # calculates the net force and vertical scaled acceleration
-        net_force = self._calculate_net_force(next_timestamp, self._last_velocity)
-        vertical_scaled_accel = net_force / (self._config["rocket_mass"] * GRAVITY)
+        # calculates the forces and vertical scaled acceleration
+        forces = self._calculate_forces(next_timestamp, self._last_velocities)
+        force_accelerations = forces / self._config["rocket_mass"]
+        compensated_accel = self._raw_rotation_manager.calculate_compensated_accel(
+            force_accelerations[0],
+            force_accelerations[1],
+        )
+        scaled_accel = compensated_accel / GRAVITY
 
-        # calculates vertical delta velocity
-        last_vertical_scaled_accel = self._get_vertical_data_point("scaledAccel")
-        vert_delta_v = (vertical_scaled_accel - last_vertical_scaled_accel) * GRAVITY * time_step
+        # calculates vertical delta velocity, and gyro
+        last_scaled_accel = np.array(
+            [
+                self._last_raw_packet.scaledAccelX,
+                self._last_raw_packet.scaledAccelY,
+                self._last_raw_packet.scaledAccelZ,
+            ]
+        )
+        delta_velocity = (scaled_accel - last_scaled_accel) * GRAVITY
+        delta_theta = self._raw_rotation_manager.calculate_delta_theta()
+        scaled_gyro_vector = delta_theta / time_step
 
+        # assembles the packet
         packet = RawDataPacket(
             next_timestamp * 1e9,
-            scaledAccelX=vertical_scaled_accel * orientation[0],
-            scaledAccelY=vertical_scaled_accel * orientation[1],
-            scaledAccelZ=vertical_scaled_accel * orientation[2],
-            scaledGyroX=0.0,
-            scaledGyroY=0.0,
-            scaledGyroZ=0.0,
-            deltaVelX=vert_delta_v * orientation[0],
-            deltaVelY=vert_delta_v * orientation[1],
-            deltaVelZ=vert_delta_v * orientation[2],
-            deltaThetaX=0.0,
-            deltaThetaY=0.0,
-            deltaThetaZ=0.0,
+            scaledAccelX=scaled_accel[0],
+            scaledAccelY=scaled_accel[1],
+            scaledAccelZ=scaled_accel[2],
+            scaledGyroX=scaled_gyro_vector[0],
+            scaledGyroY=scaled_gyro_vector[1],
+            scaledGyroZ=scaled_gyro_vector[2],
+            deltaVelX=delta_velocity[0],
+            deltaVelY=delta_velocity[1],
+            deltaVelZ=delta_velocity[2],
+            deltaThetaX=delta_theta[0],
+            deltaThetaY=delta_theta[1],
+            deltaThetaZ=delta_theta[2],
         )
 
         # updates last raw data packet
@@ -222,7 +273,6 @@ class DataGenerator:
         """
         # creating shorthand variables from config
         time_step = self._config["est_time_step"]
-        orientation = self._config["rocket_orientation"]
 
         # If the simulation has just started, we want to just generate the initial estimated packet
         # and initialize "self._last_" variables
@@ -230,44 +280,55 @@ class DataGenerator:
             self._last_est_packet = self._get_first_packet(EstimatedDataPacket)
             return self._last_raw_packet
 
+        # updates the estimated rotation manager, if we are after motor burn phase
+        if (
+            self._last_velocities[2]
+            < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+        ):
+            velocity_ratio = self._last_velocities[2] / self._max_velocity
+            self._est_rotation_manager.update_orientation(time_step, velocity_ratio)
+
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_est_packet.timestamp / 1e9) + time_step
 
-        # calculates the net force and vertical accelerations
-        net_force = self._calculate_net_force(next_timestamp, self._last_velocity)
-        vertical_linear_accel = net_force / self._config["rocket_mass"]
-        vertical_comp_accel = vertical_linear_accel + GRAVITY
+        # calculates the forces and accelerations
+        forces = self._calculate_forces(next_timestamp, self._last_velocities)
+        force_accelerations = forces / self._config["rocket_mass"]
+        compensated_accel = self._est_rotation_manager.calculate_compensated_accel(
+            force_accelerations[0],
+            force_accelerations[1],
+        )
+        linear_accel = self._est_rotation_manager.calculate_linear_accel(
+            force_accelerations[0],
+            force_accelerations[1],
+        )
 
         # gets vertical velocity and finds updated altitude
-        vert_velocity = self._calculate_vertical_velocity(vertical_comp_accel, time_step)
+        vert_velocity = self._calculate_velocities(compensated_accel, time_step)[2]
         new_altitude = self._last_est_packet.estPressureAlt + vert_velocity * time_step
 
-        # gets previous quaternion
-        last_quat = np.array(
-            [
-                self._last_est_packet.estOrientQuaternionW,
-                self._last_est_packet.estOrientQuaternionX,
-                self._last_est_packet.estOrientQuaternionY,
-                self._last_est_packet.estOrientQuaternionZ,
-            ]
-        )
+        delta_theta = self._est_rotation_manager.calculate_delta_theta()
+        angular_rates = delta_theta / time_step
 
         packet = EstimatedDataPacket(
             next_timestamp * 1e9,
-            estOrientQuaternionW=last_quat[0],
-            estOrientQuaternionX=last_quat[1],
-            estOrientQuaternionY=last_quat[2],
-            estOrientQuaternionZ=last_quat[3],
-            estCompensatedAccelX=vertical_comp_accel * orientation[0],
-            estCompensatedAccelY=vertical_comp_accel * orientation[1],
-            estCompensatedAccelZ=vertical_comp_accel * orientation[2],
+            estOrientQuaternionW=self._est_rotation_manager.quaternion[0],
+            estOrientQuaternionX=self._est_rotation_manager.quaternion[1],
+            estOrientQuaternionY=self._est_rotation_manager.quaternion[2],
+            estOrientQuaternionZ=self._est_rotation_manager.quaternion[3],
+            estCompensatedAccelX=compensated_accel[0],
+            estCompensatedAccelY=compensated_accel[1],
+            estCompensatedAccelZ=compensated_accel[2],
             estPressureAlt=new_altitude,
-            estGravityVectorX=-GRAVITY * orientation[0],
-            estGravityVectorY=-GRAVITY * orientation[1],
-            estGravityVectorZ=-GRAVITY * orientation[2],
-            estAngularRateX=0,
-            estAngularRateY=0,
-            estAngularRateZ=0,
+            estGravityVectorX=self._est_rotation_manager.gravity_vector[0],
+            estGravityVectorY=self._est_rotation_manager.gravity_vector[1],
+            estGravityVectorZ=self._est_rotation_manager.gravity_vector[2],
+            estAngularRateX=angular_rates[0],
+            estAngularRateY=angular_rates[1],
+            estAngularRateZ=angular_rates[2],
+            estLinearAccelX=linear_accel[0],
+            estLinearAccelY=linear_accel[1],
+            estLinearAccelZ=linear_accel[2],
         )
 
         # updates last estimated packet
@@ -275,47 +336,57 @@ class DataGenerator:
 
         return packet
 
-    def _calculate_vertical_velocity(self, acceleration, time_diff) -> np.float64:
+    def _calculate_velocities(self, comp_accel: npt.NDArray, time_diff: np.float64) -> np.float64:
         """
         Calculates the velocity of the rocket based on the compensated acceleration.
         Integrates that acceleration to get the velocity.
+
+        :param: numpy array containing the compensated acceleration vector
+
         :return: the velocity of the rocket
         """
-        # deadbands the acceleration
-        acceleration = deadband(acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
+        # gets the rotated acceleration vector
+        accelerations = self._est_rotation_manager._calculate_rotated_accelerations(comp_accel)
+        # deadbands the vertical part of the acceleration
+        accelerations[2] = deadband(accelerations[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
 
-        # Integrate the acceleration to get the velocity
-        vertical_velocity = self._last_velocity + acceleration * time_diff
+        # Integrate the accelerations to get the velocity
+        velocities = self._last_velocities + accelerations * time_diff
 
         # updates the last vertical velocity
-        self._last_velocity = vertical_velocity
+        self._last_velocities = velocities
 
-        return vertical_velocity
+        # updates max velocity
+        self._max_velocity = max(velocities[2], self._max_velocity)
 
-    def _calculate_net_force(self, timestamp, velocity) -> np.float64:
+        return velocities
+
+    def _calculate_forces(self, timestamp, velocities) -> npt.NDArray:
         """
-        Calculates the drag force, thrust force, and weight, and sums them.
+        Calculates the thrust force and drag force, and returns them in an array
 
         :param timestamp: the timestamp of the rocket to calcuate the net forces at
-        :param velocity: the vertical velocity at the given instant
+        :param velocities: numpy array containing the x, y, and z velocities
 
-        :return: float containing the net force. Thrust is positive, drag and weight is negative.
+        :return: a 2 element numpy array containing thrust force and drag force, respectively.
+        Thrust is positive, drag is negative.
         """
+        # calculate the magnitude of velocity
+        speed = np.linalg.norm(velocities)
+
         # we could probably actually calculate air density, maybe we set temperature as constant?
         air_density = 1.1
         reference_area = self._config["reference_area"]
         drag_coefficient = self._config["drag_coefficient"]
-        rocket_mass = self._config["rocket_mass"]
 
-        drag_force = 0.5 * air_density * reference_area * drag_coefficient * velocity**2
-        weight_force = GRAVITY * rocket_mass
         thrust_force = 0.0
+        drag_force = 0.5 * air_density * reference_area * drag_coefficient * speed**2
 
         # thrust force is non-zero if the timestamp is within the timeframe of
         # the motor burn
         if timestamp <= self._thrust_data[0][-1]:
             thrust_force = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
-        return thrust_force - weight_force - drag_force
+        return np.array([thrust_force, drag_force])
 
     def _get_vertical_data_point(self, string_identifier: str) -> np.float64:
         """
