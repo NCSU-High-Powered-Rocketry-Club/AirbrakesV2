@@ -72,6 +72,8 @@ class DataGenerator:
         the bounds specified in the config
         """
         parameters = self._config[identifier]
+        if len(parameters) == 1:
+            return parameters[0]
         if len(parameters) == 3:
             # uses standard deviation to get random number
             mean = float(np.mean([parameters[0], parameters[1]]))
@@ -169,7 +171,7 @@ class DataGenerator:
                 deltaThetaZ=0.0,
             )
         else:
-            initial_quaternion = self._est_rotation_manager.quaternion
+            initial_quaternion = self._est_rotation_manager.calculate_imu_quaternions()
             compensated_accel = self._est_rotation_manager.calculate_compensated_accel(0.0, 0.0)
             linear_accel = self._est_rotation_manager.calculate_linear_accel(0.0, 0.0)
             gravity_vector = self._est_rotation_manager.gravity_vector
@@ -212,9 +214,11 @@ class DataGenerator:
             return self._last_raw_packet
 
         # updates the raw rotation manager, if we are after motor burn phase
+
         if (
             self._last_velocities[2]
             < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            and self._last_est_packet.timestamp > 1e9
         ):
             velocity_ratio = self._last_velocities[2] / self._max_velocity
             self._raw_rotation_manager.update_orientation(time_step, velocity_ratio)
@@ -284,6 +288,7 @@ class DataGenerator:
         if (
             self._last_velocities[2]
             < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            and self._last_est_packet.timestamp > 1e9
         ):
             velocity_ratio = self._last_velocities[2] / self._max_velocity
             self._est_rotation_manager.update_orientation(time_step, velocity_ratio)
@@ -303,19 +308,23 @@ class DataGenerator:
             force_accelerations[1],
         )
 
-        # gets vertical velocity and finds updated altitude
+        # gets velocity and finds updated altitude
         vert_velocity = self._calculate_velocities(compensated_accel, time_step)[2]
         new_altitude = self._last_est_packet.estPressureAlt + vert_velocity * time_step
-
+        # print(f"sim imu altitude: {new_altitude}")
         delta_theta = self._est_rotation_manager.calculate_delta_theta()
         angular_rates = delta_theta / time_step
+        # print(f"sim imu linear accel: {np.round(linear_accel,3)}")
+        # print(f"sim imu comp accel: {np.round(compensated_accel,3)}")
+        # print(f"sim imu linear accel: {np.round(linear_accel,3)}")
+        quaternion = self._est_rotation_manager.calculate_imu_quaternions()
 
         packet = EstimatedDataPacket(
             next_timestamp * 1e9,
-            estOrientQuaternionW=self._est_rotation_manager.quaternion[0],
-            estOrientQuaternionX=self._est_rotation_manager.quaternion[1],
-            estOrientQuaternionY=self._est_rotation_manager.quaternion[2],
-            estOrientQuaternionZ=self._est_rotation_manager.quaternion[3],
+            estOrientQuaternionW=quaternion[0],
+            estOrientQuaternionX=quaternion[1],
+            estOrientQuaternionY=quaternion[2],
+            estOrientQuaternionZ=quaternion[3],
             estCompensatedAccelX=compensated_accel[0],
             estCompensatedAccelY=compensated_accel[1],
             estCompensatedAccelZ=compensated_accel[2],
@@ -346,7 +355,8 @@ class DataGenerator:
         :return: the velocity of the rocket
         """
         # gets the rotated acceleration vector
-        accelerations = self._est_rotation_manager._calculate_rotated_accelerations(comp_accel)
+        accelerations = self._est_rotation_manager.calculate_rotated_accelerations(comp_accel)
+
         # deadbands the vertical part of the acceleration
         accelerations[2] = deadband(accelerations[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
 
@@ -387,25 +397,3 @@ class DataGenerator:
         if timestamp <= self._thrust_data[0][-1]:
             thrust_force = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
         return np.array([thrust_force, drag_force])
-
-    def _get_vertical_data_point(self, string_identifier: str) -> np.float64:
-        """
-        gets the last vertical data point specified from a vector data attribute by using IMU
-        orientation in config
-        :param string_identifier: a string representing the exact attribute name of the data packet
-        :return: float containing the specified data point
-        """
-        # Dynamically retrieve x, y, z components based on the identifier
-        values = [
-            getattr(self._last_raw_packet, f"{string_identifier}X", None),
-            getattr(self._last_raw_packet, f"{string_identifier}Y", None),
-            getattr(self._last_raw_packet, f"{string_identifier}Z", None),
-        ]
-
-        # Just an edge case, but I really hope this never happens
-        if any(value is None for value in values):
-            raise AttributeError(
-                f"Could not find all components for identifier '{string_identifier}'."
-            )
-
-        return values[self._vertical_index]
