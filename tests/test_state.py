@@ -219,10 +219,18 @@ class TestCoastState:
                 CoastState,
                 ServoExtension.MAX_EXTENSION,
             ),
+            (
+                    TARGET_ALTITUDE - 5,
+                    TARGET_ALTITUDE - 5,
+                    10.0,
+                    TARGET_ALTITUDE - 1,
+                    CoastState,
+                    ServoExtension.MIN_EXTENSION,
+            ),
             (100.0, 400.0, 140.1, 5000.1, FreeFallState, ServoExtension.MIN_EXTENSION),
             (200.1, 200.1, 0.0, 200.1, FreeFallState, ServoExtension.MIN_EXTENSION),
         ],
-        ids=["climbing", "just_descent", "overshoot_apogee", "faulty_speed", "at_apogee"],
+        ids=["climbing", "just_descent", "overshoot_apogee", "undershoot_apogee", "faulty_speed", "at_apogee"],
     )
     def test_update(
         self,

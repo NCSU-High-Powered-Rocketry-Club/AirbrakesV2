@@ -144,6 +144,9 @@ class CoastState(State):
         # if our prediction is overshooting our target altitude, extend the airbrakes
         if self.context.apogee_predictor.apogee > TARGET_ALTITUDE:
             self.context.extend_airbrakes()
+        else:
+            # If our prediction is not overshooting, retract the airbrakes
+            self.context.retract_airbrakes()
 
         # if our velocity is close to zero or negative, we are in free fall.
         if data.vertical_velocity <= 0:
