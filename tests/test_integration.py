@@ -124,7 +124,7 @@ class TestIntegration:
         # Let's validate our data!
 
         # Check we have all the states:
-        if launch_name != "interest_launch":
+        if launch_name == "purple_launch":
             # Our Launches don't properly log/reach the LandedState, so we will ignore it for now.
             assert len(states_dict) == 4
             assert list(states_dict.keys()) == [
@@ -181,7 +181,7 @@ class TestIntegration:
         # We should hit target apogee, and then deploy airbrakes:
         assert any(ext == ServoExtension.MAX_EXTENSION for ext in coast_state.extensions)
 
-        if launch_name != "interest_launch":
+        if launch_name == "purple_launch":
             # High errors for other flights, because we don't have good rotation data.
             assert free_fall_state.min_velocity <= -300.0
         else:
@@ -194,7 +194,7 @@ class TestIntegration:
         assert free_fall_state.min_altitude <= GROUND_ALTITUDE + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
-        if launch_name == "interest_launch":
+        if launch_name != "purple_launch":
             # Generated data for simulated landing for interest launcH:
             landed_state = states_dict.LandedState
             assert landed_state.min_velocity >= -LANDED_SPEED
@@ -258,7 +258,7 @@ class TestIntegration:
             assert line_number > 80_000
 
             # Check if all states were logged:
-            if launch_name != "interest_launch":
+            if launch_name == "purple_launch":
                 assert state_list == ["S", "M", "C", "F"]
             else:
                 assert state_list == ["S", "M", "C", "F", "L"]
