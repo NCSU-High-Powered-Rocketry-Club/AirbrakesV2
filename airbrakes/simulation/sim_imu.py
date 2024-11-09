@@ -106,7 +106,7 @@ class SimIMU(IMU):
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            while self._data_generator.velocity > -1:
+            while self._data_generator.velocities[2] > -100:
                 # starts timer
                 start_time = time.time()
 
