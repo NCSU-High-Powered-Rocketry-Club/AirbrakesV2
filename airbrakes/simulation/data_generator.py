@@ -311,12 +311,10 @@ class DataGenerator:
         # gets velocity and finds updated altitude
         vert_velocity = self._calculate_velocities(compensated_accel, time_step)[2]
         new_altitude = self._last_est_packet.estPressureAlt + vert_velocity * time_step
-        # print(f"sim imu altitude: {new_altitude}")
+
         delta_theta = self._est_rotation_manager.calculate_delta_theta()
         angular_rates = delta_theta / time_step
-        # print(f"sim imu linear accel: {np.round(linear_accel,3)}")
-        # print(f"sim imu comp accel: {np.round(compensated_accel,3)}")
-        # print(f"sim imu linear accel: {np.round(linear_accel,3)}")
+
         quaternion = self._est_rotation_manager.calculate_imu_quaternions()
 
         packet = EstimatedDataPacket(
@@ -356,8 +354,7 @@ class DataGenerator:
         """
         # gets the rotated acceleration vector
         accelerations = self._est_rotation_manager.calculate_rotated_accelerations(comp_accel)
-
-        # deadbands the vertical part of the acceleration
+        # gets vertical part of the gravity vector
         accelerations[2] = deadband(accelerations[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
 
         # Integrate the accelerations to get the velocity
