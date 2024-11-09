@@ -39,10 +39,6 @@ class RotationManager:
         self.update_orientation(0, 0)
 
     @property
-    def quaternion(self) -> npt.NDArray:
-        return self._orientation.as_quat(scalar_first=True)
-
-    @property
     def gravity_vector(self) -> npt.NDArray:
         return self._orientation.apply([0, 0, -GRAVITY])
 
@@ -65,12 +61,14 @@ class RotationManager:
         # Step 1: We have to declare that the orientation of the rocket is vertical
         aligned_orientation = R.align_vectors([self._vertical], [[0, 0, 1]])[0]
 
-        # Step 2: Apply azimuth and zenith rotations relative to the aligned orientation
-        # 'zy' is used because azimute is yaw (z), and zenith is pitch (y)
-        azimuth_zenith_rotation = R.from_euler("zy", [self._azimuth, self._zenith], degrees=False)
+        # Step 2: Tilt by the zenith angle to adjust pitch away from vertical
+        tilt_rotation = R.from_rotvec(self._zenith * np.array([1, 0, 0]))
 
-        # Step 3: Combined rotation: aligned orientation, followed by azimuth and zenith rotations
-        orientation = azimuth_zenith_rotation * aligned_orientation
+        # Step 3: Rotate around the vertical by azimuth to set the compass direction of the tilt
+        azimuth_rotation = R.from_rotvec(self._azimuth * np.array([0, 0, -1]))
+
+        # Step 4: Combined rotation: aligned orientation, followed by azimuth and zenith rotations
+        orientation = azimuth_rotation * tilt_rotation * aligned_orientation
 
         # updating last orientation
         self._last_orientation = (
@@ -110,7 +108,7 @@ class RotationManager:
 
         :return: the linear acceleration in the vehicle frame of reference
         """
-        comp_accel = self.calculate_compensated_accel(drag_acceleration, thrust_acceleration)
+        comp_accel = self.calculate_compensated_accel(thrust_acceleration, drag_acceleration)
         # apply gravity
         gravity_accel_vector = self._orientation.apply([0, 0, -GRAVITY])
         return np.array(comp_accel - gravity_accel_vector)
@@ -128,15 +126,38 @@ class RotationManager:
         # Converts the relative rotation to a rotation vector
         return relative_rotation.as_rotvec()
 
-    def _calculate_rotated_accelerations(self, compensated_acceleration: npt.NDArray) -> np.float64:
+    def calculate_rotated_accelerations(self, compensated_acceleration: npt.NDArray) -> np.float64:
         """
-        Calculates the rotated acceleration vector with the compensated acceleration
+        Calculates the rotated acceleration vector with the compensated acceleration. Rotates from
+        vehicle frame of reference to Earth frame of reference.
 
         :param compensated_acceleration: compensated acceleration in the vehicle-frame reference.
 
         :return: float containing vertical acceleration with respect to Earth.
         """
+        # # Define the rotation needed to align the IMU
+        # imu_alignment_rotation = R.align_vectors([[0, 0, -1]], [[0, 0, 1]])[0]
+        # # Apply this alignment rotation to the given orientation
+        # imu_adjusted_orientation = imu_alignment_rotation * self._orientation
+
+        # return imu_adjusted_orientation.apply([compensated_acceleration])[0]
         return self._orientation.apply([compensated_acceleration])[0]
+
+    def calculate_imu_quaternions(self) -> npt.NDArray:
+        """
+        Adjusts the given orientation to align with the IMU's reference frame, where
+        [0, 0, -1] is vertical, and returns a quaternions.
+
+        :param orientation: A scipy Rotation object representing the current orientation.
+
+        :return: A quaternion adjusted to the IMU's frame.
+        """
+        # rotation needed to align the IMU
+        imu_alignment_rotation = R.align_vectors([[0, 0, 1]], [[0, 0, -1]])[0]
+        imu_adjusted_orientation = imu_alignment_rotation * self._orientation
+
+        # convert to quaternion
+        return imu_adjusted_orientation.as_quat(scalar_first=True)
 
     def _scalar_to_vector(self, scalar: np.float64) -> npt.NDArray:
         """
