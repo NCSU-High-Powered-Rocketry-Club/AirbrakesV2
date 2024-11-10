@@ -17,17 +17,9 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
             return None
 
 
-def convert_to_seconds(timestamp_str: str | int | float) -> float | None:
-    """Converts nanoseconds to seconds, if it isn't already in seconds."""
-    try:
-        # check if value is already in seconds:
-        return float(timestamp_str)
-    except ValueError:
-        try:
-            timestamp_int = int(timestamp_str)
-            return timestamp_int / 1e9  # return the value in seconds
-        except ValueError:
-            return None
+def convert_to_seconds(timestamp: int | float) -> float | None:
+    """Converts nanoseconds to seconds"""
+    return timestamp / 1e9
 
 
 def convert_to_float(value: str) -> float | None:

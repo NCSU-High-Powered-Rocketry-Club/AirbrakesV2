@@ -18,8 +18,9 @@ from constants import (
     MAX_VELOCITY_THRESHOLD,
     SERVO_DELAY,
     TARGET_ALTITUDE,
-    ServoExtension,
+    ServoExtension, MAX_FREE_FALL_LENGTH, LANDED_SPEED,
 )
+from tests.conftest import data_processor
 
 
 @pytest.fixture
@@ -262,18 +263,22 @@ class TestFreeFallState:
         assert free_fall_state.name == "FreeFallState"
 
     @pytest.mark.parametrize(
-        ("current_altitude", "vertical_velocity", "expected_state"),
+        ("current_altitude", "vertical_velocity", "expected_state", "time_length"),
         [
-            (50.0, -20.0, FreeFallState),
-            (19.0, -10.0, FreeFallState),
-            (GROUND_ALTITUDE - 5, -20.0, FreeFallState),
-            (GROUND_ALTITUDE - 5, 0.0, LandedState),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, 1.0),
+            (GROUND_ALTITUDE * 2, -(LANDED_SPEED * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE - 5, -(LANDED_SPEED * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE - 5, LANDED_SPEED - 1.0, LandedState, 1.0),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
         ],
-        ids=["falling", "almost_landed", "close_to_ground_but_falling", "landed"],
+        ids=["falling", "almost_landed", "close_to_ground_but_falling", "landed", "slightly_short", "too_long"],
     )
-    def test_update(self, free_fall_state, current_altitude, vertical_velocity, expected_state):
+    def test_update(self, free_fall_state, current_altitude, vertical_velocity, expected_state, time_length):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.context.data_processor._vertical_velocities = [vertical_velocity]
+        free_fall_state.start_time_ns = 0
+        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(time_length * 1e9)
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION

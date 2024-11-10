@@ -93,7 +93,7 @@ MAX_VELOCITY_THRESHOLD = 0.04
 MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
-FREE_FALL_MAX_LENGTH = 90.0  # seconds
+MAX_FREE_FALL_LENGTH = 90.0  # seconds
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height
 # and the speed is low.

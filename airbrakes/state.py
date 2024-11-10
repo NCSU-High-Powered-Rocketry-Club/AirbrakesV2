@@ -9,7 +9,7 @@ from constants import (
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE, FREE_FALL_MAX_LENGTH,
+    TARGET_ALTITUDE, MAX_FREE_FALL_LENGTH,
 )
 from utils import convert_to_seconds
 
@@ -180,7 +180,7 @@ class FreeFallState(State):
             self.next_state()
 
         # If we have been in free fall for too long, we move to the landed state
-        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= FREE_FALL_MAX_LENGTH:
+        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_LENGTH:
             self.next_state()
 
     def next_state(self):
