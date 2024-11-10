@@ -55,7 +55,7 @@ def main(args: argparse.Namespace) -> None:
         # If we are running the simulation for generating datasets, we will replace our IMU object
         # with a sim variant, similar to running a mock simulation.
         else:
-            imu = SimIMU()
+            imu = SimIMU(sim_type=args.sim)
         # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = (
             Servo(SERVO_PIN)

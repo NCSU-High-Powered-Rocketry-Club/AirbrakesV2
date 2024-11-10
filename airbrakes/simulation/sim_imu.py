@@ -3,11 +3,11 @@
 import contextlib
 import multiprocessing
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
-import yaml
+
+from airbrakes.simulation.sim_config import get_configuration, SimulationConfig
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.imu_data_packet import IMUDataPacket
@@ -31,16 +31,16 @@ class SimIMU(IMU):
         "_timestamp",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, sim_type: str) -> None:
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
+        :param sim_type: The type of simulation to run. This can be either "full-scale" or "sub-scale".
         """
         self._timestamp: np.float64 = np.float64(0.0)
-        # loads the sim_config.yaml file
-        config_path = Path("airbrakes/simulation/sim_config.yaml")
-        with config_path.open(mode="r", newline="") as file:
-            config: dict = yaml.safe_load(file)
+
+        # Gets the configuration for the simulation
+        config = get_configuration(sim_type)
 
         # This limits the queue size to a very high limit, because the data generator will
         # generate all the data before the imu reads it
@@ -96,7 +96,7 @@ class SimIMU(IMU):
         # or estimated time steps, or if there is a rounding/floating point error.
         raise ValueError("Could not update timestamp, time stamp is invalid")
 
-    def _fetch_data_loop(self, config: dict) -> None:
+    def _fetch_data_loop(self, config: SimulationConfig) -> None:
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
         data."""
 
