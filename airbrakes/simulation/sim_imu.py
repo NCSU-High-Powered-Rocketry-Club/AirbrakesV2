@@ -23,22 +23,12 @@ class SimIMU(IMU):
     and returns randomly generated data.
     """
 
-    __slots__ = (
-        "_data_fetch_process",
-        "_data_generator",
-        "_data_queue",
-        "_running",
-        "_timestamp",
-    )
-
     def __init__(self, sim_type: str) -> None:
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
         :param sim_type: The type of simulation to run. This can be either "full-scale" or "sub-scale".
         """
-        self._timestamp: np.float64 = np.float64(0.0)
-
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
@@ -58,9 +48,8 @@ class SimIMU(IMU):
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
 
-        self._data_generator = DataGenerator()
-
-    def update_timestamp(self, current_timestamp: np.float64) -> np.float64:
+    @staticmethod
+    def _update_timestamp(current_timestamp: np.float64, config: SimulationConfig) -> np.float64:
         """
         Updates the current timestamp of the data generator, based off time step defined in config.
         Will also determine if the next timestamp will be a raw packet, estimated packet, or both.
@@ -69,8 +58,8 @@ class SimIMU(IMU):
         """
 
         # finding whether the raw or estimated data packets have a lower time_step
-        lowest_dt = min(self._config["raw_time_step"], self._config["est_time_step"])
-        highest_dt = max(self._config["raw_time_step"], self._config["est_time_step"])
+        lowest_dt = min(config.raw_time_step, config.est_time_step)
+        highest_dt = max(config.raw_time_step, config.est_time_step)
 
         # checks if current time is a multiple of the highest and/or lowest time step
         at_low = any(np.isclose(current_timestamp % lowest_dt, [0, lowest_dt]))
@@ -100,27 +89,30 @@ class SimIMU(IMU):
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
         data."""
 
-        raw_dt = config["raw_time_step"]
-        est_dt = config["est_time_step"]
+        data_generator = DataGenerator()
+        timestamp: np.float64 = np.float64(0.0)
+
+        raw_dt = config.raw_time_step
+        est_dt = config.est_time_step
 
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            while self._data_generator.velocities[2] > -100:
+            while data_generator.velocities[2] > -100:
                 # starts timer
                 start_time = time.time()
 
                 # if the timestamp is a multiple of the raw time step, generate a raw data packet.
-                if any(np.isclose(self._timestamp % raw_dt, [0, raw_dt])):
-                    self._data_queue.put(self._data_generator.generate_raw_data_packet())
+                if any(np.isclose(timestamp % raw_dt, [0, raw_dt])):
+                    self._data_queue.put(data_generator.generate_raw_data_packet())
 
                 # if the timestamp is a multiple of the est time step, generate an est data packet.
-                if any(np.isclose(self._timestamp % est_dt, [0, est_dt])):
-                    self._data_queue.put(self._data_generator.generate_estimated_data_packet())
+                if any(np.isclose(timestamp % est_dt, [0, est_dt])):
+                    self._data_queue.put(data_generator.generate_estimated_data_packet())
 
                 # updates the timestamp and sleeps until next packet is ready in real-time
-                time_step = self.update_timestamp(self._timestamp) - self._timestamp
-                self._timestamp += time_step
+                time_step = self._update_timestamp(timestamp, config) - timestamp
+                timestamp += time_step
                 end_time = time.time()
                 time.sleep(max(0.0, time_step - (end_time - start_time)))
                 # if self._data_generator._last_est_packet.timestamp>1.02e9:
