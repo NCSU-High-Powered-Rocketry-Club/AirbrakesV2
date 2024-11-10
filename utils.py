@@ -105,7 +105,8 @@ def arg_parser() -> argparse.Namespace:
         help="runs the data simulation alongside the mock simulation, to randomly generate "
         "a dataset",
         action="store_true",
-        default=False,
+        choices=["full-scale", "sub-scale"],
+        default="full-scale",
     )
 
     args = parser.parse_args()

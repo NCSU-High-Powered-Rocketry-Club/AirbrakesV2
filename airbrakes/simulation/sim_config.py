@@ -53,3 +53,18 @@ SUB_SCALE_CONFIG = SimulationConfig(
     launch_rod_angle=[10],
     launch_rod_direction=[0]
 )
+
+
+def get_configuration(config_type: str) -> SimulationConfig:
+    """
+    Gets the configuration for the simulation
+    :param config_type: The type of simulation to run. This can be either "full-scale" or "sub-scale".
+    :return: The configuration for the simulation
+    """
+    match config_type:
+        case "full-scale":
+            return FULL_SCALE_CONFIG
+        case "sub-scale":
+            return SUB_SCALE_CONFIG
+        case _:
+            raise ValueError(f"Invalid config type: {config_type}")
