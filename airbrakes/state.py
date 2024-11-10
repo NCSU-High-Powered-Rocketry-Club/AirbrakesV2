@@ -9,8 +9,9 @@ from constants import (
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE,
+    TARGET_ALTITUDE, FREE_FALL_MAX_LENGTH,
 )
+from utils import convert_to_seconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -176,6 +177,10 @@ class FreeFallState(State):
 
         # If our altitude and speed are around 0, we have landed
         if data.current_altitude <= GROUND_ALTITUDE and abs(data.vertical_velocity) <= LANDED_SPEED:
+            self.next_state()
+
+        # If we have been in free fall for too long, we move to the landed state
+        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= FREE_FALL_MAX_LENGTH:
             self.next_state()
 
     def next_state(self):
