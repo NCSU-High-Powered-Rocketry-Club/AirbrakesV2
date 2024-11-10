@@ -25,6 +25,7 @@ class DataGenerator:
 
     __slots__ = (
         "_config",
+        "_eff_exhaust_velocity",
         "_est_rotation_manager",
         "_last_est_packet",
         "_last_raw_packet",
@@ -32,7 +33,6 @@ class DataGenerator:
         "_max_velocity",
         "_raw_rotation_manager",
         "_thrust_data",
-        "_vertical_index",
     )
 
     def __init__(self, config: SimulationConfig):
@@ -47,6 +47,7 @@ class DataGenerator:
         self._last_raw_packet: RawDataPacket | None = None
         self._last_velocities: npt.NDArray = np.array([0.0, 0.0, 0.0])
         self._max_velocity: np.float64 = np.float64(0.1)
+        self._eff_exhaust_velocity: np.float64 | None = None
 
         # loads thrust curve
         self._thrust_data: npt.NDArray = self._load_thrust_curve()
@@ -56,13 +57,9 @@ class DataGenerator:
         self._raw_rotation_manager: RotationManager = raw_manager
         self._est_rotation_manager: RotationManager = est_manager
 
-        # finds the vertical index of the orientation. For example, if -y is vertical, the index
-        # will be 1.
-        self._vertical_index: np.int64 = np.nonzero(self._config.rocket_orientation)[0][0]
-
     @property
     def velocities(self) -> npt.NDArray:
-        """Returns the last calculated velocity of the rocket"""
+        """Returns the last calculated velocities of the rocket"""
         return self._last_velocities
 
     def _get_random(self, identifier: str) -> np.float64:
@@ -99,9 +96,15 @@ class DataGenerator:
         start_flag = False  # flag to identify when the metadata/header rows are skipped
 
         with csv_path.open(mode="r", newline="") as thrust_csv:
+            propellant_weight = None
             reader = csv.reader(thrust_csv)
 
             for row in reader:
+                # We want to store the propellant weight
+                if row[0] == "propellant weight:":
+                    propellant_weight = float(row[1]) / 1000  # we want in kg
+                    continue
+
                 # Start appending data only after the header row
                 if row == ["Time (s)", "Thrust (N)"]:
                     start_flag = True
@@ -113,6 +116,11 @@ class DataGenerator:
                     thrust = float(row[1])
                     motor_timestamps.append(time)
                     motor_thrusts.append(thrust)
+
+            # for future mass calculations, finding total impulse
+            total_impulse = np.trapezoid(motor_thrusts, motor_timestamps)
+            # calculating effective exhaust velocity (constant)
+            self._eff_exhaust_velocity = total_impulse / propellant_weight
 
         return np.array([motor_timestamps, motor_thrusts])
 
@@ -229,7 +237,7 @@ class DataGenerator:
 
         # calculates the forces and vertical scaled acceleration
         forces = self._calculate_forces(next_timestamp, self._last_velocities)
-        force_accelerations = forces / self._config.rocket_mass
+        force_accelerations = forces / self._calculate_mass(next_timestamp)
         compensated_accel = self._raw_rotation_manager.calculate_compensated_accel(
             force_accelerations[0],
             force_accelerations[1],
@@ -299,7 +307,7 @@ class DataGenerator:
 
         # calculates the forces and accelerations
         forces = self._calculate_forces(next_timestamp, self._last_velocities)
-        force_accelerations = forces / self._config.rocket_mass
+        force_accelerations = forces / self._calculate_mass(next_timestamp)
         compensated_accel = self._est_rotation_manager.calculate_compensated_accel(
             force_accelerations[0],
             force_accelerations[1],
@@ -317,9 +325,6 @@ class DataGenerator:
         angular_rates = delta_theta / time_step
 
         quaternion = self._est_rotation_manager.calculate_imu_quaternions()
-
-        # print(f"comp: {np.round(compensated_accel,3)}")
-        # print(f"vels: {np.round(vert_velocity,3)}")
 
         packet = EstimatedDataPacket(
             next_timestamp * 1e9,
@@ -386,7 +391,7 @@ class DataGenerator:
         speed = np.linalg.norm(velocities)
 
         # we could probably actually calculate air density, maybe we set temperature as constant?
-        air_density = 1.1
+        air_density = 1.2
 
         drag_coefficient = self._config.drag_coefficient
         thrust_force = 0.0
@@ -398,3 +403,22 @@ class DataGenerator:
         drag_force = 0.5 * air_density * self._config.reference_area * drag_coefficient * speed**2
 
         return np.array([thrust_force, drag_force])
+
+    def _calculate_mass(self, timestamp: np.float64) -> np.float64:
+        """
+        Calculates the weight of the rocket at any given timestamp. The weight loss is found
+        by calculating the mass flow rate using effective exhaust velocity.
+        :param timestamp: current timestamp of the rocket, in seconds
+        :return: the current mass of the rocket, in kilograms
+        """
+        # find current thrust
+        current_thrust = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
+        # getting thrust curve up to current timestamp
+        mask = self._thrust_data[0] <= timestamp
+        time_values = np.append(self._thrust_data[0][mask], [timestamp])
+        thrust_values = np.append(self._thrust_data[1][mask], [current_thrust])
+        # Calculate the total impulse up to this timestamp as the integral of thrust over time
+        current_total_impulse = np.trapezoid(thrust_values, time_values)
+
+        # mass lost is current total impulse divided by effective exhaust velocity
+        return self._config.rocket_mass - current_total_impulse / self._eff_exhaust_velocity
