@@ -24,7 +24,6 @@ class SimIMU(IMU):
     """
 
     __slots__ = (
-        "_config",
         "_data_fetch_process",
         "_data_generator",
         "_data_queue",
@@ -41,7 +40,7 @@ class SimIMU(IMU):
         # loads the sim_config.yaml file
         config_path = Path("airbrakes/simulation/sim_config.yaml")
         with config_path.open(mode="r", newline="") as file:
-            self._config: dict = yaml.safe_load(file)
+            config: dict = yaml.safe_load(file)
 
         # This limits the queue size to a very high limit, because the data generator will
         # generate all the data before the imu reads it
@@ -53,6 +52,7 @@ class SimIMU(IMU):
         self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             name="Sim IMU Process",
+            args=(config,),
         )
 
         # Makes a boolean value that is shared between processes
@@ -96,12 +96,12 @@ class SimIMU(IMU):
         # or estimated time steps, or if there is a rounding/floating point error.
         raise ValueError("Could not update timestamp, time stamp is invalid")
 
-    def _fetch_data_loop(self) -> None:
+    def _fetch_data_loop(self, config: dict) -> None:
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
         data."""
 
-        raw_dt = self._config["raw_time_step"]
-        est_dt = self._config["est_time_step"]
+        raw_dt = config["raw_time_step"]
+        est_dt = config["est_time_step"]
 
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt

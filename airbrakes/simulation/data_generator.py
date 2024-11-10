@@ -60,7 +60,7 @@ class DataGenerator:
         self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
 
     @property
-    def velocities(self) -> np.float64:
+    def velocities(self) -> npt.NDArray:
         """Returns the last calculated velocity of the rocket"""
         return self._last_velocities
 
