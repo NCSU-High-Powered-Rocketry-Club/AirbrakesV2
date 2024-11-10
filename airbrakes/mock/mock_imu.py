@@ -74,9 +74,9 @@ class MockIMU(IMU):
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: the name of the log file to read data from located in scripts/imu_data
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
-            or run at full speed, e.g. for using it in the CI.
+        or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
 
         start_index = 0
@@ -116,7 +116,6 @@ class MockIMU(IMU):
                 if not self._running.value:
                     break
 
-                imu_data_packet = None
                 fields_dict = {}
 
                 scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
