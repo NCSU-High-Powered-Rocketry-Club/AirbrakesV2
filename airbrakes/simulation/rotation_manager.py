@@ -61,14 +61,23 @@ class RotationManager:
         # Step 1: We have to declare that the orientation of the rocket is vertical
         aligned_orientation = R.align_vectors([self._vertical], [[0, 0, 1]])[0]
 
-        # Step 2: Tilt by the zenith angle to adjust pitch away from vertical
-        tilt_rotation = R.from_rotvec(self._zenith * np.array([1, 0, 0]))
+        # Step 2: Get the axis that the zenith rotates around, it changes depending on orientation.
+        zenith_rotation_axis = np.array(
+            [
+                np.abs(self._vertical[2]),
+                np.abs(self._vertical[0]),
+                np.abs(self._vertical[1]),
+            ]
+        )
 
-        # Step 3: Rotate around the vertical by azimuth to set the compass direction of the tilt
-        azimuth_rotation = R.from_rotvec(self._azimuth * np.array([0, 0, -1]))
+        # Step 3: rotate by zenith
+        zenith_rotation = R.from_rotvec(self._zenith * zenith_rotation_axis)
 
-        # Step 4: Combined rotation: aligned orientation, followed by azimuth and zenith rotations
-        orientation = azimuth_rotation * tilt_rotation * aligned_orientation
+        # Step 4: rotate by azimuth
+        azimuth_rotation = R.from_rotvec(self._azimuth * np.array(self._vertical))
+
+        # Step 5: Combined rotation: aligned orientation, azimuth rotation, and zenith rotation
+        orientation = azimuth_rotation * zenith_rotation * aligned_orientation
 
         # updating last orientation
         self._last_orientation = (
@@ -91,13 +100,12 @@ class RotationManager:
         # if the thrust is non-zero, and this returns a value smaller than gravity, than the rocket
         # is still on the ground. We have to include the acceleration due to the normal force of
         # the ground.
-        compensated_accel = self._scalar_to_vector(thrust_drag_accel)
-        if thrust_drag_accel <= GRAVITY and thrust_drag_accel != 0.0:
-            normal_force_vector = np.array([0, 0, GRAVITY])
-            rotated_normal_vector = self._orientation.apply(normal_force_vector)
+        # if thrust_drag_accel <= GRAVITY and thrust_drag_accel != 0.0:
+        #     normal_force_vector = np.array([0, 0, GRAVITY])
+        #     rotated_normal_vector = self._orientation.apply(normal_force_vector)
 
-            compensated_accel += rotated_normal_vector
-        return compensated_accel
+        #     compensated_accel += rotated_normal_vector
+        return self._scalar_to_vector(thrust_drag_accel)
 
     def calculate_linear_accel(
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
@@ -157,11 +165,11 @@ class RotationManager:
         :return: A quaternion adjusted to the IMU's frame.
         """
         # rotation needed to align the IMU
-        imu_alignment_rotation = R.align_vectors([[0, 0, 1]], [[0, 0, -1]])[0]
-        imu_adjusted_orientation = imu_alignment_rotation * self._orientation
+        imu_alignment = R.align_vectors([[0, 0, 1]], [[0, 0, -1]])[0]
+        imu_quaternion_rotation = imu_alignment * self._orientation.inv()
 
         # convert to quaternion
-        return imu_adjusted_orientation.as_quat(scalar_first=True)
+        return imu_quaternion_rotation.as_quat(scalar_first=True)
 
     def _scalar_to_vector(self, scalar: np.float64) -> npt.NDArray:
         """
