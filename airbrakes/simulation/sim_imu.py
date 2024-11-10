@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from airbrakes.simulation.sim_config import get_configuration, SimulationConfig
+from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.imu_data_packet import IMUDataPacket
@@ -27,7 +27,8 @@ class SimIMU(IMU):
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
-        :param sim_type: The type of simulation to run. This can be either "full-scale" or "sub-scale".
+        :param sim_type: The type of simulation to run. This can be either "full-scale" or
+          "sub-scale".
         """
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)

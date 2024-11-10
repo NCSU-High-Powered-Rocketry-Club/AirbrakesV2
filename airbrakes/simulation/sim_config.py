@@ -1,18 +1,26 @@
+"""Module containing config settings for simulation"""
+
 import numpy as np
 import numpy.typing as npt
 
 
 class SimulationConfig:
-    def __init__(self,
-                 raw_time_step: np.float64,
-                 est_time_step: np.float64,
-                 motor: str,
-                 drag_coefficient: np.float64,
-                 rocket_mass: np.float64,
-                 reference_area: np.float64,
-                 rocket_orientation: npt.NDArray[np.float64],
-                 launch_rod_angle: npt.NDArray[np.float64],
-                 launch_rod_direction: npt.NDArray[np.float64]):
+    """
+    config class for simulation
+    """
+
+    def __init__(
+        self,
+        raw_time_step: np.float64,
+        est_time_step: np.float64,
+        motor: str,
+        drag_coefficient: np.float64,
+        rocket_mass: np.float64,
+        reference_area: np.float64,
+        rocket_orientation: npt.NDArray[np.float64],
+        launch_rod_angle: npt.NDArray[np.float64],
+        launch_rod_direction: npt.NDArray[np.float64],
+    ):
         # Time steps for data packet generation in the simulation
         self.raw_time_step = raw_time_step
         self.est_time_step = est_time_step
@@ -40,9 +48,9 @@ FULL_SCALE_CONFIG = SimulationConfig(
     drag_coefficient=np.float64(0.4),
     rocket_mass=np.float64(14.5),
     reference_area=np.float64(0.01929),
-    rocket_orientation=np.array([0, 0, -1]),
+    rocket_orientation=np.array([0, 0, 1]),
     launch_rod_angle=np.array([10]),
-    launch_rod_direction=np.array([0])
+    launch_rod_direction=np.array([90]),
 )
 
 # TODO: get actual values for sub scale
@@ -53,16 +61,17 @@ SUB_SCALE_CONFIG = SimulationConfig(
     drag_coefficient=np.float64(0.4),
     rocket_mass=np.float64(0),
     reference_area=np.float64(0.001929),
-    rocket_orientation=np.array([0, 0, -1]),
+    rocket_orientation=np.array([-1, 0, 0]),
     launch_rod_angle=np.array([10]),
-    launch_rod_direction=np.array([0])
+    launch_rod_direction=np.array([90]),
 )
 
 
 def get_configuration(config_type: str) -> SimulationConfig:
     """
     Gets the configuration for the simulation
-    :param config_type: The type of simulation to run. This can be either "full-scale" or "sub-scale".
+    :param config_type: The type of simulation to run. This can be either "full-scale"
+      or "sub-scale".
     :return: The configuration for the simulation
     """
     match config_type:
