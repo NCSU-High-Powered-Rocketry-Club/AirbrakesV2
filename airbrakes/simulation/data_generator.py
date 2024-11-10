@@ -6,13 +6,13 @@ from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
-import yaml
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
 from airbrakes.simulation.rotation_manager import RotationManager
+from airbrakes.simulation.sim_config import SimulationConfig
 from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY, MAX_VELOCITY_THRESHOLD
 from utils import deadband
 
@@ -35,17 +35,18 @@ class DataGenerator:
         "_vertical_index",
     )
 
-    def __init__(self):
-        """Initializes the data generator object"""
+    def __init__(self, config: SimulationConfig):
+        """
+        Initializes the data generator object with the provided configuration
+        :param config: the configuration object for the simulation
+        """
+
+        self._config = config
+
         self._last_est_packet: EstimatedDataPacket | None = None
         self._last_raw_packet: RawDataPacket | None = None
         self._last_velocities: npt.NDArray = np.array([0.0, 0.0, 0.0])
         self._max_velocity: np.float64 = np.float64(0.1)
-
-        # loads the sim_config.yaml file
-        config_path = Path("airbrakes/simulation/sim_config.yaml")
-        with config_path.open(mode="r", newline="") as file:
-            self._config: dict = yaml.safe_load(file)
 
         # loads thrust curve
         self._thrust_data: npt.NDArray = self._load_thrust_curve()
@@ -57,7 +58,7 @@ class DataGenerator:
 
         # finds the vertical index of the orientation. For example, if -y is vertical, the index
         # will be 1.
-        self._vertical_index: np.int64 = np.nonzero(self._config["rocket_orientation"])[0][0]
+        self._vertical_index: np.int64 = np.nonzero(self._config.rocket_orientation)[0][0]
 
     @property
     def velocities(self) -> npt.NDArray:
@@ -71,7 +72,7 @@ class DataGenerator:
         :return: float containing a random value for the selected identifier, between
         the bounds specified in the config
         """
-        parameters = self._config[identifier]
+        parameters = getattr(self._config, identifier)
         if len(parameters) == 1:
             return parameters[0]
         if len(parameters) == 3:
@@ -89,7 +90,7 @@ class DataGenerator:
         :return: numpy array containing tuples with the time and thrust at that time.
         """
         # gets the path of the csv based on the config file
-        csv_path = Path(f"airbrakes/simulation/thrust_curves/{self._config["motor"]}.csv")
+        csv_path = Path(f"airbrakes/simulation/thrust_curves/{self._config.motor}.csv")
 
         # initializes the list for timestamps and thrust values
         motor_timestamps = [0]
@@ -126,12 +127,12 @@ class DataGenerator:
         launch_rod_angle = self._get_random("launch_rod_angle")
         launch_rod_direction = self._get_random("launch_rod_direction")
         raw_manager = RotationManager(
-            self._config["rocket_orientation"],
+            self._config.rocket_orientation,
             launch_rod_angle,
             launch_rod_direction,
         )
         est_manager = RotationManager(
-            self._config["rocket_orientation"],
+            self._config.rocket_orientation,
             launch_rod_angle,
             launch_rod_direction,
         )
@@ -205,7 +206,7 @@ class DataGenerator:
         :return: RawDataPacket
         """
         # creating shorthand variables from config
-        time_step = self._config["raw_time_step"]
+        time_step = self._config.raw_time_step
 
         # If the simulation has just started, we want to just generate the initial raw packet
         # and initialize "self._last_" variables
@@ -228,7 +229,7 @@ class DataGenerator:
 
         # calculates the forces and vertical scaled acceleration
         forces = self._calculate_forces(next_timestamp, self._last_velocities)
-        force_accelerations = forces / self._config["rocket_mass"]
+        force_accelerations = forces / self._config.rocket_mass
         compensated_accel = self._raw_rotation_manager.calculate_compensated_accel(
             force_accelerations[0],
             force_accelerations[1],
@@ -276,7 +277,7 @@ class DataGenerator:
         :return: EstimatedDataPacket
         """
         # creating shorthand variables from config
-        time_step = self._config["est_time_step"]
+        time_step = self._config.est_time_step
 
         # If the simulation has just started, we want to just generate the initial estimated packet
         # and initialize "self._last_" variables
@@ -298,7 +299,7 @@ class DataGenerator:
 
         # calculates the forces and accelerations
         forces = self._calculate_forces(next_timestamp, self._last_velocities)
-        force_accelerations = forces / self._config["rocket_mass"]
+        force_accelerations = forces / self._config.rocket_mass
         compensated_accel = self._est_rotation_manager.calculate_compensated_accel(
             force_accelerations[0],
             force_accelerations[1],
@@ -383,11 +384,9 @@ class DataGenerator:
 
         # we could probably actually calculate air density, maybe we set temperature as constant?
         air_density = 1.1
-        reference_area = self._config["reference_area"]
-        drag_coefficient = self._config["drag_coefficient"]
 
         thrust_force = 0.0
-        drag_force = 0.5 * air_density * reference_area * drag_coefficient * speed**2
+        drag_force = 0.5 * air_density * self._config.reference_area * self._config.drag_coefficient * speed**2
 
         # thrust force is non-zero if the timestamp is within the timeframe of
         # the motor burn

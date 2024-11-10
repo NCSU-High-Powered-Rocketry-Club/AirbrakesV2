@@ -1,32 +1,36 @@
+import numpy as np
+import numpy.typing as npt
+
+
 class SimulationConfig:
     def __init__(self,
-                 raw_time_step,
-                 est_time_step,
-                 motor,
-                 drag_coefficient,
-                 rocket_mass,
-                 reference_area,
-                 rocket_orientation,
-                 launch_rod_angle,
-                 launch_rod_direction):
+                 raw_time_step: np.float64,
+                 est_time_step: np.float64,
+                 motor: str,
+                 drag_coefficient: np.float64,
+                 rocket_mass: np.float64,
+                 reference_area: np.float64,
+                 rocket_orientation: npt.NDArray[np.float64],
+                 launch_rod_angle: np.float64,
+                 launch_rod_direction: np.float64):
         # Time steps for data packet generation in the simulation
-        self.raw_time_step = raw_time_step
-        self.est_time_step = est_time_step
+        self.raw_time_step = np.float64(raw_time_step)
+        self.est_time_step = np.float64(est_time_step)
 
         # Motor selection (name of CSV file without extension)
         self.motor = motor
 
         # Rocket properties
-        self.drag_coefficient = drag_coefficient
-        self.rocket_mass = rocket_mass
-        self.reference_area = reference_area
+        self.drag_coefficient = np.float64(drag_coefficient)
+        self.rocket_mass = np.float64(rocket_mass)
+        self.reference_area = np.float64(reference_area)
 
         # Rocket orientation on the launch pad
-        self.rocket_orientation = rocket_orientation
+        self.rocket_orientation = np.asarray(rocket_orientation, dtype=np.float64)
 
         # Config for randomness in the simulation
-        self.launch_rod_angle = launch_rod_angle
-        self.launch_rod_direction = launch_rod_direction
+        self.launch_rod_angle = np.float64(launch_rod_angle)
+        self.launch_rod_direction = np.float64(launch_rod_direction)
 
 
 FULL_SCALE_CONFIG = SimulationConfig(
