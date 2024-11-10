@@ -102,11 +102,11 @@ def arg_parser() -> argparse.Namespace:
     parser.add_argument(
         "-s",
         "--sim",
-        help="runs the data simulation alongside the mock simulation, to randomly generate "
-        "a dataset",
-        action="store_true",
+        help="Runs the data simulation alongside the mock simulation, with an optional scale",
         choices=["full-scale", "sub-scale"],
-        default="full-scale",
+        nargs="?",  # Allows an optional argument
+        const="full-scale",  # Default when `-s` is provided without a value
+        default=None,  # Default when `-s` is not provided at all
     )
 
     args = parser.parse_args()
