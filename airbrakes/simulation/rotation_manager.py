@@ -97,15 +97,16 @@ class RotationManager:
         :return: the compensated acceleration in the vehicle frame of reference
         """
         thrust_drag_accel = thrust_acceleration - drag_acceleration
+        compensated_accel = self._scalar_to_vector(thrust_drag_accel)
         # if the thrust is non-zero, and this returns a value smaller than gravity, than the rocket
         # is still on the ground. We have to include the acceleration due to the normal force of
         # the ground.
-        # if thrust_drag_accel <= GRAVITY and thrust_drag_accel != 0.0:
-        #     normal_force_vector = np.array([0, 0, GRAVITY])
-        #     rotated_normal_vector = self._orientation.apply(normal_force_vector)
+        if thrust_drag_accel <= GRAVITY and thrust_acceleration != 0.0:
+            normal_force_vector = np.array([0, 0, GRAVITY])
+            rotated_normal_vector = self._orientation.apply(normal_force_vector)
 
-        #     compensated_accel += rotated_normal_vector
-        return self._scalar_to_vector(thrust_drag_accel)
+            compensated_accel += rotated_normal_vector
+        return compensated_accel
 
     def calculate_linear_accel(
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
