@@ -17,7 +17,7 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
             return None
 
 
-def convert_to_seconds(timestamp: int | float) -> float | None:
+def convert_to_seconds(timestamp: float) -> float | None:
     """Converts nanoseconds to seconds"""
     return timestamp / 1e9
 

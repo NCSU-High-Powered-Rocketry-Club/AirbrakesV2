@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING
 from constants import (
     GROUND_ALTITUDE,
     LANDED_SPEED,
+    MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE, MAX_FREE_FALL_LENGTH,
+    TARGET_ALTITUDE,
 )
 from utils import convert_to_seconds
 

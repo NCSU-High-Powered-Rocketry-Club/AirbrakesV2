@@ -94,8 +94,8 @@ class MockIMU(IMU):
                 row: dict[str, str]
                 init_timestamp = None
                 for idx, row in enumerate(reader):
-                    # We do this convert_to_nanoseconds() to make sure the timestamp is in nanoseconds
-                    # because some of our log files have timestamps in seconds and some in nanoseconds
+                    # We do this convert_to_nanoseconds() to make sure the timestamp is in ns
+                    # because some of our log files have timestamps in seconds and some in ns
                     timestamp = convert_to_nanoseconds(row["timestamp"])
                     if init_timestamp is None:
                         init_timestamp = timestamp

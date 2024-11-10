@@ -14,13 +14,14 @@ from airbrakes.state import (
 )
 from constants import (
     GROUND_ALTITUDE,
+    LANDED_SPEED,
     LOG_BUFFER_SIZE,
+    MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
     SERVO_DELAY,
     TARGET_ALTITUDE,
-    ServoExtension, MAX_FREE_FALL_LENGTH, LANDED_SPEED,
+    ServoExtension,
 )
-from tests.conftest import data_processor
 
 
 @pytest.fixture
@@ -272,13 +273,24 @@ class TestFreeFallState:
             (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
             (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
         ],
-        ids=["falling", "almost_landed", "close_to_ground_but_falling", "landed", "slightly_short", "too_long"],
+        ids=[
+            "falling",
+            "almost_landed",
+            "close_to_ground_but_falling",
+            "landed",
+            "slightly_short",
+            "too_long",
+        ],
     )
-    def test_update(self, free_fall_state, current_altitude, vertical_velocity, expected_state, time_length):
+    def test_update(
+        self, free_fall_state, current_altitude, vertical_velocity, expected_state, time_length
+    ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.context.data_processor._vertical_velocities = [vertical_velocity]
         free_fall_state.start_time_ns = 0
-        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(time_length * 1e9)
+        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
+            time_length * 1e9
+        )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
