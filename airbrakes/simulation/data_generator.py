@@ -384,18 +384,17 @@ class DataGenerator:
         """
         # calculate the magnitude of velocity
         speed = np.linalg.norm(velocities)
-        _ = speed
 
         # we could probably actually calculate air density, maybe we set temperature as constant?
         air_density = 1.1
 
+        drag_coefficient = self._config.drag_coefficient
         thrust_force = 0.0
-        drag_force = (
-            0.5 * air_density * self._config.reference_area * self._config.drag_coefficient * 1**2
-        )
-
         # thrust force is non-zero if the timestamp is within the timeframe of
         # the motor burn
         if timestamp <= self._thrust_data[0][-1]:
             thrust_force = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
+
+        drag_force = 0.5 * air_density * self._config.reference_area * drag_coefficient * speed**2
+
         return np.array([thrust_force, drag_force])
