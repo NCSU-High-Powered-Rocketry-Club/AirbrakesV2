@@ -30,7 +30,7 @@ class SimulationConfig:
 
         # Rocket properties
         self.drag_coefficient = drag_coefficient
-        self.rocket_mass = rocket_mass
+        self.rocket_mass = rocket_mass  # This is wetted mass (including propellant weight)
         self.reference_area = reference_area
 
         # Rocket orientation on the launch pad
@@ -46,7 +46,7 @@ FULL_SCALE_CONFIG = SimulationConfig(
     est_time_step=np.float64(0.002),
     motor="AeroTech_L1940X",
     drag_coefficient=np.float64(0.4),
-    rocket_mass=np.float64(14.5),
+    rocket_mass=np.float64(15.856),
     reference_area=np.float64(0.01929),
     rocket_orientation=np.array([0, 0, 1]),
     launch_rod_angle=np.array([10]),
