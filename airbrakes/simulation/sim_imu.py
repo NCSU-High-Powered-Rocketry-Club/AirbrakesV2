@@ -89,7 +89,7 @@ class SimIMU(IMU):
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
         data."""
 
-        data_generator = DataGenerator()
+        data_generator = DataGenerator(config)
         timestamp: np.float64 = np.float64(0.0)
 
         raw_dt = config.raw_time_step
