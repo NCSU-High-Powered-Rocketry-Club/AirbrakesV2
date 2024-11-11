@@ -14,12 +14,13 @@ class SimulationConfig:
         raw_time_step: np.float64,
         est_time_step: np.float64,
         motor: str,
-        drag_coefficient: np.float64,
+        drag_coefficient: npt.NDArray,
         rocket_mass: np.float64,
         reference_area: np.float64,
         rocket_orientation: npt.NDArray[np.float64],
         launch_rod_angle: npt.NDArray[np.float64],
         launch_rod_direction: npt.NDArray[np.float64],
+        air_temperature: np.float64,
     ):
         # Time steps for data packet generation in the simulation
         self.raw_time_step = raw_time_step
@@ -29,9 +30,12 @@ class SimulationConfig:
         self.motor = motor
 
         # Rocket properties
-        self.drag_coefficient = drag_coefficient
+        self.drag_coefficient = drag_coefficient  # coefficient of drag at mach numbers
         self.rocket_mass = rocket_mass  # This is wetted mass (including propellant weight)
         self.reference_area = reference_area
+
+        # Atmospheric properties
+        self.air_temperature = air_temperature  # ground temperature, in celcius
 
         # Rocket orientation on the launch pad
         self.rocket_orientation = rocket_orientation
@@ -41,13 +45,14 @@ class SimulationConfig:
         self.launch_rod_direction = launch_rod_direction
 
 
-FULL_SCALE_CONFIG = SimulationConfig(
+FULL_SCALE_CONFIG = SimulationConfig(  # 2018.99
     raw_time_step=np.float64(0.001),
     est_time_step=np.float64(0.002),
     motor="AeroTech_L1940X",
-    drag_coefficient=np.float64(0.4),
+    drag_coefficient=np.array([[0.1, 0.3, 0.5, 0.7], [0.3565, 0.3666, 0.3871, 0.41499]]),
     rocket_mass=np.float64(15.856),
     reference_area=np.float64(0.01929),
+    air_temperature=np.float64(25),
     rocket_orientation=np.array([0, 0, 1]),
     launch_rod_angle=np.array([10]),
     launch_rod_direction=np.array([90]),
@@ -58,9 +63,10 @@ SUB_SCALE_CONFIG = SimulationConfig(
     raw_time_step=np.float64(0.001),
     est_time_step=np.float64(0.002),
     motor="PLACEHOLDER",
-    drag_coefficient=np.float64(0.4),
+    drag_coefficient=np.array([[0.3], [0.4]]),
     rocket_mass=np.float64(0),
     reference_area=np.float64(0.001929),
+    air_temperature=np.float64(25),
     rocket_orientation=np.array([-1, 0, 0]),
     launch_rod_angle=np.array([10]),
     launch_rod_direction=np.array([90]),
