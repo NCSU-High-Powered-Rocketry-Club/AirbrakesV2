@@ -61,7 +61,8 @@ source = ["airbrakes"]
 omit = [
     "*/tests/*",
     "*/site-packages/*",
-    "airbrakes/mock/*"
+    "airbrakes/mock/*",
+    "airbrakes/simulation/*",
 ]
 
 [tool.coverage.report]
