@@ -230,7 +230,7 @@ class DataGenerator:
             and self._last_est_packet.timestamp > 1e9
         ):
             velocity_ratio = self._last_velocities[2] / self._max_velocity
-            self._raw_rotation_manager.update_orientation(time_step, velocity_ratio)
+            self._raw_rotation_manager.update_orientation(velocity_ratio)
 
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_raw_packet.timestamp / 1e9) + time_step
@@ -300,7 +300,7 @@ class DataGenerator:
             and self._last_est_packet.timestamp > 1e9
         ):
             velocity_ratio = self._last_velocities[2] / self._max_velocity
-            self._est_rotation_manager.update_orientation(time_step, velocity_ratio)
+            self._est_rotation_manager.update_orientation(velocity_ratio)
 
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_est_packet.timestamp / 1e9) + time_step
@@ -312,6 +312,7 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
+        compensated_accel += random.uniform(-4, 4)
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],
             force_accelerations[1],
