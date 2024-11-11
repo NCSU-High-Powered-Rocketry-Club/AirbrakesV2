@@ -387,13 +387,32 @@ class DataGenerator:
         :return: a 2 element numpy array containing thrust force and drag force, respectively.
         Thrust is positive, drag is negative.
         """
+        gradient = -6.5e-3  # troposphere gradient
+        gas_constant = 287  # J/kg*K
+        ratio_spec_heat = 1.4
+
+        # last altitude
+        altitude = self._last_est_packet.estPressureAlt
         # calculate the magnitude of velocity
         speed = np.linalg.norm(velocities)
+        # temperature using troposphere gradient
+        temp = self._config.air_temperature + 273.15 + gradient * altitude
 
-        # we could probably actually calculate air density, maybe we set temperature as constant?
-        air_density = 1.2
+        # air density formula for troposphere gradient
+        air_density = 1.225 * (temp / (self._config.air_temperature + 273.15)) ** (
+            -GRAVITY / (gas_constant * gradient) - 1
+        )
 
-        drag_coefficient = self._config.drag_coefficient
+        # using speed of sound to find mach number
+        mach_number = speed / np.sqrt(ratio_spec_heat * gas_constant * temp)
+
+        # getting the drag coefficient
+        drag_coefficient = np.interp(
+            mach_number,
+            self._config.drag_coefficient[0],
+            self._config.drag_coefficient[1],
+        )
+
         thrust_force = 0.0
         # thrust force is non-zero if the timestamp is within the timeframe of
         # the motor burn
