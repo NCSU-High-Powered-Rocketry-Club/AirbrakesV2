@@ -53,7 +53,7 @@ FULL_SCALE_CONFIG = SimulationConfig(  # 2018.99
     rocket_mass=np.float64(15.856),
     reference_area=np.float64(0.01929),
     air_temperature=np.float64(25),
-    rocket_orientation=np.array([0, 0, 1]),
+    rocket_orientation=np.array([0, 0, -1]),
     launch_rod_angle=np.array([10]),
     launch_rod_direction=np.array([90]),
 )

@@ -16,6 +16,7 @@ class RotationManager:
 
     __slots__ = (
         "_azimuth",
+        "_formula_consts",
         "_last_orientation",
         "_orientation",
         "_vertical",
@@ -36,25 +37,39 @@ class RotationManager:
         self._azimuth: np.float64 = np.float64((rod_direction * np.pi) / 180)
         self._last_orientation: R | None = None
         self._orientation: R | None = None
-        self.update_orientation(0, 0)
+        self._formula_consts: npt.NDArray = self._initialize_rotation_formula()
+        self.update_orientation(1)
 
     @property
     def gravity_vector(self) -> npt.NDArray:
         return self._orientation.apply([0, 0, -GRAVITY])
 
-    def update_orientation(self, time_step: np.float64, velocity_ratio: np.float64) -> None:
+    def _initialize_rotation_formula(self) -> np.float64:
+        """
+        Initializes the formula for rotation. Returns the shift of the function. Is constant
+        for the rest of the flight.
+        :return: the shift and initial angle of the function.
+        """
+        # initializes vector with small step values, the shift is always below 0.1
+        # for inital rod angles below 45 degrees
+        dx = 0.00001
+        xvec = np.arange(dx, 0.1, dx)
+        # this graph is zenith versus v/vmax
+        no_shift = (-xvec + 1) / (15 * xvec) + self._zenith
+        # finding the index where no_shift is closest to pi/2
+        closest_index = np.argmin(np.abs(no_shift - np.pi / 2))
+        return np.array([closest_index * dx, self._zenith])  # returns the shift and zenith
+
+    def update_orientation(self, velocity_ratio: np.float64) -> None:
         """
         Updates the baseline vehicle-frame orientation, and all of the vehicle-frame
         orientations
 
-        :param time_step: how much time has passed between updates
         :param velocity_ratio: current vertical velocity of the rocket divided by max velocity
         """
-        if velocity_ratio == 0.0:
-            scale_factor = 0.0
-        else:
-            scale_factor = np.sin(self._zenith) * time_step / abs(velocity_ratio * 10)
-        self._zenith = self._zenith + scale_factor * (np.pi / 2 - self._zenith)
+        # splitting up the function into two parts
+        devisor = 15 * (self._formula_consts[0] + 1) * (velocity_ratio + self._formula_consts[0])
+        self._zenith = (-velocity_ratio + 1) / devisor + self._formula_consts[1]
 
         # We want to convert the azimuth and zenith values into a scipy rotation object
 
