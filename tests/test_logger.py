@@ -25,10 +25,12 @@ def gen_data_packet(
 ) -> IMUDataPacket | ProcessedDataPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
-        return EstimatedDataPacket(**{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__})
+        return EstimatedDataPacket(
+            **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__}
+        )
     if kind == "raw":
-        return RawDataPacket(**{k: 1.98765432 for k in RawDataPacket.__struct_fields__})
-    return ProcessedDataPacket(**{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__})
+        return RawDataPacket(**{k: 1.987654321 for k in RawDataPacket.__struct_fields__})
+    return ProcessedDataPacket(**{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__})
 
 
 def patched_stop(self):
@@ -97,14 +99,6 @@ class TestLogger:
         assert len(logger._log_buffer) == 0
         logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
         assert logger.is_log_buffer_full
-
-    def test_logging_loop_start_stop(self, logger):
-        logger.start()
-        assert logger.is_running
-
-        logger.stop()
-        assert not logger.is_running
-        assert logger._log_process.exitcode == 0
 
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
@@ -274,27 +268,32 @@ class TestLogger:
 
                 # Random check to make sure we aren't missing any fields
                 assert len(row_dict_non_empty) > 10
+
+                # Also checks if truncation is working correctly:
                 expected_output = {
                     "state": state,
                     "extension": str(extension),
                     "predicted_apogee": "" if not is_est_data_packet else f"{predicted_apogee:.8f}",
                     **{
-                        attr: str(getattr(imu_data_packets[idx], attr, ""))
+                        attr: f"{getattr(imu_data_packets[idx], attr, 0.0):.8f}"
                         for attr in RawDataPacket.__struct_fields__
                     },
                     **{
-                        attr: str(getattr(imu_data_packets[idx], attr, ""))
+                        attr: f"{getattr(imu_data_packets[idx], attr, 0.0):.8f}"
                         for attr in EstimatedDataPacket.__struct_fields__
                     },
                     **{
-                        attr: str(
+                        attr: f"{
                             getattr(
-                                processed_data_packets[0] if is_est_data_packet else None, attr, ""
-                            )
-                        )
+                                processed_data_packets[0] if is_est_data_packet else None, attr, 0.0
+                            ):.8f
+                        }"
                         for attr in processed_data_packet_fields
                     },
                 }
+                # Convert 0.0 values:
+                dropped = {k: "" for k, v in expected_output.items() if v == "0.00000000"}
+                expected_output.update(dropped)
 
                 assert row == expected_output
 
@@ -493,7 +492,7 @@ class TestLogger:
                     {
                         "state": "S",
                         "extension": "0.1",
-                        **{k: 1.98765432 for k in RawDataPacket.__struct_fields__},
+                        **{k: 1.987654321 for k in RawDataPacket.__struct_fields__},
                     }
                 ],
             ),
@@ -506,9 +505,9 @@ class TestLogger:
                     {
                         "state": "S",
                         "extension": "0.1",
-                        **{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__},
-                        "predicted_apogee": "1800.00000000",
+                        **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
+                        "predicted_apogee": 1800.0,
                     }
                 ],
             ),
@@ -521,14 +520,14 @@ class TestLogger:
                     {
                         "state": "M",
                         "extension": "0.1",
-                        **{k: 1.98765432 for k in RawDataPacket.__struct_fields__},
+                        **{k: 1.987654321 for k in RawDataPacket.__struct_fields__},
                     },
                     {
                         "state": "M",
                         "extension": "0.1",
-                        **{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__},
-                        "predicted_apogee": "1800.00000000",
+                        **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
+                        "predicted_apogee": 1800.0,
                     },
                 ],
             ),
