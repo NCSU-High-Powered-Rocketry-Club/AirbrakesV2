@@ -312,7 +312,6 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
-        compensated_accel += random.uniform(-4, 4)
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],
             force_accelerations[1],
