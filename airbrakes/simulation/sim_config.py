@@ -54,22 +54,21 @@ FULL_SCALE_CONFIG = SimulationConfig(  # 2018.99
     reference_area=np.float64(0.01929),
     air_temperature=np.float64(25),
     rocket_orientation=np.array([0, 0, -1]),
-    launch_rod_angle=np.array([10]),
+    launch_rod_angle=np.array([5]),
     launch_rod_direction=np.array([90]),
 )
 
-# TODO: get actual values for sub scale
 SUB_SCALE_CONFIG = SimulationConfig(
     raw_time_step=np.float64(0.001),
     est_time_step=np.float64(0.002),
-    motor="PLACEHOLDER",
-    drag_coefficient=np.array([[0.3], [0.4]]),
-    rocket_mass=np.float64(0),
-    reference_area=np.float64(0.001929),
-    air_temperature=np.float64(25),
+    motor="AeroTech_J500G",
+    drag_coefficient=np.array([[0.05, 0.2, 0.3], [0.41, 0.4175, 0.425]]),
+    rocket_mass=np.float64(5.954),
+    reference_area=np.float64(0.008205),
+    air_temperature=np.float64(15),
     rocket_orientation=np.array([-1, 0, 0]),
-    launch_rod_angle=np.array([10]),
-    launch_rod_direction=np.array([90]),
+    launch_rod_angle=np.array([5]),
+    launch_rod_direction=np.array([0]),
 )
 
 
