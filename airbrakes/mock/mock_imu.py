@@ -12,7 +12,6 @@ from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.hardware.imu import IMU
 from constants import LOG_BUFFER_SIZE, MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
 
@@ -102,10 +101,13 @@ class MockIMU(IMU):
         df_header = pd.read_csv(log_file_path, nrows=0)
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those
-        valid_columns = list(set(LoggedDataPacket.__annotations__) & set(df_header.columns))
+        valid_columns = list(
+            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
+            & set(df_header.columns)
+        )
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         df = pd.read_csv(
-            log_file_path, skiprows=range(1, start_index), engine="c", usecols=valid_columns
+            log_file_path, skiprows=range(1, start_index + 1), engine="c", usecols=valid_columns
         )
         for row in df.itertuples(index=False):
             start_time = time.time()
