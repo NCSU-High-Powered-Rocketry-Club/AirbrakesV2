@@ -187,7 +187,7 @@ class Logger:
                 "state": state,
                 "extension": extension,
             }
-            # Convert the imu data packet to a dictionary, while also truncating the decimal place:
+            # Convert the imu data packet to a dictionary
             imu_data_packet_dict: dict[str, int | float | list[str]] = asdict(imu_data_packet)
             logged_fields.update(imu_data_packet_dict)
 
