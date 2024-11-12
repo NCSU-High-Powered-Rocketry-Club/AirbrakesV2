@@ -100,6 +100,14 @@ class TestLogger:
         logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
         assert logger.is_log_buffer_full
 
+    def test_logging_loop_start_stop(self, logger):
+        logger.start()
+        assert logger.is_running
+
+        logger.stop()
+        assert not logger.is_running
+        assert logger._log_process.exitcode == 0
+
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
         log_dict = {"state": "S", "extension": "0.0", "timestamp": "4", "invalid_fields": "[]"}
