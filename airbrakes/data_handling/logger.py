@@ -5,9 +5,9 @@ import multiprocessing
 import signal
 from collections import deque
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
-from msgspec.structs import asdict
+from msgspec import to_builtins
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
@@ -160,6 +160,15 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
+    def truncate_decimal_place(self, obj_type: Any) -> str:
+        """
+        Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
+        convert numpy float64 to a string.
+        :param obj_type: The object to truncate.
+        :return: The truncated object.
+        """
+        return f"{obj_type:.8f}"
+
     def _prepare_log_dict(
         self,
         state: str,
@@ -188,13 +197,14 @@ class Logger:
                 "extension": extension,
             }
             # Convert the imu data packet to a dictionary
-            imu_data_packet_dict: dict[str, int | float | list[str]] = asdict(imu_data_packet)
+            # Using to_builtins() is much faster than asdict() for some reason
+            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
             logged_fields.update(imu_data_packet_dict)
 
             # Get the processed data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
-                processed_data_packet_dict: dict[str, float] = asdict(
-                    processed_data_packets.popleft()
+                processed_data_packet_dict: dict[str, float] = to_builtins(
+                    processed_data_packets.popleft(), enc_hook=self.truncate_decimal_place
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
