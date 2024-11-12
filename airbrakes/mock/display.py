@@ -136,6 +136,8 @@ class FlightDisplay:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
+        fetched_packets = len(self.airbrakes.imu_data_packets)
+
         data_processor = self.airbrakes.data_processor
         apogee_predictor = self.airbrakes.apogee_predictor
 
@@ -177,10 +179,12 @@ class FlightDisplay:
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
+            f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
+            f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
             f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
             f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
-            f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
             f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
+            f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
             f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
         ]
 
