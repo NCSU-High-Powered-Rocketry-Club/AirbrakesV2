@@ -46,9 +46,12 @@ class FlightDisplay:
         "end_sim_natural",
         "_start_time",
         "_verbose",
+        "_mock",
     )
 
-    def __init__(self, airbrakes: "AirbrakesContext", start_time: float, verbose: bool) -> None:
+    def __init__(
+        self, airbrakes: "AirbrakesContext", start_time: float, mock: bool, verbose: bool
+    ) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
         :param start_time: The time (in seconds) the simulation started.
@@ -56,6 +59,7 @@ class FlightDisplay:
         init(autoreset=True)  # Automatically reset colors after each print
         self._airbrakes = airbrakes
         self._start_time = start_time
+        self._mock = mock
         self._verbose = verbose
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
@@ -118,7 +122,7 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
-        while True:
+        while self._mock or self._airbrakes.state.name == "StandbyState":
             if self.end_sim_natural.is_set():
                 self._update_display(self.NATURAL_END)
                 break
@@ -224,7 +228,6 @@ class FlightDisplay:
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
         Prepares a dictionary of processes to monitor CPU usage for.
-
         :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
