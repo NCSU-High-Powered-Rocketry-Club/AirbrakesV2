@@ -104,6 +104,14 @@ def arg_parser() -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shows the display with much more data.",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:

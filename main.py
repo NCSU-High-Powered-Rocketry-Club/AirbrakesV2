@@ -69,7 +69,9 @@ def main(args: argparse.Namespace) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
 
-    flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
+    flight_display = FlightDisplay(
+        airbrakes=airbrakes, start_time=sim_time_start, verbose=args.verbose
+    )
 
     try:
         airbrakes.start()  # Start the IMU and logger processes

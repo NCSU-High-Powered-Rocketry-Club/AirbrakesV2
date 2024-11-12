@@ -41,20 +41,22 @@ class FlightDisplay:
         "_launch_time",
         "_processes",
         "_thread_target",
-        "airbrakes",
+        "_airbrakes",
         "end_sim_interrupted",
         "end_sim_natural",
-        "start_time",
+        "_start_time",
+        "_verbose",
     )
 
-    def __init__(self, airbrakes: "AirbrakesContext", start_time: float) -> None:
+    def __init__(self, airbrakes: "AirbrakesContext", start_time: float, verbose: bool) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
         :param start_time: The time (in seconds) the simulation started.
         """
         init(autoreset=True)  # Automatically reset colors after each print
-        self.airbrakes = airbrakes
-        self.start_time = start_time
+        self._airbrakes = airbrakes
+        self._start_time = start_time
+        self._verbose = verbose
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
@@ -75,7 +77,7 @@ class FlightDisplay:
 
         try:
             # Try to get the launch file name (only available in MockIMU)
-            self._launch_file = self.airbrakes.imu._log_file_path.name
+            self._launch_file = self._airbrakes.imu._log_file_path.name
         except AttributeError:  # If it failed, that means we are running a real flight!
             self._launch_file = "N/A"
 
@@ -131,26 +133,26 @@ class FlightDisplay:
         :param end_sim: Whether the simulation ended or was interrupted.
         """
         try:
-            current_queue_size = self.airbrakes.imu._data_queue.qsize()
+            current_queue_size = self._airbrakes.imu._data_queue.qsize()
         except NotImplementedError:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
-        fetched_packets = len(self.airbrakes.imu_data_packets)
+        fetched_packets = len(self._airbrakes.imu_data_packets)
 
-        data_processor = self.airbrakes.data_processor
-        apogee_predictor = self.airbrakes.apogee_predictor
+        data_processor = self._airbrakes.data_processor
+        apogee_predictor = self._airbrakes.apogee_predictor
 
         # Set the launch time if it hasn't been set yet:
-        if not self._launch_time and self.airbrakes.state.name == "MotorBurnState":
-            self._launch_time = self.airbrakes.state.start_time_ns
+        if not self._launch_time and self._airbrakes.state.name == "MotorBurnState":
+            self._launch_time = self._airbrakes.state.start_time_ns
 
-        elif not self._coast_time and self.airbrakes.state.name == "CoastState":
-            self._coast_time = self.airbrakes.state.start_time_ns
+        elif not self._coast_time and self._airbrakes.state.name == "CoastState":
+            self._coast_time = self._airbrakes.state.start_time_ns
 
         if self._launch_time:
             time_since_launch = (
-                self.airbrakes.data_processor.current_timestamp - self._launch_time
+                self._airbrakes.data_processor.current_timestamp - self._launch_time
             ) * 1e-9
         else:
             time_since_launch = 0
@@ -158,10 +160,10 @@ class FlightDisplay:
         if (
             self._coast_time
             and not self._convergence_time
-            and self.airbrakes.apogee_predictor.apogee
+            and self._airbrakes.apogee_predictor.apogee
         ):
             self._convergence_time = (
-                self.airbrakes.data_processor.current_timestamp - self._coast_time
+                self._airbrakes.data_processor.current_timestamp - self._coast_time
             ) * 1e-9
             self._convergence_height = data_processor.current_altitude
 
@@ -169,34 +171,41 @@ class FlightDisplay:
         output = [
             f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
             f"Sim file:                  {C}{self._launch_file}{RESET}",
-            f"Time since sim start:      {C}{time.time() - self.start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+            f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             # Format time as MM:SS:
             f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(time_since_launch))}{RESET}",  # noqa: E501
-            f"State:                     {G}{self.airbrakes.state.name:<15}{RESET}",
+            f"State:                     {G}{self._airbrakes.state.name:<15}{RESET}",
             f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
-            f"Airbrakes extension:       {G}{self.airbrakes.current_extension.value}{RESET}",
-            f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-            f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
-            f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
-            f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
-            f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
-            f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
+            f"Airbrakes extension:       {G}{self._airbrakes.current_extension.value}{RESET}",
         ]
 
-        # Add CPU usage data with color coding
-        for name, cpu_usage in self._cpu_usages.items():
-            if cpu_usage < 50:
-                cpu_color = G
-            elif cpu_usage < 75:
-                cpu_color = Y
-            else:
-                cpu_color = R
-            output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
+        # Adds additional info to the display if -v was specified
+        if self._verbose:
+            output.extend(
+                [
+                    f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
+                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
+                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
+                    f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
+                    f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
+                ]
+            )
+
+            # Add CPU usage data with color coding
+            for name, cpu_usage in self._cpu_usages.items():
+                if cpu_usage < 50:
+                    cpu_color = G
+                elif cpu_usage < 75:
+                    cpu_color = Y
+                else:
+                    cpu_color = R
+                output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
 
         # Print the output
         print("\n".join(output))
@@ -219,9 +228,9 @@ class FlightDisplay:
         :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
-        imu_process = self.airbrakes.imu._data_fetch_process
-        log_process = self.airbrakes.logger._log_process
-        apogee_process = self.airbrakes.apogee_predictor._prediction_process
+        imu_process = self._airbrakes.imu._data_fetch_process
+        log_process = self._airbrakes.logger._log_process
+        apogee_process = self._airbrakes.apogee_predictor._prediction_process
         current_process = multiprocessing.current_process()
         for p in [imu_process, log_process, current_process, apogee_process]:
             # psutil allows us to monitor CPU usage of a process, along with low level information
