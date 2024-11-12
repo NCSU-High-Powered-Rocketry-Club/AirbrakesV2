@@ -109,7 +109,7 @@ class AirbrakesContext:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This should never happen, but if it does, we want to not error out and wait for packets
+        # This happens quite often, on our PC's since they are much faster than the Pi.
         if not self.imu_data_packets:
             return
 
