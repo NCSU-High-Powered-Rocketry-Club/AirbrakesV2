@@ -178,7 +178,7 @@ class Logger:
             data packets.
         :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: deque[LoggedDataPacket] = deque([])
+        logged_data_packets: deque[LoggedDataPacket] = deque()
 
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:

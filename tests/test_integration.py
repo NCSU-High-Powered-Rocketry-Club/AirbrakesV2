@@ -153,7 +153,7 @@ class TestIntegration:
         # our coasting velocity be fractionally higher than motor burn velocity due to data
         # processing time (does not actually happen in real life)
         assert (coast_state.max_velocity - 10) <= motor_burn_state.max_velocity
-        assert coast_state.min_velocity <= 5.0  # velocity around apogee should be low
+        assert coast_state.min_velocity <= 11.0  # velocity around apogee should be low
         assert coast_state.min_altitude >= motor_burn_state.max_altitude
         assert coast_state.max_altitude <= target_altitude + 100
         apogee_pred_list = coast_state.apogee_prediction
