@@ -160,7 +160,8 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
-    def _truncate_decimal_place(self, obj_type: Any) -> str:
+    @staticmethod
+    def _convert_unknown_type(obj_type: Any) -> str:
         """
         Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
         convert numpy float64 to a string.
@@ -203,8 +204,10 @@ class Logger:
 
             # Get the processed data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
+                # Convert the processed data packet to a dictionary. Unknown types such as numpy
+                # float64 are converted to strings with 8 decimal places (that's enc_hook)
                 processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=self._truncate_decimal_place
+                    processed_data_packets.popleft(), enc_hook=self._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
@@ -236,7 +239,8 @@ class Logger:
                     break
                 writer.writerow(self._truncate_floats(message_fields))
 
-    def _truncate_floats(self, data: LoggedDataPacket) -> dict[str, str | object]:
+    @staticmethod
+    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
         """
         Truncates the decimal place of the floats in the dictionary to 8 decimal places.
         :param data: The dictionary to truncate.
