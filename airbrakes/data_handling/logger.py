@@ -160,7 +160,7 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
-    def truncate_decimal_place(self, obj_type: Any) -> str:
+    def _truncate_decimal_place(self, obj_type: Any) -> str:
         """
         Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
         convert numpy float64 to a string.
@@ -204,7 +204,7 @@ class Logger:
             # Get the processed data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
                 processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=self.truncate_decimal_place
+                    processed_data_packets.popleft(), enc_hook=self._truncate_decimal_place
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
