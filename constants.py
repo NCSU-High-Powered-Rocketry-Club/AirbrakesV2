@@ -91,9 +91,13 @@ MAX_VELOCITY_THRESHOLD = 0.04
 MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
+MAX_FREE_FALL_LENGTH = 180.0  # seconds
 
-# Consider the rocket to have landed if it is within 15 meters of the launch site height.
-GROUND_ALTITUDE = 15.0  # meters
+# Consider the rocket to have landed if it is within 15 meters of the launch site height
+# and the speed is low.
+GROUND_ALTITUDE = 10.0  # meters
+LANDED_SPEED = 5.0  # m/s
+
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
