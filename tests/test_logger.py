@@ -6,7 +6,6 @@ import time
 from collections import deque
 from typing import Literal
 
-import msgspec
 import pytest
 
 from airbrakes.data_handling.imu_data_packet import (
@@ -87,7 +86,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             keys = reader.fieldnames
-            assert tuple(keys) == LoggedDataPacket.__struct_fields__
+            assert list(keys) == list(LoggedDataPacket.__annotations__)
 
     def test_log_buffer_is_full_property(self, logger):
         """Tests whether the property is_log_buffer_full works correctly."""
@@ -187,7 +186,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert tuple(headers) == LoggedDataPacket.__struct_fields__
+            assert list(headers) == list(LoggedDataPacket.__annotations__)
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
@@ -198,15 +197,23 @@ class TestLogger:
     # This decorator is used to run the same test with different data
     # read more about it here: https://docs.pytest.org/en/stable/parametrize.html
     @pytest.mark.parametrize(
-        ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
+        (
+            "state",
+            "extension",
+            "imu_data_packets",
+            "processed_data_packets",
+            "predicted_apogee",
+            "file_lines",
+        ),
         [
-            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
+            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0, 1),
             (
                 "S",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
                 1800.0,
+                1,
             ),
             (
                 "M",
@@ -214,6 +221,7 @@ class TestLogger:
                 deque([gen_data_packet("raw"), gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
                 1800.0,
+                2,
             ),
         ],
         ids=[
@@ -223,7 +231,14 @@ class TestLogger:
         ],
     )
     def test_log_method(
-        self, logger, state, extension, imu_data_packets, processed_data_packets, predicted_apogee
+        self,
+        logger,
+        state,
+        extension,
+        imu_data_packets,
+        processed_data_packets,
+        predicted_apogee,
+        file_lines,
     ):
         """Tests whether the log method logs the data correctly to the CSV file."""
         logger.start()
@@ -242,7 +257,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert tuple(headers) == LoggedDataPacket.__struct_fields__
+            assert list(headers) == list(LoggedDataPacket.__annotations__)
 
             processed_data_packet_fields = {
                 "current_altitude",
@@ -251,6 +266,7 @@ class TestLogger:
             }
             # The row with the data packet:
             row: dict[str, str]
+            idx = -1
             for idx, row in enumerate(reader):
                 # Only fetch non-empty values:
                 row_dict_non_empty = {k: v for k, v in row.items() if v}
@@ -258,10 +274,10 @@ class TestLogger:
 
                 # Random check to make sure we aren't missing any fields
                 assert len(row_dict_non_empty) > 10
-                assert row == {
+                expected_output = {
                     "state": state,
                     "extension": str(extension),
-                    "predicted_apogee": f"{predicted_apogee:.8f}",
+                    "predicted_apogee": "" if not is_est_data_packet else f"{predicted_apogee:.8f}",
                     **{
                         attr: str(getattr(imu_data_packets[idx], attr, ""))
                         for attr in RawDataPacket.__struct_fields__
@@ -279,6 +295,10 @@ class TestLogger:
                         for attr in processed_data_packet_fields
                     },
                 }
+
+                assert row == expected_output
+
+            assert idx + 1 == file_lines
 
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
@@ -462,81 +482,90 @@ class TestLogger:
             assert logger._log_counter == IDLE_LOG_CAPACITY
 
     @pytest.mark.parametrize(
-        ("state", "extension", "imu_data_packets", "processed_data_packets", "expected_output"),
+        ("state", "extension", "imu_data_packets", "processed_data_packets", "expected_outputs"),
         [
             (
                 "S",
-                0.1,
+                "0.1",
                 deque([gen_data_packet("raw")]),
                 deque([]),
                 [
                     {
                         "state": "S",
                         "extension": "0.1",
-                        **{k: "1.98765432" for k in RawDataPacket.__struct_fields__},
-                        "predicted_apogee": "1800.00000000",
+                        **{k: 1.98765432 for k in RawDataPacket.__struct_fields__},
                     }
                 ],
             ),
             (
                 "S",
-                0.1,
+                "0.1",
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
                 [
                     {
                         "state": "S",
                         "extension": "0.1",
-                        **{k: "1.12345678" for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: "1.88776655" for k in ProcessedDataPacket.__struct_fields__},
+                        **{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__},
+                        **{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__},
                         "predicted_apogee": "1800.00000000",
                     }
+                ],
+            ),
+            (
+                "M",
+                "0.1",
+                deque([gen_data_packet("raw"), gen_data_packet("est")]),
+                deque([gen_data_packet("processed")]),
+                [
+                    {
+                        "state": "M",
+                        "extension": "0.1",
+                        **{k: 1.98765432 for k in RawDataPacket.__struct_fields__},
+                    },
+                    {
+                        "state": "M",
+                        "extension": "0.1",
+                        **{k: 1.12345678 for k in EstimatedDataPacket.__struct_fields__},
+                        **{k: 1.88776655 for k in ProcessedDataPacket.__struct_fields__},
+                        "predicted_apogee": "1800.00000000",
+                    },
                 ],
             ),
         ],
         ids=[
             "RawDataPacket",
             "EstimatedDataPacket",
+            "both",
         ],
     )
-    def test_create_logged_data_packets(
-        self, logger, state, extension, imu_data_packets, processed_data_packets, expected_output
+    def test_prepare_log_dict(
+        self, logger, state, extension, imu_data_packets, processed_data_packets, expected_outputs
     ):
-        """Tests whether the _create_logged_data_packets method creates the correct LoggedDataPacket
-        objects."""
+        """Tests whether the _prepare_log_dict method creates the correct LoggedDataPackets."""
 
         # set some invalid fields to test if they stay as a list
         invalid_field = ["something"]
         for imu_packet in imu_data_packets:
             imu_packet.invalid_fields = invalid_field
-        expected_output[0]["invalid_fields"] = invalid_field  # we need to change the output also
+        # we need to change the output also
+        for expected in expected_outputs:
+            expected["invalid_fields"] = invalid_field
 
-        logged_data_packets = logger._create_logged_data_packets(
+        # Now let's test the method
+        logged_data_packets = logger._prepare_log_dict(
             state, extension, imu_data_packets, processed_data_packets, 1800.0
         )
         # Check that we log every packet:
-        assert len(logged_data_packets) == len(expected_output)
+        assert len(logged_data_packets) == len(expected_outputs)
 
-        for logged_data_packet, expected in zip(logged_data_packets, expected_output, strict=True):
-            assert isinstance(logged_data_packet, LoggedDataPacket)
-            # we will convert the logged_data_packet to a dict and compare only the non-None values
-            converted = {k: v for k, v in msgspec.structs.asdict(logged_data_packet).items() if v}
-            is_raw_data_packet = converted.get("scaledAccelX", False)
+        for logged_data_packet, expected in zip(logged_data_packets, expected_outputs, strict=True):
+            assert isinstance(logged_data_packet, dict)
+            converted = logged_data_packet
 
-            # certain fields are not converted to strings (intentionally. See logged_data_packet.py)
+            # certain fields are not converted to strings (intentionally. See logger.py)
             assert isinstance(converted["invalid_fields"], list)
             assert isinstance(converted["timestamp"], float)
-            assert isinstance(converted["extension"], float)
-
-            if not is_raw_data_packet:
-                assert isinstance(converted["vertical_velocity"], str)
-                assert isinstance(converted["current_altitude"], str)
-                assert isinstance(converted["vertical_acceleration"], str)
-                assert isinstance(converted["predicted_apogee"], str)
-
-            # convert the above fields for easy assertion check at the end:
-            converted["timestamp"] = str(converted["timestamp"])
-            converted["extension"] = str(converted["extension"])
 
             # Remove "time_since_last_data_packet" from the expected output, since we don't log that
             expected.pop("time_since_last_data_packet", None)

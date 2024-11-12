@@ -195,7 +195,7 @@ class TestIntegration:
             reader = csv.DictReader(f)
             # Check if all headers were logged:
             headers = reader.fieldnames
-            assert tuple(headers) == LoggedDataPacket.__struct_fields__
+            assert list(headers) == list(LoggedDataPacket.__annotations__)
 
             # Let's just test the first line (excluding the headers) for a few things:
             line = next(reader)
