@@ -69,14 +69,14 @@ def main(args: argparse.Namespace) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
 
-    flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
+    flight_display = FlightDisplay(airbrakes, sim_time_start, args.mock, args.verbose)
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
 
-        # Setup our flight display, only for mock sims:
+        # Setup our flight display
         # Don't print the flight data if we are in debug mode
-        if args.mock and not args.debug:
+        if not args.debug:
             # This is what prints the flight data to the console in real time, we only do
             # it when running the sim because printing a lot of things can significantly slow down
             # the program
@@ -106,11 +106,12 @@ def main(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     # Command line args:
+    # python main.py -v: Shows the display with much more data
     # python main.py -m: Runs a simulation on your computer.
     # python main.py -m -r: Runs a simulation on your computer with the real servo.
     # python main.py -m -l: Runs a simulation on your computer and keeps the log file after the
     # simulation stops.
     # python main.py -m -f: Runs a simulation on your computer at full speed.
-    # python main.py -m -d: Runs a simulation on your computer in debug mode.
+    # python main.py -m -d: Runs a simulation on your computer in debug mode (doesn't show display).
     args = arg_parser()  # Load all command line options
     main(args)

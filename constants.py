@@ -9,7 +9,7 @@ from pathlib import Path
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
 # for PWM
-SERVO_PIN = 12
+SERVO_PIN = 25
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
 
@@ -22,8 +22,8 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.5
-    MAX_EXTENSION = 0.5
+    MIN_EXTENSION = -0.685
+    MAX_EXTENSION = 0.1
 
 
 # -------------------------------------------------------
