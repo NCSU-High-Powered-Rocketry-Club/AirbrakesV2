@@ -85,6 +85,16 @@ class Logger:
         """
         return len(self._log_buffer) == LOG_BUFFER_SIZE
 
+    @staticmethod
+    def _convert_unknown_type(obj_type: Any) -> str:
+        """
+        Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
+        convert numpy float64 to a string.
+        :param obj_type: The object to truncate.
+        :return: The truncated object.
+        """
+        return f"{obj_type:.8f}"
+
     def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
@@ -160,16 +170,6 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
-    @staticmethod
-    def _convert_unknown_type(obj_type: Any) -> str:
-        """
-        Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
-        convert numpy float64 to a string.
-        :param obj_type: The object to truncate.
-        :return: The truncated object.
-        """
-        return f"{obj_type:.8f}"
-
     def _prepare_log_dict(
         self,
         state: str,
@@ -221,6 +221,18 @@ class Logger:
         return logged_data_packets
 
     # ------------------------------- RUN IN A SEPARATE PROCESS -----------------------------------
+    @staticmethod
+    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
+        """
+        Truncates the decimal place of the floats in the dictionary to 8 decimal places.
+        :param data: The dictionary to truncate.
+        :return: The truncated dictionary.
+        """
+        return {
+            key: f"{value:.8f}" if isinstance(value, float) else value
+            for key, value in data.items()
+        }
+
     def _logging_loop(self) -> None:
         """
         The loop that saves data to the logs. It runs in parallel with the main loop.
@@ -238,15 +250,3 @@ class Logger:
                 if message_fields == STOP_SIGNAL:
                     break
                 writer.writerow(self._truncate_floats(message_fields))
-
-    @staticmethod
-    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
-        """
-        Truncates the decimal place of the floats in the dictionary to 8 decimal places.
-        :param data: The dictionary to truncate.
-        :return: The truncated dictionary.
-        """
-        return {
-            key: f"{value:.8f}" if isinstance(value, float) else value
-            for key, value in data.items()
-        }
