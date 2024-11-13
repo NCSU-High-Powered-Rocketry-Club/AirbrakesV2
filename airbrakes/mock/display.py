@@ -33,6 +33,7 @@ class FlightDisplay:
     STATE_END = "state"
 
     __slots__ = (
+        "_airbrakes",
         "_coast_time",
         "_convergence_height",
         "_convergence_time",
@@ -40,14 +41,13 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_launch_time",
+        "_mock",
         "_processes",
+        "_start_time",
         "_thread_target",
-        "_airbrakes",
+        "_verbose",
         "end_sim_interrupted",
         "end_sim_natural",
-        "_start_time",
-        "_verbose",
-        "_mock",
     )
 
     def __init__(
