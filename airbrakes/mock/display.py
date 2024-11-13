@@ -197,9 +197,9 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
-                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
-                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
+                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
