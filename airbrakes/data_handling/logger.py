@@ -7,6 +7,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
+from faster_fifo import Queue
 from msgspec import to_builtins
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
@@ -62,9 +63,10 @@ class Logger:
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        self._log_queue: multiprocessing.Queue[LoggedDataPacket | Literal["STOP"]] = (
-            multiprocessing.Queue()
-        )
+        # self._log_queue: multiprocessing.Queue[LoggedDataPacket | Literal["STOP"]] = (
+        #     multiprocessing.Queue()
+        # )
+        self._log_queue: Queue[LoggedDataPacket | Literal["STOP"]] = Queue()
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
@@ -160,7 +162,8 @@ class Logger:
                 self._log_counter = 0  # Reset the counter for other states
 
             # Put the message in the queue
-            self._log_queue.put(logged_data_packet)
+            # self._log_queue.put(logged_data_packet)
+        self._log_queue.put_many(logged_data_packets)
 
     def _log_the_buffer(self):
         """
@@ -188,7 +191,8 @@ class Logger:
             data packets.
         :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: deque[LoggedDataPacket] = deque()
+        # logged_data_packets: deque[LoggedDataPacket] = deque()
+        logged_data_packets = []
 
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:

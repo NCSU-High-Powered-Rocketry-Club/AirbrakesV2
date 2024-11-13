@@ -1,11 +1,13 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
+import collections
 import contextlib
 import multiprocessing
 import time
 from pathlib import Path
 
 import pandas as pd
+from faster_fifo import Queue
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -14,6 +16,7 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from airbrakes.hardware.imu import IMU
 from constants import LOG_BUFFER_SIZE, MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
+from utils import convert_to_float
 
 
 class MockIMU(IMU):
@@ -53,8 +56,8 @@ class MockIMU(IMU):
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
+        self._data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
         )
 
         # Starts the process that fetches data from the log file
@@ -70,6 +73,27 @@ class MockIMU(IMU):
 
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
+
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
+        """
+        Returns all available data packets from the IMU.
+        This method differs from the actual IMU in that it uses the faster-fifo library to get
+        multiple data packets, which is many times faster than retrieving them one by one.
+        :return: A deque containing the specified number of data packets
+        """
+        # We use a deque because it's faster than a list for popping from the left
+        data_packets = collections.deque()
+        # While there is data in the queue, get the data packet and add it to the deque which we
+        # return
+        try:
+            dp = self._data_queue.get_many(
+                block=False, max_messages_to_get=SIMULATION_MAX_QUEUE_SIZE
+            )
+        except Exception:
+            dp = []
+        data_packets.extend(dp)
+
+        return data_packets
 
     def _read_file(
         self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
@@ -107,12 +131,16 @@ class MockIMU(IMU):
         )
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         df = pd.read_csv(
-            log_file_path, skiprows=range(1, start_index + 1), engine="c", usecols=valid_columns
+            log_file_path,
+            skiprows=range(1, start_index + 1),
+            engine="c",
+            usecols=valid_columns,
+            na_filter=False,
         )
         for row in df.itertuples(index=False):
             start_time = time.time()
             # Convert the named tuple to a dictionary and remove any NaN values:
-            row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
+            row_dict = {k: convert_to_float(v) for k, v in row._asdict().items() if v}
 
             # Check if the process should stop:
             if not self._running.value:
