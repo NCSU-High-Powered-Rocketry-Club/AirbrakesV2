@@ -30,6 +30,7 @@ class FlightDisplay:
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
     NATURAL_END = "natural"
     INTERRUPTED_END = "interrupted"
+    STATE_END = "state"
 
     __slots__ = (
         "_coast_time",
@@ -122,12 +123,15 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
-        while self._mock or self._airbrakes.state.name == "StandbyState":
+        while True:
             if self.end_sim_natural.is_set():
                 self._update_display(self.NATURAL_END)
                 break
             if self.end_sim_interrupted.is_set():
                 self._update_display(self.INTERRUPTED_END)
+                break
+            if not self._mock and self._airbrakes.state.name == "MotorBurnState":
+                self._update_display(self.STATE_END)
                 break
             self._update_display(False)
 
@@ -219,11 +223,13 @@ class FlightDisplay:
             print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
 
         # Print the end of simulation message if the simulation has ended
-        if end_sim == self.NATURAL_END:
-            # Print the end of simulation header
-            print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
-        elif end_sim == self.INTERRUPTED_END:
-            print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
+        match end_sim:
+            case self.NATURAL_END:
+                print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
+            case self.INTERRUPTED_END:
+                print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
+            case self.STATE_END:
+                print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
