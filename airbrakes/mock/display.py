@@ -201,6 +201,7 @@ class FlightDisplay:
                     f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
+                    f"Log buffer size:           {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )
