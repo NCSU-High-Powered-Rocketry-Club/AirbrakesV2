@@ -1,10 +1,11 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import contextlib
-import csv
 import multiprocessing
 import time
 from pathlib import Path
+
+import pandas as pd
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -12,8 +13,7 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.hardware.imu import IMU
-from constants import MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
-from utils import convert_to_float, convert_to_nanoseconds
+from constants import LOG_BUFFER_SIZE, MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
 
 
 class MockIMU(IMU):
@@ -78,78 +78,57 @@ class MockIMU(IMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
         """
-
         start_index = 0
         if start_after_log_buffer:
             # We need to loop through the file and calculate the time difference to find the index
             # at which the log buffer starts. That index will be used as the start point.
-            with log_file_path.open(newline="") as csvfile:
-                reader = csv.DictReader(csvfile)
-
-                # Reads each row as a dictionary
-                row: dict[str, str]
-                init_timestamp = None
-                for idx, row in enumerate(reader):
-                    timestamp = convert_to_nanoseconds(row["timestamp"])
-                    if init_timestamp is None:
-                        init_timestamp = timestamp
-                        continue
-                    # Anything greater than 1 second is end of the buffer.
-                    if timestamp - init_timestamp > 1e9:
-                        start_index = idx
-                        break
-                    init_timestamp = timestamp
-
-        with log_file_path.open(newline="") as csvfile:
-            reader = csv.DictReader(csvfile)
-
-            # Reads each row as a dictionary
-            row: dict[str, str]
-            for idx, row in enumerate(reader):
-                # If we are starting after the log buffer, skip the rows before the buffer:
-                if idx < start_index:
-                    continue
-
-                start_time = time.time()
-
-                # Check if the process should stop
-                if not self._running.value:
+            # Read the CSV file in chunks to avoid loading the entire file into memory
+            chunk_size = LOG_BUFFER_SIZE + 1  # The chunk size is close to our log buffer size.
+            for chunk in pd.read_csv(log_file_path, chunksize=chunk_size):
+                # Calculate the time difference between consecutive rows
+                chunk["time_diff"] = chunk["timestamp"].diff()
+                # Find the index where the time difference exceeds 1 second
+                buffer_end_index = chunk[chunk["time_diff"] > 1e9].index
+                if not buffer_end_index.empty:
+                    start_index = buffer_end_index[0]
                     break
 
-                fields_dict = {}
+        # Using pandas and itertuples to read the file:
+        df_header = pd.read_csv(log_file_path, nrows=0)
+        # Get the columns that are common between the data packet and the log file, since we only
+        # care about those
+        valid_columns = list(
+            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
+            & set(df_header.columns)
+        )
+        # Read the csv, starting from the row after the log buffer, and using only the valid columns
+        df = pd.read_csv(
+            log_file_path, skiprows=range(1, start_index + 1), engine="c", usecols=valid_columns
+        )
+        for row in df.itertuples(index=False):
+            start_time = time.time()
+            # Convert the named tuple to a dictionary and remove any NaN values:
+            row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
 
-                scaled_accel_x = row.get("scaledAccelX")  # raw data packet field
-                est_linear_accel_x = row.get("estLinearAccelX")  # estimated data packet field
-                # Create the data packet based on the row
-                if scaled_accel_x:
-                    for key in RawDataPacket.__struct_fields__:
-                        val = row.get(key, None)
-                        if val:
-                            fields_dict[key] = convert_to_float(val)
-                    fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
-                    imu_data_packet = RawDataPacket(**fields_dict)
-                elif est_linear_accel_x:
-                    for key in EstimatedDataPacket.__struct_fields__:
-                        val = row.get(key, None)
-                        if val:
-                            fields_dict[key] = convert_to_float(val)
-                    fields_dict["timestamp"] = convert_to_nanoseconds(row["timestamp"])
-                    imu_data_packet = EstimatedDataPacket(**fields_dict)
-                # Accounts for the case that the log file is messed up and has empty rows
-                # (or rows not corresponding to any data packet)
-                else:
-                    continue
+            # Check if the process should stop:
+            if not self._running.value:
+                break
 
-                # Put the packet in the queue
-                self._data_queue.put(imu_data_packet)
+            if row_dict.get("scaledAccelX"):  # RawDataPacket
+                imu_data_packet = RawDataPacket(**row_dict)
+            else:
+                imu_data_packet = EstimatedDataPacket(**row_dict)
 
-                # sleep only if we are running a real-time simulation
-                # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
-                # pretend to be real-time
-                if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
-                    # Simulate polling interval
-                    end_time = time.time()
-                    time.sleep(max(0.0, 0.001 - (end_time - start_time)))
+            # Put the packet in the queue
+            self._data_queue.put(imu_data_packet)
+
+            # sleep only if we are running a real-time simulation
+            # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
+            # pretend to be real-time
+            if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
+                # Simulate polling interval
+                end_time = time.time()
+                time.sleep(max(0.0, 0.001 - (end_time - start_time)))
 
     def _fetch_data_loop(
         self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False

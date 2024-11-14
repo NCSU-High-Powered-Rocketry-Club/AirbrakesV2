@@ -9,7 +9,7 @@ from pathlib import Path
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
 # for PWM
-SERVO_PIN = 12
+SERVO_PIN = 25
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
 
@@ -22,10 +22,8 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.5
-    MAX_EXTENSION = 0.5
-    MIN_NO_BUZZ = -0.05
-    MAX_NO_BUZZ = 0.278
+    MIN_EXTENSION = -0.685
+    MAX_EXTENSION = 0.1
 
 
 # -------------------------------------------------------
@@ -88,18 +86,27 @@ TAKEOFF_VELOCITY = 10  # m/s
 
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
-MAX_VELOCITY_THRESHOLD = 0.03
+MAX_VELOCITY_THRESHOLD = 0.04
 # seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
 MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
+MAX_FREE_FALL_LENGTH = 180.0  # seconds
 
-# Consider the rocket to have landed if it is within 15 meters of the launch site height.
-GROUND_ALTITUDE = 15.0  # meters
+# Consider the rocket to have landed if it is within 15 meters of the launch site height
+# and the speed is low.
+GROUND_ALTITUDE = 10.0  # meters
+LANDED_SPEED = 5.0  # m/s
+
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
 # -------------------------------------------------------
+
+# This needs to be checked/changed before flights
+FLIGHT_LENGTH_SECONDS = 22.0
+
+INTEGRATION_TIME_STEP = 1.0 / 500.0
 
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
@@ -108,3 +115,6 @@ GRAVITY = 9.798
 TARGET_ALTITUDE = 1700  # m (5,100 ft)
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
+
+# The uncertainty from the curve fit, below which we will say that our apogee has converged:
+UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]

@@ -1,17 +1,18 @@
 """Module for the finite state machine that represents which state of flight we are in."""
 
-import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
     GROUND_ALTITUDE,
+    LANDED_SPEED,
+    MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
-    MOTOR_BURN_TIME,
     TAKEOFF_HEIGHT,
     TAKEOFF_VELOCITY,
     TARGET_ALTITUDE,
 )
+from utils import convert_to_seconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -32,7 +33,7 @@ class State(ABC):
         brakes will be retracted.
     """
 
-    __slots__ = ("context",)
+    __slots__ = ("context", "start_time_ns")
 
     def __init__(self, context: "AirbrakesContext"):
         """
@@ -41,6 +42,7 @@ class State(ABC):
         self.context = context
         # At the very beginning of each state, we retract the airbrakes
         self.context.retract_airbrakes()
+        self.start_time_ns = context.data_processor.current_timestamp
 
     @property
     def name(self):
@@ -101,13 +103,6 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
-    __slots__ = ("start_time_ns",)
-
-    def __init__(self, context: "AirbrakesContext"):
-        super().__init__(context)
-        # This will only be called once, when the motor starts burning
-        self.start_time_ns = context.data_processor.current_timestamp
-
     def update(self):
         """Checks to see if the acceleration has dropped to zero, indicating the motor has
         burned out."""
@@ -125,10 +120,6 @@ class MotorBurnState(State):
             self.next_state()
             return
 
-        # Fallback: if our motor has burned for longer than its burn time, go to the next state
-        if data.current_timestamp - self.start_time_ns > MOTOR_BURN_TIME * 1e9:
-            self.next_state()
-
     def next_state(self):
         self.context.state = CoastState(self.context)
 
@@ -139,11 +130,10 @@ class CoastState(State):
     we actually extend the airbrakes.
     """
 
-    __slots__ = ("airbrakes_extended", "start_time")
+    __slots__ = ("airbrakes_extended",)
 
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
-        self.start_time = time.time()
         self.airbrakes_extended = False
 
     def update(self):
@@ -157,6 +147,9 @@ class CoastState(State):
         # if our prediction is overshooting our target altitude, extend the airbrakes
         if self.context.apogee_predictor.apogee > TARGET_ALTITUDE:
             self.context.extend_airbrakes()
+        else:
+            # If our prediction is not overshooting, retract the airbrakes
+            self.context.retract_airbrakes()
 
         # if our velocity is close to zero or negative, we are in free fall.
         if data.vertical_velocity <= 0:
@@ -186,8 +179,12 @@ class FreeFallState(State):
 
         data = self.context.data_processor
 
-        # If our altitude is 0, we have landed:
-        if data.current_altitude <= GROUND_ALTITUDE:
+        # If our altitude and speed are around 0, we have landed
+        if data.current_altitude <= GROUND_ALTITUDE and abs(data.vertical_velocity) <= LANDED_SPEED:
+            self.next_state()
+
+        # If we have been in free fall for too long, we move to the landed state
+        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_LENGTH:
             self.next_state()
 
     def next_state(self):

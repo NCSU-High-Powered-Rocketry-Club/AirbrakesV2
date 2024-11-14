@@ -1,19 +1,28 @@
 import multiprocessing
 import multiprocessing.queues
+import threading
 import time
 from collections import deque
 
 import numpy as np
 import pytest
 
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import APOGEE_PREDICTION_FREQUENCY
 
 
 @pytest.fixture
-def apogee_predictor():
-    return ApogeePredictor()
+def threaded_apogee_predictor(monkeypatch):
+    """Modifies the ApogeePredictor to run in a separate thread instead of a process."""
+    ap = ApogeePredictor()
+    # Cannot use signals from child threads, so we need to monkeypatch it:
+    monkeypatch.setattr("signal.signal", lambda _, __: None)
+    target = threading.Thread(target=ap._prediction_loop)
+    ap._prediction_process = target
+    ap.start()
+    yield ap
+    ap.stop()
 
 
 class TestApogeePredictor:
@@ -43,6 +52,10 @@ class TestApogeePredictor:
         assert len(ap._time_differences) == 0
         assert ap._current_altitude == np.float64(0.0)
         assert ap._current_velocity == np.float64(0.0)
+        assert not ap._has_apogee_converged
+        assert isinstance(ap.lookup_table, LookupTable)
+        assert ap.lookup_table.velocities.size == 2
+        assert ap.lookup_table.delta_heights.size == 2
 
         # Test properties on init
         assert ap.apogee == 0.0
@@ -93,70 +106,105 @@ class TestApogeePredictor:
             (
                 [
                     ProcessedDataPacket(
-                        current_altitude=float(100 + (alt * 5)),  # Goes up to 595m
-                        vertical_velocity=50,
-                        vertical_acceleration=9.798,
+                        current_altitude=float(
+                            i**3 / 15000 - i**2 / 20 - i**2 * 9.798 / 200 + 20 * i + 100
+                        ),
+                        vertical_velocity=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
+                        vertical_acceleration=float(-10 + i / 25),
                         time_since_last_data_packet=0.1,
                     )
-                    for alt in range(100)
+                    for i in range(70)
                 ],
-                1600,  # After 30 seconds, the length of estAccel is 300 (30/0.1 = 300)
-                # But length of est_vel is 200, i.e. 20 seconds. So estimated apogee should
-                # be: 600 + (200 * (50 m/s /10)) = 1600
+                # the velocity and altitude points in this data packet are calculated by hand.
+                # the data packets simulate 0 - 7 seconds, in 0.1 second intervals.
+                # the acceleration has a slope of +0.4 m/s^2 per second, which simulates
+                # coast phase, going from -10 m/s^2 to -7.2 m/s^2. The expected outcome of this
+                # test is the max of the position function. Because we are curve fitting to a
+                # quartic function though, it's off by a bit, because a quartic function
+                # cannot look very linear. If you want to check my integration math, remember that
+                #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
+                1167.8157033639814,
             ),
-            # note we can't test altitude decrease because we take the max() (APOGEE)!
         ],
-        ids=["hover_at_altitude", "constant_alt_increase"],
+        ids=["hover_at_altitude", "coast_phase_sim"],
     )
     def test_prediction_loop_no_mock(
-        self, apogee_predictor, processed_data_packets, expected_value
+        self, threaded_apogee_predictor, processed_data_packets, expected_value
     ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
         predict it correctly."""
 
-        ap = apogee_predictor
-        ap.start()
-        ap.update(processed_data_packets.copy())
-        # waits for process to complete, continues regardless after 5 seconds
-        ap._prediction_complete.wait(timeout=5)
+        threaded_apogee_predictor.update(processed_data_packets)
 
-        predicted_apogee = ap.apogee
-        # Verify result is a float and equal to predicted value
-        assert isinstance(predicted_apogee, float)
-        assert predicted_apogee == pytest.approx(expected_value)
-        ap.stop()
+        time.sleep(0.01)  # Wait for the prediction loop to finish
+        assert threaded_apogee_predictor._has_apogee_converged
+        assert threaded_apogee_predictor.apogee == expected_value
 
-    def test_prediction_loop_every_x_packets(self, apogee_predictor):
+    def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
-        ap = apogee_predictor
+
         apogees = []
-        ap.start()
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
             packets = [
                 ProcessedDataPacket(
                     current_altitude=100 + i,  # add random alt so our prediction is different
-                    vertical_velocity=2.0,
+                    vertical_velocity=2.0 + i,
                     vertical_acceleration=10.798,
                     time_since_last_data_packet=0.01,
                 )
             ]
-            ap.update(packets.copy())
+            threaded_apogee_predictor.update(packets)
+            time.sleep(0.001)  # allows update to finish
+            apogees.append(threaded_apogee_predictor.apogee)
 
-            # allows update to finish, will continue regardless after timeout period
-            ap._prediction_complete.wait(timeout=0.05)
-            time.sleep(0.001)
-            apogees.append(ap.apogee)
-        # sleep a bit again so the last prediction can finish:
-        time.sleep(0.01)
-        apogees.append(ap.apogee)
+        # Assert that apogees are ascending:
+        assert all(apogees[i] <= apogees[i + 1] for i in range(len(apogees) - 1))
         unique_apogees = set(apogees)
         # Assert that we have a '0' apogee in our unique apogees, and then remove that:
-        # We get a 0 apogee because we don't start predicting until we have 100 packets.
+        # We get a 0 apogee because we don't start predicting until we have a certain amount
+        # of packets.
         assert 0.0 in unique_apogees
         unique_apogees.remove(0.0)
-        # 3 different apogees, one for each 100 packets.
+        # amount of apogees we have is number of packets, divided by the frequency
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_FREQUENCY
-        assert ap._prediction_queue.qsize() == 0
-        ap.stop()
+        assert threaded_apogee_predictor._prediction_queue.qsize() == 0
+        assert threaded_apogee_predictor._has_apogee_converged
+        assert threaded_apogee_predictor.apogee == max(apogees)
+        assert threaded_apogee_predictor.is_running
+
+    @pytest.mark.parametrize(
+        ("cumulative_time_differences", "accelerations", "expected_convergence"),
+        [
+            (  # case with not enough data
+                [1, 2, 3, 4],
+                [1, 5, 3, 7],
+                False,
+            ),
+            (  # valid case within the uncertainty range
+                [i / 10 for i in range(20)],
+                [15.5 * (1 - 0.03 * i) ** 4 for i in range(20)],
+                True,
+            ),
+        ],
+        ids=["not_enough_data", "within_30m"],
+    )
+    def test_has_apogee_converged(
+        self,
+        apogee_predictor,
+        cumulative_time_differences,
+        accelerations,
+        expected_convergence,
+    ):
+        """
+        Test _has_apogee_converged with different lists of predicted apogees and expected results.
+        """
+        # Set up the apogee predictor with the test data
+        ap = apogee_predictor
+        ap._cumulative_time_differences = cumulative_time_differences
+        ap._accelerations = accelerations
+        ap._curve_fit()
+
+        # Check if the convergence result matches the expected value
+        assert apogee_predictor._has_apogee_converged == expected_convergence

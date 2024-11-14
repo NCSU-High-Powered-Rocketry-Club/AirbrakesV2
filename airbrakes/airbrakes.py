@@ -109,7 +109,7 @@ class AirbrakesContext:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This should never happen, but if it does, we want to not error out and wait for packets
+        # This happens quite often, on our PC's since they are much faster than the Pi.
         if not self.imu_data_packets:
             return
 
@@ -165,7 +165,7 @@ class AirbrakesContext:
         Predicts the apogee of the rocket based on the current processed data. This
         should only be called in the coast state, before we start controlling the airbrakes.
         """
-        # We have to only only run this for estimated data packets, otherwise we send duplicate
+        # We have to only run this for estimated data packets, otherwise we send duplicate
         # data to the predictor (because for a raw data packet, we still have the 'old'
         # processed_data_packets)
         # This would result in a very slow convergence and inaccurate predictions.

@@ -1,4 +1,3 @@
-import time
 from abc import ABC
 
 import pytest
@@ -14,10 +13,10 @@ from airbrakes.state import (
 )
 from constants import (
     GROUND_ALTITUDE,
+    LANDED_SPEED,
     LOG_BUFFER_SIZE,
+    MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
-    MOTOR_BURN_TIME,
-    SERVO_DELAY,
     TARGET_ALTITUDE,
     ServoExtension,
 )
@@ -83,8 +82,6 @@ class TestState:
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -102,8 +99,6 @@ class TestStandbyState:
     def test_init(self, stand_by_state, airbrakes):
         assert stand_by_state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
@@ -144,8 +139,6 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
@@ -153,37 +146,32 @@ class TestMotorBurnState:
         assert motor_burn_state.name == "MotorBurnState"
 
     @pytest.mark.parametrize(
-        ("current_velocity", "max_velocity", "expected_state", "burn_time"),
+        (
+            "current_velocity",
+            "max_velocity",
+            "expected_state",
+        ),
         [
-            (0.0, 0.0, MotorBurnState, 0.0),
-            (100.0, 100.0, MotorBurnState, 0.00),
-            (53.9, 54.0, MotorBurnState, 0.00),  # tests that we don't switch states too early
+            (0.0, 0.0, MotorBurnState),
+            (100.0, 100.0, MotorBurnState),
+            (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
             (
                 53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
                 54.0,
                 CoastState,
-                0.00,
             ),  # tests that the threshold works
-            (600.2, 600.2, CoastState, MOTOR_BURN_TIME + 0.1),
-            (600.2, 600.2, MotorBurnState, MOTOR_BURN_TIME - 0.1),
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
             "decreasing_velocity_under_threshold",
             "decreasing_velocity_over_threshold",
-            "faulty_velocity_above_motor_burn_time",
-            "faulty_velocity_below_motor_burn_time",
         ],
     )
-    def test_update(
-        self, motor_burn_state, current_velocity, max_velocity, expected_state, burn_time
-    ):
+    def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(
-            burn_time * 1e9
-        )
+        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
@@ -225,10 +213,25 @@ class TestCoastState:
                 CoastState,
                 ServoExtension.MAX_EXTENSION,
             ),
+            (
+                TARGET_ALTITUDE - 5,
+                TARGET_ALTITUDE - 5,
+                10.0,
+                TARGET_ALTITUDE - 1,
+                CoastState,
+                ServoExtension.MIN_EXTENSION,
+            ),
             (100.0, 400.0, 140.1, 5000.1, FreeFallState, ServoExtension.MIN_EXTENSION),
             (200.1, 200.1, 0.0, 200.1, FreeFallState, ServoExtension.MIN_EXTENSION),
         ],
-        ids=["climbing", "just_descent", "overshoot_apogee", "faulty_speed", "at_apogee"],
+        ids=[
+            "climbing",
+            "just_descent",
+            "overshoot_apogee",
+            "undershoot_apogee",
+            "faulty_speed",
+            "at_apogee",
+        ],
     )
     def test_update(
         self,
@@ -268,16 +271,33 @@ class TestFreeFallState:
         assert free_fall_state.name == "FreeFallState"
 
     @pytest.mark.parametrize(
-        ("current_altitude", "expected_state"),
+        ("current_altitude", "vertical_velocity", "expected_state", "time_length"),
         [
-            (50.0, FreeFallState),
-            (19.0, FreeFallState),
-            (GROUND_ALTITUDE - 5, LandedState),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, 1.0),
+            (GROUND_ALTITUDE * 2, -(LANDED_SPEED * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE - 5, -(LANDED_SPEED * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE - 5, LANDED_SPEED - 1.0, LandedState, 1.0),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
+            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
         ],
-        ids=["falling", "almost_landed", "landed"],
+        ids=[
+            "falling",
+            "almost_landed",
+            "close_to_ground_but_falling",
+            "landed",
+            "slightly_short",
+            "too_long",
+        ],
     )
-    def test_update(self, free_fall_state, current_altitude, expected_state):
+    def test_update(
+        self, free_fall_state, current_altitude, vertical_velocity, expected_state, time_length
+    ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
+        free_fall_state.context.data_processor._vertical_velocities = [vertical_velocity]
+        free_fall_state.start_time_ns = 0
+        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
+            time_length * 1e9
+        )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION

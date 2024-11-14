@@ -17,6 +17,11 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
             return None
 
 
+def convert_to_seconds(timestamp: float) -> float | None:
+    """Converts nanoseconds to seconds"""
+    return timestamp / 1e9
+
+
 def convert_to_float(value: str) -> float | None:
     """Converts a value to a float, returning None if the conversion fails."""
     try:
@@ -96,6 +101,14 @@ def arg_parser() -> argparse.Namespace:
         help="Define the pathname of flight data to use in mock simulation. Interest Launch data"
         " is used by default",
         type=Path,
+        default=False,
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shows the display with much more data.",
+        action="store_true",
         default=False,
     )
 
