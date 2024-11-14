@@ -1,3 +1,4 @@
+import time
 from abc import ABC
 
 import pytest
@@ -17,6 +18,7 @@ from constants import (
     LOG_BUFFER_SIZE,
     MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
+    SERVO_DELAY,
     TARGET_ALTITUDE,
     ServoExtension,
 )
@@ -82,6 +84,8 @@ class TestState:
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -99,6 +103,8 @@ class TestStandbyState:
     def test_init(self, stand_by_state, airbrakes):
         assert stand_by_state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(stand_by_state.__class__, State)
 
     def test_name(self, stand_by_state):
@@ -139,6 +145,8 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
