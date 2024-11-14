@@ -29,6 +29,7 @@ class LoggedDataPacket(TypedDict, total=False):  # total=False means all fields 
     deltaThetaX: float | None
     deltaThetaY: float | None
     deltaThetaZ: float | None
+    scaledAmbientPressure: float | None
 
     # Estimated Data Packet Fields
     estOrientQuaternionW: float | None
