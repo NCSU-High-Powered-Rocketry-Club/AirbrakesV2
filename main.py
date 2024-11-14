@@ -95,9 +95,12 @@ def main(args: argparse.Namespace) -> None:
             # Update the airbrakes finite state machine
             airbrakes.update()
 
-            # if args.sim:
-            #     imu: SimIMU
-            #     imu.set_airbrakes_status(airbrakes.airbrakes_extended.value)
+            # If we are running a simulation we need to tell the data generator/sim imu what the current
+            # airbrakes extension is so that it can change the Cd based on that
+            # It is a bit of a hack, but it is better we do it this way rather than changing the entire
+            # structure of the program
+            if args.sim:
+                imu.set_airbrakes_status(airbrakes.current_extension)
 
             # Stop the sim when the data is exhausted:
             if args.mock and not airbrakes.imu._data_fetch_process.is_alive():

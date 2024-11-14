@@ -33,6 +33,7 @@ class DataGenerator:
         "_max_velocity",
         "_raw_rotation_manager",
         "_thrust_data",
+        "is_airbrakes_extended",
     )
 
     def __init__(self, config: SimulationConfig):
@@ -56,6 +57,8 @@ class DataGenerator:
         raw_manager, est_manager = self._get_rotation_managers()
         self._raw_rotation_manager: RotationManager = raw_manager
         self._est_rotation_manager: RotationManager = est_manager
+
+        self.is_airbrakes_extended = False
 
     @property
     def velocities(self) -> npt.NDArray:
@@ -410,11 +413,22 @@ class DataGenerator:
         # using speed of sound to find mach number
         mach_number = speed / np.sqrt(ratio_spec_heat * gas_constant * temp)
 
+        mach_numbers = (
+            self._config.airbrakes_retracted_cd[0]
+            if not self.is_airbrakes_extended
+            else self._config.airbrakes_extended_cd[0]
+        )
+        drag_coefficients = (
+            self._config.airbrakes_retracted_cd[1]
+            if not self.is_airbrakes_extended
+            else self._config.airbrakes_extended_cd[1]
+        )
+
         # getting the drag coefficient
         drag_coefficient = np.interp(
             mach_number,
-            self._config.drag_coefficient[0],
-            self._config.drag_coefficient[1],
+            mach_numbers,
+            drag_coefficients,
         )
 
         thrust_force = 0.0

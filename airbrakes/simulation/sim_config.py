@@ -14,7 +14,8 @@ class SimulationConfig:
         raw_time_step: np.float64,
         est_time_step: np.float64,
         motor: str,
-        drag_coefficient: npt.NDArray,
+        airbrake_retracted_cd: npt.NDArray,
+        airbrake_extended_cd: npt.NDArray,
         rocket_mass: np.float64,
         reference_area: np.float64,
         rocket_orientation: npt.NDArray[np.float64],
@@ -30,7 +31,8 @@ class SimulationConfig:
         self.motor = motor
 
         # Rocket properties
-        self.drag_coefficient = drag_coefficient  # coefficient of drag at mach numbers
+        self.airbrakes_retracted_cd = airbrake_retracted_cd  # coefficient of drag at mach numbers
+        self.airbrakes_extended_cd = airbrake_extended_cd
         self.rocket_mass = rocket_mass  # This is wetted mass (including propellant weight)
         self.reference_area = reference_area
 
@@ -50,7 +52,8 @@ FULL_SCALE_CONFIG = SimulationConfig(
     est_time_step=np.float64(0.002),
     motor="AeroTech_L1940X",
     # drag_coefficient=np.array([[0.1, 0.3, 0.5, 0.7], [0.3565, 0.3666, 0.3871, 0.41499]]),
-    drag_coefficient=np.array([[0.1, 1], [0.29, 0.29]]),
+    airbrake_retracted_cd=np.array([[0.1, 1], [0.29, 0.29]]),
+    airbrake_extended_cd=np.array([[0.1, 1], [0.49, 0.49]]),
     rocket_mass=np.float64(17.6),
     reference_area=np.float64(0.01929),
     air_temperature=np.float64(25),
@@ -63,7 +66,8 @@ SUB_SCALE_CONFIG = SimulationConfig(
     raw_time_step=np.float64(0.001),
     est_time_step=np.float64(0.002),
     motor="AeroTech_J500G",
-    drag_coefficient=np.array([[0.05, 0.2, 0.3], [0.41, 0.4175, 0.425]]),
+    airbrake_retracted_cd=np.array([[0.05, 0.2, 0.3], [0.41, 0.4175, 0.425]]),
+    airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.51, 0.5175, 0.525]]),
     rocket_mass=np.float64(5.954),
     reference_area=np.float64(0.008205),
     air_temperature=np.float64(15),
