@@ -37,6 +37,8 @@ class RawDataPacket(IMUDataPacket):
     deltaThetaX: float | None = None
     deltaThetaY: float | None = None
     deltaThetaZ: float | None = None
+    # pressure in mbar
+    scaledAmbientPressure: float | None = None
 
 
 class EstimatedDataPacket(IMUDataPacket):
