@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from airbrakes.hardware.imu import IMU
 from airbrakes.simulation.data_generator import DataGenerator
-from constants import MAX_QUEUE_SIZE
+from constants import MAX_QUEUE_SIZE, ServoExtension
 
 
 class SimIMU(IMU):
@@ -46,8 +46,9 @@ class SimIMU(IMU):
             args=(config,),
         )
 
-        # Makes a boolean value that is shared between processes
+        # Makes boolean values that are shared between processes
         self._running = multiprocessing.Value("b", False)
+        self._airbrakes_extended = multiprocessing.Value("b", False)
 
     @staticmethod
     def _update_timestamp(current_timestamp: np.float64, config: SimulationConfig) -> np.float64:
@@ -85,6 +86,13 @@ class SimIMU(IMU):
         # This would happen if the input current timestamp is not a multiple of the raw
         # or estimated time steps, or if there is a rounding/floating point error.
         raise ValueError("Could not update timestamp, time stamp is invalid")
+
+    # def set_airbrakes_status(self, servo_extension: ServoExtension) -> None:
+    #     """
+    #     Sets the value of the shared boolean that indicates whether the airbrakes are extended.
+    #     :param extended: The value to set the boolean to.
+    #     """
+    #     self._airbrakes_extended.value = servo_extension == ServoExtension.MAX_EXTENSION or servo_extension == ServoExtension.
 
     def _fetch_data_loop(self, config: SimulationConfig) -> None:
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated

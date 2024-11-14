@@ -95,6 +95,10 @@ def main(args: argparse.Namespace) -> None:
             # Update the airbrakes finite state machine
             airbrakes.update()
 
+            # if args.sim:
+            #     imu: SimIMU
+            #     imu.set_airbrakes_status(airbrakes.airbrakes_extended.value)
+
             # Stop the sim when the data is exhausted:
             if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
                 break
