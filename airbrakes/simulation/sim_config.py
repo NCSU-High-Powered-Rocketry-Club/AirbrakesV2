@@ -45,12 +45,13 @@ class SimulationConfig:
         self.launch_rod_direction = launch_rod_direction
 
 
-FULL_SCALE_CONFIG = SimulationConfig(  # 2018.99
+FULL_SCALE_CONFIG = SimulationConfig(
     raw_time_step=np.float64(0.001),
     est_time_step=np.float64(0.002),
     motor="AeroTech_L1940X",
-    drag_coefficient=np.array([[0.1, 0.3, 0.5, 0.7], [0.3565, 0.3666, 0.3871, 0.41499]]),
-    rocket_mass=np.float64(15.856),
+    # drag_coefficient=np.array([[0.1, 0.3, 0.5, 0.7], [0.3565, 0.3666, 0.3871, 0.41499]]),
+    drag_coefficient=np.array([[0.1, 1], [0.29, 0.29]]),
+    rocket_mass=np.float64(17.6),
     reference_area=np.float64(0.01929),
     air_temperature=np.float64(25),
     rocket_orientation=np.array([0, 0, -1]),

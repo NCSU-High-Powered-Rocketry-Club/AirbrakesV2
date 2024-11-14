@@ -33,8 +33,8 @@ class SimIMU(IMU):
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
-        # This limits the queue size to a very high limit, because the data generator will
-        # generate all the data before the imu reads it
+        # This limits the queue size to a very high limit
+        # TODO: should be smaller limit
         self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
             MAX_QUEUE_SIZE
         )

@@ -294,12 +294,12 @@ class DataGenerator:
             return self._last_raw_packet
 
         # updates the estimated rotation manager, if we are after motor burn phase
+        velocity_ratio = self._last_velocities[2] / self._max_velocity
         if (
             self._last_velocities[2]
             < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
-            velocity_ratio = self._last_velocities[2] / self._max_velocity
             self._est_rotation_manager.update_orientation(velocity_ratio)
 
         # calculates the timestamp for this packet (in seconds)
@@ -312,6 +312,10 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
+        # adding randomness to compensated acceleration
+        comp_rand = (0.3 + velocity_ratio * 2) * random.uniform(-1, 1)
+        compensated_accel += comp_rand
+
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],
             force_accelerations[1],
