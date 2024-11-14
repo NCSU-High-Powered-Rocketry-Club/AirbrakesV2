@@ -177,7 +177,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {"SIMULATION" if self._mock else "STANDBY"} INFO {'=' * 15}{RESET}",   # noqa: E501
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
