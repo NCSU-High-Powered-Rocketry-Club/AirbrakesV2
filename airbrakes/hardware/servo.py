@@ -25,7 +25,7 @@ class Servo:
             layer that allows the Servo class to work across different hardware platforms or with
             different GPIO libraries (e.g., RPi.GPIO or pigpio).
         """
-        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
+        self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
         # Sets up the servo with the specified GPIO pin number
         # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
