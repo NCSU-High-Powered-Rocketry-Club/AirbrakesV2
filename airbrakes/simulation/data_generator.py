@@ -437,7 +437,14 @@ class DataGenerator:
         if timestamp <= self._thrust_data[0][-1]:
             thrust_force = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
 
-        drag_force = 0.5 * air_density * self._config.reference_area * drag_coefficient * speed**2
+        # reference area based on if airbrakes is extended or not
+        reference_area = (
+            self._config.reference_area
+            if not self.is_airbrakes_extended
+            else self._config.airbrakes_reference_area + self._config.reference_area
+        )
+
+        drag_force = 0.5 * air_density * reference_area * drag_coefficient * speed**2
 
         return np.array([thrust_force, drag_force])
 

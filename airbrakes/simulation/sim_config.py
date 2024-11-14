@@ -22,6 +22,7 @@ class SimulationConfig:
         launch_rod_angle: npt.NDArray[np.float64],
         launch_rod_direction: npt.NDArray[np.float64],
         air_temperature: np.float64,
+        airbrakes_reference_area: np.float64,
     ):
         # Time steps for data packet generation in the simulation
         self.raw_time_step = raw_time_step
@@ -35,6 +36,7 @@ class SimulationConfig:
         self.airbrakes_extended_cd = airbrake_extended_cd
         self.rocket_mass = rocket_mass  # This is wetted mass (including propellant weight)
         self.reference_area = reference_area
+        self.airbrakes_reference_area = airbrakes_reference_area
 
         # Atmospheric properties
         self.air_temperature = air_temperature  # ground temperature, in celcius
@@ -56,6 +58,7 @@ FULL_SCALE_CONFIG = SimulationConfig(
     airbrake_extended_cd=np.array([[0.1, 1], [0.49, 0.49]]),
     rocket_mass=np.float64(17.6),
     reference_area=np.float64(0.01929),
+    airbrakes_reference_area=np.float64(0.01),
     air_temperature=np.float64(25),
     rocket_orientation=np.array([0, 0, -1]),
     launch_rod_angle=np.array([5]),
@@ -70,6 +73,7 @@ SUB_SCALE_CONFIG = SimulationConfig(
     airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.51, 0.5175, 0.525]]),
     rocket_mass=np.float64(5.954),
     reference_area=np.float64(0.008205),
+    airbrakes_reference_area=np.float64(0.01),
     air_temperature=np.float64(15),
     rocket_orientation=np.array([-1, 0, 0]),
     launch_rod_angle=np.array([5]),

@@ -93,8 +93,9 @@ class SimIMU(IMU):
         :param servo_extension: The extension of the airbrakes servo.
         """
         # Sets the shared boolean to True if the servo extension is at max extension or max no buzz
-        self._airbrakes_extended.value = (
-            servo_extension in (ServoExtension.MAX_EXTENSION, ServoExtension.MAX_NO_BUZZ)
+        self._airbrakes_extended.value = servo_extension in (
+            ServoExtension.MAX_EXTENSION,
+            ServoExtension.MAX_NO_BUZZ,
         )
 
     def _fetch_data_loop(self, config: SimulationConfig) -> None:
