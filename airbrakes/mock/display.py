@@ -32,6 +32,7 @@ class FlightDisplay:
     INTERRUPTED_END = "interrupted"
 
     __slots__ = (
+        "_airbrakes",
         "_coast_time",
         "_convergence_height",
         "_convergence_time",
@@ -39,14 +40,13 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_launch_time",
+        "_mock",
         "_processes",
+        "_start_time",
         "_thread_target",
-        "_airbrakes",
+        "_verbose",
         "end_sim_interrupted",
         "end_sim_natural",
-        "_start_time",
-        "_verbose",
-        "_mock",
     )
 
     def __init__(
@@ -193,9 +193,9 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",
-                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",
-                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",
+                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
