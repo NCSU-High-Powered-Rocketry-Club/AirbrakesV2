@@ -197,9 +197,12 @@ class Logger:
                 "state": state,
                 "extension": extension,
             }
+
             # Convert the imu data packet to a dictionary
             # Using to_builtins() is much faster than asdict() for some reason
-            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
+            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(
+                imu_data_packet, enc_hook=self._convert_unknown_type
+            )
             logged_fields.update(imu_data_packet_dict)
 
             # Get the processed data packet fields:
