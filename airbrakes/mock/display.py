@@ -1,5 +1,6 @@
 """File to handle the display of real-time flight data in the terminal."""
 
+import argparse
 import multiprocessing
 import threading
 import time
@@ -34,6 +35,7 @@ class FlightDisplay:
 
     __slots__ = (
         "_airbrakes",
+        "_args",
         "_coast_time",
         "_convergence_height",
         "_convergence_time",
@@ -48,11 +50,10 @@ class FlightDisplay:
         "_verbose",
         "end_sim_interrupted",
         "end_sim_natural",
-        "_args",
     )
 
     def __init__(
-        self, airbrakes: "AirbrakesContext", start_time: float, args 
+        self, airbrakes: "AirbrakesContext", start_time: float, args: argparse.Namespace
     ) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
@@ -62,8 +63,6 @@ class FlightDisplay:
         self._airbrakes = airbrakes
         self._start_time = start_time
         self._args = args
-        # self._mock = mock
-        # self._verbose = verbose
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
@@ -135,8 +134,11 @@ class FlightDisplay:
             if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
                 self._update_display(self.STATE_END)
                 break
+            # Don't print the flight data if we are in debug mode
             if not self._args.debug:
                 self._update_display(False)
+            else:
+                break
 
     def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
         """
@@ -153,6 +155,13 @@ class FlightDisplay:
 
         data_processor = self._airbrakes.data_processor
         apogee_predictor = self._airbrakes.apogee_predictor
+
+        if data_processor._last_data_packet:
+            invalid_fields = data_processor._last_data_packet.invalid_fields
+            if invalid_fields:
+                invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
+        else:
+            invalid_fields = "N/A"
 
         # Set the launch time if it hasn't been set yet:
         if not self._launch_time and self._airbrakes.state.name == "MotorBurnState":
@@ -180,7 +189,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {"SIMULATION" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {"SIMULATION" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",  # noqa: E501
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
@@ -205,6 +214,7 @@ class FlightDisplay:
                     f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
                     f"Log buffer size:           {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Invalid fields:            {G}{invalid_fields}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )

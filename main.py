@@ -75,12 +75,10 @@ def main(args: argparse.Namespace) -> None:
         airbrakes.start()  # Start the IMU and logger processes
 
         # Setup our flight display
-        # Don't print the flight data if we are in debug mode
-        if not args.debug:
-            # This is what prints the flight data to the console in real time, we only do
-            # it when running the sim because printing a lot of things can significantly slow down
-            # the program
-            flight_display.start()
+        # This is what prints the flight data to the console in real time, we only do
+        # it when running the sim because printing a lot of things can significantly slow down
+        # the program
+        flight_display.start()
 
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
@@ -99,8 +97,7 @@ def main(args: argparse.Namespace) -> None:
             # hit the condition above, but if the data isn't exhausted, we will stop it here.
             flight_display.end_sim_natural.set()
     finally:
-        if args.mock and not args.debug:
-            flight_display.stop()
+        flight_display.stop()
         airbrakes.stop()
 
 

@@ -83,10 +83,7 @@ class IMU:
         # stuck waiting for the process to finish. A more technical explanation:
         # .put() is blocking and if the queue is full, it keeps waiting for the queue to be empty,
         # and thus the process never .joins().
-        try:
-            self.get_imu_data_packets()
-        except Exception as e:
-            pass
+        self.get_imu_data_packets()
         self._data_fetch_process.join()
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
