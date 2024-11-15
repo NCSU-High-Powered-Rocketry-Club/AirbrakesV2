@@ -80,10 +80,15 @@ class IMU:
         """
         self._running.value = False
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
-        # stuck waiting for the process to finish. A more technical explanation:
-        # .put() is blocking and if the queue is full, it keeps waiting for the queue to be empty,
-        # and thus the process never .joins().
-        self.get_imu_data_packets()
+        # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
+        # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
+        # be empty, and thus the process never .joins().
+        # Case 2: The other process finishes up before we call the below method, so there might be
+        # nothing in the queue, and then calling get_imu_data_packet() will block the main process
+        # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
+        with contextlib.suppress(multiprocessing.TimeoutError):
+            self.get_imu_data_packets()
+
         self._data_fetch_process.join()
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
@@ -94,7 +99,7 @@ class IMU:
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
             available, it will be None.
         """
-        return self._data_queue.get()
+        return self._data_queue.get(timeout=1)
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
