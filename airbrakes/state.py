@@ -149,11 +149,9 @@ class CoastState(State):
             if not self.airbrakes_extended:
                 self.context.extend_airbrakes()
                 self.airbrakes_extended = True
-        else:
-            # If our prediction is not overshooting, retract the airbrakes
-            if self.airbrakes_extended:
-                self.context.retract_airbrakes()
-                self.airbrakes_extended = False
+        elif self.airbrakes_extended:
+            self.context.retract_airbrakes()
+            self.airbrakes_extended = False
 
         # if our velocity is close to zero or negative, we are in free fall.
         if data.vertical_velocity <= 0:
