@@ -1,0 +1,13 @@
+# Make sure that the additional_dependencies here match pyproject.toml
+
+ci:
+    autofix_prs: false
+
+repos:
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.7.3'
+    hooks:
+    - id: ruff  # Runs the Ruff linter
+      name: ruff linter
+    - id: ruff-format
+      name: ruff formatter

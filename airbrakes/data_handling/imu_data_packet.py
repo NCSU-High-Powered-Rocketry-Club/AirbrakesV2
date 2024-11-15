@@ -17,8 +17,9 @@ class IMUDataPacket(msgspec.Struct):
 
 class RawDataPacket(IMUDataPacket):
     """
-    Represents a raw data packet from the IMU. These values are exactly what the IMU read, without any processing.
-    It contains a timestamp and the raw values of the acceleration, and gyroscope data.
+    Represents a raw data packet from the IMU. These values are exactly what the IMU read, without
+    any processing. It contains a timestamp and the raw values of the acceleration, and gyroscope
+    data.
     """
 
     # scaledAccel units are in "g" (9.81 m/s^2)
@@ -36,6 +37,8 @@ class RawDataPacket(IMUDataPacket):
     deltaThetaX: float | None = None
     deltaThetaY: float | None = None
     deltaThetaZ: float | None = None
+    # pressure in mbar
+    scaledAmbientPressure: float | None = None
 
 
 class EstimatedDataPacket(IMUDataPacket):
