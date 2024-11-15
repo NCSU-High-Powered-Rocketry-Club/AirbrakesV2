@@ -19,22 +19,27 @@ class RotationManager:
         "_formula_consts",
         "_last_orientation",
         "_orientation",
-        "_vertical",
+        "_wgs_vertical",
         "_zenith",
     )
 
     def __init__(
-        self, orientation: npt.NDArray, rod_angle_of_attack: np.float64, rod_direction: np.float64
+        self,
+        wgs_vertical: npt.NDArray,
+        launch_rod_pitch: np.float64,
+        launch_rod_azimuth: np.float64,
     ) -> None:
         """
-        Initializes a RotationManager instance with a specified orientation. This orientation
+        Initializes a RotationManager instance with a specified WGS vertical direction vector. This
         serves as the reference direction for rotation operations.
 
-        :param orientation: the vertical orientation of the rocket
+        :param wgs_vertical: the WGS vertical direction vector of the rocket.
+        :param launch_rod_pitch: pitch angle of the launch rod, in degrees.
+        :param launch_rod_azimuth: the azimuth rotation of the launch rod, in degrees.
         """
-        self._vertical: npt.NDArray = orientation
-        self._zenith: np.float64 = np.float64((rod_angle_of_attack * np.pi) / 180)
-        self._azimuth: np.float64 = np.float64((rod_direction * np.pi) / 180)
+        self._wgs_vertical: npt.NDArray = wgs_vertical
+        self._zenith: np.float64 = np.float64((launch_rod_pitch * np.pi) / 180)
+        self._azimuth: np.float64 = np.float64((launch_rod_azimuth * np.pi) / 180)
         self._last_orientation: R | None = None
         self._orientation: R | None = None
         self._formula_consts: npt.NDArray = self._initialize_rotation_formula()
@@ -74,14 +79,14 @@ class RotationManager:
         # We want to convert the azimuth and zenith values into a scipy rotation object
 
         # Step 1: We have to declare that the orientation of the rocket is vertical
-        aligned_orientation = R.align_vectors([self._vertical], [[0, 0, 1]])[0]
+        aligned_orientation = R.align_vectors([self._wgs_vertical], [[0, 0, 1]])[0]
 
         # Step 2: Get the axis that the zenith rotates around, it changes depending on orientation.
         zenith_rotation_axis = np.array(
             [
-                np.abs(self._vertical[2]),
-                np.abs(self._vertical[0]),
-                np.abs(self._vertical[1]),
+                np.abs(self._wgs_vertical[2]),
+                np.abs(self._wgs_vertical[0]),
+                np.abs(self._wgs_vertical[1]),
             ]
         )
 
@@ -89,7 +94,7 @@ class RotationManager:
         zenith_rotation = R.from_rotvec(self._zenith * zenith_rotation_axis)
 
         # Step 4: rotate by azimuth
-        azimuth_rotation = R.from_rotvec(self._azimuth * np.array(self._vertical))
+        azimuth_rotation = R.from_rotvec(self._azimuth * np.array(self._wgs_vertical))
 
         # Step 5: Combined rotation: aligned orientation, azimuth rotation, and zenith rotation
         orientation = azimuth_rotation * zenith_rotation * aligned_orientation
@@ -104,12 +109,13 @@ class RotationManager:
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
     ) -> npt.NDArray:
         """
-        Uses the acceleration due to drag and thrust to find the compensated acceleration
+        Uses the acceleration due to drag and thrust in Earth frame to find the
+        compensated acceleration
 
         :param drag_acceleration: scalar value of acceleration due to drag
         :param thrust_acceleration: scalar value of acceleration due to thrust
 
-        :return: the compensated acceleration in the vehicle frame of reference
+        :return: the compensated acceleration in the vehicle frame.
         """
         thrust_drag_accel = thrust_acceleration - drag_acceleration
         compensated_accel = self._scalar_to_vector(thrust_drag_accel)
@@ -127,13 +133,15 @@ class RotationManager:
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
     ) -> npt.NDArray:
         """
-        Uses the compensated acceleration to find the linear acceleration
+        Uses the acceleration due to drag and thrust in Earth frame to find the
+        linear acceleration
 
         :param drag_acceleration: scalar value of acceleration due to drag
         :param thrust_acceleration: scalar value of acceleration due to thrust
 
-        :return: the linear acceleration in the vehicle frame of reference
+        :return: the linear acceleration in vehicle frame
         """
+        # gets compensated acceleration
         comp_accel = self.calculate_compensated_accel(thrust_acceleration, drag_acceleration)
         # apply gravity
         gravity_accel_vector = self._orientation.apply([0, 0, GRAVITY])
@@ -141,55 +149,53 @@ class RotationManager:
 
     def calculate_delta_theta(self) -> npt.NDArray:
         """
-        Calculates the delta theta in the vehicle frame of reference, with units in
-        radians.
+        Calculates the delta theta in the vehicle frame, with units in radians.
 
-        :return: numpy array containing the delta thetas, in [x, y, z] format.
+        :return: numpy array containing the delta thetas, in [x, y, z] format, in vehicle frame.
         """
-        # first have to take the current orientation and the last orientation that is in
-        # Earth -> vehicle reference and convert to vehicle -> Earth reference
+        # first have to take the current orientation and the last orientation, which rotates
+        # from Earth frame to vehicle frame, and convert to rotations from vehicle frame to
+        # Earth frame.
         imu_adjusted_orientation = self._orientation.inv()
         imu_adjusted_last_orientation = self._last_orientation.inv()
 
-        # Calculate the relative rotation from last orientation to the current orientation
+        # Calculate the relative rotation from the new inverted rotations
         relative_rotation = imu_adjusted_last_orientation.inv() * imu_adjusted_orientation
 
-        # Converts the relative rotation to a rotation vector
+        # Expresses as a rotation vector
         return relative_rotation.as_rotvec()
 
-    def calculate_rotated_accelerations(self, compensated_acceleration: npt.NDArray) -> np.float64:
+    def calculate_rotated_accelerations(self, compensated_acceleration: npt.NDArray) -> npt.NDArray:
         """
         Calculates the rotated acceleration vector with the compensated acceleration. Rotates from
-        vehicle frame of reference to Earth frame of reference.
+        vehicle frame to Earth frame.
 
-        :param compensated_acceleration: compensated acceleration in the vehicle-frame reference.
+        :param compensated_acceleration: compensated acceleration in the vehicle frame.
 
-        :return: float containing vertical acceleration with respect to Earth.
+        :return: numpy array containing the acceleration vector in Earth frame.
         """
-        # rotation needed to align the IMU
+        # inverts the rotation, so it rotates from vehicle frame to Earth frame.
         imu_adjusted_orientation = self._orientation.inv()
 
         return imu_adjusted_orientation.apply([compensated_acceleration])[0]
 
     def calculate_imu_quaternions(self) -> npt.NDArray:
         """
-        Adjusts the given orientation to align with the IMU's reference frame, where
-        [0, 0, -1] is vertical, and returns a quaternions.
-
-        :param orientation: A scipy Rotation object representing the current orientation.
-
-        :return: A quaternion adjusted to the IMU's frame.
+        Calculates the quaternion orientation of the rocket.
+        :return: numpy array containing the quaternion, in [w, x, y, z] format.
         """
-        # rotation needed to align the IMU
+        # flips and inverts the rotation, so that the quaternions are represented
+        # accurately, reflecting what the IMU would output.
         imu_alignment = R.align_vectors([[0, 0, 1]], [[0, 0, -1]])[0]
         imu_quaternion_rotation = imu_alignment * self._orientation.inv()
 
-        # convert to quaternion
+        # returns the rotation as a quaternion
         return imu_quaternion_rotation.as_quat(scalar_first=True)
 
     def _scalar_to_vector(self, scalar: np.float64) -> npt.NDArray:
         """
-        Converts a scalar value to a vector, where it will align with the vertical orientation.
+        Converts a scalar value to a vector, where it will align with the designated
+        wgs vertical vector.
 
         :param scalar: a float representing the scalar to be converted
 
@@ -197,7 +203,7 @@ class RotationManager:
         """
         vector = np.zeros(3)
         # Gets index of non-zero value in the vertical orientation
-        index = np.argmax(np.abs(self._vertical))
+        index = np.argmax(np.abs(self._wgs_vertical))
         # Place the scalar in the appropriate position, and with the correct sign
-        vector[index] = scalar * self._vertical[index]
+        vector[index] = scalar * self._wgs_vertical[index]
         return vector

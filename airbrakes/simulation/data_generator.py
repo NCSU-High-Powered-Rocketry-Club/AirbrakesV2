@@ -30,7 +30,7 @@ class DataGenerator:
         "_last_est_packet",
         "_last_raw_packet",
         "_last_velocities",
-        "_max_velocity",
+        "_max_vertical_velocity",
         "_raw_rotation_manager",
         "_thrust_data",
         "is_airbrakes_extended",
@@ -47,7 +47,7 @@ class DataGenerator:
         self._last_est_packet: EstimatedDataPacket | None = None
         self._last_raw_packet: RawDataPacket | None = None
         self._last_velocities: npt.NDArray = np.array([0.0, 0.0, 0.0])
-        self._max_velocity: np.float64 = np.float64(0.1)
+        self._max_vertical_velocity: np.float64 = np.float64(0.1)
         self._eff_exhaust_velocity: np.float64 | None = None
 
         # loads thrust curve
@@ -61,16 +61,16 @@ class DataGenerator:
         self.is_airbrakes_extended = False
 
     @property
-    def velocities(self) -> npt.NDArray:
-        """Returns the last calculated velocities of the rocket"""
+    def velocity_vector(self) -> npt.NDArray:
+        """Returns the last calculated velocity vectors of the rocket"""
         return self._last_velocities
 
     def _get_random(self, identifier: str) -> np.float64:
         """
         Gets a random value for the selected identifier, using the standard deviation if given.
-        :param identifier: string that matches a config variable in sim_config.yaml
+        :param identifier: string that matches a config variable in sim_config.py
         :return: float containing a random value for the selected identifier, between
-        the bounds specified in the config
+        the bounds specified in the config.
         """
         parameters = getattr(self._config, identifier)
         if len(parameters) == 1:
@@ -87,7 +87,7 @@ class DataGenerator:
     def _load_thrust_curve(self) -> npt.NDArray:
         """
         Loads the thrust curve from the motor specified in the configs.
-        :return: numpy array containing tuples with the time and thrust at that time.
+        :return: numpy array containing lists with the time, and thrust at that time.
         """
         # gets the path of the csv based on the config file
         csv_path = Path(f"airbrakes/simulation/thrust_curves/{self._config.motor}.csv")
@@ -99,13 +99,13 @@ class DataGenerator:
         start_flag = False  # flag to identify when the metadata/header rows are skipped
 
         with csv_path.open(mode="r", newline="") as thrust_csv:
-            propellant_weight = None
+            propellant_mass = None
             reader = csv.reader(thrust_csv)
 
             for row in reader:
-                # We want to store the propellant weight
-                if row[0] == "propellant weight:":
-                    propellant_weight = float(row[1]) / 1000  # we want in kg
+                # We want to store the propellant mass
+                if row[0] == "propellant mass:":
+                    propellant_mass = float(row[1]) / 1000  # we want in kg
                     continue
 
                 # Start appending data only after the header row
@@ -114,7 +114,7 @@ class DataGenerator:
                     continue  # Skip header row itself
 
                 if start_flag:
-                    # Convert time and thrust values to floats and append as a tuple
+                    # Convert time and thrust values to floats and append to list
                     time = float(row[0])
                     thrust = float(row[1])
                     motor_timestamps.append(time)
@@ -123,29 +123,29 @@ class DataGenerator:
             # for future mass calculations, finding total impulse
             total_impulse = np.trapezoid(motor_thrusts, motor_timestamps)
             # calculating effective exhaust velocity (constant)
-            self._eff_exhaust_velocity = total_impulse / propellant_weight
+            self._eff_exhaust_velocity = total_impulse / propellant_mass
 
         return np.array([motor_timestamps, motor_thrusts])
 
     def _get_rotation_managers(self) -> npt.NDArray:
         """
         Creates and initializes both rotation managers that will be used to contain any rotation
-        related math and methods for the raw and estimated data.
+        related math, and methods for the raw and estimated data.
 
         :return: a 2 element array containing the raw rotation manager and the estimated rotation
         manager, respectively.
         """
-        launch_rod_angle = self._get_random("launch_rod_angle")
-        launch_rod_direction = self._get_random("launch_rod_direction")
+        launch_rod_pitch = self._get_random("launch_rod_pitch")
+        launch_rod_azimuth = self._get_random("launch_rod_azimuth")
         raw_manager = RotationManager(
-            self._config.rocket_orientation,
-            launch_rod_angle,
-            launch_rod_direction,
+            self._config.wgs_vertical,
+            launch_rod_pitch,
+            launch_rod_azimuth,
         )
         est_manager = RotationManager(
-            self._config.rocket_orientation,
-            launch_rod_angle,
-            launch_rod_direction,
+            self._config.wgs_vertical,
+            launch_rod_pitch,
+            launch_rod_azimuth,
         )
         return np.array([raw_manager, est_manager])
 
@@ -229,11 +229,11 @@ class DataGenerator:
 
         if (
             self._last_velocities[2]
-            < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            < self._max_vertical_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
-            velocity_ratio = self._last_velocities[2] / self._max_velocity
-            self._raw_rotation_manager.update_orientation(velocity_ratio)
+            vertical_velocity_ratio = self._last_velocities[2] / self._max_vertical_velocity
+            self._raw_rotation_manager.update_orientation(vertical_velocity_ratio)
 
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_raw_packet.timestamp / 1e9) + time_step
@@ -297,13 +297,13 @@ class DataGenerator:
             return self._last_raw_packet
 
         # updates the estimated rotation manager, if we are after motor burn phase
-        velocity_ratio = self._last_velocities[2] / self._max_velocity
+        vertical_velocity_ratio = self._last_velocities[2] / self._max_vertical_velocity
         if (
             self._last_velocities[2]
-            < self._max_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            < self._max_vertical_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
-            self._est_rotation_manager.update_orientation(velocity_ratio)
+            self._est_rotation_manager.update_orientation(vertical_velocity_ratio)
 
         # calculates the timestamp for this packet (in seconds)
         next_timestamp = (self._last_est_packet.timestamp / 1e9) + time_step
@@ -316,7 +316,7 @@ class DataGenerator:
             force_accelerations[1],
         )
         # adding randomness to compensated acceleration
-        comp_rand = (0.3 + velocity_ratio * 2) * random.uniform(-1, 1)
+        comp_rand = (0.3 + vertical_velocity_ratio * 2) * random.uniform(-1, 1)
         compensated_accel += comp_rand
 
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
@@ -325,8 +325,8 @@ class DataGenerator:
         )
 
         # gets velocity and finds updated altitude
-        vert_velocity = self._calculate_velocities(compensated_accel, time_step)[2]
-        new_altitude = self._last_est_packet.estPressureAlt + vert_velocity * time_step
+        vertical_velocity = self._calculate_velocities(compensated_accel, time_step)[2]
+        new_altitude = self._last_est_packet.estPressureAlt + vertical_velocity * time_step
 
         delta_theta = self._est_rotation_manager.calculate_delta_theta()
         angular_rates = delta_theta / time_step
@@ -361,35 +361,35 @@ class DataGenerator:
 
     def _calculate_velocities(self, comp_accel: npt.NDArray, time_diff: np.float64) -> np.float64:
         """
-        Calculates the velocity of the rocket based on the compensated acceleration.
-        Integrates that acceleration to get the velocity.
+        Calculates the velocity vector of the rocket based on the compensated acceleration vector.
+        Integrates that acceleration vector to get the velocity vector.
 
         :param: numpy array containing the compensated acceleration vector
 
-        :return: the velocity of the rocket
+        :return: the velocity vector of the rocket
         """
         # gets the rotated acceleration vector
-        accelerations = self._est_rotation_manager.calculate_rotated_accelerations(comp_accel)
-        # gets vertical part of the gravity vector
-        accelerations[2] = deadband(accelerations[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
+        rotated_accel = self._est_rotation_manager.calculate_rotated_accelerations(comp_accel)
+        # deadbands the wgs vertical part of the rotated acceleration
+        rotated_accel[2] = deadband(rotated_accel[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
 
-        # Integrate the accelerations to get the velocity
-        velocities = self._last_velocities + accelerations * time_diff
+        # Integrate the rotated accelerations to get the velocity vector
+        velocity_vector = self._last_velocities + rotated_accel * time_diff
 
-        # updates the last vertical velocity
-        self._last_velocities = velocities
+        # updates the last velocity vector
+        self._last_velocities = velocity_vector
 
         # updates max velocity
-        self._max_velocity = max(velocities[2], self._max_velocity)
+        self._max_vertical_velocity = max(velocity_vector[2], self._max_vertical_velocity)
 
-        return velocities
+        return velocity_vector
 
-    def _calculate_forces(self, timestamp, velocities) -> npt.NDArray:
+    def _calculate_forces(self, timestamp, velocity_vector) -> npt.NDArray:
         """
         Calculates the thrust force and drag force, and returns them in an array
 
         :param timestamp: the timestamp of the rocket to calcuate the net forces at
-        :param velocities: numpy array containing the x, y, and z velocities
+        :param velocity_vector: numpy array containing velocity vector
 
         :return: a 2 element numpy array containing thrust force and drag force, respectively.
         Thrust is positive, drag is negative.
@@ -401,34 +401,36 @@ class DataGenerator:
         # last altitude
         altitude = self._last_est_packet.estPressureAlt
         # calculate the magnitude of velocity
-        speed = np.linalg.norm(velocities)
-        # temperature using troposphere gradient
+        speed = np.linalg.norm(velocity_vector)
+        # temperature using temperature gradient
         temp = self._config.air_temperature + 273.15 + gradient * altitude
 
-        # air density formula for troposphere gradient
+        # air density formula, derived from ideal gas law
         air_density = 1.225 * (temp / (self._config.air_temperature + 273.15)) ** (
             -GRAVITY / (gas_constant * gradient) - 1
         )
 
         # using speed of sound to find mach number
-        mach_number = speed / np.sqrt(ratio_spec_heat * gas_constant * temp)
+        current_mach_number = speed / np.sqrt(ratio_spec_heat * gas_constant * temp)
 
-        mach_numbers = (
+        # gets the mach number vs drag coefficient lookup table in the config, depending on if
+        # airbrakes are currently extended or not.
+        mach_number_indices = (
             self._config.airbrakes_retracted_cd[0]
             if not self.is_airbrakes_extended
             else self._config.airbrakes_extended_cd[0]
         )
-        drag_coefficients = (
+        drag_coefficient_lookup_table = (
             self._config.airbrakes_retracted_cd[1]
             if not self.is_airbrakes_extended
             else self._config.airbrakes_extended_cd[1]
         )
 
-        # getting the drag coefficient
+        # getting the current drag coefficient
         drag_coefficient = np.interp(
-            mach_number,
-            mach_numbers,
-            drag_coefficients,
+            current_mach_number,
+            mach_number_indices,
+            drag_coefficient_lookup_table,
         )
 
         thrust_force = 0.0
@@ -450,14 +452,14 @@ class DataGenerator:
 
     def _calculate_mass(self, timestamp: np.float64) -> np.float64:
         """
-        Calculates the weight of the rocket at any given timestamp. The weight loss is found
+        Calculates the mass of the rocket at any given timestamp. The mass loss is found
         by calculating the mass flow rate using effective exhaust velocity.
         :param timestamp: current timestamp of the rocket, in seconds
         :return: the current mass of the rocket, in kilograms
         """
         # find current thrust
         current_thrust = np.interp(timestamp, self._thrust_data[0], self._thrust_data[1])
-        # getting thrust curve up to current timestamp
+        # getting the thrust curve of the motor, up to current timestamp
         mask = self._thrust_data[0] <= timestamp
         time_values = np.append(self._thrust_data[0][mask], [timestamp])
         thrust_values = np.append(self._thrust_data[1][mask], [current_thrust])

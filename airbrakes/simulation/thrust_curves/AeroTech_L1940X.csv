@@ -1,7 +1,7 @@
 "motor:","AeroTech L1940X"
 "contributor:","Mike Caplinger"
 "details:","https://www.thrustcurve.org/simfiles/60ac84458dc4640004c24eb6/"
-"propellant weight:",1825
+"propellant mass:",1825
 "Time (s)","Thrust (N)"
 0.02,48.137
 0.04,2107.333

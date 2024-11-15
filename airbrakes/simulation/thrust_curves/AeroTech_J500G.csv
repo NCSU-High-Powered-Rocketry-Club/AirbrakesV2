@@ -1,7 +1,7 @@
 "motor:","AeroTech L1940X"
 "contributor:","Will Sanderson"
 "details:","https://www.thrustcurve.org/motors/AeroTech/J500G/"
-"propellant weight:",363
+"propellant mass:",363
 "Time (s)","Thrust (N)"
 0.0134378, 40.2458
 0.0335946, 724.425

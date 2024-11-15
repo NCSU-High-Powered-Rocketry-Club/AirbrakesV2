@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 class SimulationConfig:
     """
-    config class for simulation
+    Configuration settings for the simulation. Includes presets of full-scale and sub-scale flights.
     """
 
     def __init__(
@@ -18,9 +18,9 @@ class SimulationConfig:
         airbrake_extended_cd: npt.NDArray,
         rocket_mass: np.float64,
         reference_area: np.float64,
-        rocket_orientation: npt.NDArray[np.float64],
-        launch_rod_angle: npt.NDArray[np.float64],
-        launch_rod_direction: npt.NDArray[np.float64],
+        wgs_vertical: npt.NDArray[np.float64],
+        launch_rod_pitch: npt.NDArray[np.float64],
+        launch_rod_azimuth: npt.NDArray[np.float64],
         air_temperature: np.float64,
         airbrakes_reference_area: np.float64,
     ):
@@ -42,11 +42,11 @@ class SimulationConfig:
         self.air_temperature = air_temperature  # ground temperature, in celcius
 
         # Rocket orientation on the launch pad
-        self.rocket_orientation = rocket_orientation
+        self.wgs_vertical = wgs_vertical
 
         # Config for randomness in the simulation
-        self.launch_rod_angle = launch_rod_angle
-        self.launch_rod_direction = launch_rod_direction
+        self.launch_rod_pitch = launch_rod_pitch
+        self.launch_rod_azimuth = launch_rod_azimuth
 
 
 FULL_SCALE_CONFIG = SimulationConfig(
@@ -60,9 +60,9 @@ FULL_SCALE_CONFIG = SimulationConfig(
     reference_area=np.float64(0.01929),
     airbrakes_reference_area=np.float64(0.01),
     air_temperature=np.float64(25),
-    rocket_orientation=np.array([0, 0, -1]),
-    launch_rod_angle=np.array([5]),
-    launch_rod_direction=np.array([90]),
+    wgs_vertical=np.array([0, 0, -1]),
+    launch_rod_pitch=np.array([5]),
+    launch_rod_azimuth=np.array([90]),
 )
 
 SUB_SCALE_CONFIG = SimulationConfig(
@@ -71,13 +71,13 @@ SUB_SCALE_CONFIG = SimulationConfig(
     motor="AeroTech_J500G",
     airbrake_retracted_cd=np.array([[0.05, 0.2, 0.3], [0.41, 0.4175, 0.425]]),
     airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.51, 0.5175, 0.525]]),
-    rocket_mass=np.float64(5.954),
+    rocket_mass=np.float64(6.391),
     reference_area=np.float64(0.008205),
-    airbrakes_reference_area=np.float64(0.01),
+    airbrakes_reference_area=np.float64(0.00487741),
     air_temperature=np.float64(15),
-    rocket_orientation=np.array([-1, 0, 0]),
-    launch_rod_angle=np.array([5]),
-    launch_rod_direction=np.array([0]),
+    wgs_vertical=np.array([-1, 0, 0]),
+    launch_rod_pitch=np.array([5]),
+    launch_rod_azimuth=np.array([0]),
 )
 
 
