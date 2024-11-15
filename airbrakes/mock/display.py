@@ -48,10 +48,11 @@ class FlightDisplay:
         "_verbose",
         "end_sim_interrupted",
         "end_sim_natural",
+        "_args",
     )
 
     def __init__(
-        self, airbrakes: "AirbrakesContext", start_time: float, mock: bool, verbose: bool
+        self, airbrakes: "AirbrakesContext", start_time: float, args 
     ) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
@@ -60,8 +61,9 @@ class FlightDisplay:
         init(autoreset=True)  # Automatically reset colors after each print
         self._airbrakes = airbrakes
         self._start_time = start_time
-        self._mock = mock
-        self._verbose = verbose
+        self._args = args
+        # self._mock = mock
+        # self._verbose = verbose
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
@@ -130,10 +132,11 @@ class FlightDisplay:
             if self.end_sim_interrupted.is_set():
                 self._update_display(self.INTERRUPTED_END)
                 break
-            if not self._mock and self._airbrakes.state.name == "MotorBurnState":
+            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
                 self._update_display(self.STATE_END)
                 break
-            self._update_display(False)
+            if not self._args.debug:
+                self._update_display(False)
 
     def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
         """
@@ -177,7 +180,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {"SIMULATION" if self._mock else "STANDBY"} INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {"SIMULATION" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
@@ -193,7 +196,7 @@ class FlightDisplay:
         ]
 
         # Adds additional info to the display if -v was specified
-        if self._verbose:
+        if self._args.verbose:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
