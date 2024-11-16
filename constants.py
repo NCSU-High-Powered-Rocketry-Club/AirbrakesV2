@@ -22,10 +22,10 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.685
-    MAX_EXTENSION = 0.1
-    MIN_NO_BUZZ = -0.05
-    MAX_NO_BUZZ = 0.278
+    MIN_EXTENSION = -0.4
+    MAX_EXTENSION = 0.7
+    MIN_NO_BUZZ = -0.23
+    MAX_NO_BUZZ = 0.58
 
 
 # -------------------------------------------------------
@@ -112,7 +112,7 @@ INTEGRATION_TIME_STEP = 1.0 / 500.0
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 380  # m
+TARGET_ALTITUDE = 400  # m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
 
