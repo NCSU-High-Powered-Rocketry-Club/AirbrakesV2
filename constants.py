@@ -22,10 +22,10 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.685
-    MAX_EXTENSION = 0.1
-    MIN_NO_BUZZ = -0.05
-    MAX_NO_BUZZ = 0.278
+    MIN_EXTENSION = -0.4
+    MAX_EXTENSION = 0.7
+    MIN_NO_BUZZ = -0.23
+    MAX_NO_BUZZ = 0.58
 
 
 # -------------------------------------------------------

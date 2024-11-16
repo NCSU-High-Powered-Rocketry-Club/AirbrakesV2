@@ -3,6 +3,7 @@ the airbrakes."""
 
 import threading
 import time
+import warnings
 
 import gpiozero
 
@@ -35,6 +36,7 @@ class Servo:
         if pin_factory is None:
             gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
         else:
+            warnings.filterwarnings(message="To reduce servo jitter", action="ignore")
             gpiozero.Device.pin_factory = pin_factory
 
         self.servo = gpiozero.Servo(gpio_pin_number)

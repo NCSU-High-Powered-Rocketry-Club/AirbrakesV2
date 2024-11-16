@@ -1,11 +1,10 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import contextlib
-from functools import cached_property, lru_cache
 import multiprocessing
 import time
-from pathlib import Path
 import typing
+from pathlib import Path
 
 import pandas as pd
 
@@ -25,7 +24,7 @@ class MockIMU(IMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_log_file_path", "_needed_fields", "_headers")
+    __slots__ = ("_headers", "_log_file_path", "_needed_fields")
 
     def __init__(
         self,
@@ -78,8 +77,6 @@ class MockIMU(IMU):
 
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
-
-        print(self.get_launch_time())
 
     def _read_csv(
         self, chunksize: int | None = None, start_index: int = 0, usecols: list | None = None
