@@ -30,7 +30,7 @@ class FlightDisplay:
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
     NATURAL_END = "natural"
     INTERRUPTED_END = "interrupted"
-    STATE_END = "state"
+    STANDBY_END = "standby"
 
     __slots__ = (
         "_airbrakes",
@@ -40,7 +40,8 @@ class FlightDisplay:
         "_cpu_thread",
         "_cpu_usages",
         "_launch_file",
-        "_launch_time",
+        "_simulation_launch_time",
+        "_t_minus_launch_time",
         "_mock",
         "_processes",
         "_start_time",
@@ -62,7 +63,8 @@ class FlightDisplay:
         self._start_time = start_time
         self._mock = mock
         self._verbose = verbose
-        self._launch_time: int = 0  # Launch time from MotorBurnState
+        self._simulation_launch_time: int = 0  # Launch time from MotorBurnState
+        self._t_minus_launch_time: int = 0  # T-0 time from StandbyState
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
@@ -131,11 +133,46 @@ class FlightDisplay:
                 self._update_display(self.INTERRUPTED_END)
                 break
             if not self._mock and self._airbrakes.state.name == "MotorBurnState":
-                self._update_display(self.STATE_END)
+                self._update_display(self.STANDBY_END)
                 break
             self._update_display(False)
 
-    def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
+    def calculate_launch_time(self) -> int | None:
+        """
+        Calculates the launch time of the simulation.
+        :return: The launch time of the simulation.
+        """
+        # Just update our launch time, if it was set:
+        if self._simulation_launch_time:
+            current_timestamp = self._airbrakes.data_processor.current_timestamp
+            return current_timestamp - self._simulation_launch_time
+
+        # Just update our T-minus launch time, if it is a mock, and it was set:
+        if self._args.mock and self._t_minus_launch_time:
+            current_timestamp = self._airbrakes.data_processor.current_timestamp
+            return current_timestamp - self._t_minus_launch_time
+
+        # No launch time set yet, and we are in MotorBurnState:
+        if not self._simulation_launch_time and self._airbrakes.state.name == "MotorBurnState":
+            self._simulation_launch_time = self._airbrakes.state.start_time_ns
+            # Discard the pre-calculated motor burn time, since we have the real one now:
+            self._t_minus_launch_time = 0
+            return self._simulation_launch_time
+
+        # We are before launch (T-0)
+        if self._args.mock and not self._simulation_launch_time and not self._t_minus_launch_time:
+            current_timestamp = self._airbrakes.data_processor.current_timestamp
+            if current_timestamp is None:
+                return None
+            pre_calculated_motor_burn_time = self._airbrakes.imu.get_launch_time()
+            self._t_minus_launch_time = current_timestamp - pre_calculated_motor_burn_time
+            return self._t_minus_launch_time
+
+        return None
+
+    def _update_display(
+        self, end_sim: Literal["natural", "interrupted", "standby"] | bool = False
+    ) -> None:
         """
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
@@ -151,16 +188,23 @@ class FlightDisplay:
         data_processor = self._airbrakes.data_processor
         apogee_predictor = self._airbrakes.apogee_predictor
 
-        # Set the launch time if it hasn't been set yet:
-        if not self._launch_time and self._airbrakes.state.name == "MotorBurnState":
-            self._launch_time = self._airbrakes.state.start_time_ns
+        # Set the actual launch time if it hasn't been set yet:
+        launch_clock = self.calculate_launch_time()
+        # Format as T-MM:SS:ms if the launch_clock < 0, else format as T+MM:SS:ms
+        if launch_clock is not None:
+            launch_clock = abs(launch_clock)
+            launch_time = time.strftime("%M:%S", time.gmtime(launch_clock))
+            launch_time = f"T+{launch_time}" if self._simulation_launch_time else f"T-{launch_time}"
+        else:
+            launch_time = "N/A"
+        print(launch_time)
 
-        elif not self._coast_time and self._airbrakes.state.name == "CoastState":
+        if not self._coast_time and self._airbrakes.state.name == "CoastState":
             self._coast_time = self._airbrakes.state.start_time_ns
 
-        if self._launch_time:
+        if self._simulation_launch_time:
             time_since_launch = (
-                self._airbrakes.data_processor.current_timestamp - self._launch_time
+                self._airbrakes.data_processor.current_timestamp - self._simulation_launch_time
             ) * 1e-9
         else:
             time_since_launch = 0
@@ -229,7 +273,7 @@ class FlightDisplay:
                 print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
             case self.INTERRUPTED_END:
                 print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
-            case self.STATE_END:
+            case self.STANDBY_END:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
