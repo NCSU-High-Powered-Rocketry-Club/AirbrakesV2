@@ -149,16 +149,19 @@ class FlightDisplay:
         """
         # Just update our launch time, if it was set:
         if self._simulation_launch_time:
+            print("Simulation launch time")
             current_timestamp = self._airbrakes.data_processor.current_timestamp
             return current_timestamp - self._simulation_launch_time
 
         # Just update our T-minus launch time, if it is a mock, and it was set:
         if self._args.mock and self._t_minus_launch_time:
             current_timestamp = self._airbrakes.data_processor.current_timestamp
+            print("T-minus launch time", current_timestamp)
             return current_timestamp - self._t_minus_launch_time
 
         # No launch time set yet, and we are in MotorBurnState:
         if not self._simulation_launch_time and self._airbrakes.state.name == "MotorBurnState":
+            print("MotorBurnState")
             self._simulation_launch_time = self._airbrakes.state.start_time_ns
             # Discard the pre-calculated motor burn time, since we have the real one now:
             self._t_minus_launch_time = 0
@@ -166,6 +169,7 @@ class FlightDisplay:
 
         # We are before launch (T-0)
         if self._args.mock and not self._simulation_launch_time and not self._t_minus_launch_time:
+            print("Before launch")
             current_timestamp = self._airbrakes.data_processor.current_timestamp
             if current_timestamp is None:
                 return None
