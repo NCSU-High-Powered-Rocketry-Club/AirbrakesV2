@@ -1,5 +1,6 @@
 """File to handle the display of real-time flight data in the terminal."""
 
+import argparse
 import multiprocessing
 import threading
 import time
@@ -34,6 +35,7 @@ class FlightDisplay:
 
     __slots__ = (
         "_airbrakes",
+        "_args",
         "_coast_time",
         "_convergence_height",
         "_convergence_time",
@@ -43,6 +45,7 @@ class FlightDisplay:
         "_launch_time",
         "_mock",
         "_processes",
+        "_running",
         "_start_time",
         "_thread_target",
         "_verbose",
@@ -51,7 +54,7 @@ class FlightDisplay:
     )
 
     def __init__(
-        self, airbrakes: "AirbrakesContext", start_time: float, mock: bool, verbose: bool
+        self, airbrakes: "AirbrakesContext", start_time: float, args: argparse.Namespace
     ) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
@@ -60,8 +63,8 @@ class FlightDisplay:
         init(autoreset=True)  # Automatically reset colors after each print
         self._airbrakes = airbrakes
         self._start_time = start_time
-        self._mock = mock
-        self._verbose = verbose
+        self._running = False
+        self._args = args
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
@@ -91,6 +94,7 @@ class FlightDisplay:
         in the simulation. This should only be done *after* airbrakes.start() is called, because we
         need the process IDs.
         """
+        self._running = True
         self._processes = self.prepare_process_dict()
         self._cpu_usages = {name: 0.0 for name in self._processes}
         self._cpu_thread.start()
@@ -100,6 +104,7 @@ class FlightDisplay:
         """Stops the display thread. Similar to start(), this must be called *before*
         airbrakes.stop() is called to prevent psutil from raising a NoSuchProcess exception.
         """
+        self._running = False
         self._cpu_thread.join()
         self._thread_target.join()
 
@@ -107,7 +112,7 @@ class FlightDisplay:
         """Update CPU usage for each monitored process every `interval` seconds. This is run in
         another thread because polling for CPU usage is a blocking operation."""
         cpu_count = psutil.cpu_count()
-        while not self.end_sim_natural.is_set() and not self.end_sim_interrupted.is_set():
+        while self._running:
             for name, process in self._processes.items():
                 # interval=None is not recommended and can be inaccurate.
                 # We normalize the CPU usage by the number of CPUs to get average cpu usage,
@@ -123,17 +128,21 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
-        while True:
+        while self._running:
             if self.end_sim_natural.is_set():
                 self._update_display(self.NATURAL_END)
                 break
             if self.end_sim_interrupted.is_set():
                 self._update_display(self.INTERRUPTED_END)
                 break
-            if not self._mock and self._airbrakes.state.name == "MotorBurnState":
+            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
                 self._update_display(self.STATE_END)
                 break
-            self._update_display(False)
+            # Don't print the flight data if we are in debug mode
+            if not self._args.debug:
+                self._update_display(False)
+            else:
+                break
 
     def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
         """
@@ -150,6 +159,13 @@ class FlightDisplay:
 
         data_processor = self._airbrakes.data_processor
         apogee_predictor = self._airbrakes.apogee_predictor
+
+        if data_processor._last_data_packet:
+            invalid_fields = data_processor._last_data_packet.invalid_fields
+            if invalid_fields:
+                invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
+        else:
+            invalid_fields = "N/A"
 
         # Set the launch time if it hasn't been set yet:
         if not self._launch_time and self._airbrakes.state.name == "MotorBurnState":
@@ -177,7 +193,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} SIMULATION INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {"SIMULATION" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",  # noqa: E501
             f"Sim file:                  {C}{self._launch_file}{RESET}",
             f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
@@ -193,7 +209,7 @@ class FlightDisplay:
         ]
 
         # Adds additional info to the display if -v was specified
-        if self._verbose:
+        if self._args.verbose:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
@@ -202,6 +218,7 @@ class FlightDisplay:
                     f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
                     f"Log buffer size:           {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Invalid fields:            {G}{invalid_fields}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )

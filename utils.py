@@ -126,22 +126,13 @@ def arg_parser() -> argparse.Namespace:
 
     # Check if the user has passed any options that are only available in simulation mode:
     if (
-        any(
-            [
-                args.real_servo,
-                args.keep_log_file,
-                args.fast_simulation,
-                args.debug,
-                args.path,
-                args.sim,
-            ]
-        )
+        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.path, args.sim])
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, `--path`, "
-            "and `--sim` options are only available in simulation mode. Please pass `-m` or "
-            "`--mock` to run in simulation mode."
+            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--sim`, and `--path` "
+            "options are only available in simulation mode. Please pass `-m` or `--mock` "
+            "to run in simulation mode."
         )
 
     if args.sim and args.path:

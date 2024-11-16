@@ -22,10 +22,10 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.685
-    MAX_EXTENSION = 0.1
-    MIN_NO_BUZZ = -0.05
-    MAX_NO_BUZZ = 0.278
+    MIN_EXTENSION = -0.4
+    MAX_EXTENSION = 0.7
+    MIN_NO_BUZZ = -0.23
+    MAX_NO_BUZZ = 0.58
 
 
 # -------------------------------------------------------
@@ -89,8 +89,6 @@ TAKEOFF_VELOCITY = 10  # m/s
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
 MAX_VELOCITY_THRESHOLD = 0.04
-# seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
-MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
 MAX_FREE_FALL_LENGTH = 180.0  # seconds
@@ -114,9 +112,9 @@ INTEGRATION_TIME_STEP = 1.0 / 500.0
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 1700  # m (5,100 ft)
+TARGET_ALTITUDE = 400  # m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
-UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]
+UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # [0.0259, 0.00065]
