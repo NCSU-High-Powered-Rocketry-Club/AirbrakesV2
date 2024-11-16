@@ -112,7 +112,7 @@ INTEGRATION_TIME_STEP = 1.0 / 500.0
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 380  # m
+TARGET_ALTITUDE = 400  # m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
 

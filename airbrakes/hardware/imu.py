@@ -88,7 +88,8 @@ class IMU:
         with contextlib.suppress(multiprocessing.TimeoutError):
             self.get_imu_data_packets()
 
-        self._data_fetch_process.join()
+        with contextlib.suppress(multiprocessing.TimeoutError):
+            self._data_fetch_process.join(timeout=1)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
