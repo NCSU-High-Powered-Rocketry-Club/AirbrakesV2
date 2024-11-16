@@ -3,7 +3,6 @@
 import collections
 import contextlib
 import multiprocessing
-import signal
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
 # mscl is annoying and we really just have it installed on the pi
@@ -56,7 +55,7 @@ class IMU:
         self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency), name="IMU Process"
+            target=self._query_imu_for_data_packets, args=(port, frequency), name="IMU Process"
         )
 
     @property
@@ -115,14 +114,16 @@ class IMU:
 
         return data_packets
 
-    def _fetch_data_loop(self, port: str, frequency: int) -> None:
+    def _query_imu_for_data_packets(self, port: str, frequency: int) -> None:
         """
         The loop that fetches data from the IMU. It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         :param frequency: the frequency that the IMU is set to poll at
         """
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        with contextlib.suppress(KeyboardInterrupt):
+            self._fetch_data_loop(port, frequency)
+
+    def _fetch_data_loop(self, port: str, frequency: int) -> None:
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)

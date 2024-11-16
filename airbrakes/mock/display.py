@@ -45,6 +45,7 @@ class FlightDisplay:
         "_launch_time",
         "_mock",
         "_processes",
+        "_running",
         "_start_time",
         "_thread_target",
         "_verbose",
@@ -62,6 +63,7 @@ class FlightDisplay:
         init(autoreset=True)  # Automatically reset colors after each print
         self._airbrakes = airbrakes
         self._start_time = start_time
+        self._running = False
         self._args = args
         self._launch_time: int = 0  # Launch time from MotorBurnState
         self._coast_time: int = 0  # Coast time from CoastState
@@ -92,6 +94,7 @@ class FlightDisplay:
         in the simulation. This should only be done *after* airbrakes.start() is called, because we
         need the process IDs.
         """
+        self._running = True
         self._processes = self.prepare_process_dict()
         self._cpu_usages = {name: 0.0 for name in self._processes}
         self._cpu_thread.start()
@@ -101,6 +104,7 @@ class FlightDisplay:
         """Stops the display thread. Similar to start(), this must be called *before*
         airbrakes.stop() is called to prevent psutil from raising a NoSuchProcess exception.
         """
+        self._running = False
         self._cpu_thread.join()
         self._thread_target.join()
 
@@ -108,7 +112,7 @@ class FlightDisplay:
         """Update CPU usage for each monitored process every `interval` seconds. This is run in
         another thread because polling for CPU usage is a blocking operation."""
         cpu_count = psutil.cpu_count()
-        while not self.end_sim_natural.is_set() and not self.end_sim_interrupted.is_set():
+        while self._running:
             for name, process in self._processes.items():
                 # interval=None is not recommended and can be inaccurate.
                 # We normalize the CPU usage by the number of CPUs to get average cpu usage,
@@ -124,7 +128,7 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
-        while True:
+        while self._running:
             if self.end_sim_natural.is_set():
                 self._update_display(self.NATURAL_END)
                 break
