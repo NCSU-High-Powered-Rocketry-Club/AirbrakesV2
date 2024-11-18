@@ -65,8 +65,13 @@ TEST_LOGS_PATH = Path("test_logs")
 STOP_SIGNAL = "STOP"
 
 
+# Formula for converting number of packets to seconds and vice versa:
+# If N = total number of packets, T = total time in seconds:
+# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 1000 = 1500 Hz
+# T = N/f => T = N/1500
+
 # Don't log more than x packets for StandbyState and LandedState
-IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
+IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
 # sure we don't lose data
 LOG_BUFFER_SIZE = 5000
@@ -112,7 +117,7 @@ INTEGRATION_TIME_STEP = 1.0 / 500.0
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 10000000  # m  Actual openrocket height is 524m
+TARGET_ALTITUDE = 10  # m  Actual openrocket height is 524m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
 
