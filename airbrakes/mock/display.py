@@ -35,6 +35,7 @@ class FlightDisplay:
 
     __slots__ = (
         "_airbrakes",
+        "_apogee_at_convergence",
         "_args",
         "_coast_time",
         "_convergence_height",
@@ -69,6 +70,7 @@ class FlightDisplay:
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
+        self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
         # Prepare the processes for monitoring in the simulation:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -128,23 +130,23 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
-        while self._running:
-            if self.end_sim_natural.is_set():
-                self._update_display(self.NATURAL_END)
-                break
-            if self.end_sim_interrupted.is_set():
-                self._update_display(self.INTERRUPTED_END)
-                break
-            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
-                self._update_display(self.STATE_END)
-                break
-            # Don't print the flight data if we are in debug mode
-            if not self._args.debug:
-                self._update_display(False)
-            else:
-                break
+        # Don't print the flight data if we are in debug mode
+        if self._args.debug:
+            return
 
-    def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
+        while self._running:
+            self._update_display(False)
+
+        if self.end_sim_natural.is_set():
+            self._update_display(self.NATURAL_END)
+        if self.end_sim_interrupted.is_set():
+            self._update_display(self.INTERRUPTED_END)
+        if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
+            self._update_display(self.STATE_END)
+
+    def _update_display(
+        self, end_sim: Literal["natural", "interrupted", "state"] | bool = False
+    ) -> None:
         """
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
@@ -181,15 +183,10 @@ class FlightDisplay:
         else:
             time_since_launch = 0
 
-        if (
-            self._coast_time
-            and not self._convergence_time
-            and self._airbrakes.apogee_predictor.apogee
-        ):
-            self._convergence_time = (
-                self._airbrakes.data_processor.current_timestamp - self._coast_time
-            ) * 1e-9
+        if self._coast_time and not self._convergence_time and apogee_predictor.apogee:
+            self._convergence_time = (data_processor.current_timestamp - self._coast_time) * 1e-9
             self._convergence_height = data_processor.current_altitude
+            self._apogee_at_convergence = apogee_predictor.apogee
 
         # Prepare output
         output = [
@@ -213,12 +210,13 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
-                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
-                    f"Log buffer size:           {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Invalid fields:            {G}{invalid_fields}{G}{RESET}",
+                    f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+                    f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Invalid fields:                  {G}{invalid_fields}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )

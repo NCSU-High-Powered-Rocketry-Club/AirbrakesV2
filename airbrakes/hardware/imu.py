@@ -89,7 +89,7 @@ class IMU:
             self.get_imu_data_packets()
 
         with contextlib.suppress(multiprocessing.TimeoutError):
-            self._data_fetch_process.join(timeout=1)
+            self._data_fetch_process.join(timeout=2)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
@@ -99,7 +99,7 @@ class IMU:
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
             available, it will be None.
         """
-        return self._data_queue.get(timeout=1)
+        return self._data_queue.get(timeout=3)
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
