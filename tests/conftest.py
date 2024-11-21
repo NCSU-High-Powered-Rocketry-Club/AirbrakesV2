@@ -60,11 +60,13 @@ def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
 
 @pytest.fixture
 def random_data_mock_imu():
+    # A mock IMU that outputs random data packets
     return RandomDataIMU(port=PORT, frequency=FREQUENCY)
 
 
 @pytest.fixture
 def idle_mock_imu():
+    # A sleeping IMU that doesn't output any data packets
     return IdleIMU(port=PORT, frequency=FREQUENCY)
 
 
