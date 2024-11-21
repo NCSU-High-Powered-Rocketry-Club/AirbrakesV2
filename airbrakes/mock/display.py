@@ -4,10 +4,12 @@ import argparse
 import multiprocessing
 import threading
 import time
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import psutil
 from colorama import Fore, Style, init
+
+from constants import DisplayEndingType
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -29,9 +31,6 @@ class FlightDisplay:
 
     # Initialize Colorama
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
-    NATURAL_END = "natural"
-    INTERRUPTED_END = "interrupted"
-    STATE_END = "state"
 
     __slots__ = (
         "_airbrakes",
@@ -134,19 +133,22 @@ class FlightDisplay:
         if self._args.debug:
             return
 
+        # Update the display as long as the program is running:
         while self._running:
-            self._update_display(False)
+            self._update_display()
 
+            # If we are running a real flight, we will stop the display when the rocket takes off:
+            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
+                self._update_display(DisplayEndingType.TAKEOFF)
+                break
+
+        # The program has ended, so we print the final display, depending on how it ended:
         if self.end_sim_natural.is_set():
-            self._update_display(self.NATURAL_END)
+            self._update_display(DisplayEndingType.NATURAL)
         if self.end_sim_interrupted.is_set():
-            self._update_display(self.INTERRUPTED_END)
-        if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
-            self._update_display(self.STATE_END)
+            self._update_display(DisplayEndingType.INTERRUPTED)
 
-    def _update_display(
-        self, end_sim: Literal["natural", "interrupted", "state"] | bool = False
-    ) -> None:
+    def _update_display(self, end_type: DisplayEndingType | None = None) -> None:
         """
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
@@ -235,16 +237,16 @@ class FlightDisplay:
         print("\n".join(output))
 
         # Move the cursor up for the next update, if the simulation hasn't ended:
-        if not end_sim:
+        if not end_type:
             print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
 
         # Print the end of simulation message if the simulation has ended
-        match end_sim:
-            case self.NATURAL_END:
+        match end_type:
+            case DisplayEndingType.NATURAL:
                 print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
-            case self.INTERRUPTED_END:
+            case DisplayEndingType.INTERRUPTED:
                 print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
-            case self.STATE_END:
+            case DisplayEndingType.TAKEOFF:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
