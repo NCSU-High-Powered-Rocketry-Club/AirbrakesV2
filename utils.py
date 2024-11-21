@@ -104,17 +104,28 @@ def arg_parser() -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shows the display with much more data.",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:
     if (
-        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.debug, args.path])
+        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.path])
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--debug`, and `--path` "
+            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, and `--path` "
             "options are only available in simulation mode. Please pass `-m` or `--mock` "
             "to run in simulation mode."
         )
+
+    if args.verbose and args.debug:
+        parser.error("The `--verbose` and `--debug` options cannot be used together.")
 
     return args

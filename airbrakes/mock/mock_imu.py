@@ -1,5 +1,6 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
+import ast
 import collections
 import contextlib
 import multiprocessing
@@ -95,6 +96,12 @@ class MockIMU(IMU):
 
         return data_packets
 
+    @staticmethod
+    def _convert_invalid_fields(value):
+        if not value:
+            return None
+        return ast.literal_eval(value)  # Convert string to list
+
     def _read_file(
         self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
     ) -> None:
@@ -112,7 +119,11 @@ class MockIMU(IMU):
             # at which the log buffer starts. That index will be used as the start point.
             # Read the CSV file in chunks to avoid loading the entire file into memory
             chunk_size = LOG_BUFFER_SIZE + 1  # The chunk size is close to our log buffer size.
-            for chunk in pd.read_csv(log_file_path, chunksize=chunk_size):
+            for chunk in pd.read_csv(
+                log_file_path,
+                chunksize=chunk_size,
+                converters={"invalid_fields": self._convert_invalid_fields},
+            ):
                 # Calculate the time difference between consecutive rows
                 chunk["time_diff"] = chunk["timestamp"].diff()
                 # Find the index where the time difference exceeds 1 second
@@ -136,6 +147,7 @@ class MockIMU(IMU):
             engine="c",
             usecols=valid_columns,
             na_filter=False,
+            converters={"invalid_fields": self._convert_invalid_fields},
         )
         for row in df.itertuples(index=False):
             start_time = time.time()

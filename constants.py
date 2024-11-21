@@ -1,6 +1,6 @@
 """Contains the constants used in the airbrakes module"""
 
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 # -------------------------------------------------------
@@ -9,7 +9,7 @@ from pathlib import Path
 
 # The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
 # for PWM
-SERVO_PIN = 12
+SERVO_PIN = 25
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
 
@@ -22,8 +22,23 @@ class ServoExtension(Enum):
     straining past the physical bounds of the air brakes.
     """
 
-    MIN_EXTENSION = -0.5
-    MAX_EXTENSION = 0.5
+    MIN_EXTENSION = -0.4
+    MAX_EXTENSION = 0.7
+    MIN_NO_BUZZ = -0.23
+    MAX_NO_BUZZ = 0.58
+
+
+class DisplayEndingType(StrEnum):
+    """
+    Enum that represents the different ways the display can end.
+    """
+
+    NATURAL = "natural"
+    """The display ends naturally, when the rocket lands, in a mock sim."""
+    INTERRUPTED = "interrupted"
+    """The display ends because the user interrupted the program."""
+    TAKEOFF = "takeoff"
+    """The display ends because the rocket took off."""
 
 
 # -------------------------------------------------------
@@ -45,6 +60,9 @@ MAX_QUEUE_SIZE = 100000
 # This is used for the mock imu to limit the queue size to a more realistic value
 SIMULATION_MAX_QUEUE_SIZE = 65
 
+# The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
+PROCESS_TIMEOUT = 3
+
 # -------------------------------------------------------
 # Data Processing Configuration
 # -------------------------------------------------------
@@ -63,8 +81,13 @@ TEST_LOGS_PATH = Path("test_logs")
 STOP_SIGNAL = "STOP"
 
 
+# Formula for converting number of packets to seconds and vice versa:
+# If N = total number of packets, T = total time in seconds:
+# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 1000 = 1500 Hz
+# T = N/f => T = N/1500
+
 # Don't log more than x packets for StandbyState and LandedState
-IDLE_LOG_CAPACITY = 5000  # This is equal to (x/2 + x = 3x/2 = 5000 => x = 3333 = 3.33 secs of data)
+IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
 # Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
 # sure we don't lose data
 LOG_BUFFER_SIZE = 5000
@@ -87,8 +110,6 @@ TAKEOFF_VELOCITY = 10  # m/s
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
 MAX_VELOCITY_THRESHOLD = 0.04
-# seconds (this is slightly higher than the actual burn time, which is 2.2 seconds)
-MOTOR_BURN_TIME = 2.6
 
 # Free fall to Landing:
 MAX_FREE_FALL_LENGTH = 180.0  # seconds
@@ -112,9 +133,10 @@ INTEGRATION_TIME_STEP = 1.0 / 500.0
 GRAVITY = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 1700  # m (5,100 ft)
+TARGET_ALTITUDE = 1000  # m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
-APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 0.02 seconds == 50Hz
+APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
-UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]
+UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # [0.0259, 0.00065]
+# UNCERTAINTY_THRESHOLD = [0.1, 0.75]  # [0.0259, 0.00065]

@@ -69,18 +69,16 @@ def main(args: argparse.Namespace) -> None:
     # The context that will manage the airbrakes state machine
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
 
-    flight_display = FlightDisplay(airbrakes=airbrakes, start_time=sim_time_start)
+    flight_display = FlightDisplay(airbrakes, sim_time_start, args)
 
     try:
         airbrakes.start()  # Start the IMU and logger processes
 
-        # Setup our flight display, only for mock sims:
-        # Don't print the flight data if we are in debug mode
-        if args.mock and not args.debug:
-            # This is what prints the flight data to the console in real time, we only do
-            # it when running the sim because printing a lot of things can significantly slow down
-            # the program
-            flight_display.start()
+        # Setup our flight display
+        # This is what prints the flight data to the console in real time, we only do
+        # it when running the sim because printing a lot of things can significantly slow down
+        # the program
+        flight_display.start()
 
         # This is the main loop that will run until we press Ctrl+C
         while not airbrakes.shutdown_requested:
@@ -99,18 +97,18 @@ def main(args: argparse.Namespace) -> None:
             # hit the condition above, but if the data isn't exhausted, we will stop it here.
             flight_display.end_sim_natural.set()
     finally:
-        if args.mock and not args.debug:
-            flight_display.stop()
+        flight_display.stop()
         airbrakes.stop()
 
 
 if __name__ == "__main__":
     # Command line args:
+    # python main.py -v: Shows the display with much more data
     # python main.py -m: Runs a simulation on your computer.
     # python main.py -m -r: Runs a simulation on your computer with the real servo.
     # python main.py -m -l: Runs a simulation on your computer and keeps the log file after the
     # simulation stops.
     # python main.py -m -f: Runs a simulation on your computer at full speed.
-    # python main.py -m -d: Runs a simulation on your computer in debug mode.
+    # python main.py -m -d: Runs a simulation on your computer in debug mode (doesn't show display).
     args = arg_parser()  # Load all command line options
     main(args)
