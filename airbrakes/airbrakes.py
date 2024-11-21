@@ -133,6 +133,9 @@ class AirbrakesContext:
         # Update the state machine based on the latest processed data
         self.state.update()
 
+        # Gets what we have currently set the extension of the airbrakes to
+        self.current_extension = self.servo.current_extension
+
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
             self.state.name,
@@ -151,14 +154,12 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
-        self.current_extension = ServoExtension.MAX_EXTENSION
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the airbrakes to the minimum extension.
         """
         self.servo.set_retracted()
-        self.current_extension = ServoExtension.MIN_EXTENSION
 
     def predict_apogee(self) -> None:
         """
