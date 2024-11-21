@@ -1,6 +1,6 @@
 """Contains the constants used in the airbrakes module"""
 
-from enum import Enum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 # -------------------------------------------------------
@@ -28,6 +28,19 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 0.58
 
 
+class DisplayEndingType(StrEnum):
+    """
+    Enum that represents the different ways the display can end.
+    """
+
+    NATURAL = "natural"
+    """The display ends naturally, when the rocket lands, in a mock sim."""
+    INTERRUPTED = "interrupted"
+    """The display ends because the user interrupted the program."""
+    TAKEOFF = "takeoff"
+    """The display ends because the rocket took off."""
+
+
 # -------------------------------------------------------
 # IMU Configuration
 # -------------------------------------------------------
@@ -46,6 +59,9 @@ RAW_DESCRIPTOR_SET = 128
 MAX_QUEUE_SIZE = 100000
 # This is used for the mock imu to limit the queue size to a more realistic value
 SIMULATION_MAX_QUEUE_SIZE = 15
+
+# The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
+PROCESS_TIMEOUT = 3
 
 # -------------------------------------------------------
 # Data Processing Configuration
