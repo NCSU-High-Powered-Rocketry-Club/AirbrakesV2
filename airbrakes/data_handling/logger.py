@@ -1,6 +1,7 @@
 """Module for logging data to a CSV file in real time."""
 
 import csv
+import sys
 import multiprocessing
 import signal
 from collections import deque
@@ -14,6 +15,8 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
+
+from faster_fifo import Queue
 
 
 class Logger:
@@ -66,7 +69,9 @@ class Logger:
         # self._log_queue: multiprocessing.Queue[LoggedDataPacket | Literal["STOP"]] = (
         #     multiprocessing.Queue()
         # )
-        self._log_queue: Queue[LoggedDataPacket | Literal["STOP"]] = Queue()
+        self._log_queue: Queue[LoggedDataPacket | Literal["STOP"]] = Queue(
+            max_size_bytes=1000*1000*10  # 10 Mb
+        )
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
@@ -161,16 +166,17 @@ class Logger:
 
                 self._log_counter = 0  # Reset the counter for other states
 
-            # Put the message in the queue
-            # self._log_queue.put(logged_data_packet)
-        self._log_queue.put_many(logged_data_packets)
+        # Put the message in the queue
+        if not self._log_buffer:
+            self._log_queue.put_many(logged_data_packets)
 
     def _log_the_buffer(self):
         """
         Adds the log buffer to the queue, so it can be logged to file.
         """
-        for buffered_message in self._log_buffer:
-            self._log_queue.put(buffered_message)
+        self._log_queue.put_many(list(self._log_buffer))
+        # for buffered_message in self._log_buffer:
+        #     self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
     def _prepare_log_dict(
@@ -249,8 +255,12 @@ class Logger:
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get()
+                message_fields = self._log_queue.get_many(timeout=sys.maxsize)
                 # If the message is the stop signal, break out of the loop
-                if message_fields == STOP_SIGNAL:
-                    break
-                writer.writerow(self._truncate_floats(message_fields))
+                for message_field in message_fields:
+                    if message_field == STOP_SIGNAL:
+                        break
+                    writer.writerow(self._truncate_floats(message_field))
+                else:
+                    continue
+                break

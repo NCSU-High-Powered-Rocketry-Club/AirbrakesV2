@@ -1,6 +1,7 @@
 """Module for predicting apogee"""
 
 import multiprocessing
+import sys
 import signal
 from collections import deque
 from typing import Literal
@@ -20,6 +21,8 @@ from constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
+
+from faster_fifo import Queue
 
 
 class LookupTable(msgspec.Struct):
@@ -62,9 +65,10 @@ class ApogeePredictor:
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
         self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
-        self._prediction_queue: multiprocessing.Queue[
-            deque[ProcessedDataPacket] | Literal["STOP"]
-        ] = multiprocessing.Queue()
+        # self._prediction_queue: multiprocessing.Queue[
+        #     deque[ProcessedDataPacket] | Literal["STOP"]
+        # ] = multiprocessing.Queue()
+        self._prediction_queue: Queue[deque[ProcessedDataPacket] | Literal["STOP"]] = Queue()
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
@@ -120,7 +124,7 @@ class ApogeePredictor:
         """
         # The .copy() below is critical to ensure the data is actually transferred correctly to
         # the apogee prediction process.
-        self._prediction_queue.put(processed_data_packets.copy())
+        self._prediction_queue.put_many(list(processed_data_packets.copy()))
 
     # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
     @staticmethod
@@ -216,9 +220,9 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets = self._prediction_queue.get()
+            data_packets = self._prediction_queue.get_many(timeout=sys.maxsize)
 
-            if data_packets == STOP_SIGNAL:
+            if STOP_SIGNAL in data_packets:
                 break
 
             self._extract_processed_data_packets(data_packets)
@@ -235,7 +239,7 @@ class ApogeePredictor:
                     self._predict_apogee()
                 last_run_length = len(self._accelerations)
 
-    def _extract_processed_data_packets(self, data_packets) -> None:
+    def _extract_processed_data_packets(self, data_packets: list[ProcessedDataPacket]) -> None:
         """
         Extracts the processed data packets from the data packets and appends them to the
         respective internal lists.

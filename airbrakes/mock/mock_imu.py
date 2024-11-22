@@ -75,27 +75,6 @@ class MockIMU(IMU):
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        """
-        Returns all available data packets from the IMU.
-        This method differs from the actual IMU in that it uses the faster-fifo library to get
-        multiple data packets, which is many times faster than retrieving them one by one.
-        :return: A deque containing the specified number of data packets
-        """
-        # We use a deque because it's faster than a list for popping from the left
-        data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the deque which we
-        # return
-        try:
-            dp = self._data_queue.get_many(
-                block=False, max_messages_to_get=SIMULATION_MAX_QUEUE_SIZE
-            )
-        except Exception:
-            dp = []
-        data_packets.extend(dp)
-
-        return data_packets
-
     @staticmethod
     def _convert_invalid_fields(value):
         if not value:

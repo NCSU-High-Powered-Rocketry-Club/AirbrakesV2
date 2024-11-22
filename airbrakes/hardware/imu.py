@@ -14,8 +14,11 @@ from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
+
 )
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT, RAW_DESCRIPTOR_SET
+from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT, RAW_DESCRIPTOR_SET, SIMULATION_MAX_QUEUE_SIZE
+
+from faster_fifo import Queue
 
 
 class IMU:
@@ -48,8 +51,8 @@ class IMU:
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE
+        self._data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE
         )
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
@@ -102,14 +105,21 @@ class IMU:
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
+        This method differs from the actual IMU in that it uses the faster-fifo library to get
+        multiple data packets, which is many times faster than retrieving them one by one.
         :return: A deque containing the specified number of data packets
         """
         # We use a deque because it's faster than a list for popping from the left
         data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the dequeue which we
+        # While there is data in the queue, get the data packet and add it to the deque which we
         # return
-        while not self._data_queue.empty():
-            data_packets.append(self.get_imu_data_packet())
+        try:
+            dp = self._data_queue.get_many(
+                block=False, max_messages_to_get=SIMULATION_MAX_QUEUE_SIZE
+            )
+        except Exception:
+            dp = []
+        data_packets.extend(dp)
 
         return data_packets
 

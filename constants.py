@@ -58,7 +58,7 @@ RAW_DESCRIPTOR_SET = 128
 # The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
 # This is used for the mock imu to limit the queue size to a more realistic value
-SIMULATION_MAX_QUEUE_SIZE = 65
+SIMULATION_MAX_QUEUE_SIZE = 15
 
 # The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
 PROCESS_TIMEOUT = 3
@@ -103,7 +103,7 @@ ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_VELOCITY = 10  # m/s
+TAKEOFF_VELOCITY = 1  # m/s
 
 # MotorBurn to Coasting:
 
@@ -138,5 +138,6 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
+# UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # [0.0259, 0.00065]
-# UNCERTAINTY_THRESHOLD = [0.1, 0.75]  # [0.0259, 0.00065]
+# UNCERTAINTY_THRESHOLD = [1, 75]  # [0.0259, 0.00065]

@@ -7,6 +7,7 @@ from collections import deque
 from typing import Literal
 
 import pytest
+import faster_fifo
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -62,7 +63,7 @@ class TestLogger:
         assert logger.log_path.parent.name == "logs"
 
         # Test if all attributes are created correctly
-        assert isinstance(logger._log_queue, multiprocessing.queues.Queue)
+        assert isinstance(logger._log_queue, faster_fifo.Queue)
         assert isinstance(logger._log_process, multiprocessing.Process)
 
         # Test that the process is not running
@@ -126,7 +127,7 @@ class TestLogger:
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(self):
             """Monkeypatched method for testing."""
@@ -154,7 +155,7 @@ class TestLogger:
 
     def test_logger_loop_exception_raised(self, monkeypatch):
         """Tests whether the Logger loop properly propogates unknown exceptions."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(_):
             """Monkeypatched method for testing."""
