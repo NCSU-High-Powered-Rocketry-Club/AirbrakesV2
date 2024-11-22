@@ -1,9 +1,9 @@
 """Module for logging data to a CSV file in real time."""
 
 import csv
-import sys
 import multiprocessing
 import signal
+import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
@@ -15,8 +15,6 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
-
-from faster_fifo import Queue
 
 
 class Logger:
@@ -70,7 +68,7 @@ class Logger:
         #     multiprocessing.Queue()
         # )
         self._log_queue: Queue[LoggedDataPacket | Literal["STOP"]] = Queue(
-            max_size_bytes=1000*1000*10  # 10 Mb
+            max_size_bytes=1000 * 1000 * 10  # 10 Mb
         )
 
         # Start the logging process

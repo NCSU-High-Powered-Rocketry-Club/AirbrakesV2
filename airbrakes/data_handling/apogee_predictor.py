@@ -1,7 +1,6 @@
 """Module for predicting apogee"""
 
 import multiprocessing
-import sys
 import signal
 from collections import deque
 from typing import Literal
@@ -9,6 +8,7 @@ from typing import Literal
 import msgspec
 import numpy as np
 import numpy.typing as npt
+from faster_fifo import Queue
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
@@ -21,8 +21,6 @@ from constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
-
-from faster_fifo import Queue
 
 
 class LookupTable(msgspec.Struct):
@@ -220,7 +218,7 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets = self._prediction_queue.get_many(timeout=sys.maxsize)
+            data_packets = self._prediction_queue.get_many(timeout=100)
 
             if STOP_SIGNAL in data_packets:
                 break

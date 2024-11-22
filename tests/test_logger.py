@@ -6,8 +6,8 @@ import time
 from collections import deque
 from typing import Literal
 
-import pytest
 import faster_fifo
+import pytest
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,

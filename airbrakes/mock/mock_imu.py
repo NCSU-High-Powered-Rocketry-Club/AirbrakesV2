@@ -1,7 +1,6 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
 import ast
-import collections
 import contextlib
 import multiprocessing
 import time

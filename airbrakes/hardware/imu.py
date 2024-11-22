@@ -10,15 +10,20 @@ with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
 
+from faster_fifo import Queue
+
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
-
 )
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT, RAW_DESCRIPTOR_SET, SIMULATION_MAX_QUEUE_SIZE
-
-from faster_fifo import Queue
+from constants import (
+    ESTIMATED_DESCRIPTOR_SET,
+    MAX_QUEUE_SIZE,
+    PROCESS_TIMEOUT,
+    RAW_DESCRIPTOR_SET,
+    SIMULATION_MAX_QUEUE_SIZE,
+)
 
 
 class IMU:
@@ -51,9 +56,7 @@ class IMU:
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
-        self._data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE
-        )
+        self._data_queue: Queue[IMUDataPacket] = Queue(maxsize=MAX_QUEUE_SIZE)
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU

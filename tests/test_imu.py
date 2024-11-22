@@ -4,8 +4,8 @@ import signal
 import time
 from collections import deque
 
-import pytest
 import faster_fifo
+import pytest
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
