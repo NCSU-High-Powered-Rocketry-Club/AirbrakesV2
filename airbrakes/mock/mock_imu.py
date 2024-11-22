@@ -15,8 +15,7 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.hardware.imu import IMU
-from constants import LOG_BUFFER_SIZE, MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
-from utils import convert_to_float
+from constants import LOG_BUFFER_SIZE, MAX_FETCHED_PACKETS, MAX_QUEUE_SIZE
 
 
 class MockIMU(IMU):
@@ -57,7 +56,7 @@ class MockIMU(IMU):
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
         self._data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
+            maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
         )
 
         # Starts the process that fetches data from the log file
@@ -124,13 +123,12 @@ class MockIMU(IMU):
             skiprows=range(1, start_index + 1),
             engine="c",
             usecols=valid_columns,
-            na_filter=False,
             converters={"invalid_fields": self._convert_invalid_fields},
         )
         for row in df.itertuples(index=False):
             start_time = time.time()
             # Convert the named tuple to a dictionary and remove any NaN values:
-            row_dict = {k: convert_to_float(v) for k, v in row._asdict().items() if v}
+            row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
 
             # Check if the process should stop:
             if not self._running.value:

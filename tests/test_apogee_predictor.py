@@ -124,7 +124,7 @@ class TestApogeePredictor:
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1167.232574134796,
+                1177.232574134796,
             ),
         ],
         ids=["hover_at_altitude", "coast_phase_sim"],

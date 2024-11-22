@@ -3,7 +3,6 @@
 import csv
 import multiprocessing
 import signal
-import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
@@ -14,7 +13,7 @@ from msgspec import to_builtins
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
+from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, MAX_GET_TIMEOUT, STOP_SIGNAL
 
 
 class Logger:
@@ -30,7 +29,13 @@ class Logger:
     :param log_dir: The directory where the log files will be.
     """
 
-    __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
+    __slots__ = (
+        "_log_buffer",
+        "_log_counter",
+        "_log_process",
+        "_log_queue",
+        "log_path",
+    )
 
     def __init__(self, log_dir: Path) -> None:
         """
@@ -137,7 +142,7 @@ class Logger:
         # We only want the first letter of the state to save space
         state_letter = state[0]
         # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: deque[LoggedDataPacket] = self._prepare_log_dict(
+        logged_data_packets: list[LoggedDataPacket] = self._prepare_log_dict(
             state_letter,
             str(extension),
             imu_data_packets,
@@ -145,27 +150,35 @@ class Logger:
             predicted_apogee,
         )
 
-        # Loop through all the IMU data packets
-        for logged_data_packet in logged_data_packets:
-            # If the state is StandbyState or LandedState, we create a buffer for data packets
-            # because otherwise we could have gigabytes of data in the log file just for when the
-            # rocket is on the ground.
-            if state_letter in ["S", "L"]:  # S: StandbyState, L: LandedState
-                if self._log_counter < IDLE_LOG_CAPACITY:
-                    # add the count:
-                    self._log_counter += 1
+        # If we are in Standby or Landed State, we need to buffer the data packets:
+        if state_letter in ["S", "L"]:
+            # If we haven't logged the enough packets yet, add that to the log count:
+            if self._log_counter < IDLE_LOG_CAPACITY:
+                self._log_counter += len(logged_data_packets)
+
+                # If we have reached the capacity, we should handle the buffer appropriately:
+                if self._log_counter > IDLE_LOG_CAPACITY:
+                    extra_packets = self._log_counter - IDLE_LOG_CAPACITY
+                    # Extra packets will go to the buffer:
+                    self._log_buffer.extend(logged_data_packets[-extra_packets:])
+                    # While the rest will be logged:
+                    self._log_queue.put_many(logged_data_packets[:-extra_packets])
+                    self._log_counter = IDLE_LOG_CAPACITY
+
+                # If we haven't reached the capacity, we can just log the packets:
                 else:
-                    self._log_buffer.append(logged_data_packet)
-                    continue  # skip because we don't want to put the message in the queue
+                    self._log_queue.put_many(logged_data_packets)
+            # If we have already logged the capacity, we should just buffer the packets:
             else:
-                if self._log_buffer:
-                    # Log the buffer before logging the new message
-                    self._log_the_buffer()
+                # The packets need to be moved to the buffer:
+                self._log_buffer.extend(logged_data_packets)
+        else:
+            # If we are not in Standby or Landed State, we should log the buffer if it's not empty:
+            if self._log_buffer:
+                self._log_the_buffer()
 
-                self._log_counter = 0  # Reset the counter for other states
-
-        # Put the message in the queue
-        if not self._log_buffer:
+            # Reset the counter for other states
+            self._log_counter = 0
             self._log_queue.put_many(logged_data_packets)
 
     def _log_the_buffer(self):
@@ -173,8 +186,6 @@ class Logger:
         Adds the log buffer to the queue, so it can be logged to file.
         """
         self._log_queue.put_many(list(self._log_buffer))
-        # for buffered_message in self._log_buffer:
-        #     self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
     def _prepare_log_dict(
@@ -184,7 +195,7 @@ class Logger:
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
         predicted_apogee: float,
-    ) -> deque[LoggedDataPacket]:
+    ) -> list[LoggedDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.
         :param state: The current state of the airbrakes.
@@ -193,7 +204,7 @@ class Logger:
         :param processed_data_packets: The processed data packets to log.
         :param: predicted_apogee: The predicted apogee of the rocket. Only logged with estimated
             data packets.
-        :return: A deque of LoggedDataPacket objects.
+        :return: A list of LoggedDataPacket objects.
         """
         # logged_data_packets: deque[LoggedDataPacket] = deque()
         logged_data_packets = []
@@ -253,7 +264,7 @@ class Logger:
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get_many(timeout=sys.maxsize)
+                message_fields = self._log_queue.get_many(timeout=MAX_GET_TIMEOUT)
                 # If the message is the stop signal, break out of the loop
                 for message_field in message_fields:
                     if message_field == STOP_SIGNAL:

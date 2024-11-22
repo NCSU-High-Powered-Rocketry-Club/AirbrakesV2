@@ -28,6 +28,11 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 0.58
 
 
+# -------------------------------------------------------
+# Display Configuration
+# -------------------------------------------------------
+
+
 class DisplayEndingType(StrEnum):
     """
     Enum that represents the different ways the display can end.
@@ -56,9 +61,16 @@ ESTIMATED_DESCRIPTOR_SET = 130
 RAW_DESCRIPTOR_SET = 128
 
 # The maximum size of the data queue for the packets, so we don't run into memory issues
-MAX_QUEUE_SIZE = 100000
-# This is used for the mock imu to limit the queue size to a more realistic value
-SIMULATION_MAX_QUEUE_SIZE = 15
+MAX_QUEUE_SIZE = 100_000
+
+# This is used by all queues to keep things consistent:
+MAX_FETCHED_PACKETS = 15
+
+# Timeouts for get() queue operations:
+MAX_GET_TIMEOUT = 100  # seconds
+
+# Max bytes to put/get from the queue at once:
+MAX_SIZE_BYTES = 1000 * 1000 * 20  # 20 Mb
 
 # The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
 PROCESS_TIMEOUT = 3
@@ -103,7 +115,7 @@ ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_VELOCITY = 1  # m/s
+TAKEOFF_VELOCITY = 10  # m/s
 
 # MotorBurn to Coasting:
 

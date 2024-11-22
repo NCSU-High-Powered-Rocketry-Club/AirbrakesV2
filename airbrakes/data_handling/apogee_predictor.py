@@ -18,6 +18,8 @@ from constants import (
     FLIGHT_LENGTH_SECONDS,
     GRAVITY,
     INTEGRATION_TIME_STEP,
+    MAX_GET_TIMEOUT,
+    MAX_SIZE_BYTES,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -66,7 +68,9 @@ class ApogeePredictor:
         # self._prediction_queue: multiprocessing.Queue[
         #     deque[ProcessedDataPacket] | Literal["STOP"]
         # ] = multiprocessing.Queue()
-        self._prediction_queue: Queue[deque[ProcessedDataPacket] | Literal["STOP"]] = Queue()
+        self._prediction_queue: Queue[deque[ProcessedDataPacket] | Literal["STOP"]] = Queue(
+            max_size_bytes=MAX_SIZE_BYTES
+        )
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
@@ -218,7 +222,7 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets = self._prediction_queue.get_many(timeout=100)
+            data_packets = self._prediction_queue.get_many(timeout=MAX_GET_TIMEOUT)
 
             if STOP_SIGNAL in data_packets:
                 break

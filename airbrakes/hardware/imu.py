@@ -10,7 +10,7 @@ with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
 
-from faster_fifo import Queue
+from faster_fifo import Empty, Queue
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -19,10 +19,10 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from constants import (
     ESTIMATED_DESCRIPTOR_SET,
+    MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     PROCESS_TIMEOUT,
     RAW_DESCRIPTOR_SET,
-    SIMULATION_MAX_QUEUE_SIZE,
 )
 
 
@@ -113,18 +113,15 @@ class IMU:
         :return: A deque containing the specified number of data packets
         """
         # We use a deque because it's faster than a list for popping from the left
-        data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the deque which we
-        # return
         try:
-            dp = self._data_queue.get_many(
-                block=False, max_messages_to_get=SIMULATION_MAX_QUEUE_SIZE
+            return collections.deque(
+                self._data_queue.get_many(block=False, max_messages_to_get=MAX_FETCHED_PACKETS)
             )
-        except Exception:
-            dp = []
-        data_packets.extend(dp)
-
-        return data_packets
+            # If we had done block=True, then Ctrl+C would not have worked, so we use block=False
+            # to allow for KeyboardInterrupts. The library does not seem to handle
+            # KeyboardInterrupts well, so we have to watch that carefully.
+        except Empty:  # If the queue is empty, don't bother waiting.
+            return collections.deque()
 
     def _query_imu_for_data_packets(self, port: str, frequency: int) -> None:
         """

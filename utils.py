@@ -22,7 +22,7 @@ def convert_to_seconds(timestamp: float) -> float | None:
     return timestamp / 1e9
 
 
-def convert_to_float(value: str) -> float | None:
+def convert_str_to_float(value: str) -> float | None:
     """Converts a value to a float, returning None if the conversion fails."""
     try:
         return float(value)  # Attempt to convert to float
