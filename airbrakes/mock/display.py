@@ -138,9 +138,9 @@ class FlightDisplay:
             self._update_display()
 
             # If we are running a real flight, we will stop the display when the rocket takes off:
-            # if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
-            #     self._update_display(DisplayEndingType.TAKEOFF)
-            #     break
+            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
+                self._update_display(DisplayEndingType.TAKEOFF)
+                break
 
         # The program has ended, so we print the final display, depending on how it ended:
         if self.end_sim_natural.is_set():

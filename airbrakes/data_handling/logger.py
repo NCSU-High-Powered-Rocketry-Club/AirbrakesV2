@@ -206,8 +206,7 @@ class Logger:
             data packets.
         :return: A list of LoggedDataPacket objects.
         """
-        # logged_data_packets: deque[LoggedDataPacket] = deque()
-        logged_data_packets = []
+        logged_data_packets: list[LoggedDataPacket] = []
 
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
