@@ -192,12 +192,14 @@ class IMUDataProcessor:
         Calculates the current altitudes, by zeroing out the initial altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
-        # Get the pressure altitudes from the data points
-        altitudes = np.array(
-            [data_packet.estPressureAlt for data_packet in self._data_packets], dtype=np.float64
+        # Get the pressure altitudes from the data points and zero out the initial altitude
+        return np.array(
+            [
+                data_packet.estPressureAlt - self._initial_altitude
+                for data_packet in self._data_packets
+            ],
+            dtype=np.float64,
         )
-        # Zero out the initial altitude
-        return altitudes - self._initial_altitude
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """

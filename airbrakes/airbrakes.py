@@ -117,7 +117,7 @@ class AirbrakesContext:
         # logging
         self.est_data_packets = [
             data_packet
-            for data_packet in self.imu_data_packets.copy()
+            for data_packet in self.imu_data_packets
             if isinstance(data_packet, EstimatedDataPacket)
             # The copy() above is critical to ensure the data here is not modified by the data
             # processor
@@ -128,7 +128,8 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
-        self.processed_data_packets = self.data_processor.get_processed_data_packets()
+        if self.est_data_packets:
+            self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()

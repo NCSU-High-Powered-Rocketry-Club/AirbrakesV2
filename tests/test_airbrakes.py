@@ -199,10 +199,7 @@ class TestAirbrakesContext:
         # Check if we processed the raw data packet:
         assert list(airbrakes.imu_data_packets) == [raw_1]
         assert not airbrakes.est_data_packets
-        # We will have an ProcessedDataPacket with all 0s, since we don't have any data to process:
-        assert len(airbrakes.processed_data_packets) == 1
-        assert airbrakes.processed_data_packets[0].current_altitude == 0.0
-        assert airbrakes.processed_data_packets[0].time_since_last_data_packet == 0.0
+        assert len(airbrakes.processed_data_packets) == 0
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         airbrakes.predict_apogee()
         assert not calls
