@@ -152,26 +152,17 @@ class Logger:
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
         if state_letter in ["S", "L"]:
-            # If we haven't logged the enough packets yet, add that to the log count:
-            if self._log_counter < IDLE_LOG_CAPACITY:
-                self._log_counter += len(logged_data_packets)
+            # Determine how many packets to log and buffer
+            log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
+            to_log = logged_data_packets[:log_capacity]
+            to_buffer = logged_data_packets[log_capacity:]
 
-                # If we have reached the capacity, we should handle the buffer appropriately:
-                if self._log_counter > IDLE_LOG_CAPACITY:
-                    extra_packets = self._log_counter - IDLE_LOG_CAPACITY
-                    # Extra packets will go to the buffer:
-                    self._log_buffer.extend(logged_data_packets[-extra_packets:])
-                    # While the rest will be logged:
-                    self._log_queue.put_many(logged_data_packets[:-extra_packets])
-                    self._log_counter = IDLE_LOG_CAPACITY
-
-                # If we haven't reached the capacity, we can just log the packets:
-                else:
-                    self._log_queue.put_many(logged_data_packets)
-            # If we have already logged the capacity, we should just buffer the packets:
-            else:
-                # The packets need to be moved to the buffer:
-                self._log_buffer.extend(logged_data_packets)
+            # Update counter and handle logging/buffering
+            self._log_counter += len(to_log)
+            if to_log:
+                self._log_queue.put_many(to_log)
+            if to_buffer:
+                self._log_buffer.extend(to_buffer)
         else:
             # If we are not in Standby or Landed State, we should log the buffer if it's not empty:
             if self._log_buffer:
