@@ -17,7 +17,6 @@ from constants import (
     LOG_BUFFER_SIZE,
     MAX_FREE_FALL_LENGTH,
     MAX_VELOCITY_THRESHOLD,
-    TARGET_ALTITUDE,
     ServoExtension,
 )
 
@@ -203,35 +202,17 @@ class TestCoastState:
         [
             (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_EXTENSION),
             (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_EXTENSION),
-            (
-                TARGET_ALTITUDE - 5,
-                TARGET_ALTITUDE - 2,
-                40.0,
-                TARGET_ALTITUDE + 2,
-                CoastState,
-                ServoExtension.MAX_EXTENSION,
-            ),
-            (
-                TARGET_ALTITUDE - 5,
-                TARGET_ALTITUDE - 5,
-                10.0,
-                TARGET_ALTITUDE - 1,
-                CoastState,
-                ServoExtension.MIN_EXTENSION,
-            ),
             (100.0, 400.0, 140.1, 5000.1, FreeFallState, ServoExtension.MIN_EXTENSION),
             (200.1, 200.1, 0.0, 200.1, FreeFallState, ServoExtension.MIN_EXTENSION),
         ],
         ids=[
             "climbing",
             "just_descent",
-            "overshoot_apogee",
-            "undershoot_apogee",
             "faulty_speed",
             "at_apogee",
         ],
     )
-    def test_update(
+    def test_update_without_controls(
         self,
         coast_state,
         current_altitude,
@@ -240,16 +221,73 @@ class TestCoastState:
         predicted_apogee,
         expected_state,
         airbrakes_ext,
+        monkeypatch,
     ):
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
+        # Just set the target altitude to the predicted apogee, since we are not testing the
+        # controls logic in this test:
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", predicted_apogee)
         coast_state.update()
         assert isinstance(
             coast_state.context.state, expected_state
         ), f"Got {coast_state.context.state.name}, expected {expected_state!r}"
         assert coast_state.context.current_extension == airbrakes_ext
+
+    @pytest.mark.parametrize(
+        (
+            "target_altitude",
+            "predicted_apogee",
+            "expected_airbrakes",
+        ),
+        [
+            (1100.0, 1130.2, ServoExtension.MAX_EXTENSION),
+            (1152.1, 1150.1, ServoExtension.MIN_EXTENSION),
+            (1168.1, 1160.1, ServoExtension.MIN_EXTENSION),
+            (1170.1, 1170.1, ServoExtension.MIN_EXTENSION),
+            (1189.4, 1190.1, ServoExtension.MAX_EXTENSION),
+            (1191.9, 1200.5, ServoExtension.MAX_EXTENSION),
+        ],
+        ids=[
+            "extend_1",
+            "retract_1",
+            "retract_2",
+            "equal_alt",
+            "extend_2",
+            "extend_3",
+        ],
+    )
+    def test_update_with_controls(
+        self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
+    ):
+        coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
+        # set a dummy value to prevent state changes:
+        monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        coast_state.update()
+        assert coast_state.context.current_extension == expected_airbrakes
+
+    def test_update_control_only_once(self, coast_state, monkeypatch):
+        """Check that we only tell the airbrakes to extend once, and not send the command
+        repeatedly."""
+        calls = 0
+
+        def extend_airbrakes(_):
+            nonlocal calls
+            calls += 1
+
+        # patch the extend_airbrakes method to count the number of calls made:
+        monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
+
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", 900.0)
+        coast_state.context.apogee_predictor._apogee_prediction_value.value = 1000.0
+
+        coast_state.update()
+        assert calls == 1
+        coast_state.update()
+        assert calls == 1
 
 
 class TestFreeFallState:

@@ -4,10 +4,12 @@ import argparse
 import multiprocessing
 import threading
 import time
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import psutil
 from colorama import Fore, Style, init
+
+from constants import DisplayEndingType
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -29,12 +31,10 @@ class FlightDisplay:
 
     # Initialize Colorama
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
-    NATURAL_END = "natural"
-    INTERRUPTED_END = "interrupted"
-    STATE_END = "state"
 
     __slots__ = (
         "_airbrakes",
+        "_apogee_at_convergence",
         "_args",
         "_coast_time",
         "_convergence_height",
@@ -69,6 +69,7 @@ class FlightDisplay:
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
+        self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
         # Prepare the processes for monitoring in the simulation:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -128,23 +129,26 @@ class FlightDisplay:
         Updates the display with real-time data. Runs in another thread. Automatically stops when
         the simulation ends.
         """
+        # Don't print the flight data if we are in debug mode
+        if self._args.debug:
+            return
+
+        # Update the display as long as the program is running:
         while self._running:
-            if self.end_sim_natural.is_set():
-                self._update_display(self.NATURAL_END)
-                break
-            if self.end_sim_interrupted.is_set():
-                self._update_display(self.INTERRUPTED_END)
-                break
+            self._update_display()
+
+            # If we are running a real flight, we will stop the display when the rocket takes off:
             if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
-                self._update_display(self.STATE_END)
-                break
-            # Don't print the flight data if we are in debug mode
-            if not self._args.debug:
-                self._update_display(False)
-            else:
+                self._update_display(DisplayEndingType.TAKEOFF)
                 break
 
-    def _update_display(self, end_sim: Literal["natural", "interrupted"] | bool = False) -> None:
+        # The program has ended, so we print the final display, depending on how it ended:
+        if self.end_sim_natural.is_set():
+            self._update_display(DisplayEndingType.NATURAL)
+        if self.end_sim_interrupted.is_set():
+            self._update_display(DisplayEndingType.INTERRUPTED)
+
+    def _update_display(self, end_type: DisplayEndingType | None = None) -> None:
         """
         Updates the display with real-time data.
         :param end_sim: Whether the simulation ended or was interrupted.
@@ -181,15 +185,10 @@ class FlightDisplay:
         else:
             time_since_launch = 0
 
-        if (
-            self._coast_time
-            and not self._convergence_time
-            and self._airbrakes.apogee_predictor.apogee
-        ):
-            self._convergence_time = (
-                self._airbrakes.data_processor.current_timestamp - self._coast_time
-            ) * 1e-9
+        if self._coast_time and not self._convergence_time and apogee_predictor.apogee:
+            self._convergence_time = (data_processor.current_timestamp - self._coast_time) * 1e-9
             self._convergence_height = data_processor.current_altitude
+            self._apogee_at_convergence = apogee_predictor.apogee
 
         # Prepare output
         output = [
@@ -213,12 +212,13 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Convergence Time:          {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
-                    f"Convergence Height:        {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-                    f"IMU Data Queue Size:       {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets:           {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",
-                    f"Log buffer size:           {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Invalid fields:            {G}{invalid_fields}{G}{RESET}",
+                    f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+                    f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Invalid fields:                  {G}{invalid_fields}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )
@@ -237,16 +237,16 @@ class FlightDisplay:
         print("\n".join(output))
 
         # Move the cursor up for the next update, if the simulation hasn't ended:
-        if not end_sim:
+        if not end_type:
             print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
 
         # Print the end of simulation message if the simulation has ended
-        match end_sim:
-            case self.NATURAL_END:
+        match end_type:
+            case DisplayEndingType.NATURAL:
                 print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
-            case self.INTERRUPTED_END:
+            case DisplayEndingType.INTERRUPTED:
                 print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
-            case self.STATE_END:
+            case DisplayEndingType.TAKEOFF:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
