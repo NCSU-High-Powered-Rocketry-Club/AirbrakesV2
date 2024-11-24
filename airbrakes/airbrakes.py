@@ -154,12 +154,14 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
+        self.current_extension = self.servo.current_extension
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the airbrakes to the minimum extension.
         """
         self.servo.set_retracted()
+        self.current_extension = self.servo.current_extension
 
     def predict_apogee(self) -> None:
         """
