@@ -112,13 +112,14 @@ class TestAirbrakesContext:
             calls.append("state update called")
             if isinstance(self.context.state, CoastState):
                 self.context.predict_apogee()
+                self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
         def log(self, state, extension, imu_data_packets, processed_data_packets, apogee):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(state == "CoastState")
-            asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
+            asserts.append(extension == ServoExtension.MAX_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
             asserts.append(apogee == 0.0)
