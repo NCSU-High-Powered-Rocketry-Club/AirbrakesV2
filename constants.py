@@ -67,6 +67,10 @@ PROCESS_TIMEOUT = 3
 # Data Processing Configuration
 # -------------------------------------------------------
 
+# this is the uncertainty that any element of the quaternion uncertainties can reach before
+# before switching to calculating rotated accelerations with gyroscope data instead of directly
+# with quaternion data
+QUATERNION_UNCERTAINTY_THRESHOLD = 0.5
 
 # -------------------------------------------------------
 # Logging Configuration
