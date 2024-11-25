@@ -119,8 +119,6 @@ class AirbrakesContext:
             data_packet
             for data_packet in self.imu_data_packets
             if isinstance(data_packet, EstimatedDataPacket)
-            # The copy() above is critical to ensure the data here is not modified by the data
-            # processor
         ]
 
         # Update the processed data with the new data packets. We only care about EstDataPackets
