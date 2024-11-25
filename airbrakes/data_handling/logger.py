@@ -9,9 +9,10 @@ from typing import Any, Literal
 
 from msgspec import to_builtins
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.data_handling.packets.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 
 
@@ -117,7 +118,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
-        predicted_apogee: float,
+        debug_packet: DebugPacket,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -137,7 +138,7 @@ class Logger:
             str(extension),
             imu_data_packets,
             processed_data_packets,
-            predicted_apogee,
+            debug_packet,
         )
 
         # Loop through all the IMU data packets
@@ -176,7 +177,7 @@ class Logger:
         extension: str,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
-        predicted_apogee: float,
+        debug_packet: DebugPacket,
     ) -> deque[LoggedDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.
@@ -189,6 +190,14 @@ class Logger:
         :return: A deque of LoggedDataPacket objects.
         """
         logged_data_packets: deque[LoggedDataPacket] = deque()
+
+        # The debug packet will only be added to the first packet:
+        debug_packet_dict = to_builtins(debug_packet)
+        # predicted apogee and curve coefficients will only be added if we are in CoastState:
+        if state != "C":
+            debug_packet_dict["predicted_apogee"] = ""
+            debug_packet_dict["uncertainity_threshold_1"] = ""
+            debug_packet_dict["uncertainity_threshold_2"] = ""
 
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
@@ -213,10 +222,10 @@ class Logger:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
                 logged_fields.update(processed_data_packet_dict)
 
-                # Add the predicted apogee field:
-                logged_fields["predicted_apogee"] = predicted_apogee
-
             logged_data_packets.append(logged_fields)
+
+        # Add the debug packet to the first logged data packet:
+        logged_data_packets[0].update(debug_packet_dict)
 
         return logged_data_packets
 

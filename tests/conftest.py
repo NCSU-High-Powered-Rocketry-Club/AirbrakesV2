@@ -9,8 +9,8 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU

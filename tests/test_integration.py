@@ -10,7 +10,7 @@ import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.logged_data_packet import LoggedDataPacket
 from constants import (
     GROUND_ALTITUDE,
     LANDED_SPEED,
@@ -272,11 +272,15 @@ class TestIntegration:
                 if state not in state_list:
                     state_list.append(state)
 
+                # Check if we logged convergence params in CoastState:
+                if state == "C" and row["fetched_imu_packets"] != "":
+                    assert row["uncertainity_threshold_1"] != ""
+                    assert row["predicted_apogee"] != ""
+
                 # Check if we logged our main calculations for estimated data packets:
                 if is_est_data_packet:
                     assert row["vertical_velocity"] != ""
                     assert row["current_altitude"] != ""
-                    assert row["predicted_apogee"] != ""
                     assert row["vertical_acceleration"] != ""
 
                 # Check if the extension is a float:

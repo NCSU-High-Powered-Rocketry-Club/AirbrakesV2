@@ -5,15 +5,16 @@ from typing import TYPE_CHECKING
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
 from constants import ServoExtension
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+    from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
 
@@ -31,6 +32,7 @@ class AirbrakesContext:
         "apogee_predictor",
         "current_extension",
         "data_processor",
+        "debug_packet",
         "est_data_packets",
         "imu",
         "imu_data_packets",
@@ -61,11 +63,11 @@ class AirbrakesContext:
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
-        self.servo = servo
-        self.imu = imu
-        self.logger = logger
-        self.data_processor = data_processor
-        self.apogee_predictor = apogee_predictor
+        self.servo: Servo = servo
+        self.imu: IMU = imu
+        self.logger: Logger = logger
+        self.data_processor: IMUDataProcessor = data_processor
+        self.apogee_predictor: ApogeePredictor = apogee_predictor
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
@@ -75,6 +77,7 @@ class AirbrakesContext:
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processed_data_packets: deque[ProcessedDataPacket] = deque()
         self.est_data_packets: list[EstimatedDataPacket] = []
+        self.debug_packet: DebugPacket | None = None
 
     def start(self) -> None:
         """
@@ -136,13 +139,22 @@ class AirbrakesContext:
         # Gets what we have currently set the extension of the airbrakes to
         self.current_extension = self.servo.current_extension
 
+        # Create a debug packet for the logger:
+        self.debug_packet = DebugPacket(
+            predicted_apogee=self.apogee_predictor.apogee,
+            uncertainity_threshold_1=str(self.apogee_predictor.uncertainity_threshold_1.value),
+            uncertainity_threshold_2=str(self.apogee_predictor.uncertainity_threshold_2.value),
+            fetched_imu_packets=str(len(self.imu_data_packets)),
+            packets_in_imu_queue=str(self.imu._data_queue.qsize()),
+        )
+
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
             self.state.name,
             self.current_extension.value,
             self.imu_data_packets,
             self.processed_data_packets,
-            self.apogee_predictor.apogee,
+            self.debug_packet,
         )
         # CAUTION: You would need to copy() self.processed_data_packets in the log line above
         # if you want to reference it anywhere else after update(), because it would be modified

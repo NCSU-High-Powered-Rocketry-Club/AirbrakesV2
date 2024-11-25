@@ -4,7 +4,8 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY, ServoExtension
 
@@ -114,7 +115,7 @@ class TestAirbrakesContext:
                 self.context.predict_apogee()
                 self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
-        def log(self, state, extension, imu_data_packets, processed_data_packets, apogee):
+        def log(self, state, extension, imu_data_packets, processed_data_packets, debug_packet):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
@@ -122,7 +123,7 @@ class TestAirbrakesContext:
             asserts.append(extension == ServoExtension.MAX_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
-            asserts.append(apogee == 0.0)
+            asserts.append(isinstance(debug_packet, DebugPacket))
 
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")

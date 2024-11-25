@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
 from constants import APOGEE_PREDICTION_FREQUENCY
 
 
@@ -140,6 +140,8 @@ class TestApogeePredictor:
         time.sleep(0.01)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == expected_value
+        assert threaded_apogee_predictor.uncertainity_threshold_1
+        assert threaded_apogee_predictor.uncertainity_threshold_2
 
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""

@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.optimize import curve_fit
 
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
 from constants import (
     APOGEE_PREDICTION_FREQUENCY,
     CURVE_FIT_INITIAL,
@@ -37,6 +37,7 @@ class CurveCoefficients(msgspec.Struct):
 
     A: np.float64 = np.float64(0.0)
     B: np.float64 = np.float64(0.0)
+    uncertainties: npt.NDArray[np.float64] = np.array([0.0, 0.0])
 
 
 class ApogeePredictor:
@@ -57,6 +58,8 @@ class ApogeePredictor:
         "_prediction_queue",
         "_time_differences",
         "lookup_table",
+        "uncertainity_threshold_1",
+        "uncertainity_threshold_2",
     )
 
     def __init__(self):
@@ -68,6 +71,8 @@ class ApogeePredictor:
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
+        self.uncertainity_threshold_1 = multiprocessing.Value("d", 0.0)
+        self.uncertainity_threshold_2 = multiprocessing.Value("d", 0.0)
 
         # ------ Variables which can only be referenced in the prediction process ------
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
@@ -133,6 +138,13 @@ class ApogeePredictor:
         """
         return a * (1 - b * t) ** 4
 
+    def _send_to_main_process(self, curve_coefficients: CurveCoefficients) -> None:
+        """
+        Sends the curve coefficients to the main process.
+        """
+        self.uncertainity_threshold_1.value = curve_coefficients.uncertainties[0]
+        self.uncertainity_threshold_2.value = curve_coefficients.uncertainties[1]
+
     def _curve_fit(self) -> CurveCoefficients:
         """
         Calculates the curve fit function of rotated compensated acceleration
@@ -154,7 +166,7 @@ class ApogeePredictor:
             self._has_apogee_converged = True
 
         a, b = popt
-        return CurveCoefficients(A=a, B=b)
+        return CurveCoefficients(A=a, B=b, uncertainties=uncertainties)
 
     def _update_prediction_lookup_table(self, curve_coefficients: CurveCoefficients):
         """
@@ -228,6 +240,7 @@ class ApogeePredictor:
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:
                     curve_coefficients = self._curve_fit()
+                    self._send_to_main_process(curve_coefficients)
                     self._update_prediction_lookup_table(curve_coefficients)
 
                 # Get the predicted apogee if the curve fit has converged:

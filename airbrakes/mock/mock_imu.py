@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

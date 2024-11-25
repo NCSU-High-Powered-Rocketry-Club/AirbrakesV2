@@ -9,7 +9,7 @@ import pytest
 import scipy.spatial
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 
 def simulate_altitude_sine_wave(
