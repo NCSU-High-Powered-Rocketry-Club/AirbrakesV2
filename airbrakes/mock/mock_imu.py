@@ -1,5 +1,6 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
+import ast
 import contextlib
 import multiprocessing
 import time
@@ -79,7 +80,11 @@ class MockIMU(IMU):
         self._running = multiprocessing.Value("b", False)
 
     def _read_csv(
-        self, chunksize: int | None = None, start_index: int = 0, usecols: list | None = None
+        self,
+        chunksize: int | None = None,
+        start_index: int = 0,
+        usecols: list | None = None,
+        **kwargs,
     ) -> pd.DataFrame:
         """Reads the csv file and returns it as a pandas DataFrame."""
         return pd.read_csv(
@@ -88,7 +93,14 @@ class MockIMU(IMU):
             engine="c",
             usecols=usecols,
             skiprows=range(1, start_index + 1),
+            **kwargs,
         )
+
+    @staticmethod
+    def _convert_invalid_fields(value):
+        if not value:
+            return None
+        return ast.literal_eval(value)  # Convert string to list
 
     def _read_file(self, real_time_simulation: bool, start_after_log_buffer: bool = False) -> None:
         """
@@ -105,7 +117,11 @@ class MockIMU(IMU):
             # at which the log buffer starts. That index will be used as the start point.
             # Read the CSV file in chunks to avoid loading the entire file into memory
             chunk_size = LOG_BUFFER_SIZE + 1  # The chunk size is close to our log buffer size.
-            for chunk in self._read_csv(chunksize=chunk_size, usecols=["timestamp"]):
+            for chunk in self._read_csv(
+                chunksize=chunk_size,
+                usecols=["timestamp"],
+                converters={"invalid_fields": self._convert_invalid_fields},
+            ):
                 # Calculate the time difference between consecutive rows
                 chunk["time_diff"] = chunk["timestamp"].diff()
                 # Find the index where the time difference exceeds 1 second
@@ -117,7 +133,12 @@ class MockIMU(IMU):
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
-        df = self._read_csv(start_index=start_index, usecols=self._needed_fields)
+        df = self._read_csv(
+            start_index=start_index,
+            usecols=self._needed_fields,
+            converters={"invalid_fields": self._convert_invalid_fields},
+            engine="c",
+        )
         # Using pandas and itertuples to read the file:
         for row in df.itertuples(index=False):
             start_time = time.time()

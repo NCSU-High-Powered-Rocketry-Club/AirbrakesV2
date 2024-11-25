@@ -3,7 +3,6 @@
 import collections
 import contextlib
 import multiprocessing
-import signal
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
 # mscl is annoying and we really just have it installed on the pi
@@ -16,7 +15,7 @@ from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, RAW_DESCRIPTOR_SET
+from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT, RAW_DESCRIPTOR_SET
 
 
 class IMU:
@@ -56,7 +55,7 @@ class IMU:
         self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._fetch_data_loop, args=(port, frequency), name="IMU Process"
+            target=self._query_imu_for_data_packets, args=(port, frequency), name="IMU Process"
         )
 
     @property
@@ -88,8 +87,7 @@ class IMU:
         # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
         with contextlib.suppress(multiprocessing.TimeoutError):
             self.get_imu_data_packets()
-
-        self._data_fetch_process.join()
+            self._data_fetch_process.join(timeout=PROCESS_TIMEOUT)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
@@ -99,7 +97,7 @@ class IMU:
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
             available, it will be None.
         """
-        return self._data_queue.get(timeout=1)
+        return self._data_queue.get(timeout=PROCESS_TIMEOUT)
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
@@ -115,14 +113,16 @@ class IMU:
 
         return data_packets
 
-    def _fetch_data_loop(self, port: str, frequency: int) -> None:
+    def _query_imu_for_data_packets(self, port: str, frequency: int) -> None:
         """
         The loop that fetches data from the IMU. It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         :param frequency: the frequency that the IMU is set to poll at
         """
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        with contextlib.suppress(KeyboardInterrupt):
+            self._fetch_data_loop(port, frequency)
+
+    def _fetch_data_loop(self, port: str, frequency: int) -> None:
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)

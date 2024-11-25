@@ -125,4 +125,7 @@ def arg_parser() -> argparse.Namespace:
             "to run in simulation mode."
         )
 
+    if args.verbose and args.debug:
+        parser.error("The `--verbose` and `--debug` options cannot be used together.")
+
     return args
