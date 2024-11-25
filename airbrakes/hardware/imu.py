@@ -38,7 +38,7 @@ class IMU:
         "_running",
     )
 
-    def __init__(self, port: str, frequency: int) -> None:
+    def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
@@ -55,7 +55,7 @@ class IMU:
         self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._query_imu_for_data_packets, args=(port, frequency), name="IMU Process"
+            target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
 
     @property
@@ -113,27 +113,27 @@ class IMU:
 
         return data_packets
 
-    def _query_imu_for_data_packets(self, port: str, frequency: int) -> None:
+    def _query_imu_for_data_packets(self, port: str) -> None:
         """
         The loop that fetches data from the IMU. It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         :param frequency: the frequency that the IMU is set to poll at
         """
         with contextlib.suppress(KeyboardInterrupt):
-            self._fetch_data_loop(port, frequency)
+            self._fetch_data_loop(port)
 
-    def _fetch_data_loop(self, port: str, frequency: int) -> None:
+    def _fetch_data_loop(self, port: str) -> None:
         # Connect to the IMU
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
-        timeout = int(1000 / frequency)
+        timeout = 10
 
         while self._running.value:
             # Get the latest data packets from the IMU, with the help of `getDataPackets`.
             # `getDataPackets` accepts a timeout in milliseconds.
             # During IMU configuration (outside of this code), we set the sampling rate of the IMU
             # as 1ms for RawDataPackets, and 2ms for EstimatedDataPackets.
-            # So we use a timeout of 1000 / frequency = 10ms which should be more
+            # So we use a timeout of 10ms which should be more
             # than enough. If the timeout is hit, the function will return an empty list.
 
             packets: mscl.MipDataPackets = node.getDataPackets(timeout)
