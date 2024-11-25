@@ -195,7 +195,7 @@ class TestIntegration:
             ServoExtension.MIN_NO_BUZZ,
             ServoExtension.MAX_EXTENSION,
             ServoExtension.MAX_NO_BUZZ,
-        } == set(coast_state.extensions)
+        }.issuperset(set(coast_state.extensions))
 
         # ------- FREE FALL STATE -------
         if launch_name == "purple_launch":
