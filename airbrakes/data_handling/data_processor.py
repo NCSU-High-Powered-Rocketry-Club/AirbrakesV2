@@ -210,6 +210,15 @@ class IMUDataProcessor:
         # We pre-allocate the space for our accelerations first
         rotated_accelerations = np.zeros(len(self._data_packets))
 
+        # checks for missing data
+        if any(
+            packet.estCompensatedAccelX is None
+            or packet.estCompensatedAccelY is None
+            or packet.estCompensatedAccelZ is None
+            for packet in self._data_packets
+        ):
+            return rotated_accelerations
+
         # get the compensated accelerations from each data packet
         compensated_accelerations = np.array(
             [
@@ -221,6 +230,7 @@ class IMUDataProcessor:
                 for packet in self._data_packets
             ]
         )
+
         # check if the quaternions are too uncertain or not. If they are not, we calculate
         # the rotated accelerations directly with the quaternion data, if they are uncertain,
         # we calculate the quaternions from the gyroscope data, and then find the rotations.
@@ -233,9 +243,12 @@ class IMUDataProcessor:
                 last_packet.estAttitudeUncertQuaternionZ,
             ]
         )
-        if np.any(quaternion_uncertainties >= QUATERNION_UNCERTAINTY_THRESHOLD):
-            # quaternions are too uncertain to use, so we calculate them from gyro
 
+        if (
+            np.any(quaternion_uncertainties >= QUATERNION_UNCERTAINTY_THRESHOLD)
+            or self._data_packets[-1].estOrientQuaternionW is None
+        ):
+            # quaternions are too uncertain to use, so we calculate them from gyro
             current_orientation = self._current_orientation_quaternions
             # Iterates through the data points and time differences between the data points
             for idx, (data_packet, dt) in enumerate(
@@ -251,7 +264,7 @@ class IMUDataProcessor:
                 gyro_z = data_packet.estAngularRateZ
 
                 # Check for missing data points
-                if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
+                if any(val is None for val in [gyro_x, gyro_y, gyro_z]):
                     return rotated_accelerations
 
                 # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
@@ -292,8 +305,8 @@ class IMUDataProcessor:
 
         # Update the class attribute with the latest quaternion orientation
         self._current_orientation_quaternions = current_orientation
-        # we only want to return the vertical component of each acceleration
-        return np.array([accel[2] for accel in rotated_accels])
+        # we only want to return the negative vertical component of each acceleration
+        return np.array([-accel[2] for accel in rotated_accels])
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """

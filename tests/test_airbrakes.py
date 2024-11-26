@@ -217,8 +217,19 @@ class TestAirbrakesContext:
             estOrientQuaternionX=0.1,
             estOrientQuaternionY=0.2,
             estOrientQuaternionZ=0.3,
+            estAttitudeUncertQuaternionW=0.01,
+            estAttitudeUncertQuaternionX=0.01,
+            estAttitudeUncertQuaternionY=0.01,
+            estAttitudeUncertQuaternionZ=0.01,
         )
-        est_2 = EstimatedDataPacket(timestamp=3.0 + 1e9, estPressureAlt=24.0)
+        est_2 = EstimatedDataPacket(
+            timestamp=3.0 + 1e9,
+            estPressureAlt=24.0,
+            estAttitudeUncertQuaternionW=0.01,
+            estAttitudeUncertQuaternionX=0.01,
+            estAttitudeUncertQuaternionY=0.01,
+            estAttitudeUncertQuaternionZ=0.01,
+        )
         airbrakes.imu._data_queue.put(est_1)
         airbrakes.imu._data_queue.put(est_2)
         time.sleep(0.001)

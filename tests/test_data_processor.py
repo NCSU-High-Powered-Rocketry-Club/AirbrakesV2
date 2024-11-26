@@ -93,6 +93,10 @@ class TestIMUDataProcessor:
             estGravityVectorX=0,
             estGravityVectorY=0,
             estGravityVectorZ=9.8,
+            estAttitudeUncertQuaternionW=0.01,
+            estAttitudeUncertQuaternionX=0.01,
+            estAttitudeUncertQuaternionY=0.01,
+            estAttitudeUncertQuaternionZ=0.01,
         ),
         EstimatedDataPacket(
             2 * 1e9,
@@ -107,6 +111,10 @@ class TestIMUDataProcessor:
             estGravityVectorX=0,
             estGravityVectorY=0,
             estGravityVectorZ=9.8,
+            estAttitudeUncertQuaternionW=0.01,
+            estAttitudeUncertQuaternionX=0.01,
+            estAttitudeUncertQuaternionY=0.01,
+            estAttitudeUncertQuaternionZ=0.01,
         ),
     ]
 
@@ -172,6 +180,10 @@ class TestIMUDataProcessor:
                     estOrientQuaternionX=-0.036,
                     estOrientQuaternionY=-0.039,
                     estOrientQuaternionZ=0.936,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                     estGravityVectorX=0,
                     estGravityVectorY=0,
                     estGravityVectorZ=9.8,
@@ -188,6 +200,10 @@ class TestIMUDataProcessor:
                     estAngularRateX=-0.8,
                     estAngularRateY=0.05,
                     estAngularRateZ=3.5,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                 ),
                 EstimatedDataPacket(
                     2.2 * 1e9,
@@ -198,6 +214,10 @@ class TestIMUDataProcessor:
                     estAngularRateX=-0.08,
                     estAngularRateY=-0.075,
                     estAngularRateZ=3.4,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                 ),
             ]
         )
@@ -218,6 +238,10 @@ class TestIMUDataProcessor:
                     estAngularRateX=0.01,
                     estAngularRateY=0.02,
                     estAngularRateZ=0.03,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                 ),
                 EstimatedDataPacket(
                     6 * 1e9,
@@ -228,6 +252,10 @@ class TestIMUDataProcessor:
                     estAngularRateX=0.01,
                     estAngularRateY=0.02,
                     estAngularRateZ=0.03,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                 ),
                 EstimatedDataPacket(
                     7 * 1e9,
@@ -238,6 +266,10 @@ class TestIMUDataProcessor:
                     estAngularRateX=0.01,
                     estAngularRateY=0.02,
                     estAngularRateZ=0.03,
+                    estAttitudeUncertQuaternionW=0.01,
+                    estAttitudeUncertQuaternionX=0.01,
+                    estAttitudeUncertQuaternionY=0.01,
+                    estAttitudeUncertQuaternionZ=0.01,
                 ),
             ]
         )
@@ -282,6 +314,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     )
                 ],
                 20.0,
@@ -299,6 +335,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     ),
                     EstimatedDataPacket(
                         2 * 1e9,
@@ -310,6 +350,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     ),
                 ],
                 25.0,
@@ -327,6 +371,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     ),
                     EstimatedDataPacket(
                         2 * 1e9,
@@ -338,6 +386,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     ),
                     EstimatedDataPacket(
                         3 * 1e9,
@@ -349,6 +401,10 @@ class TestIMUDataProcessor:
                         estOrientQuaternionX=0.2,
                         estOrientQuaternionY=0.3,
                         estOrientQuaternionZ=0.4,
+                        estAttitudeUncertQuaternionW=0.01,
+                        estAttitudeUncertQuaternionX=0.01,
+                        estAttitudeUncertQuaternionY=0.01,
+                        estAttitudeUncertQuaternionZ=0.01,
                     ),
                 ],
                 30.0,
@@ -499,9 +555,56 @@ class TestIMUDataProcessor:
             ),
         ],
     )
-    def test_calculate_rotations(self, csv_path, expected_value, n_packets):
+    def test_calculate_rotations_quaternions(self, csv_path, expected_value, n_packets):
         data_packets = load_data_packets(csv_path, n_packets)
         d = IMUDataProcessor()
+        d.update(data_packets)
+        rotations = d._rotated_accelerations
+        assert len(rotations) == n_packets
+
+        assert rotations[-1] == pytest.approx(expected_value)
+
+    @pytest.mark.parametrize(
+        ("csv_path", "expected_value", "n_packets"),
+        [
+            (
+                "tests/imu_data/xminus.csv",
+                9.85116094,
+                2,
+            ),
+            (
+                "tests/imu_data/yminus.csv",
+                9.83891064,
+                2,
+            ),
+            (
+                "tests/imu_data/zminus.csv",
+                9.82264007,
+                2,
+            ),
+            (
+                "tests/imu_data/xplus.csv",
+                9.75015129,
+                2,
+            ),
+            (
+                "tests/imu_data/yplus.csv",
+                9.61564675,
+                2,
+            ),
+            (
+                "tests/imu_data/zplus.csv",
+                9.81399729,
+                2,
+            ),
+        ],
+    )
+    def test_calculate_rotations_gyro(self, csv_path, expected_value, n_packets):
+        data_packets = load_data_packets(csv_path, n_packets)
+        d = IMUDataProcessor()
+        for i, _ in enumerate(data_packets):
+            data_packets[i].estAttitudeUncertQuaternionW = 1
+        print(data_packets)
         d.update(data_packets)
         rotations = d._rotated_accelerations
         assert len(rotations) == n_packets
