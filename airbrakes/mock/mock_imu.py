@@ -4,6 +4,7 @@ import ast
 import contextlib
 import multiprocessing
 import time
+import typing
 from pathlib import Path
 
 import pandas as pd
@@ -15,6 +16,7 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from airbrakes.hardware.imu import IMU
 from constants import LOG_BUFFER_SIZE, MAX_QUEUE_SIZE, SIMULATION_MAX_QUEUE_SIZE
+from utils import convert_to_nanoseconds
 
 
 class MockIMU(IMU):
@@ -23,7 +25,7 @@ class MockIMU(IMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_log_file_path",)
+    __slots__ = ("_headers", "_log_file_path", "_needed_fields")
 
     def __init__(
         self,
@@ -46,7 +48,13 @@ class MockIMU(IMU):
         if not log_file_path:
             # Just use the first file in the `launch_data` directory:
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
+        self._log_file_path = typing.cast(Path, self._log_file_path)
 
+        self._headers = pd.read_csv(self._log_file_path, nrows=0)
+        self._needed_fields = list(
+            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
+            & set(self._headers.columns)
+        )
         # We don't call the parent constructor as the IMU class has different parameters, so we
         # manually start the process that fetches data from the log file
 
@@ -62,7 +70,6 @@ class MockIMU(IMU):
         self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(
-                self._log_file_path,
                 real_time_simulation,
                 start_after_log_buffer,
             ),
@@ -72,15 +79,30 @@ class MockIMU(IMU):
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
 
+    def _read_csv(
+        self,
+        chunksize: int | None = None,
+        start_index: int = 0,
+        usecols: list | None = None,
+        **kwargs,
+    ) -> pd.DataFrame:
+        """Reads the csv file and returns it as a pandas DataFrame."""
+        return pd.read_csv(
+            self._log_file_path,
+            chunksize=chunksize,
+            engine="c",
+            usecols=usecols,
+            skiprows=range(1, start_index + 1),
+            **kwargs,
+        )
+
     @staticmethod
     def _convert_invalid_fields(value):
         if not value:
             return None
         return ast.literal_eval(value)  # Convert string to list
 
-    def _read_file(
-        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
-    ) -> None:
+    def _read_file(self, real_time_simulation: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: the name of the log file to read data from located in scripts/imu_data
@@ -95,9 +117,9 @@ class MockIMU(IMU):
             # at which the log buffer starts. That index will be used as the start point.
             # Read the CSV file in chunks to avoid loading the entire file into memory
             chunk_size = LOG_BUFFER_SIZE + 1  # The chunk size is close to our log buffer size.
-            for chunk in pd.read_csv(
-                log_file_path,
+            for chunk in self._read_csv(
                 chunksize=chunk_size,
+                usecols=["timestamp"],
                 converters={"invalid_fields": self._convert_invalid_fields},
             ):
                 # Calculate the time difference between consecutive rows
@@ -108,22 +130,16 @@ class MockIMU(IMU):
                     start_index = buffer_end_index[0]
                     break
 
-        # Using pandas and itertuples to read the file:
-        df_header = pd.read_csv(log_file_path, nrows=0)
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those
-        valid_columns = list(
-            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
-            & set(df_header.columns)
-        )
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
-        df = pd.read_csv(
-            log_file_path,
-            skiprows=range(1, start_index + 1),
-            engine="c",
-            usecols=valid_columns,
+        df = self._read_csv(
+            start_index=start_index,
+            usecols=self._needed_fields,
             converters={"invalid_fields": self._convert_invalid_fields},
+            engine="c",
         )
+        # Using pandas and itertuples to read the file:
         for row in df.itertuples(index=False):
             start_time = time.time()
             # Convert the named tuple to a dictionary and remove any NaN values:
@@ -150,10 +166,49 @@ class MockIMU(IMU):
                 time.sleep(max(0.0, 0.001 - (end_time - start_time)))
 
     def _fetch_data_loop(
-        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
+        self, real_time_simulation: bool, start_after_log_buffer: bool = False
     ) -> None:
         """A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file."""
         # unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(log_file_path, real_time_simulation, start_after_log_buffer)
+            self._read_file(real_time_simulation, start_after_log_buffer)
+
+    def get_launch_time(self) -> int:
+        """Gets the launch time, from reading the csv file.
+
+        :return int: The corresponding launch time in nanoseconds. Returns 0 if the launch time
+            could not be found.
+        """
+
+        # Read the file, and check when the "state" field shows "M", or when the magnitude of the
+        # estimated linear acceleration is greater than 3 m/s^2:
+        if "state" in self._headers.columns:
+            df = self._read_csv(usecols=["timestamp", "state"])
+            # Check for the "M" state
+            launch_time = df.loc[df["state"] == "M", "timestamp"]
+            if not launch_time.empty:
+                return convert_to_nanoseconds(launch_time.iloc[0])
+            return 0
+
+        df = self._read_csv(
+            usecols=[
+                "timestamp",
+                "estLinearAccelX",
+                "estLinearAccelY",
+                "estLinearAccelZ",
+            ]
+        )
+
+        # Calculate the magnitude of the estimated linear acceleration
+        df["estLinearAccelMag"] = (
+            df["estLinearAccelX"].astype(float) ** 2
+            + df["estLinearAccelY"].astype(float) ** 2
+            + df["estLinearAccelZ"].astype(float) ** 2
+        ) ** 0.5
+
+        # Check for the magnitude condition
+        launch_time = df.loc[df["estLinearAccelMag"] > 3, "timestamp"]
+        if not launch_time.empty:
+            return convert_to_nanoseconds(launch_time.iloc[0])
+        return 0
