@@ -66,11 +66,6 @@ SIMULATION_MAX_QUEUE_SIZE = 15
 PROCESS_TIMEOUT = 3
 
 # -------------------------------------------------------
-# Data Processing Configuration
-# -------------------------------------------------------
-
-
-# -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
 
@@ -100,20 +95,19 @@ LOG_BUFFER_SIZE = 5000
 
 # Arbitrarily set values for transition between states:
 
-# Standby to MotorBurn:
+# ----------------- Standby to MotorBurn ----------------
 ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
 TAKEOFF_HEIGHT = 10  # meters
 TAKEOFF_VELOCITY = 10  # m/s
 
-# MotorBurn to Coasting:
-
+# ---------------- MotorBurn to Coasting ----------------
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
 MAX_VELOCITY_THRESHOLD = 0.04
 
-# Free fall to Landing:
+# ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_LENGTH = 180.0  # seconds
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height
@@ -140,5 +134,5 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
-UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # [0.0259, 0.00065]
-# UNCERTAINTY_THRESHOLD = [0.1, 0.75]  # [0.0259, 0.00065]
+UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]
+# For near instantaneous convergence times, use: [0.1, 0.75]
