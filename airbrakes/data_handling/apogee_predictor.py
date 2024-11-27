@@ -15,8 +15,8 @@ from constants import (
     APOGEE_PREDICTION_FREQUENCY,
     CURVE_FIT_INITIAL,
     FLIGHT_LENGTH_SECONDS,
-    GRAVITY,
-    INTEGRATION_TIME_STEP,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+    INTEGRATION_TIME_STEP_SECONDS,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -177,21 +177,21 @@ class ApogeePredictor:
         # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
-        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
+        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
         predicted_accelerations = (
-            self._curve_fit_function(
+                self._curve_fit_function(
                 predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
             )
-            - GRAVITY
+                - GRAVITY_METERS_PER_SECOND_SQUARED
         )
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP + self._initial_velocity
+                np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP_SECONDS + self._initial_velocity
         )
         # We don't care about velocity values less than 0 as those correspond with the rocket
         # falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
-        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
+        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP_SECONDS
         predicted_apogee = np.max(predicted_altitudes)
         # We need to flip the lookup table because the velocities are in descending order, not
         # ascending order. We need them to be in ascending order for the interpolation to work.

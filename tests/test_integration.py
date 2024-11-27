@@ -13,10 +13,10 @@ import pytest
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
-    TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
+    TAKEOFF_HEIGHT_METERS,
+    TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
 
@@ -151,16 +151,16 @@ class TestIntegration:
 
         # Now let's check if the values in each state are as expected:
         assert stand_by_state.min_velocity == pytest.approx(0.0, abs=0.1)
-        assert stand_by_state.max_velocity <= TAKEOFF_VELOCITY
+        assert stand_by_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert stand_by_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
-        assert stand_by_state.max_altitude <= TAKEOFF_HEIGHT
+        assert stand_by_state.max_altitude <= TAKEOFF_HEIGHT_METERS
         assert not any(stand_by_state.apogee_prediction)
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in stand_by_state.extensions)
 
-        assert motor_burn_state.min_velocity >= TAKEOFF_VELOCITY
+        assert motor_burn_state.min_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert motor_burn_state.min_altitude >= -2.5  # detecting takeoff from velocity data
-        assert motor_burn_state.max_altitude >= TAKEOFF_HEIGHT
+        assert motor_burn_state.max_altitude >= TAKEOFF_HEIGHT_METERS
         assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
         assert not any(motor_burn_state.apogee_prediction)
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in motor_burn_state.extensions)
@@ -191,16 +191,16 @@ class TestIntegration:
         # max altitude of both states should be about the same
         assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=1e2)
         # free fall should be close to ground:
-        assert free_fall_state.min_altitude <= GROUND_ALTITUDE + 10.0
+        assert free_fall_state.min_altitude <= GROUND_ALTITUDE_METERS + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
         if launch_name != "purple_launch":
             # Generated data for simulated landing for interest launcH:
             landed_state = states_dict.LandedState
-            assert landed_state.min_velocity >= -LANDED_SPEED
+            assert landed_state.min_velocity >= -LANDED_SPEED_METERS_PER_SECOND
             assert landed_state.max_velocity <= 0.1
-            assert landed_state.min_altitude <= GROUND_ALTITUDE
-            assert landed_state.max_altitude <= GROUND_ALTITUDE + 10.0
+            assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
+            assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
             assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
 
         # Now let's check if everything was logged correctly:

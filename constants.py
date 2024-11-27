@@ -7,11 +7,12 @@ from pathlib import Path
 # Servo Configuration
 # -------------------------------------------------------
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 25 pin which is used to control the servo
-# You can read more about it here: https://www.youngwonks.com/blog/Raspberry-Pi-4-Pinout
 SERVO_PIN = 25
-# This is how long the servo approximately takes to move from one extreme to the other
-SERVO_DELAY = 0.3
+"""The pin on the pi that the servo's signal wire is plugged into, in this case the GPIO 25 pin. You
+can read more about the pins here: https://www.youngwonks.com/blog/Raspberry-Pi-4-Pinout"""
+SERVO_DELAY_SECONDS = 0.3
+"""This is how long the servo approximately takes to move from one extreme to the other. This is
+used for the no buzz code, to make sure the servo has enough time to move to the desired position"""
 
 
 class ServoExtension(Enum):
@@ -63,7 +64,7 @@ MAX_QUEUE_SIZE = 100000
 SIMULATION_MAX_QUEUE_SIZE = 15
 
 # The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
-PROCESS_TIMEOUT = 3
+PROCESS_TIMEOUT_SECONDS = 3.0
 
 # -------------------------------------------------------
 # Logging Configuration
@@ -96,24 +97,24 @@ LOG_BUFFER_SIZE = 5000
 # Arbitrarily set values for transition between states:
 
 # ----------------- Standby to MotorBurn ----------------
-ACCELERATION_NOISE_THRESHOLD = 0.35  # m/s^2
+ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35  # m/s^2
 
 # We will take the magnitude of acceleration for this
-TAKEOFF_HEIGHT = 10  # meters
-TAKEOFF_VELOCITY = 10  # m/s
+TAKEOFF_HEIGHT_METERS = 10  # meters
+TAKEOFF_VELOCITY_METERS_PER_SECOND = 10  # m/s
 
 # ---------------- MotorBurn to Coasting ----------------
 # We will only say that the motor has stopped burning if the
 # current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
-MAX_VELOCITY_THRESHOLD = 0.04
+MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND = 0.04
 
 # ----------------- Freefall to Landing -----------------
-MAX_FREE_FALL_LENGTH = 180.0  # seconds
+MAX_FREE_FALL_SECONDS = 180.0  # seconds
 
 # Consider the rocket to have landed if it is within 15 meters of the launch site height
 # and the speed is low.
-GROUND_ALTITUDE = 10.0  # meters
-LANDED_SPEED = 5.0  # m/s
+GROUND_ALTITUDE_METERS = 10.0  # meters
+LANDED_SPEED_METERS_PER_SECOND = 5.0  # m/s
 
 
 # -------------------------------------------------------
@@ -123,13 +124,13 @@ LANDED_SPEED = 5.0  # m/s
 # This needs to be checked/changed before flights
 FLIGHT_LENGTH_SECONDS = 22.0
 
-INTEGRATION_TIME_STEP = 1.0 / 500.0
+INTEGRATION_TIME_STEP_SECONDS = 1.0 / 500.0
 
 # This is the standard gravity on Earth, in m/s^2
-GRAVITY = 9.798
+GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
 
 # The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE = 1000  # m
+TARGET_ALTITUDE_METERS = 1000  # m
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
 

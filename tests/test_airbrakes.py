@@ -6,7 +6,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.state import CoastState, StandbyState
-from constants import SERVO_DELAY, ServoExtension
+from constants import SERVO_DELAY_SECONDS, ServoExtension
 
 
 class TestAirbrakesContext:
@@ -32,11 +32,11 @@ class TestAirbrakesContext:
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         airbrakes.extend_airbrakes()
         assert airbrakes.servo.current_extension == ServoExtension.MAX_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
+        time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MAX_NO_BUZZ
         airbrakes.retract_airbrakes()
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
+        time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
         assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_start(self, airbrakes):

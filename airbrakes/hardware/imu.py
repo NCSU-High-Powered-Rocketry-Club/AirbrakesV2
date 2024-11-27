@@ -15,7 +15,7 @@ from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT, RAW_DESCRIPTOR_SET
+from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, PROCESS_TIMEOUT_SECONDS, RAW_DESCRIPTOR_SET
 
 
 class IMU:
@@ -87,7 +87,7 @@ class IMU:
         # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
         with contextlib.suppress(multiprocessing.TimeoutError):
             self.get_imu_data_packets()
-            self._data_fetch_process.join(timeout=PROCESS_TIMEOUT)
+            self._data_fetch_process.join(timeout=PROCESS_TIMEOUT_SECONDS)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
@@ -97,7 +97,7 @@ class IMU:
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
             available, it will be None.
         """
-        return self._data_queue.get(timeout=PROCESS_TIMEOUT)
+        return self._data_queue.get(timeout=PROCESS_TIMEOUT_SECONDS)
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """

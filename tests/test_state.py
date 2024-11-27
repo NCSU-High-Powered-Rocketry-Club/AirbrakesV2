@@ -12,11 +12,11 @@ from airbrakes.state import (
     State,
 )
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
     LOG_BUFFER_SIZE,
-    MAX_FREE_FALL_LENGTH,
-    MAX_VELOCITY_THRESHOLD,
+    MAX_FREE_FALL_SECONDS,
+    MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
     ServoExtension,
 )
 
@@ -153,9 +153,9 @@ class TestMotorBurnState:
             (100.0, 100.0, MotorBurnState),
             (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
             (
-                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
-                54.0,
-                CoastState,
+                    53.999 - 54.0 * MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
+                    54.0,
+                    CoastState,
             ),  # tests that the threshold works
         ],
         ids=[
@@ -309,12 +309,12 @@ class TestFreeFallState:
     @pytest.mark.parametrize(
         ("current_altitude", "vertical_velocity", "expected_state", "time_length"),
         [
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, 1.0),
-            (GROUND_ALTITUDE * 2, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, LANDED_SPEED - 1.0, LandedState, 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
+            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS * 2, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, LANDED_SPEED_METERS_PER_SECOND - 1.0, LandedState, 1.0),
+            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), FreeFallState, MAX_FREE_FALL_SECONDS - 1.0),
+            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), LandedState, MAX_FREE_FALL_SECONDS),
         ],
         ids=[
             "falling",

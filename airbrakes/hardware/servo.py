@@ -6,7 +6,7 @@ import warnings
 
 import gpiozero
 
-from constants import SERVO_DELAY, ServoExtension
+from constants import SERVO_DELAY_SECONDS, ServoExtension
 
 
 class Servo:
@@ -41,8 +41,8 @@ class Servo:
         self.servo = gpiozero.Servo(gpio_pin_number)
         # We have to use threading to avoid blocking the main thread because our extension methods
         # need to run at a specific time.
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY, self._set_max_no_buzz)
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY, self._set_min_no_buzz)
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     def set_extended(self) -> None:
         """
@@ -56,7 +56,7 @@ class Servo:
         self._set_extension(ServoExtension.MAX_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the maximum extension
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY, self._set_max_no_buzz)
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
         self._go_to_max_no_buzz.start()
 
     def set_retracted(self) -> None:
@@ -71,7 +71,7 @@ class Servo:
         self._set_extension(ServoExtension.MIN_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the minimum extension
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY, self._set_min_no_buzz)
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
         self._go_to_min_no_buzz.start()
 
     def _set_max_no_buzz(self) -> None:

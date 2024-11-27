@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
-    MAX_FREE_FALL_LENGTH,
-    MAX_VELOCITY_THRESHOLD,
-    TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
+    MAX_FREE_FALL_SECONDS,
+    MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
+    TAKEOFF_HEIGHT_METERS,
+    TAKEOFF_VELOCITY_METERS_PER_SECOND,
+    TARGET_ALTITUDE_METERS,
 )
 from utils import convert_to_seconds
 
@@ -86,11 +86,11 @@ class StandbyState(State):
 
         data = self.context.data_processor
 
-        if data.vertical_velocity > TAKEOFF_VELOCITY:
+        if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
 
-        if data.current_altitude > TAKEOFF_HEIGHT:
+        if data.current_altitude > TAKEOFF_HEIGHT_METERS:
             self.next_state()
             return
 
@@ -115,7 +115,7 @@ class MotorBurnState(State):
         # bit less than the max velocity
         if (
             data.vertical_velocity
-            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
+            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND
         ):
             self.next_state()
             return
@@ -145,7 +145,7 @@ class CoastState(State):
         data = self.context.data_processor
 
         # if our prediction is overshooting our target altitude, extend the airbrakes
-        if self.context.apogee_predictor.apogee > TARGET_ALTITUDE:
+        if self.context.apogee_predictor.apogee > TARGET_ALTITUDE_METERS:
             if not self.airbrakes_extended:
                 self.context.extend_airbrakes()
                 self.airbrakes_extended = True
@@ -182,11 +182,11 @@ class FreeFallState(State):
         data = self.context.data_processor
 
         # If our altitude and speed are around 0, we have landed
-        if data.current_altitude <= GROUND_ALTITUDE and abs(data.vertical_velocity) <= LANDED_SPEED:
+        if data.current_altitude <= GROUND_ALTITUDE_METERS and abs(data.vertical_velocity) <= LANDED_SPEED_METERS_PER_SECOND:
             self.next_state()
 
         # If we have been in free fall for too long, we move to the landed state
-        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_LENGTH:
+        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self):
