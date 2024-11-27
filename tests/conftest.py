@@ -14,7 +14,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import EST_DATA_PACKET_SAMPLING_RATE, PORT, RAW_DATA_PACKET_SAMPLING_RATE, SERVO_PIN
+from constants import EST_DATA_PACKET_SAMPLING_RATE, IMU_PORT, RAW_DATA_PACKET_SAMPLING_RATE, SERVO_PIN
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
@@ -40,7 +40,7 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=PORT)
+    return IMU(port=IMU_PORT)
 
 
 @pytest.fixture
@@ -61,13 +61,13 @@ def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
 @pytest.fixture
 def random_data_mock_imu():
     # A mock IMU that outputs random data packets
-    return RandomDataIMU(port=PORT)
+    return RandomDataIMU(port=IMU_PORT)
 
 
 @pytest.fixture
 def idle_mock_imu():
     # A sleeping IMU that doesn't output any data packets
-    return IdleIMU(port=PORT)
+    return IdleIMU(port=IMU_PORT)
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)

@@ -7,8 +7,8 @@ from pathlib import Path
 # Servo Configuration
 # -------------------------------------------------------
 
-# The pin that the servo's data wire is plugged into, in this case the GPIO 12 pin which is used
-# for PWM
+# The pin that the servo's data wire is plugged into, in this case the GPIO 25 pin which is used to control the servo
+# You can read more about it here: https://www.youngwonks.com/blog/Raspberry-Pi-4-Pinout
 SERVO_PIN = 25
 # This is how long the servo approximately takes to move from one extreme to the other
 SERVO_DELAY = 0.3
@@ -20,6 +20,9 @@ class ServoExtension(Enum):
     the actual position. This is to ensure that the servo will move fast enough and with enough
     power to actually make it to the position, but then once it's there, we don't want it to keep
     straining past the physical bounds of the air brakes.
+
+    The range of the input for the servo is -1 to 1, where -1 is the minimum rotation and 1 is the
+    maximum rotation. We obtained these values through guess and check.
     """
 
     MIN_EXTENSION = -0.4
@@ -45,12 +48,10 @@ class DisplayEndingType(StrEnum):
 # IMU Configuration
 # -------------------------------------------------------
 
-# The port that the IMU is connected to
-PORT = "/dev/ttyACM0"
-
-# The frequency at which the IMU sends data packets, in seconds
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
+# The serial port that the IMU is connected to
+# This is typically the default port where the IMU connects to the Raspberry Pi.
+# "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the system.
+IMU_PORT = "/dev/ttyACM0"
 
 # The "IDs" of the data packets that the IMU sends
 ESTIMATED_DESCRIPTOR_SET = 130
@@ -128,7 +129,7 @@ LANDED_SPEED = 5.0  # m/s
 # This needs to be checked/changed before flights
 FLIGHT_LENGTH_SECONDS = 22.0
 
-INTEGRATION_TIME_STEP = EST_DATA_PACKET_SAMPLING_RATE
+INTEGRATION_TIME_STEP = 1.0 / 500.0
 
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
