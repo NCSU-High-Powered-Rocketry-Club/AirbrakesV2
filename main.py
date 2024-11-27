@@ -16,7 +16,6 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from constants import (
-    FREQUENCY,
     LOGS_PATH,
     PORT,
     SERVO_PIN,
@@ -58,7 +57,7 @@ def main(args: argparse.Namespace) -> None:
     else:
         # If we are not running a simulation, then we will use the real hardware objects
         servo = Servo(SERVO_PIN)
-        imu = IMU(PORT, FREQUENCY)
+        imu = IMU(PORT)
         logger = Logger(LOGS_PATH)
 
     # Our data processing and apogee prediction stay the same regardless of whether we are running

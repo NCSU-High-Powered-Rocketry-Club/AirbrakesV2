@@ -4,11 +4,11 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import FREQUENCY, PORT
+from constants import PORT
 from airbrakes.hardware.imu import IMU
 
 
-imu = IMU(PORT, FREQUENCY)
+imu = IMU(PORT)
 
 try:
     imu.start()

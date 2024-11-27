@@ -48,8 +48,9 @@ class DisplayEndingType(StrEnum):
 # The port that the IMU is connected to
 PORT = "/dev/ttyACM0"
 
-# The frequency in Hz that the IMU will be polled at
-FREQUENCY = 100  # TODO: Remove this since we don't/can't control the frequency from the code.
+# The frequency at which the IMU sends data packets, in seconds
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 # The "IDs" of the data packets that the IMU sends
 ESTIMATED_DESCRIPTOR_SET = 130
@@ -127,7 +128,7 @@ LANDED_SPEED = 5.0  # m/s
 # This needs to be checked/changed before flights
 FLIGHT_LENGTH_SECONDS = 22.0
 
-INTEGRATION_TIME_STEP = 1.0 / 500.0
+INTEGRATION_TIME_STEP = EST_DATA_PACKET_SAMPLING_RATE
 
 # This is the standard gravity on Earth, in m/s^2
 GRAVITY = 9.798
