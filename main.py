@@ -1,5 +1,9 @@
+"""The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object
+and run the main loop."""
+
 import argparse
 import time
+
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
@@ -25,9 +29,8 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
     if args.mock:
         # Replace hardware with mock objects for simulation
         imu = MockIMU(
-            args.path,
             real_time_simulation=not args.fast_simulation,
-            start_after_log_buffer=True
+            log_file_path=args.path,
         )
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
@@ -45,7 +48,9 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
     return servo, imu, logger
 
 
-def run_flight_loop(airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool) -> None:
+def run_flight_loop(
+    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
+) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
     :param airbrakes: The airbrakes context managing the state machine.

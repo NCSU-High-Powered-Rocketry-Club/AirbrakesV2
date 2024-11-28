@@ -88,7 +88,7 @@ TEST_LOGS_PATH = Path("test_logs")
 """The path of the folder to hold the test log files in"""
 
 STOP_SIGNAL = "STOP"
-"""The signal to stop the logging and the apogee prediction process, this will be put in the queue 
+"""The signal to stop the logging and the apogee prediction process, this will be put in the queue
 to stop the process"""
 
 
@@ -125,7 +125,7 @@ off."""
 # ---------------- MotorBurn to Coasting ----------------
 MAX_VELOCITY_THRESHOLD = 0.96
 """Because motors can behave unpredictably near the end of their burn, we will only say that the
-motor has stopped burning if the current velocity is less than this percentage of the max velocity."""
+motor has stopped burning if the current velocity is less than a percentage of the max velocity."""
 
 # ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_SECONDS = 300.0
