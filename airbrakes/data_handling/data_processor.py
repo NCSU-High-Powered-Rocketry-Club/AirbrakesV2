@@ -259,7 +259,10 @@ class IMUDataProcessor:
         # subtracted from vertical acceleration, Then deadbanded.
         vertical_accelerations = np.array(
             [
-                deadband(vertical_acceleration - GRAVITY_METERS_PER_SECOND_SQUARED, ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED)
+                deadband(
+                    vertical_acceleration - GRAVITY_METERS_PER_SECOND_SQUARED,
+                    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+                )
                 for vertical_acceleration in self._rotated_accelerations
             ]
         )

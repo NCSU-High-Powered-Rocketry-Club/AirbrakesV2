@@ -177,16 +177,19 @@ class ApogeePredictor:
         # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
-        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
+        predicted_coast_timestamps = np.arange(
+            0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS
+        )
 
         predicted_accelerations = (
-                self._curve_fit_function(
+            self._curve_fit_function(
                 predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
             )
-                - GRAVITY_METERS_PER_SECOND_SQUARED
+            - GRAVITY_METERS_PER_SECOND_SQUARED
         )
         predicted_velocities = (
-                np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP_SECONDS + self._initial_velocity
+            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP_SECONDS
+            + self._initial_velocity
         )
         # We don't care about velocity values less than 0 as those correspond with the rocket
         # falling

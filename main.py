@@ -16,8 +16,8 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from constants import (
-    LOGS_PATH,
     IMU_PORT,
+    LOGS_PATH,
     SERVO_PIN,
 )
 from utils import arg_parser

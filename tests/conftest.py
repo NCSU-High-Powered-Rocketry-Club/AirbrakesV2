@@ -14,7 +14,12 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import EST_DATA_PACKET_SAMPLING_RATE, IMU_PORT, RAW_DATA_PACKET_SAMPLING_RATE, SERVO_PIN
+from constants import (
+    EST_DATA_PACKET_SAMPLING_RATE,
+    IMU_PORT,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_PIN,
+)
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:

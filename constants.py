@@ -105,7 +105,7 @@ sure we don't lose data"""
 
 # ----------------- Standby to MotorBurn ----------------
 ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
-"""We integrate our acceleration to get velocity, but because IMU has some noise, and other things 
+"""We integrate our acceleration to get velocity, but because IMU has some noise, and other things
 like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
 we deadband the accel to prevent this."""
 
@@ -123,7 +123,7 @@ motor has stopped burning if the current velocity <= Max velocity * (1 - MAX_VEL
 # ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_SECONDS = 300.0
 """The maximum amount of time in seconds that the rocket can be in freefall before we consider it to
-have landed. This is to prevent the program from running indefinitely if our code never detects the 
+have landed. This is to prevent the program from running indefinitely if our code never detects the
 landing of the rocket. This value accounts for the worst case scenario of the main parachute
 deploying at apogee."""
 
@@ -162,4 +162,4 @@ APOGEE_PREDICTION_MIN_PACKETS = 10
 """The minimum number of data packets required to predict the apogee."""
 
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
-"""he uncertainty from the curve fit, below which we will say that our apogee has converged"""
+"""The uncertainty from the curve fit, below which we will say that our apogee has converged"""

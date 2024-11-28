@@ -182,7 +182,10 @@ class FreeFallState(State):
         data = self.context.data_processor
 
         # If our altitude and speed are around 0, we have landed
-        if data.current_altitude <= GROUND_ALTITUDE_METERS and abs(data.vertical_velocity) <= LANDED_SPEED_METERS_PER_SECOND:
+        if (
+            data.current_altitude <= GROUND_ALTITUDE_METERS
+            and abs(data.vertical_velocity) <= LANDED_SPEED_METERS_PER_SECOND
+        ):
             self.next_state()
 
         # If we have been in free fall for too long, we move to the landed state

@@ -153,9 +153,9 @@ class TestMotorBurnState:
             (100.0, 100.0, MotorBurnState),
             (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
             (
-                    53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
-                    54.0,
-                    CoastState,
+                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
+                54.0,
+                CoastState,
             ),  # tests that the threshold works
         ],
         ids=[
@@ -313,8 +313,18 @@ class TestFreeFallState:
             (GROUND_ALTITUDE_METERS * 2, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
             (GROUND_ALTITUDE_METERS - 5, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
             (GROUND_ALTITUDE_METERS - 5, LANDED_SPEED_METERS_PER_SECOND - 1.0, LandedState, 1.0),
-            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), FreeFallState, MAX_FREE_FALL_SECONDS - 1.0),
-            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), LandedState, MAX_FREE_FALL_SECONDS),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                FreeFallState,
+                MAX_FREE_FALL_SECONDS - 1.0,
+            ),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                LandedState,
+                MAX_FREE_FALL_SECONDS,
+            ),
         ],
         ids=[
             "falling",

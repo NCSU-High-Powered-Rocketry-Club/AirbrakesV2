@@ -15,7 +15,12 @@ from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from constants import ESTIMATED_DESCRIPTOR_SET, MAX_QUEUE_SIZE, IMU_TIMEOUT_SECONDS, RAW_DESCRIPTOR_SET
+from constants import (
+    ESTIMATED_DESCRIPTOR_SET,
+    IMU_TIMEOUT_SECONDS,
+    MAX_QUEUE_SIZE,
+    RAW_DESCRIPTOR_SET,
+)
 
 
 class IMU:
