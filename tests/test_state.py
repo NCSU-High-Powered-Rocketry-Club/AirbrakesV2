@@ -229,7 +229,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", predicted_apogee)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
         coast_state.update()
         assert isinstance(
             coast_state.context.state, expected_state

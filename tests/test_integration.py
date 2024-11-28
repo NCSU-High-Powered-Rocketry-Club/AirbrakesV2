@@ -64,11 +64,11 @@ class TestIntegration:
         # request.node.name is the name of the test function, e.g. test_update[interest_launch]
         launch_name = request.node.name.split("[")[-1].strip("]")
 
-        # Since TARGET_ALTITUDE is bound locally to the importing module, we have to patch it here.
-        # simply doing constants.TARGET_ALTITUDE = target_altitude will only change it here, and not
-        # in the actual state module.
+        # Since TARGET_ALTITUDE_METERS is bound locally to the importing module, we have to patch it
+        # here. Simply doing constants.TARGET_ALTITUDE_METERS = target_altitude will only change it
+        # here, and not in the actual state module.
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
 
         states_dict: dict[str, StateInformation] = {}
 

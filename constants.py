@@ -88,7 +88,8 @@ TEST_LOGS_PATH = Path("test_logs")
 """The path of the folder to hold the test log files in"""
 
 STOP_SIGNAL = "STOP"
-"""The signal to stop the logging and the apogee prediction process, this will be put in the queue to stop the process"""
+"""The signal to stop the logging and the apogee prediction process, this will be put in the queue 
+to stop the process"""
 
 
 # Formula for converting number of packets to seconds and vice versa:
