@@ -71,12 +71,11 @@ def main(args: argparse.Namespace) -> None:
     flight_display = FlightDisplay(airbrakes, sim_time_start, args)
 
     try:
-        airbrakes.start()  # Start the IMU and logger processes
+        # Starts the IMU, Apogee Prediction, and Logger processes
+        airbrakes.start()
 
-        # Setup our flight display
-        # This is what prints the flight data to the console in real time, we only do
-        # it when running the sim because printing a lot of things can significantly slow down
-        # the program
+        # This starts our display. It will run for the entire duration of the mock, but only during
+        # LandedState in the real flight as lots of printing can be expensive.
         flight_display.start()
 
         # This is the main loop that will run until we press Ctrl+C
@@ -85,7 +84,7 @@ def main(args: argparse.Namespace) -> None:
             airbrakes.update()
 
             # Stop the sim when the data is exhausted:
-            if args.mock and not airbrakes.imu._data_fetch_process.is_alive():
+            if args.mock and not airbrakes.imu.is_running:
                 break
     except KeyboardInterrupt:
         if args.mock:

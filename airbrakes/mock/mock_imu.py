@@ -33,13 +33,12 @@ class MockIMU(IMU):
     ):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a
-            log file.
+        log file.
         :param log_file_path: The path of the log file to read data from.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set
-            period, or run at full
-            speed, e.g. for using it in the CI.
+        period, or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
         self._log_file_path = log_file_path
         # Check if the launch data file exists:
@@ -85,9 +84,9 @@ class MockIMU(IMU):
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: the name of the log file to read data from located in scripts/imu_data
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
-            or run at full speed, e.g. for using it in the CI.
+        or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
         start_index = 0
         if start_after_log_buffer:
@@ -116,6 +115,7 @@ class MockIMU(IMU):
             (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
             & set(df_header.columns)
         )
+
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         df = pd.read_csv(
             log_file_path,
@@ -157,3 +157,6 @@ class MockIMU(IMU):
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
             self._read_file(log_file_path, real_time_simulation, start_after_log_buffer)
+
+        # For the mock, once we're done reading the file, we say it is no longer running
+        self._running.value = False
