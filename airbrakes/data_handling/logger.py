@@ -24,8 +24,6 @@ class Logger:
 
     It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
     our logs in real time.
-
-    :param log_dir: The directory where the log files will be.
     """
 
     __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
@@ -94,6 +92,18 @@ class Logger:
         :return: The truncated object.
         """
         return f"{obj_type:.8f}"
+
+    @staticmethod
+    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
+        """
+        Truncates the decimal place of the floats in the dictionary to 8 decimal places.
+        :param data: The dictionary to truncate.
+        :return: The truncated dictionary.
+        """
+        return {
+            key: f"{value:.8f}" if isinstance(value, float) else value
+            for key, value in data.items()
+        }
 
     def start(self) -> None:
         """
@@ -207,7 +217,7 @@ class Logger:
                 # Convert the processed data packet to a dictionary. Unknown types such as numpy
                 # float64 are converted to strings with 8 decimal places (that's enc_hook)
                 processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=self._convert_unknown_type
+                    processed_data_packets.popleft(), enc_hook=Logger._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
@@ -219,19 +229,6 @@ class Logger:
             logged_data_packets.append(logged_fields)
 
         return logged_data_packets
-
-    # ------------------------------- RUN IN A SEPARATE PROCESS -----------------------------------
-    @staticmethod
-    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
-        """
-        Truncates the decimal place of the floats in the dictionary to 8 decimal places.
-        :param data: The dictionary to truncate.
-        :return: The truncated dictionary.
-        """
-        return {
-            key: f"{value:.8f}" if isinstance(value, float) else value
-            for key, value in data.items()
-        }
 
     def _logging_loop(self) -> None:
         """
@@ -249,4 +246,4 @@ class Logger:
                 # If the message is the stop signal, break out of the loop
                 if message_fields == STOP_SIGNAL:
                     break
-                writer.writerow(self._truncate_floats(message_fields))
+                writer.writerow(Logger._truncate_floats(message_fields))

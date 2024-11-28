@@ -141,12 +141,14 @@ class CoastState(State):
 
         data = self.context.data_processor
 
-        # if our prediction is overshooting our target altitude, extend the airbrakes
-        if self.context.apogee_predictor.apogee > TARGET_ALTITUDE_METERS:
-            if not self.airbrakes_extended:
-                self.context.extend_airbrakes()
-                self.airbrakes_extended = True
-        elif self.airbrakes_extended:
+        # This is our bang-bang controller for the airbrakes. If we predict we are going to
+        # overshoot our target altitude, we extend the airbrakes. If we predict we are going to
+        # undershoot our target altitude, we retract the airbrakes.
+        apogee = self.context.apogee_predictor.apogee
+        if apogee > TARGET_ALTITUDE_METERS and not self.airbrakes_extended:
+            self.context.extend_airbrakes()
+            self.airbrakes_extended = True
+        elif apogee <= TARGET_ALTITUDE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
             self.airbrakes_extended = False
 

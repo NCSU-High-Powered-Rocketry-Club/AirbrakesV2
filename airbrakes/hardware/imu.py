@@ -47,8 +47,6 @@ class IMU:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
-        :param frequency: the frequency that the IMU is set to poll at (this can be checked in
-        SensorConnect)
         """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
@@ -84,7 +82,7 @@ class IMU:
         # Initialize packet with the timestamp, determines if the packet is raw or estimated
         if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
             return EstimatedDataPacket(timestamp)
-        elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+        if packet.descriptorSet() == RAW_DESCRIPTOR_SET:
             return RawDataPacket(timestamp)
         return None
 

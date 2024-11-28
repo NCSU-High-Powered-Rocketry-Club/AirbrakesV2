@@ -5,6 +5,7 @@ import threading
 import warnings
 
 import gpiozero
+
 from constants import SERVO_DELAY_SECONDS, ServoExtension
 
 
