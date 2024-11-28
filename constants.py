@@ -54,6 +54,12 @@ IMU_PORT = "/dev/ttyACM0"
 to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the
 system."""
 
+# The frequency at which the IMU sends data packets, in seconds
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000
+"""The frequency at which the IMU sends raw data packets, this is 1kHz"""
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""The frequency at which the IMU sends estimated data packets, this is 500Hz"""
+
 # The "IDs" of the data packets that the IMU sends.
 ESTIMATED_DESCRIPTOR_SET = 130
 """The ID of the estimated data packet that the IMU sends"""
