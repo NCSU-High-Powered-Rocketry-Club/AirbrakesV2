@@ -70,11 +70,11 @@ class IMU:
         return self._running.value
 
     @staticmethod
-    def _initialize_packet(packet: mscl.MipDataPacket) -> IMUDataPacket | None:
+    def _initialize_packet(packet) -> IMUDataPacket | None:
         """
         Initialize an IMU data packet based on its descriptor set.
         :param packet: The data packet from the IMU.
-        :return: An IMUDatapacket, or None if the packet is unrecognized.
+        :return: An IMUDataPacket, or None if the packet is unrecognized.
         """
         # Extract the timestamp from the packet.
         timestamp = packet.collectedTimestamp().nanoseconds()
@@ -87,7 +87,7 @@ class IMU:
         return None
 
     @staticmethod
-    def _process_data_point(data_point: mscl.MipDataPoint, channel: str, imu_data_packet) -> None:
+    def _process_data_point(data_point, channel: str, imu_data_packet) -> None:
         """
         Process an individual data point and set its value in the data packet object.
         :param data_point: The IMU data point containing the measurement.
@@ -113,7 +113,7 @@ class IMU:
             imu_data_packet.invalid_fields.append(channel)
 
     @staticmethod
-    def _process_packet_data(packet: mscl.MipDataPacket, imu_data_packet) -> None:
+    def _process_packet_data(packet, imu_data_packet) -> None:
         """
         Process the data points in the packet and update the data packet object.
         :param packet: The IMU data packet containing multiple data points.
