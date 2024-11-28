@@ -115,7 +115,7 @@ class MotorBurnState(State):
         # bit less than the max velocity
         if (
             data.vertical_velocity
-            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
+            < data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
         ):
             self.next_state()
             return

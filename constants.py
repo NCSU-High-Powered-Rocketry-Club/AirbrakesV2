@@ -66,7 +66,7 @@ ESTIMATED_DESCRIPTOR_SET = 130
 RAW_DESCRIPTOR_SET = 128
 """The ID of the raw data packet that the IMU sends"""
 
-MAX_QUEUE_SIZE = 100000
+MAX_QUEUE_SIZE = 100_000
 """The maximum size of the queue that holds the data packets. This is to prevent the queue from"
 growing too large and taking up too much memory. This is a very large number, so it should not be
 reached in normal operation."""
@@ -75,7 +75,7 @@ SIMULATION_MAX_QUEUE_SIZE = 15
 
 IMU_TIMEOUT_SECONDS = 3.0
 """The maximum amount of time in seconds the IMU process to do something (e.g. read a packet) before
-it is considered to have timed out. This is used to prevent the program from hanging if the IMU
+it is considered to have timed out. This is used to prevent the program from deadlocking if the IMU
 stops sending data."""
 
 # -------------------------------------------------------
@@ -123,9 +123,9 @@ TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 off."""
 
 # ---------------- MotorBurn to Coasting ----------------
-MAX_VELOCITY_THRESHOLD = 0.04
+MAX_VELOCITY_THRESHOLD = 0.96
 """Because motors can behave unpredictably near the end of their burn, we will only say that the
-motor has stopped burning if the current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)"""
+motor has stopped burning if the current velocity is less than this percentage of the max velocity."""
 
 # ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_SECONDS = 300.0

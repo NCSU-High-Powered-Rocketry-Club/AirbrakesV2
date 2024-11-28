@@ -265,7 +265,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
         coast_state.update()
         assert coast_state.context.current_extension == expected_airbrakes
 
@@ -281,7 +281,7 @@ class TestCoastState:
         # patch the extend_airbrakes method to count the number of calls made:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", 900.0)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
         coast_state.context.apogee_predictor._apogee_prediction_value.value = 1000.0
 
         coast_state.update()
