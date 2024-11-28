@@ -57,7 +57,8 @@ class Servo:
 
         self._set_extension(ServoExtension.MAX_EXTENSION)
 
-        # Restart the timer to stop buzzing once the extension is reached
+        # Creates a timer to stop the buzzing after the servo reaches the maximum extension
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
         self._go_to_max_no_buzz.start()
 
     def set_retracted(self) -> None:
@@ -71,7 +72,8 @@ class Servo:
 
         self._set_extension(ServoExtension.MIN_EXTENSION)
 
-        # Restart the timer to stop buzzing once retraction is complete
+        # Creates a timer to stop the buzzing after the servo reaches the minimum extension
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
         self._go_to_min_no_buzz.start()
 
     def _set_max_no_buzz(self) -> None:
