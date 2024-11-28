@@ -49,34 +49,40 @@ class DisplayEndingType(StrEnum):
 # IMU Configuration
 # -------------------------------------------------------
 
-# The serial port that the IMU is connected to
-# This is typically the default port where the IMU connects to the Raspberry Pi.
-# "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the system.
 IMU_PORT = "/dev/ttyACM0"
+"""The port that the IMU is connected to. This is typically the default port where the IMU connects
+to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the
+system."""
 
-# The "IDs" of the data packets that the IMU sends
+# The "IDs" of the data packets that the IMU sends.
 ESTIMATED_DESCRIPTOR_SET = 130
+"""The ID of the estimated data packet that the IMU sends"""
 RAW_DESCRIPTOR_SET = 128
+"""The ID of the raw data packet that the IMU sends"""
 
-# The maximum size of the data queue for the packets, so we don't run into memory issues
 MAX_QUEUE_SIZE = 100000
-# This is used for the mock imu to limit the queue size to a more realistic value
+"""The maximum size of the queue that holds the data packets. This is to prevent the queue from"
+growing too large and taking up too much memory. This is a very large number, so it should not be
+reached in normal operation."""
 SIMULATION_MAX_QUEUE_SIZE = 15
+"""This is used for the mock imu to limit the queue size to a more realistic value"""
 
-# The maximum amount of time in seconds the IMU process will wait for a packet before timing out:
-PROCESS_TIMEOUT_SECONDS = 3.0
+IMU_TIMEOUT_SECONDS = 3.0
+"""The maximum amount of time in seconds the IMU process to do something (e.g. read a packet) before
+it is considered to have timed out. This is used to prevent the program from hanging if the IMU
+stops sending data."""
 
 # -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
 
-# The path of the folder to hold the log files in
 LOGS_PATH = Path("logs")
+"""The path of the folder to hold the log files in"""
 TEST_LOGS_PATH = Path("test_logs")
+"""The path of the folder to hold the test log files in"""
 
-# The signal to stop the logging process, this will be put in the queue to stop the process
-# see stop() and _logging_loop() for more details.
 STOP_SIGNAL = "STOP"
+"""The signal to stop the logging process, this will be put in the queue to stop the process"""
 
 
 # Formula for converting number of packets to seconds and vice versa:
@@ -84,11 +90,12 @@ STOP_SIGNAL = "STOP"
 # f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 1000 = 1500 Hz
 # T = N/f => T = N/1500
 
-# Don't log more than x packets for StandbyState and LandedState
 IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
-# Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
-# sure we don't lose data
+"""The maximum number of data packets to log in the StandbyState and LandedState. This is to prevent
+log file sizes from growing too large. Some of our 2023-2024 launches were >300 mb."""
 LOG_BUFFER_SIZE = 5000
+"""Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
+sure we don't lose data"""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -97,25 +104,34 @@ LOG_BUFFER_SIZE = 5000
 # Arbitrarily set values for transition between states:
 
 # ----------------- Standby to MotorBurn ----------------
-ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35  # m/s^2
+ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
+"""We integrate our acceleration to get velocity, but because IMU has some noise, and other things 
+like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
+we deadband the accel to prevent this."""
 
-# We will take the magnitude of acceleration for this
-TAKEOFF_HEIGHT_METERS = 10  # meters
-TAKEOFF_VELOCITY_METERS_PER_SECOND = 10  # m/s
+TAKEOFF_HEIGHT_METERS = 10
+"""The height in meters that the rocket must reach before we consider it to have taken off."""
+TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
+"""The velocity in meters per second that the rocket must reach before we consider it to have taken
+off."""
 
 # ---------------- MotorBurn to Coasting ----------------
-# We will only say that the motor has stopped burning if the
-# current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)
-MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND = 0.04
+MAX_VELOCITY_THRESHOLD = 0.04
+"""Because motors can behave unpredictably near the end of their burn, we will only say that the
+motor has stopped burning if the current velocity <= Max velocity * (1 - MAX_VELOCITY_THRESHOLD)"""
 
 # ----------------- Freefall to Landing -----------------
-MAX_FREE_FALL_SECONDS = 180.0  # seconds
+MAX_FREE_FALL_SECONDS = 300.0
+"""The maximum amount of time in seconds that the rocket can be in freefall before we consider it to
+have landed. This is to prevent the program from running indefinitely if our code never detects the 
+landing of the rocket. This value accounts for the worst case scenario of the main parachute
+deploying at apogee."""
 
-# Consider the rocket to have landed if it is within 15 meters of the launch site height
-# and the speed is low.
-GROUND_ALTITUDE_METERS = 10.0  # meters
-LANDED_SPEED_METERS_PER_SECOND = 5.0  # m/s
-
+GROUND_ALTITUDE_METERS = 10.0
+"""The altitude in meters that the rocket must be under before we consider it to have landed."""
+LANDED_SPEED_METERS_PER_SECOND = 5.0
+"""The speed in meters per second that the rocket must be under before we consider it to have
+landed."""
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
@@ -123,17 +139,27 @@ LANDED_SPEED_METERS_PER_SECOND = 5.0  # m/s
 
 # This needs to be checked/changed before flights
 FLIGHT_LENGTH_SECONDS = 22.0
+"""When we do apogee prediction, we do stepwise integration of our fitted curve to predict the
+accel, velocity, and altitude curve of the rocket. This is the total time in seconds that we will
+predict for. This is a rough estimate of the time from coast state to freefall with some extra room
+for error."""
 
 INTEGRATION_TIME_STEP_SECONDS = 1.0 / 500.0
+"""This is the dt that we use for the stepwise integration of our fitted curve. It could be any
+value and just corresponds to the precision of our prediction."""
 
-# This is the standard gravity on Earth, in m/s^2
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
+"""This is the standard gravity on Earth."""
 
-# The altitude at which the rocket is expected to reach apogee, without the airbrakes
-TARGET_ALTITUDE_METERS = 1000  # m
+TARGET_ALTITUDE_METERS = 1000
+"""The target altitude in meters that we want the rocket to reach. This is used with our bang-bang
+controller to determine when to extend and retract the airbrakes."""
+
 CURVE_FIT_INITIAL = [-10.5, 0.03]
-APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
+"""The initial guess for the coefficients for curve fit of the acceleration curve."""
 
-# The uncertainty from the curve fit, below which we will say that our apogee has converged:
-UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]
-# For near instantaneous convergence times, use: [0.1, 0.75]
+APOGEE_PREDICTION_MIN_PACKETS = 10
+"""The minimum number of data packets required to predict the apogee."""
+
+UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
+"""he uncertainty from the curve fit, below which we will say that our apogee has converged"""

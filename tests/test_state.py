@@ -16,7 +16,7 @@ from constants import (
     LANDED_SPEED_METERS_PER_SECOND,
     LOG_BUFFER_SIZE,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
+    MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
 
@@ -153,7 +153,7 @@ class TestMotorBurnState:
             (100.0, 100.0, MotorBurnState),
             (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
             (
-                    53.999 - 54.0 * MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
+                    53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
                     54.0,
                     CoastState,
             ),  # tests that the threshold works

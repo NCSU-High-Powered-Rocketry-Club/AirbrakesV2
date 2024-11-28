@@ -7,7 +7,7 @@ from constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_SPEED_METERS_PER_SECOND,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND,
+    MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_ALTITUDE_METERS,
@@ -115,7 +115,7 @@ class MotorBurnState(State):
         # bit less than the max velocity
         if (
             data.vertical_velocity
-            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD_METERS_PER_SECOND
+            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
         ):
             self.next_state()
             return

@@ -12,7 +12,7 @@ from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import (
-    APOGEE_PREDICTION_FREQUENCY,
+    APOGEE_PREDICTION_MIN_PACKETS,
     CURVE_FIT_INITIAL,
     FLIGHT_LENGTH_SECONDS,
     GRAVITY_METERS_PER_SECOND_SQUARED,
@@ -223,7 +223,7 @@ class ApogeePredictor:
 
             self._extract_processed_data_packets(data_packets)
 
-            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
+            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:
