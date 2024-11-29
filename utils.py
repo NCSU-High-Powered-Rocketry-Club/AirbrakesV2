@@ -112,6 +112,14 @@ def arg_parser() -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "-o",
+        "--old-display",
+        help="Use the legacy display instead of the new one.",
+        action="store_true",
+        default=False,
+    )
+
     args = parser.parse_args()
 
     # Check if the user has passed any options that are only available in simulation mode:

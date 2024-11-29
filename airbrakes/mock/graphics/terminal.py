@@ -5,13 +5,18 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Label, Static
+from textual.widgets import Footer, Header, Label, Static, Digits
+
+
+class TimeDisplay(Digits):
+    """A widget to display elapsed flight time"""
 
 
 class FlightDisplay(App):
     """A terminal based GUI for displaying real-time flight data."""
 
     BINDINGS: ClassVar = [("q", "quit", "Quit")]
+    TITLE = "AirbrakesV2"
 
     def compose(self) -> ComposeResult:
         """Create the layout of the app."""
@@ -35,7 +40,7 @@ class FlightDataPanel(Static):
 
     def compose(self) -> ComposeResult:
         yield Label("Flight Data", id="title")
-        yield Label("T+: " + self.time_display, id="time_display")
+        yield TimeDisplay("T+: " + self.time_display, id="time_display")
         yield Label("State: " + self.state, id="state")
         yield Label("Current Velocity: " + self.current_velocity, id="current_velocity")
         yield Label("Max Velocity: " + self.max_velocity, id="max_velocity")
