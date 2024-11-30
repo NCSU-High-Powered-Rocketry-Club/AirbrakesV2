@@ -140,9 +140,7 @@ class ApogeePredictor:
 
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
-        # The .copy() below is critical to ensure the data is actually transferred correctly to
-        # the apogee prediction process.
-        self._prediction_queue.put_many(list(processed_data_packets.copy()))
+        self._prediction_queue.put_many(list(processed_data_packets))
 
     # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
     @staticmethod
