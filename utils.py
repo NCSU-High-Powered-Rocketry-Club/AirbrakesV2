@@ -4,6 +4,22 @@ import argparse
 from pathlib import Path
 
 
+def get_all_from_queue(self, *args, **kwargs) -> list:
+    """Used to get all the items from a queue at once. Only relevant if you are running the mock
+    sim on Windows, as the multiprocessing.Queue doesn't have a `get_many` method"""
+    kwargs.pop("max_messages_to_get", None)  # Argument only used in the Linux version
+    return [self.get(*args, **kwargs) for _ in range(self.qsize())]
+
+
+def get_always_list(self, *args, **kwargs) -> list:
+    """Used to get items from the queue, and always returns a list. Only relevant on Windows,
+    as the multiprocessing.Queue doesn't have a `get_many` method"""
+    fetched = self.get(*args, **kwargs)
+    if isinstance(fetched, list):
+        return fetched
+    return [fetched]
+
+
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
     """Converts seconds to nanoseconds, if it isn't already in nanoseconds."""
     try:

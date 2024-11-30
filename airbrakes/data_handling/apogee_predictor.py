@@ -2,13 +2,22 @@
 
 import multiprocessing
 import signal
+import sys
 from collections import deque
 from typing import Literal
 
 import msgspec
 import numpy as np
 import numpy.typing as npt
-from faster_fifo import Queue
+
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from utils import get_always_list
+
 from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
@@ -65,12 +74,19 @@ class ApogeePredictor:
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
         self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
-        # self._prediction_queue: multiprocessing.Queue[
-        #     deque[ProcessedDataPacket] | Literal["STOP"]
-        # ] = multiprocessing.Queue()
-        self._prediction_queue: Queue[deque[ProcessedDataPacket] | Literal["STOP"]] = Queue(
-            max_size_bytes=MAX_SIZE_BYTES
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            self._prediction_queue: multiprocessing.Queue[
+                list[ProcessedDataPacket] | Literal["STOP"]
+            ] = multiprocessing.Queue()
+            self._prediction_queue.get_many = partial(get_always_list, self._prediction_queue)
+            self._prediction_queue.put_many = self._prediction_queue.put
+        else:
+            self._prediction_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
+                max_size_bytes=MAX_SIZE_BYTES
+            )
+
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
@@ -222,7 +238,9 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets = self._prediction_queue.get_many(timeout=MAX_GET_TIMEOUT)
+            data_packets: list[ProcessedDataPacket | Literal["STOP"]] = (
+                self._prediction_queue.get_many(timeout=MAX_GET_TIMEOUT)
+            )
 
             if STOP_SIGNAL in data_packets:
                 break

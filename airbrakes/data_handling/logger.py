@@ -3,11 +3,19 @@
 import csv
 import multiprocessing
 import signal
+import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
-from faster_fifo import Queue
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from utils import get_always_list
+
+
 from msgspec import to_builtins
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
@@ -69,12 +77,18 @@ class Logger:
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        # self._log_queue: multiprocessing.Queue[LoggedDataPacket | Literal["STOP"]] = (
-        #     multiprocessing.Queue()
-        # )
-        self._log_queue: Queue[LoggedDataPacket | Literal["STOP"]] = Queue(
-            max_size_bytes=1000 * 1000 * 10  # 10 Mb
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            self._log_queue: multiprocessing.Queue[list[LoggedDataPacket] | Literal["STOP"]] = (
+                multiprocessing.Queue()
+            )
+            self._log_queue.get_many = partial(get_always_list, self._log_queue)
+            self._log_queue.put_many = self._log_queue.put
+        else:
+            self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
+                max_size_bytes=1000 * 1000 * 10  # 10 Mb
+            )
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
@@ -254,7 +268,9 @@ class Logger:
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get_many(timeout=MAX_GET_TIMEOUT)
+                message_fields: list[LoggedDataPacket | Literal["STOP"]] = self._log_queue.get_many(
+                    timeout=MAX_GET_TIMEOUT
+                )
                 # If the message is the stop signal, break out of the loop
                 for message_field in message_fields:
                     if message_field == STOP_SIGNAL:

@@ -3,6 +3,7 @@
 import collections
 import contextlib
 import multiprocessing
+import sys
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
 # mscl is annoying and we really just have it installed on the pi
@@ -10,7 +11,11 @@ with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
 
-from faster_fifo import Empty, Queue
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Empty, Queue
+else:
+    from multiprocessing.queues import Empty
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -56,6 +61,7 @@ class IMU:
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
+        # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
         self._data_queue: Queue[IMUDataPacket] = Queue(maxsize=MAX_QUEUE_SIZE)
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
