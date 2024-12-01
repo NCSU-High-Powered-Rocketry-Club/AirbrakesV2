@@ -127,6 +127,11 @@ MAX_VELOCITY_THRESHOLD = 0.96
 """Because motors can behave unpredictably near the end of their burn, we will only say that the
 motor has stopped burning if the current velocity is less than a percentage of the max velocity."""
 
+# ----------------- Coasting to Freefall -----------------
+TARGET_ALTITUDE_METERS = 1000
+"""The target altitude in meters that we want the rocket to reach. This is used with our bang-bang
+controller to determine when to extend and retract the airbrakes."""
+
 # ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_SECONDS = 300.0
 """The maximum amount of time in seconds that the rocket can be in freefall before we consider it to
@@ -158,10 +163,6 @@ value and just corresponds to the precision of our prediction."""
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
 """This is the standard gravity on Earth."""
 
-TARGET_ALTITUDE_METERS = 1000
-"""The target altitude in meters that we want the rocket to reach. This is used with our bang-bang
-controller to determine when to extend and retract the airbrakes."""
-
 CURVE_FIT_INITIAL = [-10.5, 0.03]
 """The initial guess for the coefficients for curve fit of the acceleration curve."""
 
@@ -169,5 +170,5 @@ APOGEE_PREDICTION_MIN_PACKETS = 10
 """The minimum number of data packets required to predict the apogee."""
 
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
-"""The uncertainty from the curve fit, below which we will say that our apogee has converged. This uncertainty
-corresponds to being off by +/- 5m."""
+"""The uncertainty from the curve fit, below which we will say that our apogee has converged. This
+uncertainty corresponds to being off by +/- 5m."""

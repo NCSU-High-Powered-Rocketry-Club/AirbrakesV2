@@ -74,9 +74,9 @@ def run_flight_loop(
     except KeyboardInterrupt:
         if is_mock:
             flight_display.end_sim_interrupted.set()
-    else:
-        # Stop the mock simulation naturally if not interrupted
+    else:  # This is run if we have landed and the program is not interrupted (see state.py)
         if is_mock:
+            # Stop the mock simulation naturally if not interrupted
             flight_display.end_sim_natural.set()
     finally:
         # Stop the display and airbrakes
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Command line args (after these are run, you can press Ctrl+C to exit the program):
     # python main.py -v: Shows the display with much more data
     # python main.py -m: Runs a simulation on your computer
-    # python main.py -m -r: Runs a simulation on your computer with the real servo.
+    # python main.py -m -r: Runs a simulation on your computer with the real servo
     # python main.py -m -l: Runs a simulation on your computer and keeps the log file after the
     # simulation stops
     # python main.py -m -f: Runs a simulation on your computer at full speed
