@@ -169,4 +169,5 @@ APOGEE_PREDICTION_MIN_PACKETS = 10
 """The minimum number of data packets required to predict the apogee."""
 
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
-"""The uncertainty from the curve fit, below which we will say that our apogee has converged"""
+"""The uncertainty from the curve fit, below which we will say that our apogee has converged. This uncertainty
+corresponds to being off by +/- 5m."""
