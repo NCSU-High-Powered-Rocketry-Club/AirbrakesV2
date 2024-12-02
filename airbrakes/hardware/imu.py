@@ -116,7 +116,7 @@ class IMU:
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
-    def _initialize_packet(packet) -> IMUDataPacket | None:
+    def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:
         """
         Initialize an IMU data packet based on its descriptor set.
         :param packet: The data packet from the IMU.
@@ -133,9 +133,12 @@ class IMU:
         return None
 
     @staticmethod
-    def _process_data_point(data_point, channel: str, imu_data_packet) -> None:
+    def _process_data_point(
+        data_point: "mscl.MipDataPoint", channel: str, imu_data_packet: IMUDataPacket
+    ) -> None:
         """
-        Process an individual data point and set its value in the data packet object.
+        Process an individual data point and set its value in the data packet object. Modifies
+        `imu_data_packet` in place.
         :param data_point: The IMU data point containing the measurement.
         :param channel: The channel name of the data point.
         :param imu_data_packet: The data packet object to update.
@@ -159,13 +162,15 @@ class IMU:
             imu_data_packet.invalid_fields.append(channel)
 
     @staticmethod
-    def _process_packet_data(packet, imu_data_packet) -> None:
+    def _process_packet_data(packet: "mscl.MipDataPacket", imu_data_packet: IMUDataPacket) -> None:
         """
-        Process the data points in the packet and update the data packet object.
+        Process the data points in the packet and update the data packet object. Modifies
+        `imu_data_packet` in place.
         :param packet: The IMU data packet containing multiple data points.
         :param imu_data_packet: The initialized data packet object to populate.
         """
         # Iterate through each data point in the packet.
+        data_point: mscl.MipDataPoint
         for data_point in packet.data():
             # Extract the channel name of the data point.
             channel = data_point.channelName()
@@ -190,6 +195,7 @@ class IMU:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
+            packet: mscl.MipDataPacket
             for packet in packets:
                 # Initialize the appropriate data packet.
                 imu_data_packet = IMU._initialize_packet(packet)
