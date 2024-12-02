@@ -12,11 +12,11 @@ from scipy.optimize import curve_fit
 
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import (
-    APOGEE_PREDICTION_FREQUENCY,
+    APOGEE_PREDICTION_MIN_PACKETS,
     CURVE_FIT_INITIAL,
     FLIGHT_LENGTH_SECONDS,
-    GRAVITY,
-    INTEGRATION_TIME_STEP,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+    INTEGRATION_TIME_STEP_SECONDS,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -122,7 +122,7 @@ class ApogeePredictor:
         # the apogee prediction process.
         self._prediction_queue.put(processed_data_packets.copy())
 
-    # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _curve_fit_function(
         t: npt.NDArray[np.float64], a: np.float64, b: np.float64
@@ -177,21 +177,24 @@ class ApogeePredictor:
         # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
-        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
+        predicted_coast_timestamps = np.arange(
+            0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS
+        )
 
         predicted_accelerations = (
             self._curve_fit_function(
                 predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
             )
-            - GRAVITY
+            - GRAVITY_METERS_PER_SECOND_SQUARED
         )
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP + self._initial_velocity
+            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP_SECONDS
+            + self._initial_velocity
         )
         # We don't care about velocity values less than 0 as those correspond with the rocket
         # falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
-        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
+        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP_SECONDS
         predicted_apogee = np.max(predicted_altitudes)
         # We need to flip the lookup table because the velocities are in descending order, not
         # ascending order. We need them to be in ascending order for the interpolation to work.
@@ -223,7 +226,7 @@ class ApogeePredictor:
 
             self._extract_processed_data_packets(data_packets)
 
-            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
+            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:

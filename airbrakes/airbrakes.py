@@ -56,7 +56,7 @@ class AirbrakesContext:
         :param servo: The servo object that controls the extension of the airbrakes. This can be a
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
-            a mock IMU.
+        a mock IMU.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.

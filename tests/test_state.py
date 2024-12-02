@@ -12,10 +12,10 @@ from airbrakes.state import (
     State,
 )
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
     LOG_BUFFER_SIZE,
-    MAX_FREE_FALL_LENGTH,
+    MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
@@ -229,7 +229,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", predicted_apogee)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
         coast_state.update()
         assert isinstance(
             coast_state.context.state, expected_state
@@ -265,7 +265,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
         coast_state.update()
         assert coast_state.context.current_extension == expected_airbrakes
 
@@ -281,7 +281,7 @@ class TestCoastState:
         # patch the extend_airbrakes method to count the number of calls made:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", 900.0)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
         coast_state.context.apogee_predictor._apogee_prediction_value.value = 1000.0
 
         coast_state.update()
@@ -309,12 +309,22 @@ class TestFreeFallState:
     @pytest.mark.parametrize(
         ("current_altitude", "vertical_velocity", "expected_state", "time_length"),
         [
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, 1.0),
-            (GROUND_ALTITUDE * 2, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, LANDED_SPEED - 1.0, LandedState, 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
+            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS * 2, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, LANDED_SPEED_METERS_PER_SECOND - 1.0, LandedState, 1.0),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                FreeFallState,
+                MAX_FREE_FALL_SECONDS - 1.0,
+            ),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                LandedState,
+                MAX_FREE_FALL_SECONDS,
+            ),
         ],
         ids=[
             "falling",
