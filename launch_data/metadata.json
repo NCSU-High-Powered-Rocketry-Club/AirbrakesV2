@@ -21,7 +21,7 @@
             "log_buffer_index": 5000,
             "apogee_meters": 457.68
         },
-        "flight_description": "Unknown."
+        "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },
     "interest_launch.csv": {
         "date": "2024-08-28",
