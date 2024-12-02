@@ -69,6 +69,52 @@ class IMU:
         """
         return self._running.value
 
+    def start(self) -> None:
+        """
+        Starts the process separate from the main process for fetching data from the IMU.
+        """
+        self._running.value = True
+        self._data_fetch_process.start()
+
+    def stop(self) -> None:
+        """
+        Stops the process separate from the main process for fetching data from the IMU.
+        """
+        self._running.value = False
+        # Fetch all packets which are not yet fetched and discard them, so main() does not get
+        # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
+        # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
+        # be empty, and thus the process never .joins().
+        # Case 2: The other process finishes up before we call the below method, so there might be
+        # nothing in the queue, and then calling get_imu_data_packet() will block the main process
+        # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
+        with contextlib.suppress(multiprocessing.TimeoutError):
+            self.get_imu_data_packets()
+            self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
+
+    def get_imu_data_packet(self) -> IMUDataPacket | None:
+        """
+        Gets the last available data packet from the IMU.
+        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
+        available, it will be None.
+        """
+        return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
+
+    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
+        """
+        Returns all available data packets from the IMU.
+        :return: A deque containing the specified number of data packets
+        """
+        # We use a deque because it's faster than a list for popping from the left
+        data_packets = collections.deque()
+        # While there is data in the queue, get the data packet and add it to the dequeue which we
+        # return
+        while not self._data_queue.empty():
+            data_packets.append(self.get_imu_data_packet())
+
+        return data_packets
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _initialize_packet(packet) -> IMUDataPacket | None:
         """
@@ -124,75 +170,23 @@ class IMU:
             # Extract the channel name of the data point.
             channel = data_point.channelName()
 
-            # Check if the channel is relevant for the data packet.
+            # Check if the channel is relevant for the data packet, we check for quaternions
+            # separately because the IMU sends them over as a matrix, but we store each of them
+            # individually as fields.
             if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
                 # Process and set the data point value in the data packet.
                 IMU._process_data_point(data_point, channel, imu_data_packet)
-
-    def start(self) -> None:
-        """
-        Starts the process separate from the main process for fetching data from the IMU.
-        """
-        self._running.value = True
-        self._data_fetch_process.start()
-
-    def stop(self) -> None:
-        """
-        Stops the process separate from the main process for fetching data from the IMU.
-        """
-        self._running.value = False
-        # Fetch all packets which are not yet fetched and discard them, so main() does not get
-        # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
-        # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
-        # be empty, and thus the process never .joins().
-        # Case 2: The other process finishes up before we call the below method, so there might be
-        # nothing in the queue, and then calling get_imu_data_packet() will block the main process
-        # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
-        with contextlib.suppress(multiprocessing.TimeoutError):
-            self.get_imu_data_packets()
-            self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
-
-    def get_imu_data_packet(self) -> IMUDataPacket | None:
-        """
-        Gets the last available data packet from the IMU.
-        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
-        available, it will be None.
-        """
-        return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
-
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        """
-        Returns all available data packets from the IMU.
-        :return: A deque containing the specified number of data packets
-        """
-        # We use a deque because it's faster than a list for popping from the left
-        data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the dequeue which we
-        # return
-        while not self._data_queue.empty():
-            data_packets.append(self.get_imu_data_packet())
-
-        return data_packets
-
-    def _query_imu_for_data_packets(self, port: str) -> None:
-        """
-        The loop that fetches data from the IMU. It runs in parallel with the main loop.
-        :param port: the port that the IMU is connected to
-        :param frequency: the frequency that the IMU is set to poll at
-        """
-        with contextlib.suppress(KeyboardInterrupt):
-            self._fetch_data_loop(port)
 
     def _fetch_data_loop(self, port: str) -> None:
         """
         Continuously fetch data packets from the IMU and process them.
         :param port: The serial port to connect to the IMU.
         """
-        while self._running.value:
-            # Reconnect to the IMU at the start of each loop iteration.
-            connection = mscl.Connection.Serial(port)
-            node = mscl.InertialNode(connection)
+        # Connect to the IMU and initialize the node used for getting data packets
+        connection = mscl.Connection.Serial(port)
+        node = mscl.InertialNode(connection)
 
+        while self._running.value:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
@@ -208,3 +202,11 @@ class IMU:
 
                 # Add the processed data packet to the shared queue.
                 self._data_queue.put(imu_data_packet)
+
+    def _query_imu_for_data_packets(self, port: str) -> None:
+        """
+        The loop that fetches data from the IMU. It runs in parallel with the main loop.
+        :param port: the port that the IMU is connected to
+        """
+        with contextlib.suppress(KeyboardInterrupt):
+            self._fetch_data_loop(port)

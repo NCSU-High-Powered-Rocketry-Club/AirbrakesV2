@@ -122,7 +122,7 @@ class ApogeePredictor:
         # the apogee prediction process.
         self._prediction_queue.put(processed_data_packets.copy())
 
-    # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _curve_fit_function(
         t: npt.NDArray[np.float64], a: np.float64, b: np.float64

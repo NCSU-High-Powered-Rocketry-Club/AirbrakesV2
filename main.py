@@ -91,7 +91,7 @@ def main(args: argparse.Namespace) -> None:
     """
     sim_time_start = time.time()
 
-    # Create the necessary components
+    # Creates the components for the airbrakes system
     servo, imu, logger = create_components(args)
 
     # Initialize data processing and prediction
