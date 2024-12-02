@@ -1,4 +1,3 @@
-import time
 from abc import ABC
 
 import pytest
@@ -13,12 +12,11 @@ from airbrakes.state import (
     State,
 )
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
     LOG_BUFFER_SIZE,
-    MAX_FREE_FALL_LENGTH,
+    MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
-    SERVO_DELAY,
     ServoExtension,
 )
 
@@ -40,7 +38,7 @@ def state(airbrakes):
 
 
 @pytest.fixture
-def stand_by_state(airbrakes):
+def standby_state(airbrakes):
     return StandbyState(airbrakes)
 
 
@@ -83,8 +81,6 @@ class TestState:
     def test_init(self, state, airbrakes):
         assert state.context == airbrakes
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -94,20 +90,17 @@ class TestState:
 class TestStandbyState:
     """Tests the StandbyState class"""
 
-    def test_slots(self, stand_by_state):
-        inst = stand_by_state
+    def test_slots(self, standby_state):
+        inst = standby_state
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, stand_by_state, airbrakes):
-        assert stand_by_state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.2)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert issubclass(stand_by_state.__class__, State)
+    def test_init(self, standby_state, airbrakes):
+        assert standby_state.context == airbrakes
+        assert issubclass(standby_state.__class__, State)
 
-    def test_name(self, stand_by_state):
-        assert stand_by_state.name == "StandbyState"
+    def test_name(self, standby_state):
+        assert standby_state.name == "StandbyState"
 
     @pytest.mark.parametrize(
         ("current_velocity", "current_altitude", "expected_state"),
@@ -126,11 +119,11 @@ class TestStandbyState:
             "high_velocity",
         ],
     )
-    def test_update(self, stand_by_state, current_velocity, current_altitude, expected_state):
-        stand_by_state.context.data_processor._vertical_velocities = [current_velocity]
-        stand_by_state.context.data_processor._current_altitudes = [current_altitude]
-        stand_by_state.update()
-        assert isinstance(stand_by_state.context.state, expected_state)
+    def test_update(self, standby_state, current_velocity, current_altitude, expected_state):
+        standby_state.context.data_processor._vertical_velocities = [current_velocity]
+        standby_state.context.data_processor._current_altitudes = [current_altitude]
+        standby_state.update()
+        assert isinstance(standby_state.context.state, expected_state)
 
 
 class TestMotorBurnState:
@@ -143,9 +136,6 @@ class TestMotorBurnState:
 
     def test_init(self, motor_burn_state, airbrakes):
         assert motor_burn_state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY + 0.1)  # wait for servo to extend
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
@@ -239,7 +229,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", predicted_apogee)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
         coast_state.update()
         assert isinstance(
             coast_state.context.state, expected_state
@@ -275,7 +265,7 @@ class TestCoastState:
         coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", target_altitude)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
         coast_state.update()
         assert coast_state.context.current_extension == expected_airbrakes
 
@@ -291,7 +281,7 @@ class TestCoastState:
         # patch the extend_airbrakes method to count the number of calls made:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE", 900.0)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
         coast_state.context.apogee_predictor._apogee_prediction_value.value = 1000.0
 
         coast_state.update()
@@ -319,12 +309,22 @@ class TestFreeFallState:
     @pytest.mark.parametrize(
         ("current_altitude", "vertical_velocity", "expected_state", "time_length"),
         [
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, 1.0),
-            (GROUND_ALTITUDE * 2, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, -(LANDED_SPEED * 2), FreeFallState, 1.0),
-            (GROUND_ALTITUDE - 5, LANDED_SPEED - 1.0, LandedState, 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), FreeFallState, MAX_FREE_FALL_LENGTH - 1.0),
-            (GROUND_ALTITUDE * 4, -(LANDED_SPEED * 4), LandedState, MAX_FREE_FALL_LENGTH),
+            (GROUND_ALTITUDE_METERS * 4, -(LANDED_SPEED_METERS_PER_SECOND * 4), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS * 2, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, -(LANDED_SPEED_METERS_PER_SECOND * 2), FreeFallState, 1.0),
+            (GROUND_ALTITUDE_METERS - 5, LANDED_SPEED_METERS_PER_SECOND - 1.0, LandedState, 1.0),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                FreeFallState,
+                MAX_FREE_FALL_SECONDS - 1.0,
+            ),
+            (
+                GROUND_ALTITUDE_METERS * 4,
+                -(LANDED_SPEED_METERS_PER_SECOND * 4),
+                LandedState,
+                MAX_FREE_FALL_SECONDS,
+            ),
         ],
         ids=[
             "falling",

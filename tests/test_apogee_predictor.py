@@ -10,7 +10,7 @@ import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_FREQUENCY
+from constants import APOGEE_PREDICTION_MIN_PACKETS
 
 
 @pytest.fixture
@@ -169,7 +169,7 @@ class TestApogeePredictor:
         assert 0.0 in unique_apogees
         unique_apogees.remove(0.0)
         # amount of apogees we have is number of packets, divided by the frequency
-        assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_FREQUENCY
+        assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_MIN_PACKETS
         assert threaded_apogee_predictor._prediction_queue.qsize() == 0
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == max(apogees)

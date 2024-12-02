@@ -45,7 +45,7 @@ class TestLogger:
     """Tests the Logger() class in logger.py"""
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
-    def clear_directory(self):
+    def _clear_directory(self):
         """Clear the tests/logs directory after running each test."""
         yield  # This is where the test runs
         # Test run is over, now clean up

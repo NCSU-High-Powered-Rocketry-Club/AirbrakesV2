@@ -24,9 +24,10 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from constants import (
     ESTIMATED_DESCRIPTOR_SET,
+    IMU_TIMEOUT_SECONDS,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
-    PROCESS_TIMEOUT,
+    MAX_SIZE_BYTES,
     RAW_DESCRIPTOR_SET,
 )
 
@@ -51,23 +52,23 @@ class IMU:
         "_running",
     )
 
-    def __init__(self, port: str, frequency: int) -> None:
+    def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
-        :param frequency: the frequency that the IMU is set to poll at (this can be checked in
-            SensorConnect)
         """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
-        self._data_queue: Queue[IMUDataPacket] = Queue(maxsize=MAX_QUEUE_SIZE)
+        self._data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE, max_size_bytes=MAX_SIZE_BYTES
+        )
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU
         self._data_fetch_process = multiprocessing.Process(
-            target=self._query_imu_for_data_packets, args=(port, frequency), name="IMU Process"
+            target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
 
     @property
@@ -99,17 +100,15 @@ class IMU:
         # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
         with contextlib.suppress(multiprocessing.TimeoutError):
             self.get_imu_data_packets()
-            self._data_fetch_process.join(timeout=PROCESS_TIMEOUT)
+            self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
         Gets the last available data packet from the IMU.
-        Note: If `get_imu_data_packet` is called slower than the frequency set, the data will not
-        be the latest, but the first in the queue.
         :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
-            available, it will be None.
+        available, it will be None.
         """
-        return self._data_queue.get(timeout=PROCESS_TIMEOUT)
+        return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
 
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
@@ -129,79 +128,105 @@ class IMU:
         except Empty:  # If the queue is empty, don't bother waiting.
             return collections.deque()
 
-    def _query_imu_for_data_packets(self, port: str, frequency: int) -> None:
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
+    @staticmethod
+    def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:
+        """
+        Initialize an IMU data packet based on its descriptor set.
+        :param packet: The data packet from the IMU.
+        :return: An IMUDataPacket, or None if the packet is unrecognized.
+        """
+        # Extract the timestamp from the packet.
+        timestamp = packet.collectedTimestamp().nanoseconds()
+
+        # Initialize packet with the timestamp, determines if the packet is raw or estimated
+        if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
+            return EstimatedDataPacket(timestamp)
+        if packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+            return RawDataPacket(timestamp)
+        return None
+
+    @staticmethod
+    def _process_data_point(
+        data_point: "mscl.MipDataPoint", channel: str, imu_data_packet: IMUDataPacket
+    ) -> None:
+        """
+        Process an individual data point and set its value in the data packet object. Modifies
+        `imu_data_packet` in place.
+        :param data_point: The IMU data point containing the measurement.
+        :param channel: The channel name of the data point.
+        :param imu_data_packet: The data packet object to update.
+        """
+        # Handle special channels that represent quaternion data.
+        if channel in {"estAttitudeUncertQuaternion", "estOrientQuaternion"}:
+            # Convert quaternion data into a 4x1 matrix and set its components.
+            matrix = data_point.as_Matrix()
+            setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
+            setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
+            setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
+            setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
+        else:
+            # Set other data points directly as attributes in the data packet.
+            setattr(imu_data_packet, channel, data_point.as_float())
+
+        # Check if the data point is invalid and update the invalid fields list.
+        if not data_point.valid():
+            if imu_data_packet.invalid_fields is None:
+                imu_data_packet.invalid_fields = []
+            imu_data_packet.invalid_fields.append(channel)
+
+    @staticmethod
+    def _process_packet_data(packet: "mscl.MipDataPacket", imu_data_packet: IMUDataPacket) -> None:
+        """
+        Process the data points in the packet and update the data packet object. Modifies
+        `imu_data_packet` in place.
+        :param packet: The IMU data packet containing multiple data points.
+        :param imu_data_packet: The initialized data packet object to populate.
+        """
+        # Iterate through each data point in the packet.
+        data_point: mscl.MipDataPoint
+        for data_point in packet.data():
+            # Extract the channel name of the data point.
+            channel = data_point.channelName()
+
+            # Check if the channel is relevant for the data packet, we check for quaternions
+            # separately because the IMU sends them over as a matrix, but we store each of them
+            # individually as fields.
+            if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
+                # Process and set the data point value in the data packet.
+                IMU._process_data_point(data_point, channel, imu_data_packet)
+
+    def _fetch_data_loop(self, port: str) -> None:
+        """
+        Continuously fetch data packets from the IMU and process them.
+        :param port: The serial port to connect to the IMU.
+        """
+        # Connect to the IMU and initialize the node used for getting data packets
+        connection = mscl.Connection.Serial(port)
+        node = mscl.InertialNode(connection)
+
+        while self._running.value:
+            # Retrieve data packets from the IMU.
+            packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
+
+            packet: mscl.MipDataPacket
+            for packet in packets:
+                # Initialize the appropriate data packet.
+                imu_data_packet = IMU._initialize_packet(packet)
+                if imu_data_packet is None:
+                    # Skip unrecognized packets.
+                    continue
+
+                # Process the packet's data and populate the data packet object.
+                IMU._process_packet_data(packet, imu_data_packet)
+
+                # Add the processed data packet to the shared queue.
+                self._data_queue.put(imu_data_packet)
+
+    def _query_imu_for_data_packets(self, port: str) -> None:
         """
         The loop that fetches data from the IMU. It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
-        :param frequency: the frequency that the IMU is set to poll at
         """
         with contextlib.suppress(KeyboardInterrupt):
-            self._fetch_data_loop(port, frequency)
-
-    def _fetch_data_loop(self, port: str, frequency: int) -> None:
-        # Connect to the IMU
-        connection = mscl.Connection.Serial(port)
-        node = mscl.InertialNode(connection)
-        timeout = int(1000 / frequency)
-
-        while self._running.value:
-            # Get the latest data packets from the IMU, with the help of `getDataPackets`.
-            # `getDataPackets` accepts a timeout in milliseconds.
-            # During IMU configuration (outside of this code), we set the sampling rate of the IMU
-            # as 1ms for RawDataPackets, and 2ms for EstimatedDataPackets.
-            # So we use a timeout of 1000 / frequency = 10ms which should be more
-            # than enough. If the timeout is hit, the function will return an empty list.
-
-            packets: mscl.MipDataPackets = node.getDataPackets(timeout)
-            # Every loop iteration we get the latest data in form of packets from the imu
-            for packet in packets:
-                # The data packet from the IMU:
-                packet: mscl.MipDataPacket
-
-                # Get the timestamp of the packet
-                timestamp = packet.collectedTimestamp().nanoseconds()
-
-                # Initialize packet with the timestamp, determines if the packet is raw or estimated
-                if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
-                    imu_data_packet = EstimatedDataPacket(timestamp)
-                elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
-                    imu_data_packet = RawDataPacket(timestamp)
-                else:
-                    # This is an unknown packet, so we skip it
-                    continue
-
-                # Each of these packets has multiple data points
-                for data_point in packet.data():
-                    data_point: mscl.MipDataPoint
-                    channel: str = data_point.channelName()
-                    # This cpp file was the only place I was able to find all the channel names
-                    # https://github.com/LORD-MicroStrain/MSCL/blob/master/MSCL/source/mscl/MicroStrain/MIP/MipTypes.cpp
-                    # Check if the channel name is one we want to save
-                    if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
-                        # First checks if the data point needs special handling, if not, just set
-                        # the attribute
-                        match channel:
-                            # These specific data points are matrix's rather than doubles
-                            case "estAttitudeUncertQuaternion" | "estOrientQuaternion":
-                                # This makes a 4x1 matrix from the data point with the data as
-                                # [[w], [x], [y], [z]]
-                                matrix = data_point.as_Matrix()
-                                # Sets the W, X, Y, and Z of the quaternion to the data packet
-                                setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
-                                setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
-                                setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
-                                setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
-                            case _:
-                                # Because the attribute names in our data packet classes are the
-                                # same as the channel names, we can just set the attribute to the
-                                # value of the data point.
-                                setattr(imu_data_packet, channel, data_point.as_float())
-
-                        # If the data point is invalid, add it to the invalid fields list:
-                        if not data_point.valid():
-                            if imu_data_packet.invalid_fields is None:
-                                imu_data_packet.invalid_fields = []
-                            imu_data_packet.invalid_fields.append(channel)
-
-                # Put the latest data into the shared queue
-                self._data_queue.put(imu_data_packet)
+            self._fetch_data_loop(port)

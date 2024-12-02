@@ -13,7 +13,7 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.hardware.imu import IMU
-from constants import FREQUENCY, PORT
+from constants import IMU_PORT
 
 
 class TestIMU:
@@ -42,30 +42,29 @@ class TestIMU:
         """Tests whether the IMU process starts correctly with the passed arguments."""
         values = faster_fifo.Queue()
 
-        def _fetch_data_loop(self, port: str, frequency: int):
+        def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
-            print(port, frequency)
-            values.put((port, frequency))
+            values.put((port,))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
         time.sleep(0.01)  # Give the process time to start and put the values
         assert values.qsize() == 1
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMU_PORT,)
 
     def test_imu_stop(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
 
-        def _fetch_data_loop(self, port: str, frequency: int):
+        def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
             self._data_queue.put(EstimatedDataPacket(timestamp=0))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.01)  # Sleep a bit to let the process start and put the data
         assert imu._data_queue.qsize() == 1
@@ -79,15 +78,15 @@ class TestIMU:
         """Tests whether the IMU's stop() handles Ctrl+C fine."""
         values = faster_fifo.Queue(maxsize=100000)
 
-        def _fetch_data_loop(self, port: str, frequency: int):
+        def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
             signal.signal(signal.SIGINT, signal.SIG_IGN)
             while self._running.value:
                 continue
-            values.put((port, frequency))
+            values.put((port,))
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
         assert imu.is_running
@@ -103,28 +102,32 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         assert values.qsize() == 1
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMU_PORT,)
 
     def test_imu_fetch_loop_exception(self, monkeypatch):
         """Tests whether the IMU's _fetch_loop propogates unknown exceptions."""
         values = faster_fifo.Queue()
 
-        def _fetch_data_loop(self, port: str, frequency: int):
+        def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
-            values.put((port, frequency))
+            values.put((port,))
             raise ValueError("some error")
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=PORT, frequency=FREQUENCY)
+        imu = IMU(
+            port=IMU_PORT,
+        )
         imu.start()
         with pytest.raises(ValueError, match="some error") as excinfo:
-            imu._fetch_data_loop(PORT, FREQUENCY)
+            imu._fetch_data_loop(
+                IMU_PORT,
+            )
         imu.stop()
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         assert values.qsize() == 2
-        assert values.get() == (PORT, FREQUENCY)
+        assert values.get() == (IMU_PORT,)
         assert "some error" in str(excinfo.value)
 
     def test_data_packets_fetch(self, random_data_mock_imu):
