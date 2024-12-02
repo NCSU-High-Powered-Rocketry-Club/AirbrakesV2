@@ -79,7 +79,7 @@ class MockIMU(IMU):
         :param value: The value to convert.
         :return: The converted value
         """
-        return None if not value else ast.literal_eval(value)
+        return None if not value else ast.literal_eval(value)  # Convert string to list
 
     @staticmethod
     def _calculate_start_index(log_file_path: Path) -> int:
@@ -88,6 +88,7 @@ class MockIMU(IMU):
         :param log_file_path: The path of the log file to read data from.
         :return: The index where the log buffer ends.
         """
+        # We read the file in small chunks because it is faster than reading the whole file at once
         chunk_size = LOG_BUFFER_SIZE + 1
         for chunk in pd.read_csv(
             log_file_path,
