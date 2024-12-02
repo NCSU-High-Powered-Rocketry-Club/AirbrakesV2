@@ -266,7 +266,7 @@ class IMUDataProcessor:
             ]
         )
         # Technical notes: Trying to vectorize the deadband function via np.vectorize() or
-        # np.frompyfunc() is slower than this approach.
+        # np.frompyfunc() or np.where() is slower than this approach.
 
         # Integrate the accelerations to get the velocities
         vertical_velocities = self._previous_vertical_velocity + np.cumsum(
