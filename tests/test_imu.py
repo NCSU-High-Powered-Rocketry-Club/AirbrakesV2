@@ -6,7 +6,7 @@ from collections import deque
 
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

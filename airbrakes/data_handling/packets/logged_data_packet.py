@@ -59,5 +59,9 @@ class LoggedDataPacket(TypedDict, total=False):  # total=False means all fields 
     vertical_velocity: float | None
     vertical_acceleration: float | None
 
-    # fields not in the data packets
+    # fields in a DebugPacket:
     predicted_apogee: float | None
+    uncertainity_threshold_1: str | None
+    uncertainity_threshold_2: str | None
+    fetched_imu_packets: str | None
+    packets_in_imu_queue: str | None

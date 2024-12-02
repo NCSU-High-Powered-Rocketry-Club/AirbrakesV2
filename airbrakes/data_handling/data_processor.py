@@ -6,8 +6,8 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
 from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
 from utils import deadband
 

@@ -2,7 +2,7 @@ from abc import ABC
 
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,

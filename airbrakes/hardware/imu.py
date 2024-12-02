@@ -10,7 +10,7 @@ with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
 
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

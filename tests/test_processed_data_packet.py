@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
 
 
 @pytest.fixture
