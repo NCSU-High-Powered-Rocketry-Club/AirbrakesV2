@@ -201,24 +201,11 @@ class IMUDataProcessor:
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the rotated acceleration vector. Converts gyroscope data into a delta
-        quaternion, and adds onto the last quaternion. Only used when the quaternions are
-        deemed too uncertain to rely on.
+        Calculates the rotated acceleration vector. Rotates the compensated acceleration
+        vector by the current quaternion orientation.
 
         :return: numpy list of the vertical rotated accelerations
         """
-        # We pre-allocate the space for our accelerations first
-        rotated_accelerations = np.zeros(len(self._data_packets))
-
-        # checks for missing data
-        if any(
-            packet.estCompensatedAccelX is None
-            or packet.estCompensatedAccelY is None
-            or packet.estCompensatedAccelZ is None
-            for packet in self._data_packets
-        ):
-            return rotated_accelerations
-
         # get the compensated accelerations from each data packet
         compensated_accelerations = np.array(
             [
@@ -244,48 +231,9 @@ class IMUDataProcessor:
             ]
         )
 
-        if (
-            np.any(quaternion_uncertainties >= QUATERNION_UNCERTAINTY_THRESHOLD)
-            or self._data_packets[-1].estOrientQuaternionW is None
-        ):
+        if np.any(quaternion_uncertainties >= QUATERNION_UNCERTAINTY_THRESHOLD):
             # quaternions are too uncertain to use, so we calculate them from gyro
-            current_orientation = self._current_orientation_quaternions
-            # Iterates through the data points and time differences between the data points
-            for idx, (data_packet, dt) in enumerate(
-                zip(self._data_packets, self._time_differences, strict=True)
-            ):
-                # Accelerations are in m/s^2
-                x_accel = compensated_accelerations[idx][0]
-                y_accel = compensated_accelerations[idx][1]
-                z_accel = compensated_accelerations[idx][2]
-                # Angular rates are in rads/s
-                gyro_x = data_packet.estAngularRateX
-                gyro_y = data_packet.estAngularRateY
-                gyro_z = data_packet.estAngularRateZ
-
-                # Check for missing data points
-                if any(val is None for val in [gyro_x, gyro_y, gyro_z]):
-                    return rotated_accelerations
-
-                # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
-                # Calculate the delta quaternion from the angular rates
-                delta_rotation = R.from_rotvec([gyro_x * dt, gyro_y * dt, gyro_z * dt])
-
-                # Update the current orientation by applying the delta rotation
-                current_orientation = current_orientation * delta_rotation
-
-                # Rotate the acceleration vector using the updated orientation
-                rotated_accel = current_orientation.apply([x_accel, y_accel, z_accel])
-                # Vertical acceleration will always be the 3rd element of the rotated vector,
-                # regardless of orientation. For simplicity, we multiply by -1 so that acceleration
-                # during motor burn is positive, and acceleration due to drag force during coast
-                # phase is negative.
-                rotated_accelerations[idx] = -rotated_accel[2]
-
-            # Update the class attribute with the latest quaternion orientation
-            self._current_orientation_quaternions = current_orientation
-
-            return rotated_accelerations
+            return self._calculate_gyro_rotated_accelerations(compensated_accelerations)
 
         # the quaternions are not uncertain, so we can directly use the quaternions given from
         # the IMU.
@@ -306,7 +254,57 @@ class IMUDataProcessor:
         # Update the class attribute with the latest quaternion orientation
         self._current_orientation_quaternions = current_orientation
         # we only want to return the negative vertical component of each acceleration
-        return np.array([-accel[2] for accel in rotated_accels])
+
+        # print(current_orientation.apply([0,0,-1]))
+        # print((self._data_packets[-1].timestamp-1727551375347022592)*1e-9)
+        # print(self._data_packets[-1].estPressureAlt)
+        # print(R.as_quat(current_orientation,scalar_first=True))
+        return -rotated_accels[:, -1]
+
+    def _calculate_gyro_rotated_accelerations(
+        self, compensated_accelerations: npt.NDArray
+    ) -> npt.NDArray[np.float64]:
+        """
+        Calculates the rotated acceleration vector using gyroscope. Converts gyroscope data into
+        a delta quaternion, and adds onto the last quaternion. Only used when the quaternions are
+        deemed too uncertain to rely on.
+
+        :return: numpy list of the vertical rotated accelerations
+        """
+        current_orientation = self._current_orientation_quaternions
+        # We pre-allocate the space for our accelerations first
+        rotated_accelerations = np.zeros(len(self._data_packets))
+
+        # Iterates through the data points and time differences between the data points
+        for idx, (data_packet, dt) in enumerate(
+            zip(self._data_packets, self._time_differences, strict=True)
+        ):
+            # Accelerations are in m/s^2
+            x_accel = compensated_accelerations[idx][0]
+            y_accel = compensated_accelerations[idx][1]
+            z_accel = compensated_accelerations[idx][2]
+            # Angular rates are in rads/s
+            gyro_x = data_packet.estAngularRateX
+            gyro_y = data_packet.estAngularRateY
+            gyro_z = data_packet.estAngularRateZ
+
+            # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
+            # Calculate the delta quaternion from the angular rates
+            delta_rotation = R.from_rotvec([gyro_x * dt, gyro_y * dt, gyro_z * dt])
+
+            # Update the current orientation by applying the delta rotation
+            current_orientation = current_orientation * delta_rotation
+
+            # Rotate the acceleration vector using the updated orientation
+            rotated_accel = current_orientation.apply([x_accel, y_accel, z_accel])
+            # Vertical acceleration will always be the 3rd element of the rotated vector,
+            # regardless of orientation. For simplicity, we multiply by -1 so that acceleration
+            # during motor burn is positive, and acceleration due to drag force during coast
+            # phase is negative.
+            rotated_accelerations[idx] = -rotated_accel[2]
+        # Update the class attribute with the latest quaternion orientation
+        self._current_orientation_quaternions = current_orientation
+        return rotated_accelerations
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """

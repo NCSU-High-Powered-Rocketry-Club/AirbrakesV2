@@ -142,5 +142,5 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_FREQUENCY = 10  # estimated data packets => 10 * 0.002 seconds => 50Hz
 
 # The uncertainty from the curve fit, below which we will say that our apogee has converged:
-UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # [0.0259, 0.00065]
+UNCERTAINTY_THRESHOLD = [0.0259, 0.00065]
 # UNCERTAINTY_THRESHOLD = [0.1, 0.75]  # [0.0259, 0.00065]
