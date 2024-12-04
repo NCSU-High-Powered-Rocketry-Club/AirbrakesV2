@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation as R
 
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY
+from constants import ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED, GRAVITY_METERS_PER_SECOND_SQUARED
 from utils import deadband
 
 
@@ -259,7 +259,10 @@ class IMUDataProcessor:
         # subtracted from vertical acceleration, Then deadbanded.
         vertical_accelerations = np.array(
             [
-                deadband(vertical_acceleration - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
+                deadband(
+                    vertical_acceleration - GRAVITY_METERS_PER_SECOND_SQUARED,
+                    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+                )
                 for vertical_acceleration in self._rotated_accelerations
             ]
         )

@@ -14,15 +14,20 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import FREQUENCY, PORT, SERVO_PIN
+from constants import (
+    EST_DATA_PACKET_SAMPLING_RATE,
+    IMU_PORT,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_PIN,
+)
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
 LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
+# Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
+LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 
 @pytest.fixture
@@ -40,7 +45,7 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=PORT, frequency=FREQUENCY)
+    return IMU(port=IMU_PORT)
 
 
 @pytest.fixture
@@ -60,12 +65,14 @@ def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
 
 @pytest.fixture
 def random_data_mock_imu():
-    return RandomDataIMU(port=PORT, frequency=FREQUENCY)
+    # A mock IMU that outputs random data packets
+    return RandomDataIMU(port=IMU_PORT)
 
 
 @pytest.fixture
 def idle_mock_imu():
-    return IdleIMU(port=PORT, frequency=FREQUENCY)
+    # A sleeping IMU that doesn't output any data packets
+    return IdleIMU(port=IMU_PORT)
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
@@ -90,13 +97,15 @@ def target_altitude(request):
         return 750.0  # actual apogee was about 794m
     if launch_name == "interest_launch":
         return 1800.0  # actual apogee was about 1854m
+    if launch_name == "genesis_launch_2":
+        return 413.0  # actual apogee was about 462m
     return 1000.0  # Default altitude
 
 
 class RandomDataIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
 
-    def _fetch_data_loop(self, _: str, __: int) -> None:
+    def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
         next_estimated_packet_time = time.time()
         next_raw_packet_time = time.time()
@@ -123,6 +132,6 @@ class RandomDataIMU(IMU):
 class IdleIMU(IMU):
     """Mocks the IMU data fetch loop, but doesn't output any data packets."""
 
-    def _fetch_data_loop(self, _: str, __: int) -> None:
+    def _fetch_data_loop(self, _: str) -> None:
         while self._running.value:
             time.sleep(0.1)

@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from constants import (
-    GROUND_ALTITUDE,
-    LANDED_SPEED,
-    MAX_FREE_FALL_LENGTH,
+    GROUND_ALTITUDE_METERS,
+    LANDED_SPEED_METERS_PER_SECOND,
+    MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
-    TAKEOFF_HEIGHT,
-    TAKEOFF_VELOCITY,
-    TARGET_ALTITUDE,
+    TAKEOFF_HEIGHT_METERS,
+    TAKEOFF_VELOCITY_METERS_PER_SECOND,
+    TARGET_ALTITUDE_METERS,
 )
 from utils import convert_to_seconds
 
@@ -86,11 +86,11 @@ class StandbyState(State):
 
         data = self.context.data_processor
 
-        if data.vertical_velocity > TAKEOFF_VELOCITY:
+        if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
 
-        if data.current_altitude > TAKEOFF_HEIGHT:
+        if data.current_altitude > TAKEOFF_HEIGHT_METERS:
             self.next_state()
             return
 
@@ -113,10 +113,7 @@ class MotorBurnState(State):
         # accelerating. This is the same thing as checking if our accel sign has flipped
         # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
         # bit less than the max velocity
-        if (
-            data.vertical_velocity
-            < data.max_vertical_velocity - data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD
-        ):
+        if data.vertical_velocity < data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
             self.next_state()
             return
 
@@ -144,12 +141,14 @@ class CoastState(State):
 
         data = self.context.data_processor
 
-        # if our prediction is overshooting our target altitude, extend the airbrakes
-        if self.context.apogee_predictor.apogee > TARGET_ALTITUDE:
-            if not self.airbrakes_extended:
-                self.context.extend_airbrakes()
-                self.airbrakes_extended = True
-        elif self.airbrakes_extended:
+        # This is our bang-bang controller for the airbrakes. If we predict we are going to
+        # overshoot our target altitude, we extend the airbrakes. If we predict we are going to
+        # undershoot our target altitude, we retract the airbrakes.
+        apogee = self.context.apogee_predictor.apogee
+        if apogee > TARGET_ALTITUDE_METERS and not self.airbrakes_extended:
+            self.context.extend_airbrakes()
+            self.airbrakes_extended = True
+        elif apogee <= TARGET_ALTITUDE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
             self.airbrakes_extended = False
 
@@ -182,11 +181,14 @@ class FreeFallState(State):
         data = self.context.data_processor
 
         # If our altitude and speed are around 0, we have landed
-        if data.current_altitude <= GROUND_ALTITUDE and abs(data.vertical_velocity) <= LANDED_SPEED:
+        if (
+            data.current_altitude <= GROUND_ALTITUDE_METERS
+            and abs(data.vertical_velocity) <= LANDED_SPEED_METERS_PER_SECOND
+        ):
             self.next_state()
 
         # If we have been in free fall for too long, we move to the landed state
-        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_LENGTH:
+        if convert_to_seconds(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self):

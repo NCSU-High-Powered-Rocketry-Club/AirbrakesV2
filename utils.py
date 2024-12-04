@@ -101,7 +101,7 @@ def arg_parser() -> argparse.Namespace:
         help="Define the pathname of flight data to use in mock simulation. Interest Launch data"
         " is used by default",
         type=Path,
-        default=False,
+        default=None,
     )
 
     parser.add_argument(
@@ -135,7 +135,9 @@ def arg_parser() -> argparse.Namespace:
             "to run in simulation mode."
         )
 
+    if args.verbose and args.debug:
+        parser.error("The `--verbose` and `--debug` options cannot be used together.")
+
     if args.sim and args.path:
         parser.error("The `--path` option is not able to be used with the `--sim` option")
-
     return args

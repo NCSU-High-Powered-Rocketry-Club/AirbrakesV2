@@ -24,8 +24,6 @@ class Logger:
 
     It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
     our logs in real time.
-
-    :param log_dir: The directory where the log files will be.
     """
 
     __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
@@ -95,6 +93,56 @@ class Logger:
         """
         return f"{obj_type:.8f}"
 
+    @staticmethod
+    def _prepare_log_dict(
+        state: str,
+        extension: str,
+        imu_data_packets: deque[IMUDataPacket],
+        processed_data_packets: deque[ProcessedDataPacket],
+        predicted_apogee: float,
+    ) -> deque[LoggedDataPacket]:
+        """
+        Creates a data packet dictionary representing a row of data to be logged.
+        :param state: The current state of the airbrakes.
+        :param extension: The current extension of the airbrakes.
+        :param imu_data_packets: The IMU data packets to log.
+        :param processed_data_packets: The processed data packets to log.
+        :param: predicted_apogee: The predicted apogee of the rocket. Only logged with estimated
+        data packets.
+        :return: A deque of LoggedDataPacket objects.
+        """
+        logged_data_packets: deque[LoggedDataPacket] = deque()
+
+        # Convert the imu data packets to a dictionary:
+        for imu_data_packet in imu_data_packets:
+            # Let's first add the state, extension field:
+            logged_fields: LoggedDataPacket = {
+                "state": state,
+                "extension": extension,
+            }
+            # Convert the imu data packet to a dictionary
+            # Using to_builtins() is much faster than asdict() for some reason
+            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
+            logged_fields.update(imu_data_packet_dict)
+
+            # Get the processed data packet fields:
+            if isinstance(imu_data_packet, EstimatedDataPacket):
+                # Convert the processed data packet to a dictionary. Unknown types such as numpy
+                # float64 are converted to strings with 8 decimal places (that's enc_hook)
+                processed_data_packet_dict: dict[str, float] = to_builtins(
+                    processed_data_packets.popleft(), enc_hook=Logger._convert_unknown_type
+                )
+                # Let's drop the "time_since_last_data_packet" field:
+                processed_data_packet_dict.pop("time_since_last_data_packet", None)
+                logged_fields.update(processed_data_packet_dict)
+
+                # Add the predicted apogee field:
+                logged_fields["predicted_apogee"] = predicted_apogee
+
+            logged_data_packets.append(logged_fields)
+
+        return logged_data_packets
+
     def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
@@ -126,13 +174,13 @@ class Logger:
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
         :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched
-            from the apogee predictor, which runs in a separate process, it may not be the most
-            recent value, nor would it correspond to the respective data packet being logged.
+        from the apogee predictor, which runs in a separate process, it may not be the most recent
+        value, nor would it correspond to the respective data packet being logged.
         """
         # We only want the first letter of the state to save space
         state_letter = state[0]
         # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: deque[LoggedDataPacket] = self._prepare_log_dict(
+        logged_data_packets: deque[LoggedDataPacket] = Logger._prepare_log_dict(
             state_letter,
             str(extension),
             imu_data_packets,
@@ -170,60 +218,7 @@ class Logger:
             self._log_queue.put(buffered_message)
         self._log_buffer.clear()
 
-    def _prepare_log_dict(
-        self,
-        state: str,
-        extension: str,
-        imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
-        predicted_apogee: float,
-    ) -> deque[LoggedDataPacket]:
-        """
-        Creates a data packet dictionary representing a row of data to be logged.
-        :param state: The current state of the airbrakes.
-        :param extension: The current extension of the airbrakes.
-        :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :param: predicted_apogee: The predicted apogee of the rocket. Only logged with estimated
-            data packets.
-        :return: A deque of LoggedDataPacket objects.
-        """
-        logged_data_packets: deque[LoggedDataPacket] = deque()
-
-        # Convert the imu data packets to a dictionary:
-        for imu_data_packet in imu_data_packets:
-            # Let's first add the state, extension field:
-            logged_fields: LoggedDataPacket = {
-                "state": state,
-                "extension": extension,
-            }
-
-            # Convert the imu data packet to a dictionary
-            # Using to_builtins() is much faster than asdict() for some reason
-            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(
-                imu_data_packet, enc_hook=self._convert_unknown_type
-            )
-            logged_fields.update(imu_data_packet_dict)
-
-            # Get the processed data packet fields:
-            if isinstance(imu_data_packet, EstimatedDataPacket):
-                # Convert the processed data packet to a dictionary. Unknown types such as numpy
-                # float64 are converted to strings with 8 decimal places (that's enc_hook)
-                processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=self._convert_unknown_type
-                )
-                # Let's drop the "time_since_last_data_packet" field:
-                processed_data_packet_dict.pop("time_since_last_data_packet", None)
-                logged_fields.update(processed_data_packet_dict)
-
-                # Add the predicted apogee field:
-                logged_fields["predicted_apogee"] = predicted_apogee
-
-            logged_data_packets.append(logged_fields)
-
-        return logged_data_packets
-
-    # ------------------------------- RUN IN A SEPARATE PROCESS -----------------------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
         """
@@ -252,4 +247,4 @@ class Logger:
                 # If the message is the stop signal, break out of the loop
                 if message_fields == STOP_SIGNAL:
                     break
-                writer.writerow(self._truncate_floats(message_fields))
+                writer.writerow(Logger._truncate_floats(message_fields))

@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
-from constants import GRAVITY
+from constants import GRAVITY_METERS_PER_SECOND_SQUARED
 
 
 class RotationManager:
@@ -47,7 +47,7 @@ class RotationManager:
 
     @property
     def gravity_vector(self) -> npt.NDArray:
-        return self._orientation.apply([0, 0, -GRAVITY])
+        return self._orientation.apply([0, 0, -GRAVITY_METERS_PER_SECOND_SQUARED])
 
     def _initialize_rotation_formula(self) -> np.float64:
         """
@@ -122,8 +122,12 @@ class RotationManager:
         # if the thrust is non-zero, and this returns a value smaller than gravity, than the rocket
         # is still on the ground. We have to include the acceleration due to the normal force of
         # the ground.
-        if thrust_drag_accel <= GRAVITY and thrust_acceleration != 0.0 and drag_acceleration < 1:
-            normal_force_vector = np.array([0, 0, GRAVITY])
+        if (
+            thrust_drag_accel <= GRAVITY_METERS_PER_SECOND_SQUARED
+            and thrust_acceleration != 0.0
+            and drag_acceleration < 1
+        ):
+            normal_force_vector = np.array([0, 0, GRAVITY_METERS_PER_SECOND_SQUARED])
             rotated_normal_vector = self._orientation.apply(normal_force_vector)
 
             compensated_accel += rotated_normal_vector
@@ -144,7 +148,7 @@ class RotationManager:
         # gets compensated acceleration
         comp_accel = self.calculate_compensated_accel(thrust_acceleration, drag_acceleration)
         # apply gravity
-        gravity_accel_vector = self._orientation.apply([0, 0, GRAVITY])
+        gravity_accel_vector = self._orientation.apply([0, 0, GRAVITY_METERS_PER_SECOND_SQUARED])
         return np.array(comp_accel - gravity_accel_vector)
 
     def calculate_delta_theta(self) -> npt.NDArray:

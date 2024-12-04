@@ -13,7 +13,11 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from airbrakes.simulation.rotation_manager import RotationManager
 from airbrakes.simulation.sim_config import SimulationConfig
-from constants import ACCELERATION_NOISE_THRESHOLD, GRAVITY, MAX_VELOCITY_THRESHOLD
+from constants import (
+    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+    MAX_VELOCITY_THRESHOLD,
+)
 from utils import deadband
 
 
@@ -165,13 +169,14 @@ class DataGenerator:
         packet = None
         if packet_type == RawDataPacket:
             scaled_accel = (
-                self._raw_rotation_manager.calculate_compensated_accel(0.0, 0.0) / GRAVITY
+                self._raw_rotation_manager.calculate_compensated_accel(0.0, 0.0)
+                / GRAVITY_METERS_PER_SECOND_SQUARED
             )
             packet = RawDataPacket(
                 0,
-                scaledAccelX=scaled_accel[0],
-                scaledAccelY=scaled_accel[1],
-                scaledAccelZ=scaled_accel[2],
+                scaledAccelX=float(scaled_accel[0]),
+                scaledAccelY=float(scaled_accel[1]),
+                scaledAccelZ=float(scaled_accel[2]),
                 scaledGyroX=0.0,
                 scaledGyroY=0.0,
                 scaledGyroZ=0.0,
@@ -189,23 +194,23 @@ class DataGenerator:
             gravity_vector = self._est_rotation_manager.gravity_vector
             packet = EstimatedDataPacket(
                 0,
-                estOrientQuaternionW=initial_quaternion[0],
-                estOrientQuaternionX=initial_quaternion[1],
-                estOrientQuaternionY=initial_quaternion[2],
-                estOrientQuaternionZ=initial_quaternion[3],
-                estPressureAlt=0,
-                estAngularRateX=0,
-                estAngularRateY=0,
-                estAngularRateZ=0,
-                estCompensatedAccelX=compensated_accel[0],
-                estCompensatedAccelY=compensated_accel[1],
-                estCompensatedAccelZ=compensated_accel[2],
-                estLinearAccelX=linear_accel[0],
-                estLinearAccelY=linear_accel[1],
-                estLinearAccelZ=linear_accel[2],
-                estGravityVectorX=gravity_vector[0],
-                estGravityVectorY=gravity_vector[1],
-                estGravityVectorZ=gravity_vector[2],
+                estOrientQuaternionW=float(initial_quaternion[0]),
+                estOrientQuaternionX=float(initial_quaternion[1]),
+                estOrientQuaternionY=float(initial_quaternion[2]),
+                estOrientQuaternionZ=float(initial_quaternion[3]),
+                estPressureAlt=0.0,
+                estAngularRateX=0.0,
+                estAngularRateY=0.0,
+                estAngularRateZ=0.0,
+                estCompensatedAccelX=float(compensated_accel[0]),
+                estCompensatedAccelY=float(compensated_accel[1]),
+                estCompensatedAccelZ=float(compensated_accel[2]),
+                estLinearAccelX=float(linear_accel[0]),
+                estLinearAccelY=float(linear_accel[1]),
+                estLinearAccelZ=float(linear_accel[2]),
+                estGravityVectorX=float(gravity_vector[0]),
+                estGravityVectorY=float(gravity_vector[1]),
+                estGravityVectorZ=float(gravity_vector[2]),
             )
 
         return packet
@@ -245,7 +250,7 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
-        scaled_accel = compensated_accel / GRAVITY
+        scaled_accel = compensated_accel / GRAVITY_METERS_PER_SECOND_SQUARED
 
         # calculates vertical delta velocity, and gyro
         last_scaled_accel = np.array(
@@ -255,25 +260,25 @@ class DataGenerator:
                 self._last_raw_packet.scaledAccelZ,
             ]
         )
-        delta_velocity = (scaled_accel - last_scaled_accel) * GRAVITY
+        delta_velocity = (scaled_accel - last_scaled_accel) * GRAVITY_METERS_PER_SECOND_SQUARED
         delta_theta = self._raw_rotation_manager.calculate_delta_theta()
         scaled_gyro_vector = delta_theta / time_step
 
         # assembles the packet
         packet = RawDataPacket(
-            next_timestamp * 1e9,
-            scaledAccelX=scaled_accel[0],
-            scaledAccelY=scaled_accel[1],
-            scaledAccelZ=scaled_accel[2],
-            scaledGyroX=scaled_gyro_vector[0],
-            scaledGyroY=scaled_gyro_vector[1],
-            scaledGyroZ=scaled_gyro_vector[2],
-            deltaVelX=delta_velocity[0],
-            deltaVelY=delta_velocity[1],
-            deltaVelZ=delta_velocity[2],
-            deltaThetaX=delta_theta[0],
-            deltaThetaY=delta_theta[1],
-            deltaThetaZ=delta_theta[2],
+            timestamp=int(next_timestamp * 1e9),
+            scaledAccelX=float(scaled_accel[0]),
+            scaledAccelY=float(scaled_accel[1]),
+            scaledAccelZ=float(scaled_accel[2]),
+            scaledGyroX=float(scaled_gyro_vector[0]),
+            scaledGyroY=float(scaled_gyro_vector[1]),
+            scaledGyroZ=float(scaled_gyro_vector[2]),
+            deltaVelX=float(delta_velocity[0]),
+            deltaVelY=float(delta_velocity[1]),
+            deltaVelZ=float(delta_velocity[2]),
+            deltaThetaX=float(delta_theta[0]),
+            deltaThetaY=float(delta_theta[1]),
+            deltaThetaZ=float(delta_theta[2]),
         )
 
         # updates last raw data packet
@@ -334,24 +339,24 @@ class DataGenerator:
         quaternion = self._est_rotation_manager.calculate_imu_quaternions()
 
         packet = EstimatedDataPacket(
-            next_timestamp * 1e9,
-            estOrientQuaternionW=quaternion[0],
-            estOrientQuaternionX=quaternion[1],
-            estOrientQuaternionY=quaternion[2],
-            estOrientQuaternionZ=quaternion[3],
-            estCompensatedAccelX=compensated_accel[0],
-            estCompensatedAccelY=compensated_accel[1],
-            estCompensatedAccelZ=compensated_accel[2],
-            estPressureAlt=new_altitude,
-            estGravityVectorX=self._est_rotation_manager.gravity_vector[0],
-            estGravityVectorY=self._est_rotation_manager.gravity_vector[1],
-            estGravityVectorZ=self._est_rotation_manager.gravity_vector[2],
-            estAngularRateX=angular_rates[0],
-            estAngularRateY=angular_rates[1],
-            estAngularRateZ=angular_rates[2],
-            estLinearAccelX=linear_accel[0],
-            estLinearAccelY=linear_accel[1],
-            estLinearAccelZ=linear_accel[2],
+            timestamp=int(next_timestamp * 1e9),
+            estOrientQuaternionW=float(quaternion[0]),
+            estOrientQuaternionX=float(quaternion[1]),
+            estOrientQuaternionY=float(quaternion[2]),
+            estOrientQuaternionZ=float(quaternion[3]),
+            estCompensatedAccelX=float(compensated_accel[0]),
+            estCompensatedAccelY=float(compensated_accel[1]),
+            estCompensatedAccelZ=float(compensated_accel[2]),
+            estPressureAlt=float(new_altitude),
+            estGravityVectorX=float(self._est_rotation_manager.gravity_vector[0]),
+            estGravityVectorY=float(self._est_rotation_manager.gravity_vector[1]),
+            estGravityVectorZ=float(self._est_rotation_manager.gravity_vector[2]),
+            estAngularRateX=float(angular_rates[0]),
+            estAngularRateY=float(angular_rates[1]),
+            estAngularRateZ=float(angular_rates[2]),
+            estLinearAccelX=float(linear_accel[0]),
+            estLinearAccelY=float(linear_accel[1]),
+            estLinearAccelZ=float(linear_accel[2]),
         )
 
         # updates last estimated packet
@@ -371,7 +376,10 @@ class DataGenerator:
         # gets the rotated acceleration vector
         rotated_accel = self._est_rotation_manager.calculate_rotated_accelerations(comp_accel)
         # deadbands the wgs vertical part of the rotated acceleration
-        rotated_accel[2] = deadband(rotated_accel[2] - GRAVITY, ACCELERATION_NOISE_THRESHOLD)
+        rotated_accel[2] = deadband(
+            rotated_accel[2] - GRAVITY_METERS_PER_SECOND_SQUARED,
+            ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+        )
 
         # Integrate the rotated accelerations to get the velocity vector
         velocity_vector = self._last_velocities + rotated_accel * time_diff
@@ -407,7 +415,7 @@ class DataGenerator:
 
         # air density formula, derived from ideal gas law
         air_density = 1.225 * (temp / (self._config.air_temperature + 273.15)) ** (
-            -GRAVITY / (gas_constant * gradient) - 1
+            -GRAVITY_METERS_PER_SECOND_SQUARED / (gas_constant * gradient) - 1
         )
 
         # using speed of sound to find mach number
