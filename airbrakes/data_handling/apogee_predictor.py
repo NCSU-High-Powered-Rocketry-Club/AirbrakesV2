@@ -152,7 +152,6 @@ class ApogeePredictor:
         uncertainties = np.sqrt(np.diag(pcov))
         if np.all(uncertainties < UNCERTAINTY_THRESHOLD):
             self._has_apogee_converged = True
-
         a, b = popt
         return CurveCoefficients(A=a, B=b)
 

@@ -15,6 +15,7 @@ from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.simulation.sim_imu import SimIMU
 from constants import IMU_PORT, LOGS_PATH, SERVO_PIN
 from utils import arg_parser
 
@@ -27,12 +28,20 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
     :return: A tuple containing the servo, IMU, and logger objects.
     """
     if args.mock:
-        # Replace hardware with mock objects for simulation
-        imu = MockIMU(
-            real_time_simulation=not args.fast_simulation,
-            log_file_path=args.path,
-        )
-        # If using a real servo, use the real servo object, otherwise use a mock servo object
+        # If we are running a mock simulation, then we will replace our hardware objects with mock
+        # objects that just pretend to be the real hardware. This is useful for testing the
+        # software without having to fly the rocket. MockIMU pretends to be the imu by reading
+        # previous flight data from a log file
+        if not args.sim:
+            imu = MockIMU(
+                real_time_simulation=not args.fast_simulation,
+                log_file_path=args.path,
+            )
+        # If we are running the simulation for generating datasets, we will replace our IMU object
+        # with a sim variant, similar to running a mock simulation.
+        else:
+            imu = SimIMU(sim_type=args.sim)
+        # MockFactory is used to create a mock servo object that pretends to be the real servo
         servo = (
             Servo(SERVO_PIN)
             if args.real_servo
@@ -49,13 +58,14 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
+    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool, is_sim: bool
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
     :param airbrakes: The airbrakes context managing the state machine.
     :param flight_display: Display interface for flight data.
-    :param is_mock: Whether running in simulation mode.
+    :param is_mock: Whether running in mock simulation mode.
+    :param is_sim: Whether running in flight simulation mode.
     """
     try:
         # Starts the airbrakes system and display
@@ -69,6 +79,13 @@ def run_flight_loop(
             # Stop the simulation when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:
                 break
+
+            # If we are running a simulation we need to tell the data generator/sim imu what
+            # the current airbrakes extension is so that it can change the Cd based on that
+            # It is a bit of a hack, but it is better we do it this way rather than changing
+            # the entire structure of the program
+            if is_sim:
+                airbrakes.imu.set_airbrakes_status(airbrakes.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
@@ -103,7 +120,7 @@ def main(args: argparse.Namespace) -> None:
     flight_display = FlightDisplay(airbrakes, sim_time_start, args)
 
     # Run the main flight loop
-    run_flight_loop(airbrakes, flight_display, args.mock)
+    run_flight_loop(airbrakes, flight_display, args.mock, args.sim)
 
 
 if __name__ == "__main__":

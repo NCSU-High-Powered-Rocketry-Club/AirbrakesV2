@@ -28,8 +28,6 @@ class MockIMU(IMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_log_file_path",)
-
     def __init__(
         self,
         real_time_simulation: bool,

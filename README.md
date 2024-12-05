@@ -114,12 +114,14 @@ We have put great effort into keeping the file structure of this project organiz
 ```
 AirbrakesV2/
 ├── airbrakes/
+|   ├── data_handling/
+│   │   ├── [files related to the processing of data ...]
 |   ├── hardware/
 │   │   ├── [files related to the connection of the pi with hardware ...]
 |   ├── mock/
 │   │   ├── [files related to the connection of mock (or simulated) hardware ...]
-|   ├── data_handling/
-│   │   ├── [files related to the processing of data ...]
+|   ├── simulation/
+│   │   ├── [files related to our custom air brakes sim ...]
 │   ├── [files which control the airbrakes at a high level ...]
 ├── tests/  [used for testing all the code]
 │   ├── ...
@@ -178,6 +180,10 @@ python3 main.py -m
 If you want to run a mock launch, but with the real servo running, run:
 ```bash
 python3 main.py -m -r
+```
+To run a mock launch with our custom simulation:
+```bash
+python3 main.py -m -s 
 ```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash
