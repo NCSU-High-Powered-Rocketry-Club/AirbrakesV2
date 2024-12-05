@@ -231,10 +231,8 @@ class DataGenerator:
             return self._last_raw_packet
 
         # updates the raw rotation manager, if we are after motor burn phase
-
         if (
-            self._last_velocities[2]
-            < self._max_vertical_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            self._last_velocities[2] < self._max_vertical_velocity * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
             vertical_velocity_ratio = self._last_velocities[2] / self._max_vertical_velocity
@@ -304,8 +302,7 @@ class DataGenerator:
         # updates the estimated rotation manager, if we are after motor burn phase
         vertical_velocity_ratio = self._last_velocities[2] / self._max_vertical_velocity
         if (
-            self._last_velocities[2]
-            < self._max_vertical_velocity - self._last_velocities[2] * MAX_VELOCITY_THRESHOLD
+            self._last_velocities[2] < self._max_vertical_velocity * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
             self._est_rotation_manager.update_orientation(vertical_velocity_ratio)
@@ -320,9 +317,6 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
-        # adding randomness to compensated acceleration
-        comp_rand = (0.3 + vertical_velocity_ratio * 2) * random.uniform(-1, 1)
-        compensated_accel += comp_rand
 
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],
@@ -337,7 +331,6 @@ class DataGenerator:
         angular_rates = delta_theta / time_step
 
         quaternion = self._est_rotation_manager.calculate_imu_quaternions()
-
         packet = EstimatedDataPacket(
             timestamp=int(next_timestamp * 1e9),
             estOrientQuaternionW=float(quaternion[0]),
