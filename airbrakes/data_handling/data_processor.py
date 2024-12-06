@@ -204,9 +204,9 @@ class IMUDataProcessor:
 
         current_orientation = self._current_orientation_quaternions
         # Iterates through the data points and time differences between the data points
-        for idx, (data_packet, dt) in enumerate(
-            zip(self._data_packets, self._time_differences, strict=True)
-        ):
+        for idx in range(len(self._data_packets)):
+            data_packet = self._data_packets[idx]
+            dt = self._time_differences[idx]
             # Accelerations are in m/s^2
             x_accel = data_packet.estCompensatedAccelX
             y_accel = data_packet.estCompensatedAccelY
