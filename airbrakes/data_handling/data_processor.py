@@ -1,7 +1,5 @@
 """Module for processing IMU data on a higher level."""
 
-from collections import deque
-
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
@@ -126,7 +124,7 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
 
-    def get_processed_data_packets(self) -> deque[ProcessedDataPacket]:
+    def get_processed_data_packets(self) -> list[ProcessedDataPacket]:
         """
         Processes the data points and returns a deque of ProcessedDataPacket objects. The length
         of the deque should be the same as the length of the list of estimated data packets most
@@ -134,7 +132,7 @@ class IMUDataProcessor:
 
         :return: A deque of ProcessedDataPacket objects.
         """
-        return deque(
+        return [
             ProcessedDataPacket(
                 current_altitude=self._current_altitudes[i],
                 vertical_velocity=self._vertical_velocities[i],
@@ -142,7 +140,7 @@ class IMUDataProcessor:
                 time_since_last_data_packet=self._time_differences[i],
             )
             for i in range(len(self._data_packets))
-        )
+        ]
 
     def _first_update(self) -> None:
         """
@@ -197,7 +195,6 @@ class IMUDataProcessor:
 
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
-
         # We pre-allocate the space for our accelerations first
         rotated_accelerations = np.zeros(len(self._data_packets))
 

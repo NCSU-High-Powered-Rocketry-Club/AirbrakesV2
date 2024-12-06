@@ -128,7 +128,7 @@ class Logger:
         state: str,
         extension: str,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> list[LoggedDataPacket]:
         """
@@ -143,6 +143,7 @@ class Logger:
         """
         logged_data_packets: list[LoggedDataPacket] = []
 
+        index = 0  # Index to loop over processed data packets:
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
@@ -160,7 +161,7 @@ class Logger:
                 # Convert the processed data packet to a dictionary. Unknown types such as numpy
                 # float64 are converted to strings with 8 decimal places (that's enc_hook)
                 processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=Logger._convert_unknown_type
+                    processed_data_packets[index], enc_hook=Logger._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
@@ -168,6 +169,7 @@ class Logger:
 
                 # Add the predicted apogee field:
                 logged_fields["predicted_apogee"] = predicted_apogee
+                index += 1
 
             logged_data_packets.append(logged_fields)
 
@@ -194,7 +196,7 @@ class Logger:
         state: str,
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> None:
         """

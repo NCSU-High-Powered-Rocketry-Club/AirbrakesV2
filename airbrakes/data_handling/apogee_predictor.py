@@ -133,14 +133,14 @@ class ApogeePredictor:
         self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
-    def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
+    def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
         """
         Updates the apogee predictor to include the most recent processed data packets. This method
         should only be called during the coast phase of the rocket's flight.
 
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
-        self._prediction_queue.put_many(list(processed_data_packets))
+        self._prediction_queue.put_many(processed_data_packets)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod

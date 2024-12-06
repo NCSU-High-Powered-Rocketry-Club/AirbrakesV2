@@ -73,7 +73,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: deque[ProcessedDataPacket] = deque()
+        self.processed_data_packets: list[ProcessedDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
 
     def start(self) -> None:
