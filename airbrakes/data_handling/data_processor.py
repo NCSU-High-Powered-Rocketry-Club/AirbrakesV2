@@ -43,11 +43,11 @@ class IMUDataProcessor:
         maximum velocity of the rocket.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
-        self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
-        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: R | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
@@ -157,7 +157,7 @@ class IMUDataProcessor:
         # This is us getting the rocket's initial altitude from the mean of the first data packets
         self._initial_altitude = np.mean(
             np.array(
-                [data_packet.estPressureAlt for data_packet in self._data_packets], dtype=np.float64
+                [data_packet.estPressureAlt for data_packet in self._data_packets],
             )
         )
 
@@ -187,7 +187,6 @@ class IMUDataProcessor:
                 data_packet.estPressureAlt - self._initial_altitude
                 for data_packet in self._data_packets
             ],
-            dtype=np.float64,
         )
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
