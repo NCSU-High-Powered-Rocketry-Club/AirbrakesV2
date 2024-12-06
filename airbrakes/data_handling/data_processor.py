@@ -216,10 +216,6 @@ class IMUDataProcessor:
             gyro_y = data_packet.estAngularRateY
             gyro_z = data_packet.estAngularRateZ
 
-            # Check for missing data points
-            if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
-                return rotated_accelerations
-
             # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
             # Calculate the delta quaternion from the angular rates
             delta_rotation = R.from_rotvec([gyro_x * dt, gyro_y * dt, gyro_z * dt])
