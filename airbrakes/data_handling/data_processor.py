@@ -136,23 +136,12 @@ class IMUDataProcessor:
         """
         return deque(
             ProcessedDataPacket(
-                current_altitude=current_alt,
-                vertical_velocity=vertical_velocity,
-                vertical_acceleration=vertical_acceleration,
-                time_since_last_data_packet=time_since_last_data_packet,
+                current_altitude=self._current_altitudes[i],
+                vertical_velocity=self._vertical_velocities[i],
+                vertical_acceleration=self._rotated_accelerations[i],
+                time_since_last_data_packet=self._time_differences[i],
             )
-            for (
-                current_alt,
-                vertical_velocity,
-                vertical_acceleration,
-                time_since_last_data_packet,
-            ) in zip(
-                self._current_altitudes,
-                self._vertical_velocities,
-                self._rotated_accelerations,
-                self._time_differences,
-                strict=True,
-            )
+            for i in range(len(self._data_packets))
         )
 
     def _first_update(self) -> None:
