@@ -33,6 +33,8 @@ from constants import (
     UNCERTAINTY_THRESHOLD,
 )
 
+PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
+
 
 class LookupTable(msgspec.Struct):
     """The lookup table for the apogee predictor. This will store the respective velocities and
@@ -197,13 +199,9 @@ class ApogeePredictor:
         # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
-        predicted_coast_timestamps = np.arange(
-            0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS
-        )
-
         predicted_accelerations = (
             self._curve_fit_function(
-                predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
+                PREDICTED_COAST_TIMESTAMPS, curve_coefficients.A, curve_coefficients.B
             )
             - GRAVITY_METERS_PER_SECOND_SQUARED
         )
