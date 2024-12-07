@@ -3,10 +3,18 @@
 import ast
 import contextlib
 import multiprocessing
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
+
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from utils import get_all_from_queue
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -16,9 +24,9 @@ from airbrakes.data_handling.imu_data_packet import (
 from airbrakes.hardware.imu import IMU
 from constants import (
     LOG_BUFFER_SIZE,
+    MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DATA_PACKET_SAMPLING_RATE,
-    SIMULATION_MAX_QUEUE_SIZE,
 )
 
 
@@ -58,10 +66,18 @@ class MockIMU(IMU):
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            self._data_queue = multiprocessing.Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
 
+            self._data_queue.get_many = partial(get_all_from_queue, self._data_queue)
+        else:
+            self._data_queue: Queue[IMUDataPacket] = Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
         # Starts the process that fetches data from the log file
         self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
