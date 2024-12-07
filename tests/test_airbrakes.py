@@ -4,9 +4,10 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY_SECONDS, ServoExtension
+from tests.auxil.utils import make_est_data_packet
 
 
 class TestAirbrakesContext:
@@ -100,6 +101,7 @@ class TestAirbrakesContext:
         def data_processor_update(self, est_data_packets):
             # monkeypatched method of IMUDataProcessor
             calls.append("update called")
+            self._data_packets = est_data_packets
             # Length of these lists must be equal to the number of estimated data packets for
             # get_processed_data() to work correctly
             self._current_altitudes = [0.0] * len(est_data_packets)
@@ -207,7 +209,7 @@ class TestAirbrakesContext:
 
         # Insert 2 estimated data packet:
         # first_update():
-        est_1 = EstimatedDataPacket(
+        est_1 = make_est_data_packet(
             timestamp=1.0 + 1e9,
             estPressureAlt=20.0,
             estOrientQuaternionW=0.99,
@@ -215,7 +217,7 @@ class TestAirbrakesContext:
             estOrientQuaternionY=0.2,
             estOrientQuaternionZ=0.3,
         )
-        est_2 = EstimatedDataPacket(timestamp=3.0 + 1e9, estPressureAlt=24.0)
+        est_2 = make_est_data_packet(timestamp=3.0 + 1e9, estPressureAlt=24.0)
         airbrakes.imu._data_queue.put(est_1)
         airbrakes.imu._data_queue.put(est_2)
         time.sleep(0.001)
