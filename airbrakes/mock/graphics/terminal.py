@@ -5,7 +5,7 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Label, Static, Digits
+from textual.widgets import Digits, Footer, Header, Label, Static
 
 
 class TimeDisplay(Digits):

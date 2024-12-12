@@ -2,10 +2,11 @@
 
 ci:
     autofix_prs: false
+    autoupdate_schedule: "monthly"
 
 repos:
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.8.0'
+    rev: 'v0.8.1'
     hooks:
     - id: ruff  # Runs the Ruff linter
       name: ruff linter

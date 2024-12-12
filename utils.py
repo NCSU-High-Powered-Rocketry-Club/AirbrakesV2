@@ -101,7 +101,7 @@ def arg_parser() -> argparse.Namespace:
         help="Define the pathname of flight data to use in mock simulation. Interest Launch data"
         " is used by default",
         type=Path,
-        default=False,
+        default=None,
     )
 
     parser.add_argument(
