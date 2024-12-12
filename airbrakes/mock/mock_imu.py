@@ -7,6 +7,7 @@ import time
 import typing
 from pathlib import Path
 
+import msgspec
 import pandas as pd
 
 from airbrakes.data_handling.imu_data_packet import (
@@ -23,6 +24,9 @@ from constants import (
 )
 from utils import convert_to_nanoseconds
 
+if typing.TYPE_CHECKING:
+    from pandas.io.parsers.readers import TextFileReader
+
 
 class MockIMU(IMU):
     """
@@ -30,7 +34,12 @@ class MockIMU(IMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_headers", "_log_file_path", "_needed_fields")
+    __slots__ = (
+        "_headers",
+        "_log_file_path",
+        "_needed_fields",
+        "file_metadata",
+    )
 
     def __init__(
         self,
@@ -50,18 +59,19 @@ class MockIMU(IMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
         """
-        self._log_file_path = log_file_path
         # Check if the launch data file exists:
         if log_file_path is None:
             # Just use the first file in the `launch_data` directory:
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
-        self._log_file_path = typing.cast(Path, self._log_file_path)
+        self._log_file_path: Path = typing.cast(Path, log_file_path)
 
-        self._headers = pd.read_csv(self._log_file_path, nrows=0)
+        self._headers: pd.DataFrame = self._read_csv(nrows=0)
         self._needed_fields = list(
             (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
             & set(self._headers.columns)
         )
+
+        self.file_metadata: dict = self.read_file_metadata()
         # We don't call the parent constructor as the IMU class has different parameters, so we
         # manually start the process that fetches data from the log file
 
@@ -88,11 +98,12 @@ class MockIMU(IMU):
 
     def _read_csv(
         self,
+        *,
         chunksize: int | None = None,
         start_index: int = 0,
-        usecols: list | None = None,
+        usecols: list[str] | None = None,
         **kwargs,
-    ) -> pd.DataFrame:
+    ) -> "pd.DataFrame | TextFileReader":
         """Reads the csv file and returns it as a pandas DataFrame."""
         return pd.read_csv(
             self._log_file_path,
@@ -102,6 +113,18 @@ class MockIMU(IMU):
             skiprows=range(1, start_index + 1),
             **kwargs,
         )
+
+    def read_file_metadata(self) -> dict:
+        """
+        Reads the metadata from the log file and returns it as a dictionary.
+        """
+        metadata = Path("launch_data/metadata.json")
+        decoded_metadata = msgspec.json.decode(metadata.read_text())
+
+        if self._log_file_path.name not in decoded_metadata:
+            return {}
+
+        return decoded_metadata[self._log_file_path.name]
 
     @staticmethod
     def _convert_invalid_fields(value) -> list:
@@ -118,6 +141,11 @@ class MockIMU(IMU):
         :param log_file_path: The path of the log file to read data from.
         :return: The index where the log buffer ends.
         """
+        metadata_buffer_index: int | None = self.file_metadata["flight_data"]["log_buffer_index"]
+
+        if metadata_buffer_index:
+            return metadata_buffer_index
+
         # We read the file in small chunks because it is faster than reading the whole file at once
         chunk_size = LOG_BUFFER_SIZE + 1
         for chunk in self._read_csv(

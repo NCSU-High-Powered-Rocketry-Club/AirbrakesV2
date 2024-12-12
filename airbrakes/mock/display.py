@@ -43,11 +43,11 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_mock",
+        "_pre_calculated_motor_burn_time",
         "_processes",
         "_running",
         "_simulation_launch_time",
         "_start_time",
-        "_t_minus_launch_time",
         "_thread_target",
         "_verbose",
         "end_sim_interrupted",
@@ -65,7 +65,7 @@ class FlightDisplay:
         self._airbrakes = airbrakes
         self._start_time = start_time
         self._simulation_launch_time: int = 0  # Launch time from MotorBurnState
-        self._t_minus_launch_time: int = 0  # T-0 time from StandbyState
+        self._pre_calculated_motor_burn_time = self._airbrakes.imu.get_launch_time()
         self._running = False
         self._args = args
         self._coast_time: int = 0  # Coast time from CoastState
@@ -170,29 +170,20 @@ class FlightDisplay:
         launch_clock = self.calculate_launch_time()
         # Format as T-MM:SS:ms if the launch_clock < 0, else format as T+MM:SS:ms
         if launch_clock is not None:
-            launch_clock = abs(launch_clock)
-            launch_time = time.strftime("%M:%S", time.gmtime(launch_clock))
-            launch_time = f"T+{launch_time}" if self._simulation_launch_time else f"T-{launch_time}"
+            after_launch = launch_clock > 0
+            launch_time = self.format_ns_to_min_s_ms(abs(launch_clock))
+            launch_time = f"T+{launch_time}" if after_launch else f"T-{launch_time}"
         else:
             launch_time = "N/A"
-        print(launch_time)
 
         if data_processor._last_data_packet:
             invalid_fields = data_processor._last_data_packet.invalid_fields
-            if invalid_fields:
-                invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
+            invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}" if invalid_fields else "None"
         else:
             invalid_fields = "N/A"
 
         if not self._coast_time and self._airbrakes.state.name == "CoastState":
             self._coast_time = self._airbrakes.state.start_time_ns
-
-        if self._simulation_launch_time:
-            time_since_launch = (
-                self._airbrakes.data_processor.current_timestamp - self._simulation_launch_time
-            ) * 1e-9
-        else:
-            time_since_launch = 0
 
         if self._coast_time and not self._convergence_time and apogee_predictor.apogee:
             self._convergence_time = (data_processor.current_timestamp - self._coast_time) * 1e-9
@@ -206,7 +197,7 @@ class FlightDisplay:
             f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             # Format time as MM:SS:
-            f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(time_since_launch))}{RESET}",  # noqa: E501
+            f"Launch time:               {G}{launch_time:<15}{RESET}",
             f"State:                     {G}{self._airbrakes.state.name:<15}{RESET}",
             f"Current velocity:          {G}{data_processor.vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
@@ -227,7 +218,7 @@ class FlightDisplay:
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Invalid fields:                  {G}{invalid_fields}{G}{RESET}",
+                    f"Invalid fields:                  {G}{invalid_fields:<25}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )
@@ -276,37 +267,44 @@ class FlightDisplay:
 
     def calculate_launch_time(self) -> int | None:
         """
-        Calculates the launch time of the simulation.
-        :return: The launch time of the simulation.
+        Calculates the launch time relative to the start of motor burn.
+        :return: The launch time in nanoseconds relative to the start of motor burn.
         """
         # Just update our launch time, if it was set:
         if self._simulation_launch_time:
-            print("Simulation launch time")
             current_timestamp = self._airbrakes.data_processor.current_timestamp
             return current_timestamp - self._simulation_launch_time
 
-        # Just update our T-minus launch time, if it is a mock, and it was set:
-        if self._args.mock and self._t_minus_launch_time:
-            current_timestamp = self._airbrakes.data_processor.current_timestamp
-            print("T-minus launch time", current_timestamp)
-            return current_timestamp - self._t_minus_launch_time
-
         # No launch time set yet, and we are in MotorBurnState:
         if not self._simulation_launch_time and self._airbrakes.state.name == "MotorBurnState":
-            print("MotorBurnState")
             self._simulation_launch_time = self._airbrakes.state.start_time_ns
-            # Discard the pre-calculated motor burn time, since we have the real one now:
-            self._t_minus_launch_time = 0
-            return self._simulation_launch_time
+            return 0
 
-        # We are before launch (T-0)
-        if self._args.mock and not self._simulation_launch_time and not self._t_minus_launch_time:
-            print("Before launch")
+        # We are before launch (T-0). Only happens when running a mock:
+        if self._args.mock:
             current_timestamp = self._airbrakes.data_processor.current_timestamp
-            if current_timestamp is None:
+            if not current_timestamp:
                 return None
-            pre_calculated_motor_burn_time = self._airbrakes.imu.get_launch_time()
-            self._t_minus_launch_time = current_timestamp - pre_calculated_motor_burn_time
-            return self._t_minus_launch_time
+            return current_timestamp - self._pre_calculated_motor_burn_time
 
         return None
+
+    def format_ns_to_min_s_ms(self, ns: int) -> str:
+        """
+        Formats a time in nanoseconds to a string in the format MM:SS:ms.
+        :param: ns: The time in nanoseconds.
+
+        :return: The formatted time string.
+        """
+
+        # Convert nanoseconds to seconds
+        s = ns / 1e9
+
+        # Get the minutes
+        m = s // 60
+        s %= 60
+
+        # Get the milliseconds
+        ms = (s % 1) * 100
+
+        return f"{m:02.0f}:{s:02.0f}.{ms:02.0f}"
