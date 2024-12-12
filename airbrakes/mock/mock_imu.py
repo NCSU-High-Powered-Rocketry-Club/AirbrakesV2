@@ -29,6 +29,9 @@ CHUNK_SIZE = LOG_BUFFER_SIZE + 1
 """The size of the chunk to read from the log file at a time. This has 2 benefits. Less memory
 usage and faster initial read of the file."""
 
+DEFAULT = object()
+"""Default sentinel value for usecols in the read_csv method."""
+
 
 class MockIMU(IMU):
     """
@@ -67,7 +70,7 @@ class MockIMU(IMU):
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
         self._log_file_path: Path = typing.cast(Path, log_file_path)
 
-        self._headers: pd.DataFrame = self._read_csv(nrows=0)
+        self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
         self._needed_fields = list(
             (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
             & set(self._headers.columns)
@@ -101,17 +104,16 @@ class MockIMU(IMU):
     def _read_csv(
         self,
         *,
-        chunksize: int | None = None,
         start_index: int = 0,
-        usecols: list[str] | None = None,
+        usecols: list[str] | typing.Literal[DEFAULT] = DEFAULT,
         **kwargs,
     ) -> "pd.DataFrame | TextFileReader":
         """Reads the csv file and returns it as a pandas DataFrame."""
         return pd.read_csv(
             self._log_file_path,
-            chunksize=chunksize,
             engine="c",
-            usecols=usecols,
+            usecols=self._needed_fields if usecols is DEFAULT else usecols,
+            converters={"invalid_fields": MockIMU._convert_invalid_fields},
             skiprows=range(1, start_index + 1),
             **kwargs,
         )
@@ -152,7 +154,6 @@ class MockIMU(IMU):
         for chunk in self._read_csv(
             chunksize=CHUNK_SIZE,
             usecols=["timestamp"],
-            converters={"invalid_fields": MockIMU._convert_invalid_fields},
         ):
             chunk["time_diff"] = chunk["timestamp"].diff()
             buffer_end_index = chunk[chunk["time_diff"] > 1e9].index
@@ -163,7 +164,6 @@ class MockIMU(IMU):
     def _read_file(self, real_time_simulation: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_path: the name of the log file to read data from located in scripts/imu_data
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
         or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
@@ -174,13 +174,11 @@ class MockIMU(IMU):
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
-        # and use an iterator to read the file in chunks
+        # and chunk read the file because it's faster and memory efficient
         reader: TextFileReader = typing.cast(
             TextFileReader,
             self._read_csv(
                 start_index=start_index,
-                usecols=self._needed_fields,
-                converters={"invalid_fields": MockIMU._convert_invalid_fields},
                 chunksize=CHUNK_SIZE,
             ),
         )
@@ -218,7 +216,6 @@ class MockIMU(IMU):
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
-        :param log_file_path: the name of the log file to read data from located in scripts/imu_data
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
         or run at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
@@ -228,8 +225,8 @@ class MockIMU(IMU):
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
             self._read_file(real_time_simulation, start_after_log_buffer)
-        # For the mock, once we're done reading the file, we say it is no longer running
-        self._running.value = False
+            # For the mock, once we're done reading the file, we say it is no longer running
+            self._running.value = False
 
     def get_launch_time(self) -> int:
         """Gets the launch time, from reading the csv file.
