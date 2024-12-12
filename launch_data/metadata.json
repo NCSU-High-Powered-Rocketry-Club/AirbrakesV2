@@ -1,6 +1,6 @@
 {
     "purple_launch.csv": {
-        "date": "2023-12-16 17:11:35.000",
+        "date": "2023-12-16T17:11:35.000-05:00",
         "launch_site": {
             "air_temperature_celsius": 16.11,  
             "air_pressure_mb": 1031.49,
@@ -28,7 +28,7 @@
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },
     "interest_launch.csv": {
-        "date": "2024-08-28 14:51:21.437",
+        "date": "2024-08-28T14:51:21.437-04:00",
         "launch_site": {
             "air_temperature_celsius": 30.0,
             "air_pressure_mb": 1012.19,
@@ -56,7 +56,7 @@
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to simulate a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
     "genesis_launch_1.csv": {
-        "date": "2024-11-16 13:45:58.732",
+        "date": "2024-11-16T13:45:58.732-05:00",
         "launch_site": {
             "air_temperature_celsius": 16.0,
             "air_pressure_mb": 1016.18,
@@ -85,7 +85,7 @@
 
     },
     "genesis_launch_2.csv": {
-        "date": "2024-11-16 16:45:13.844",
+        "date": "2024-11-16T+16:45:13.844-05:00",
         "launch_site": {
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
