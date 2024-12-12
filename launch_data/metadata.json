@@ -6,9 +6,13 @@
             "air_pressure_mb": 1031.49,
             "wind_speed_kmh": 12.87,
             "wind_speed_direction": "ESE",
-            "coordinates": {
+            "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
             },
             "launch_rod_angle": 5.0
         },
@@ -30,9 +34,13 @@
             "air_pressure_mb": 1012.19,
             "wind_speed_kmh": 22.53,
             "wind_speed_direction": "SSW",
-            "coordinates": {
+            "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
             },
             "launch_rod_angle": 5.0
         },
@@ -54,9 +62,13 @@
             "air_pressure_mb": 1016.18,
             "wind_speed_kmh": 16.01,
             "wind_speed_direction": "S",
-            "coordinates": {
+            "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
             },
             "launch_rod_angle": 6.0
         },
@@ -79,9 +91,13 @@
             "air_pressure_mb": 1015.53,
             "wind_speed_kmh": 8.01,
             "wind_speed_direction": "S",
-            "coordinates": {
+            "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": 35.1751266,
+                "longitude": -76.826902
             },
             "launch_rod_angle": 5.0
         },
