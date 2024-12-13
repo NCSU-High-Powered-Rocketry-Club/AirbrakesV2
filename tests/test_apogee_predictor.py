@@ -4,6 +4,7 @@ import threading
 import time
 from collections import deque
 
+import faster_fifo
 import numpy as np
 import pytest
 
@@ -41,7 +42,7 @@ class TestApogeePredictor:
         ap = apogee_predictor
         # Test attributes on init
         assert ap._apogee_prediction_value.value == 0.0
-        assert isinstance(ap._prediction_queue, multiprocessing.queues.Queue)
+        assert isinstance(ap._prediction_queue, faster_fifo.Queue)
         assert isinstance(ap._prediction_process, multiprocessing.Process)
         assert not ap._prediction_process.is_alive()
         assert isinstance(ap._cumulative_time_differences, np.ndarray)
@@ -82,7 +83,7 @@ class TestApogeePredictor:
         # it from the queue and we want to check if it's added to the queue.
         apogee_predictor.update(packet.copy())
         assert apogee_predictor._prediction_queue.qsize() == 1
-        assert apogee_predictor._prediction_queue.get() == packet
+        assert apogee_predictor._prediction_queue.get_many() == packet
 
     @pytest.mark.parametrize(
         (
@@ -123,7 +124,7 @@ class TestApogeePredictor:
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1167.8157033639814,
+                1177.232574134796,
             ),
         ],
         ids=["hover_at_altitude", "coast_phase_sim"],

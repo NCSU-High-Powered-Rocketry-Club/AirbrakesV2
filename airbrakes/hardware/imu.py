@@ -3,6 +3,7 @@
 import collections
 import contextlib
 import multiprocessing
+import sys
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
 # mscl is annoying and we really just have it installed on the pi
@@ -10,14 +11,22 @@ with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
 
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Empty, Queue
+else:
+    from multiprocessing.queues import Empty
+
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
 from constants import (
+    BUFFER_SIZE_IN_BYTES,
     ESTIMATED_DESCRIPTOR_SET,
     IMU_TIMEOUT_SECONDS,
+    MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
 )
@@ -51,8 +60,9 @@ class IMU:
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE
+        # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
+        self._data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
         )
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
@@ -103,16 +113,18 @@ class IMU:
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
-        :return: A deque containing the specified number of data packets
+        :return: A deque containing the latest data packets from the IMU.
         """
         # We use a deque because it's faster than a list for popping from the left
-        data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the dequeue which we
-        # return
-        while not self._data_queue.empty():
-            data_packets.append(self.get_imu_data_packet())
-
-        return data_packets
+        try:
+            return collections.deque(
+                self._data_queue.get_many(block=False, max_messages_to_get=MAX_FETCHED_PACKETS)
+            )
+            # If we had done block=True, then Ctrl+C would not have worked, so we use block=False
+            # to allow for KeyboardInterrupts. The library does not seem to handle
+            # KeyboardInterrupts well, so we have to watch that carefully.
+        except Empty:  # If the queue is empty, don't bother waiting.
+            return collections.deque()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
