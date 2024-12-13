@@ -22,10 +22,10 @@ from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUData
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import (
+    BUFFER_SIZE_IN_BYTES,
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     MAX_GET_TIMEOUT_SECONDS,
-    MAX_SIZE_BYTES,
     STOP_SIGNAL,
 )
 
@@ -40,6 +40,8 @@ class Logger:
     It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
     our logs in real time.
     """
+
+    LOG_BUFFER_STATES = ("StandbyState", "LandedState")
 
     __slots__ = (
         "_log_buffer",
@@ -91,7 +93,7 @@ class Logger:
             self._log_queue.put_many = self._log_queue.put
         else:
             self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
-                max_size_bytes=MAX_SIZE_BYTES
+                max_size_bytes=BUFFER_SIZE_IN_BYTES
             )
 
         # Start the logging process
@@ -221,7 +223,7 @@ class Logger:
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if state_letter in ["S", "L"]:
+        if state in self.LOG_BUFFER_STATES:
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
             to_log = logged_data_packets[:log_capacity]
@@ -280,8 +282,5 @@ class Logger:
                 # If the message is the stop signal, break out of the loop
                 for message_field in message_fields:
                     if message_field == STOP_SIGNAL:
-                        break
+                        return
                     writer.writerow(Logger._truncate_floats(message_field))
-                else:
-                    continue
-                break

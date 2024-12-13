@@ -80,7 +80,7 @@ MAX_GET_TIMEOUT_SECONDS = 100  # seconds
 """The maximum amount of time in seconds to wait for a get operation on the queue."""
 
 # Max bytes to put/get from the queue at once:
-MAX_SIZE_BYTES = 1000 * 1000 * 20  # 20 Mb
+BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
 """The maximum number of bytes to put or get from the queue at once. This is an increase from the
 default value of 1Mb, which is too small sometimes for our data packets, e.g. when logging the
 entire buffer, which is 5000 packets."""

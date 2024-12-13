@@ -23,11 +23,11 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from constants import (
+    BUFFER_SIZE_IN_BYTES,
     ESTIMATED_DESCRIPTOR_SET,
     IMU_TIMEOUT_SECONDS,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
-    MAX_SIZE_BYTES,
     RAW_DESCRIPTOR_SET,
 )
 
@@ -62,7 +62,7 @@ class IMU:
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
         self._data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE, max_size_bytes=MAX_SIZE_BYTES
+            maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
         )
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
@@ -113,9 +113,7 @@ class IMU:
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
-        This method differs from the actual IMU in that it uses the faster-fifo library to get
-        multiple data packets, which is many times faster than retrieving them one by one.
-        :return: A deque containing the specified number of data packets
+        :return: A deque containing the latest data packets from the IMU.
         """
         # We use a deque because it's faster than a list for popping from the left
         try:

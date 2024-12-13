@@ -23,12 +23,12 @@ from scipy.optimize import curve_fit
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 from constants import (
     APOGEE_PREDICTION_MIN_PACKETS,
+    BUFFER_SIZE_IN_BYTES,
     CURVE_FIT_INITIAL,
     FLIGHT_LENGTH_SECONDS,
     GRAVITY_METERS_PER_SECOND_SQUARED,
     INTEGRATION_TIME_STEP_SECONDS,
     MAX_GET_TIMEOUT_SECONDS,
-    MAX_SIZE_BYTES,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
@@ -86,7 +86,7 @@ class ApogeePredictor:
             self._prediction_queue.put_many = self._prediction_queue.put
         else:
             self._prediction_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
-                max_size_bytes=MAX_SIZE_BYTES
+                max_size_bytes=BUFFER_SIZE_IN_BYTES
             )
 
         self._prediction_process = multiprocessing.Process(
