@@ -24,6 +24,7 @@
                 "latitude": null,
                 "longitude": null
             },
+            "flight_length_seconds": 99.9
         },
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },
@@ -51,7 +52,8 @@
             "landed_coordinates:": {
                 "latitude": null,
                 "longitude": null
-            }
+            },
+            "flight_length_seconds": 136.47
         },
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to simulate a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
@@ -79,7 +81,8 @@
             "landed_coordinates:": {
                 "latitude": null,
                 "longitude": null
-            }
+            },
+            "flight_length_seconds": 53.34
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
 
@@ -108,7 +111,8 @@
             "landed_coordinates:": {
                 "latitude": 35.1751266,
                 "longitude": -76.826902
-            }
+            },
+            "flight_length_seconds": 54.15
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
     }
