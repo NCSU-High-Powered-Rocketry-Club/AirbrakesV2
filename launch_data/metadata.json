@@ -10,10 +10,6 @@
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
             },
-            "landed_coordinates:": {
-                "latitude": null,
-                "longitude": null
-            },
             "launch_rod_angle": 5.0
         },
         "imu_details": {
@@ -23,7 +19,11 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 457.68
+            "apogee_meters": 457.68,
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            },
         },
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },
@@ -38,10 +38,6 @@
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
             },
-            "landed_coordinates:": {
-                "latitude": null,
-                "longitude": null
-            },
             "launch_rod_angle": 5.0
         },
         "imu_details": {
@@ -51,7 +47,11 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 1856.28
+            "apogee_meters": 1856.28,
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            }
         },
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to simulate a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
@@ -66,10 +66,6 @@
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
             },
-            "landed_coordinates:": {
-                "latitude": null,
-                "longitude": null
-            },
             "launch_rod_angle": 6.0
         },
         "imu_details": {
@@ -79,7 +75,11 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 459.46
+            "apogee_meters": 459.46,
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            }
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
 
@@ -95,10 +95,6 @@
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
             },
-            "landed_coordinates:": {
-                "latitude": 35.1751266,
-                "longitude": -76.826902
-            },
             "launch_rod_angle": 5.0
         },
         "imu_details": {
@@ -108,7 +104,11 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 463.62
+            "apogee_meters": 463.62,
+            "landed_coordinates:": {
+                "latitude": 35.1751266,
+                "longitude": -76.826902
+            }
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
     }
