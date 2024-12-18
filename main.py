@@ -10,13 +10,14 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.graphics.terminal import FlightDisplay
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from airbrakes.mock.display import FlightDisplay
+
+# from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from constants import IMU_PORT, LOGS_PATH, SERVO_PIN
-from utils import arg_parser
 
 
 def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
@@ -115,5 +116,7 @@ if __name__ == "__main__":
     # simulation stops
     # python main.py -m -f: Runs a simulation on your computer at full speed
     # python main.py -m -d: Runs a simulation on your computer in debug mode (doesn't show display)
-    args = arg_parser()
-    main(args)
+    # args = arg_parser()
+    # main(args)
+    app = FlightDisplay()
+    app.run()
