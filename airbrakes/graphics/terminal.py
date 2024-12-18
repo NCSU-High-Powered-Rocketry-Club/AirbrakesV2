@@ -7,6 +7,8 @@ from textual.containers import Horizontal, Vertical
 from textual.reactive import reactive
 from textual.widgets import Digits, Footer, Header, Label, Static
 
+from airbrakes.graphics.launch_selector import LaunchSelector, SelectedLaunchConfiguration
+
 
 class TimeDisplay(Digits):
     """A widget to display elapsed flight time"""
@@ -17,6 +19,15 @@ class FlightDisplay(App):
 
     BINDINGS: ClassVar = [("q", "quit", "Quit")]
     TITLE = "AirbrakesV2"
+    SCREENS = {"launch_selector": LaunchSelector}
+
+    # def on_load(self) -> None:
+
+    def on_mount(self) -> None:
+        self.push_screen("launch_selector", self.receive_launch_config)
+
+    def receive_launch_config(self, launch_config: SelectedLaunchConfiguration) -> None:
+        pass
 
     def compose(self) -> ComposeResult:
         """Create the layout of the app."""

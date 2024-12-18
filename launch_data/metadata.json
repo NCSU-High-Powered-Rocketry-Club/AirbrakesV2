@@ -5,7 +5,7 @@
             "air_temperature_celsius": 16.11,  
             "air_pressure_mb": 1031.49,
             "wind_speed_kmh": 12.87,
-            "wind_speed_direction": "ESE",
+            "wind_direction": "ESE",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -29,12 +29,12 @@
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },
     "interest_launch.csv": {
-        "date": "2024-08-28T14:51:21.437-04:00",
+        "date": "2024-09-28T14:51:21.437-04:00",
         "launch_site": {
             "air_temperature_celsius": 30.0,
             "air_pressure_mb": 1012.19,
             "wind_speed_kmh": 22.53,
-            "wind_speed_direction": "SSW",
+            "wind_direction": "SSW",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -63,7 +63,7 @@
             "air_temperature_celsius": 16.0,
             "air_pressure_mb": 1016.18,
             "wind_speed_kmh": 16.01,
-            "wind_speed_direction": "S",
+            "wind_direction": "S",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -88,12 +88,12 @@
 
     },
     "genesis_launch_2.csv": {
-        "date": "2024-11-16T+16:45:13.844-05:00",
+        "date": "2024-11-16T16:45:13.844-05:00",
         "launch_site": {
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
             "wind_speed_kmh": 8.01,
-            "wind_speed_direction": "S",
+            "wind_direction": "S",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400

@@ -76,7 +76,8 @@ class MockIMU(IMU):
             & set(self._headers.columns)
         )
 
-        self.file_metadata: dict = self.read_file_metadata()
+        file_metadata: dict = MockIMU.read_file_metadata()
+        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
         # We don't call the parent constructor as the IMU class has different parameters, so we
         # manually start the process that fetches data from the log file
 
@@ -118,17 +119,13 @@ class MockIMU(IMU):
             **kwargs,
         )
 
-    def read_file_metadata(self) -> dict:
+    @staticmethod
+    def read_file_metadata() -> dict:
         """
         Reads the metadata from the log file and returns it as a dictionary.
         """
         metadata = Path("launch_data/metadata.json")
-        decoded_metadata = msgspec.json.decode(metadata.read_text())
-
-        if self._log_file_path.name not in decoded_metadata:
-            return {}
-
-        return decoded_metadata[self._log_file_path.name]
+        return msgspec.json.decode(metadata.read_text())
 
     @staticmethod
     def _convert_invalid_fields(value) -> list:
