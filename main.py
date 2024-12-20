@@ -10,7 +10,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.graphics.terminal import FlightDisplay
+from airbrakes.graphics.terminal import AirbrakesApplication
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 
@@ -50,7 +50,7 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
+    airbrakes: AirbrakesContext, flight_display: AirbrakesApplication, is_mock: bool
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
@@ -101,7 +101,7 @@ def main(args: argparse.Namespace) -> None:
 
     # Initialize the airbrakes context and display
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
-    flight_display = FlightDisplay(airbrakes, sim_time_start, args)
+    flight_display = AirbrakesApplication(airbrakes, sim_time_start, args)
 
     # Run the main flight loop
     run_flight_loop(airbrakes, flight_display, args.mock)
@@ -118,5 +118,5 @@ if __name__ == "__main__":
     # python main.py -m -d: Runs a simulation on your computer in debug mode (doesn't show display)
     # args = arg_parser()
     # main(args)
-    app = FlightDisplay()
+    app = AirbrakesApplication()
     app.run()
