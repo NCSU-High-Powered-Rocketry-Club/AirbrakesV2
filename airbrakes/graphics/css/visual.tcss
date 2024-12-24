@@ -1,0 +1,73 @@
+#main-grid {
+    layout: grid;
+    grid-size: 1;
+    grid-rows: auto 1fr;
+    # background: green;
+}
+
+#flight-information-panel {
+    layout: grid;
+    grid-size: 3;  /* 3 columns */
+    height: 100%;
+    overflow-y: auto;
+    # background: maroon;
+
+    #flight_data_panel {
+        border: solid;
+        overflow-y: auto;
+    }
+
+    #debug-flight-data-panel {
+        overflow: auto;
+    }
+}
+
+Placeholder {
+    width: auto;
+    height: auto;
+}
+
+
+#flight-header {
+    layout: grid;
+    overflow-y: auto;
+    grid-size: 3; /* 3 columns */
+    grid-rows: auto;
+    grid-gutter: 1;
+
+    #launch-file-name {
+        # background: black;
+        text-align: center;
+        width: 100%;
+    }
+
+    #normal-sim-time {
+        text-align: center;
+        width: 100%;
+    }
+
+    Button {
+        min-width: 0;
+        border: none;
+    }
+
+    #launch-clock {
+        # background: blue;
+        text-align: center;
+    }
+
+    #state {
+        align: left bottom;
+        content-align: left bottom;
+        text-align: center;
+        width: 100%;
+        # background: green;
+    }
+
+    #sim-speed-panel {
+        # background: green;
+        Horizontal {
+            align: center middle;
+        }
+    }
+}
