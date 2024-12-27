@@ -10,7 +10,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.graphics.terminal import AirbrakesApplication
+from airbrakes.graphics.application import AirbrakesApplication
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 
