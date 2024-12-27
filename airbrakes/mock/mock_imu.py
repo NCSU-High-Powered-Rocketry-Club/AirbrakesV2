@@ -19,7 +19,6 @@ from airbrakes.data_handling.imu_data_packet import (
 from airbrakes.hardware.imu import IMU
 from constants import (
     LOG_BUFFER_SIZE,
-    MAX_QUEUE_SIZE,
     RAW_DATA_PACKET_SAMPLING_RATE,
     SIMULATION_MAX_QUEUE_SIZE,
 )
@@ -43,12 +42,13 @@ class MockIMU(IMU):
         "_headers",
         "_log_file_path",
         "_needed_fields",
+        "_sim_speed_factor",
         "file_metadata",
     )
 
     def __init__(
         self,
-        real_time_simulation: bool,
+        simulation_speed: float = 1.0,
         log_file_path: Path | None = None,
         start_after_log_buffer: bool = True,
     ):
@@ -86,21 +86,20 @@ class MockIMU(IMU):
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
         self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
+            SIMULATION_MAX_QUEUE_SIZE
         )
 
         # Starts the process that fetches data from the log file
         self._data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
-            args=(
-                real_time_simulation,
-                start_after_log_buffer,
-            ),
+            args=(start_after_log_buffer,),
             name="Mock IMU Process",
         )
 
         # Makes a boolean value that is shared between processes
         self._running = multiprocessing.Value("b", False)
+
+        self._sim_speed_factor = multiprocessing.Value("d", simulation_speed)
 
     def _read_csv(
         self,
@@ -158,11 +157,9 @@ class MockIMU(IMU):
                 return buffer_end_index[0]
         return 0
 
-    def _read_file(self, real_time_simulation: bool, start_after_log_buffer: bool = False) -> None:
+    def _read_file(self, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
-        or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
         """
@@ -203,14 +200,19 @@ class MockIMU(IMU):
                 # sleep only if we are running a real-time simulation
                 # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
                 # pretend to be real-time
-                if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
+                if isinstance(imu_data_packet, RawDataPacket):
                     # Simulate polling interval
-                    end_time = time.time()
-                    time.sleep(max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - (end_time - start_time)))
+                    execution_time = time.time() - start_time
+                    sleep_time = max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - execution_time)
+                    sim_speed = self._sim_speed_factor.value
+                    if sim_speed > 0:
+                        adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
+                        time.sleep(adjusted_sleep_time)
+                    else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
+                        while not self._sim_speed_factor.value and self._running.value:
+                            time.sleep(0.1)
 
-    def _fetch_data_loop(
-        self, real_time_simulation: bool, start_after_log_buffer: bool = False
-    ) -> None:
+    def _fetch_data_loop(self, start_after_log_buffer: bool = False) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
         :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
@@ -221,7 +223,7 @@ class MockIMU(IMU):
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(real_time_simulation, start_after_log_buffer)
+            self._read_file(start_after_log_buffer)
             # For the mock, once we're done reading the file, we say it is no longer running
             self._running.value = False
 

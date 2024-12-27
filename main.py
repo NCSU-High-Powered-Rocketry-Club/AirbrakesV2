@@ -30,7 +30,7 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
     if args.mock:
         # Replace hardware with mock objects for simulation
         imu = MockIMU(
-            real_time_simulation=not args.fast_simulation,
+            initial_sim_speed=not args.fast_simulation,
             log_file_path=args.path,
         )
         # If using a real servo, use the real servo object, otherwise use a mock servo object

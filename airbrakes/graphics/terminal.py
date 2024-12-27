@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import textual.renderables.digits
 from gpiozero.pins.mock import MockFactory, MockPWMPin
-from textual import work
+from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import Center, Grid, Horizontal
 from textual.reactive import reactive, var
@@ -79,7 +79,7 @@ class AirbrakesApplication(App):
     def __init__(self) -> None:
         super().__init__()
         self.update_timer: Timer | None = None
-        self.airbrakes: AirbrakesContext | None = None
+        self.airbrakes: AirbrakesContext
         self.is_mock: bool = False
         self._pre_calculated_motor_burn_time: int = None
 
@@ -87,6 +87,8 @@ class AirbrakesApplication(App):
     async def on_mount(self) -> None:
         await self.push_screen("launch_selector", self.create_components, wait_for_dismiss=True)
         self.update_timer = self.set_interval(1 / 20, self.update_telemetry, pause=True)
+        self.initialize_widgets()
+        self.watch(self.query_one(SimulationSpeed), "sim_speed", self.change_sim_speed)
         self.start()
 
     @work
@@ -96,6 +98,14 @@ class AirbrakesApplication(App):
         if self.airbrakes:
             self.airbrakes.stop()
 
+    def initialize_widgets(self) -> None:
+        """Supplies the airbrakes context and related objects to the widgets for proper
+        operation."""
+        flight_header = self.query_one(FlightHeader)
+        flight_information = self.query_one(FlightInformation)
+        flight_header.initialize_widgets(self.airbrakes, self.is_mock)
+        flight_information.initialize_widgets(self.airbrakes)
+
     def start(self) -> None:
         """Starts the flight display."""
         # Initialize the airbrakes context and display
@@ -103,11 +113,15 @@ class AirbrakesApplication(App):
         self.call_later(self.update_timer.resume)
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
 
+    def change_sim_speed(self, sim_speed: float) -> None:
+        self.airbrakes.imu._sim_speed_factor.value = sim_speed
+        # TODO: Make the time blink if sim_speed == 0
+
     def create_components(self, launch_config: SelectedLaunchConfiguration) -> None:
         """Create the system components needed for the airbrakes system."""
         if launch_config.launch_options is not None:
             imu = MockIMU(
-                real_time_simulation=not launch_config.launch_options.fast_simulation,
+                simulation_speed=2.0 if launch_config.launch_options.fast_simulation else 1.0,
                 log_file_path=launch_config.selected_button,
             )
             logger = MockLogger(
@@ -135,9 +149,9 @@ class AirbrakesApplication(App):
     def update_telemetry(self) -> None:
         """Updates all the reactive variables with the latest telemetry data."""
         flight_header = self.query_one(FlightHeader)
-        flight_header.update_header(self.airbrakes, self.is_mock)
+        flight_header.update_header()
         flight_information = self.query_one(FlightInformation)
-        flight_information.update_flight_information(self.airbrakes)
+        flight_information.update_flight_information()
 
     def run_flight_loop(self) -> None:
         """Main flight control loop that runs until shutdown is requested or interrupted."""
@@ -171,6 +185,7 @@ class FlightHeader(Static):
     airbrakes: AirbrakesContext | None = None
     t_zero_time = reactive(0)
     takeoff_time = 0
+    is_mock: bool = True
     _pre_calculated_motor_burn_time: int | None = None
 
     def compose(self) -> ComposeResult:
@@ -200,7 +215,12 @@ class FlightHeader(Static):
         label = self.state.removesuffix("State")
         state_label.update(f"STATUS: {label}")
 
-    def calculate_launch_time(self, is_mock: bool) -> int:
+    def initialize_widgets(self, airbrakes: AirbrakesContext, is_mock: bool) -> None:
+        self.airbrakes = airbrakes
+        self.is_mock = is_mock
+        self.query_one(SimulationSpeed).sim_speed = self.airbrakes.imu._sim_speed_factor.value
+
+    def calculate_launch_time(self) -> int:
         """
         Calculates the launch time relative to the start of motor burn.
         :return: The launch time in nanoseconds relative to the start of motor burn.
@@ -211,26 +231,24 @@ class FlightHeader(Static):
             return current_timestamp - self.takeoff_time
 
         # We are before launch (T-0). Only happens when running a mock:
-        if is_mock:
+        if self.is_mock:
             current_timestamp = self.airbrakes.data_processor.current_timestamp
             return current_timestamp - self._pre_calculated_motor_burn_time
 
         return 0
 
-    def update_header(self, airbrakes: AirbrakesContext, is_mock: bool) -> None:
-        self.airbrakes = airbrakes
-
+    def update_header(self) -> None:
         file_name = self.query_one("#launch-file-name", Label)
         if file_name.disabled:
-            launch_file_name = airbrakes.imu._log_file_path.stem.replace("_", " ").title()
+            launch_file_name = self.airbrakes.imu._log_file_path.stem.replace("_", " ").title()
             file_name.update(launch_file_name)
             file_name.disabled = False
 
         if not self._pre_calculated_motor_burn_time:
             self._pre_calculated_motor_burn_time = self.airbrakes.imu.get_launch_time()
 
-        self.state = airbrakes.state.name
-        self.t_zero_time = self.calculate_launch_time(is_mock)
+        self.state = self.airbrakes.state.name
+        self.t_zero_time = self.calculate_launch_time()
 
 
 class FlightInformation(Static):
@@ -239,37 +257,89 @@ class FlightInformation(Static):
     airbrakes: AirbrakesContext | None = None
 
     def compose(self) -> ComposeResult:
-        ft = FlightTelemetry(id="flight_data_panel")
-        ft.border_title = "SIMULATED TELEMETRY"
-        yield ft
+        self.flight_telemetry = FlightTelemetry(id="flight_data_panel")
+        self.flight_telemetry.border_title = "SIMULATED TELEMETRY"
+        yield self.flight_telemetry
         yield Placeholder("tabbed graphs")
         yield Placeholder("2d rocket vis")
-        yield DebugTelemetry(id="debug-flight-data-panel")
+        self.debug_telemetry = DebugTelemetry(id="debug-flight-data-panel")
+        yield self.debug_telemetry
         yield Placeholder("downrange map")
         yield Placeholder("2d rocket vis")
 
-    def update_flight_information(self, airbrakes: AirbrakesContext) -> None:
+    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self.airbrakes = airbrakes
-        flight_telemetry = self.query_one("#flight_data_panel", FlightTelemetry)
-        debug_telemetry = self.query_one("#debug-flight-data-panel", DebugTelemetry)
-        flight_telemetry.update_flight_telemetry(airbrakes)
-        debug_telemetry.update_debug_telemetry(airbrakes)
+        self.flight_telemetry.initialize_widgets(self.airbrakes)
+        self.debug_telemetry.initialize_widgets(self.airbrakes)
+
+    def update_flight_information(self) -> None:
+        self.flight_telemetry.update_flight_telemetry()
+        self.debug_telemetry.update_debug_telemetry()
 
 
-class SimulationSpeed(Static):
+class SimulationSpeed(Static, can_focus=True):
     """Panel displaying the current simulation speed, with buttons to change it."""
+
+    BINDINGS: ClassVar[list] = [
+        ("comma", "decrease_sim_speed", "Dec. speed"),
+        ("full_stop", "increase_sim_speed", "Inc. speed"),
+        ("space", "pause_sim", "Pause sim"),
+        ("space", "play_sim", "Play sim"),
+    ]
+
+    sim_speed: reactive[float] = reactive(1.0, bindings=True)
+    old_sim_speed: float = 1.0
 
     def compose(self) -> ComposeResult:
         with Horizontal():
             yield Button("<", id="speed_decrease_button")
-            yield Label("1x", id="simulation_speed")
+            yield Label("1.0x", id="simulation_speed")
             yield Button(">", id="speed_increase_button")
+
+    def validate_sim_speed(self, sim_speed: float) -> float:
+        if sim_speed < 0.0:
+            return 0
+        if sim_speed > 2.0:
+            return 2.0
+        return sim_speed
+
+    def watch_sim_speed(self, old_sim_speed: float, sim_speed: float) -> None:
+        self.query_one("#simulation_speed", Label).update(f"{sim_speed:.1f}x")
+        self.old_sim_speed = old_sim_speed
+
+    def action_pause_sim(self) -> None:
+        self.sim_speed = 0.0
+
+    def action_play_sim(self) -> None:
+        self.sim_speed = self.old_sim_speed
+
+    @on(Button.Pressed, "#speed_decrease_button")
+    def decrease_speed(self) -> None:
+        self.sim_speed -= 0.1
+
+    @on(Button.Pressed, "#speed_increase_button")
+    def increase_speed(self) -> None:
+        self.sim_speed += 0.1
+
+    def check_action(self, action: str, _: tuple[object, ...]) -> bool | None:
+        if action == "decrease_sim_speed" and self.sim_speed <= 0.0:
+            return None
+        if action == "increase_sim_speed" and self.sim_speed >= 2.0:
+            return None
+        if action == "pause_sim":
+            return self.sim_speed != 0.0
+        if action == "play_sim":
+            return self.sim_speed == 0.0
+        return True
+
+    action_decrease_sim_speed = decrease_speed
+    action_increase_sim_speed = increase_speed
 
 
 class DebugTelemetry(Static):
     """Collapsible panel for displaying debug telemetry data."""
 
-    airbrakes: AirbrakesContext | None = None
+    airbrakes: AirbrakesContext
     imu_queue_size = reactive(0)
     cpu_usage = reactive("")
     state = var("Standby")
@@ -282,13 +352,16 @@ class DebugTelemetry(Static):
     coast_start_time = 0
 
     def compose(self) -> ComposeResult:
-        yield Label("IMU Queue Size: ", id="imu_queue_size")
+        yield Label("IMU Queue Size: ", id="imu_queue_size", expand=True)
         yield Label("Convergence Time: ", id="apogee_convergence_time")
         yield Label("Convergence Height: ", id="alt_at_convergence")
         yield Label("Pred. Apogee at Convergence: ", id="apogee_at_convergence")
         yield Label("Fetched packets: ", id="fetched_packets")
         yield Label("Log buffer size: ", id="log_buffer_size")
         yield Label("CPU Usage: ", id="cpu_usage")
+
+    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
+        self.airbrakes = airbrakes
 
     def watch_imu_queue_size(self) -> None:
         imu_queue_size_label = self.query_one("#imu_queue_size", Label)
@@ -334,19 +407,19 @@ class DebugTelemetry(Static):
         cpu_usage_label = self.query_one("#cpu_usage", Label)
         cpu_usage_label.update(f"CPU Usage: {self.cpu_usage}")
 
-    def update_debug_telemetry(self, airbrakes: AirbrakesContext) -> None:
-        self.airbrakes = airbrakes
-        self.imu_queue_size = airbrakes.imu._data_queue.qsize()
+    def update_debug_telemetry(self) -> None:
+        self.imu_queue_size = self.airbrakes.imu._data_queue.qsize()
         self.log_buffer_size = len(self.airbrakes.logger._log_buffer)
         self.apogee = self.airbrakes.apogee_predictor.apogee
         self.fetched_packets = len(self.airbrakes.imu_data_packets)
-        self.state = airbrakes.state.name
+        self.state = self.airbrakes.state.name
         # self.cpu_usage = cpu_usage
 
 
 class FlightTelemetry(Static):
     """Panel displaying real-time flight information."""
 
+    airbrakes: AirbrakesContext
     vertical_velocity = reactive(0.0)
     max_vertical_velocity = reactive(0.0)
     current_height = reactive(0.0)
@@ -361,6 +434,9 @@ class FlightTelemetry(Static):
         yield Label("Max altitude: ", id="max_height")
         yield Label("Predicted Apogee: ", id="apogee_prediction")
         yield Label("Airbrakes Extension: ", id="airbrakes_extension")
+
+    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
+        self.airbrakes = airbrakes
 
     def watch_vertical_velocity(self) -> None:
         vertical_velocity_label = self.query_one("#vertical_velocity", Label)
@@ -386,10 +462,10 @@ class FlightTelemetry(Static):
         airbrakes_extension_label = self.query_one("#airbrakes_extension", Label)
         airbrakes_extension_label.update(f"Airbrakes Extension: {self.airbrakes_extension:.2f}")
 
-    def update_flight_telemetry(self, airbrakes: AirbrakesContext) -> None:
-        self.vertical_velocity = airbrakes.data_processor.vertical_velocity
-        self.max_vertical_velocity = airbrakes.data_processor.max_vertical_velocity
-        self.current_height = airbrakes.data_processor.current_altitude
-        self.max_height = airbrakes.data_processor.max_altitude
-        self.apogee_prediction = airbrakes.apogee_predictor.apogee
-        self.airbrakes_extension = airbrakes.current_extension.value
+    def update_flight_telemetry(self) -> None:
+        self.vertical_velocity = self.airbrakes.data_processor.vertical_velocity
+        self.max_vertical_velocity = self.airbrakes.data_processor.max_vertical_velocity
+        self.current_height = self.airbrakes.data_processor.current_altitude
+        self.max_height = self.airbrakes.data_processor.max_altitude
+        self.apogee_prediction = self.airbrakes.apogee_predictor.apogee
+        self.airbrakes_extension = self.airbrakes.current_extension.value
