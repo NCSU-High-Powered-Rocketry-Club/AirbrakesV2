@@ -37,7 +37,7 @@ class AirbrakesApplication(App):
     def __init__(self) -> None:
         super().__init__()
         self.update_timer: Timer | None = None
-        self.airbrakes: AirbrakesContext
+        self.airbrakes: AirbrakesContext = None
         self.is_mock: bool = False
         self._pre_calculated_motor_burn_time: int = None
 

@@ -126,7 +126,7 @@ class LaunchSelector(Screen):
         yield LaunchConfiguration(id="launch-configuration-container")
         with Vertical(id="button-container"), Center():
             yield Button("Run Mock Simulation", id="run-mock-sim-button")
-            yield Button("Run Real Flight", id="run-real-flight-button")
+            yield Button("Run Real Flight", id="run-real-flight-button", disabled=True)
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
         """Handle the radio set change events."""
