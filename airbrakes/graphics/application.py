@@ -44,7 +44,7 @@ class AirbrakesApplication(App):
     @work
     async def on_mount(self) -> None:
         await self.push_screen("launch_selector", self.create_components, wait_for_dismiss=True)
-        self.update_timer = self.set_interval(1 / 20, self.update_telemetry, pause=True)
+        self.update_timer = self.set_interval(1 / 10, self.update_telemetry, pause=True)
         self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
         self.start()

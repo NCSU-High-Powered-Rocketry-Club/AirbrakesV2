@@ -18,10 +18,11 @@ def add_unicode_T_to_digits():
     textual.renderables.digits.DIGITS3X3_BOLD.extend(unicode_T.splitlines())
 
 
+add_unicode_T_to_digits()
+
+
 class TimeDisplay(Digits):
     """A widget to display elapsed flight time"""
-
-    add_unicode_T_to_digits()
 
     @staticmethod
     def format_ns_to_min_s_ms(ns: int) -> str:

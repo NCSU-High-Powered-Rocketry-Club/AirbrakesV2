@@ -27,7 +27,7 @@ class DebugTelemetry(Static):
         yield Label("Convergence Time: ", id="apogee_convergence_time")
         yield Label("Convergence Height: ", id="alt_at_convergence")
         yield Label("Pred. Apogee at Convergence: ", id="apogee_at_convergence")
-        yield Label("Fetched packets: ", id="fetched_packets")
+        yield Label("Fetched packets: ", id="fetched_packets", expand=True)
         yield Label("Log buffer size: ", id="log_buffer_size")
         yield Label("CPU Usage: ", id="cpu_usage")
 
@@ -99,10 +99,10 @@ class FlightTelemetry(Static):
     airbrakes_extension = reactive(0.0)
 
     def compose(self) -> ComposeResult:
-        yield Label("Velocity: ", id="vertical_velocity")
+        yield Label("Velocity: ", id="vertical_velocity", expand=True)
         yield Label("Max Velocity: ", id="max_vertical_velocity")
         yield Label("Altitude: ", id="current_height")
-        yield Label("Max altitude: ", id="max_height")
+        yield Label("Max altitude: ", id="max_height", expand=True)
         yield Label("Predicted Apogee: ", id="apogee_prediction")
         yield Label("Airbrakes Extension: ", id="airbrakes_extension")
 
