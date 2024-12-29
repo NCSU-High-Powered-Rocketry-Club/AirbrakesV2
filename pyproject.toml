@@ -9,7 +9,6 @@ dependencies = [
     # Run sudo pigpiod before running the program
     "msgspec",
     "numpy",
-    "colorama",
     "psutil",
     "scipy",
     "pandas",
@@ -23,7 +22,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-cov",
-    "ruff",
+    "ruff>=0.8.4",
     "pre-commit",
 ]
 
