@@ -1,8 +1,13 @@
 """Module which has the 2 telemetry panels for the flight display."""
 
+import multiprocessing
+
+import psutil
 from textual.app import ComposeResult
 from textual.reactive import reactive, var
 from textual.widgets import Label, Static
+from textual.worker import get_current_worker
+from textual_plotext import PlotextPlot
 
 from airbrakes.airbrakes import AirbrakesContext
 
@@ -29,10 +34,11 @@ class DebugTelemetry(Static):
         yield Label("Pred. Apogee at Convergence: ", id="apogee_at_convergence")
         yield Label("Fetched packets: ", id="fetched_packets", expand=True)
         yield Label("Log buffer size: ", id="log_buffer_size")
-        yield Label("CPU Usage: ", id="cpu_usage")
+        yield CPUUsage(id="cpu_usage_widget")
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self.airbrakes = airbrakes
+        self.query_one(CPUUsage).initialize_widgets(airbrakes)
 
     def watch_imu_queue_size(self) -> None:
         imu_queue_size_label = self.query_one("#imu_queue_size", Label)
@@ -74,17 +80,81 @@ class DebugTelemetry(Static):
         fetched_packets_label = self.query_one("#fetched_packets", Label)
         fetched_packets_label.update(f"Fetched packets: {self.fetched_packets}")
 
-    def watch_cpu_usage(self) -> None:
-        cpu_usage_label = self.query_one("#cpu_usage", Label)
-        cpu_usage_label.update(f"CPU Usage: {self.cpu_usage}")
-
     def update_debug_telemetry(self) -> None:
         self.imu_queue_size = self.airbrakes.imu._data_queue.qsize()
         self.log_buffer_size = len(self.airbrakes.logger._log_buffer)
         self.apogee = self.airbrakes.apogee_predictor.apogee
         self.fetched_packets = len(self.airbrakes.imu_data_packets)
         self.state = self.airbrakes.state.name
-        # self.cpu_usage = cpu_usage
+
+
+class CPUUsage(Static):
+    """Panel displaying the CPU usage."""
+
+    _airbrakes: AirbrakesContext = None
+    cpu_usages = reactive({})
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.processes: dict[str, psutil.Process] = {}
+        super().__init__(*args, **kwargs)
+
+    def compose(self) -> ComposeResult:
+        yield PlotextPlot(id="cpu_usage_plotext")
+
+    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
+        self._airbrakes = airbrakes
+
+    def start(self) -> None:
+        self.processes = self.prepare_process_dict()
+        self.run_worker(self.update_cpu_usage, name="CPU Polling", thread=True, exclusive=True)
+
+    def watch_cpu_usages(self) -> None:
+        plt_obj = self.query_one("#cpu_usage_plotext", PlotextPlot)
+        plt = plt_obj.plt
+        plt.clear_data()
+        plt.ylim(0)
+        names = list(self.cpu_usages.keys())
+        names = [name[0].upper() for name in names]
+        values = list(self.cpu_usages.values())
+        plt.bar(names, values, width=0.01, orientation="horizontal")
+        plt.title("CPU Usage")
+        plt_obj.refresh()
+
+    def prepare_process_dict(self) -> dict[str, psutil.Process]:
+        """
+        Prepares a dictionary of processes to monitor CPU usage for.
+        :return: A dictionary of process names and their corresponding psutil.Process objects.
+        """
+        all_processes = {}
+        imu_process = self._airbrakes.imu._data_fetch_process
+        log_process = self._airbrakes.logger._log_process
+        apogee_process = self._airbrakes.apogee_predictor._prediction_process
+        current_process = multiprocessing.current_process()
+        for p in [imu_process, log_process, current_process, apogee_process]:
+            # psutil allows us to monitor CPU usage of a process, along with low level information
+            # which we are not using.
+            all_processes[p.name] = psutil.Process(p.pid)
+        return all_processes
+
+    def update_cpu_usage(self) -> None:
+        """Update CPU usage for each monitored process every `interval` seconds. This is run in
+        another thread because polling for CPU usage is a blocking operation."""
+        cpu_count = psutil.cpu_count()
+        worker = get_current_worker()
+        while not worker.is_cancelled:
+            for name, process in self.processes.items():
+                # interval=None is not recommended and can be inaccurate.
+                # We normalize the CPU usage by the number of CPUs to get average cpu usage,
+                # otherwise it's usually > 100%.
+                try:
+                    p_name = name.removesuffix("Process").strip()
+                    self.cpu_usages.update({p_name: process.cpu_percent(interval=0.3) / cpu_count})
+                    # self.cpu_usages[name] = process.cpu_percent(interval=0.3) / cpu_count
+                except psutil.NoSuchProcess:
+                    # The process has ended, so we set the CPU usage to 0.
+                    self.cpu_usages.update({name: 0.0})
+                    # self.cpu_usages[name] = 0.0
+            self.mutate_reactive(CPUUsage.cpu_usages)
 
 
 class FlightTelemetry(Static):

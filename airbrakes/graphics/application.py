@@ -16,6 +16,7 @@ from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.graphics.flight.header import FlightHeader
 from airbrakes.graphics.flight.panel import FlightInformation
+from airbrakes.graphics.flight.telemetry import CPUUsage
 from airbrakes.graphics.launch_selector import LaunchSelector, SelectedLaunchConfiguration
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -62,6 +63,7 @@ class AirbrakesApplication(App):
         """Starts the flight display."""
         # Initialize the airbrakes context and display
         self.airbrakes.start()
+        self.query_one(CPUUsage).start()
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
 
     def change_sim_speed(self, sim_speed: float) -> None:

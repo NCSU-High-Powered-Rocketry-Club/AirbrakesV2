@@ -16,6 +16,7 @@ dependencies = [
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
     "textual-dev>=1.7.0",
+    "textual-plotext>=1.0.1",
 ]
 
 [project.optional-dependencies]

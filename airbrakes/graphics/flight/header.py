@@ -68,11 +68,8 @@ class SimulationSpeed(Static, can_focus=True):
             return self.sim_speed == 0.0
         return True
 
-    def action_decrease_sim_speed(self) -> None:
-        self.sim_speed -= 0.1
-
-    def action_increase_sim_speed(self) -> None:
-        self.sim_speed += 0.1
+    action_decrease_sim_speed = decrease_speed
+    action_increase_sim_speed = increase_speed
 
 
 class FlightHeader(Static):
