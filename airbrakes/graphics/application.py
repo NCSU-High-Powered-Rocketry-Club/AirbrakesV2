@@ -1,6 +1,7 @@
 """Module to show the terminal GUI for the airbrakes system."""
 
-from typing import TYPE_CHECKING, ClassVar
+import time
+from typing import ClassVar
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 from textual import work
@@ -20,10 +21,7 @@ from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
-from constants import IMU_PORT, LOGS_PATH, SERVO_PIN
-
-if TYPE_CHECKING:
-    from textual.timer import Timer
+from constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
 
 
 class AirbrakesApplication(App):
@@ -36,7 +34,6 @@ class AirbrakesApplication(App):
 
     def __init__(self) -> None:
         super().__init__()
-        self.update_timer: Timer | None = None
         self.airbrakes: AirbrakesContext = None
         self.is_mock: bool = False
         self._pre_calculated_motor_burn_time: int = None
@@ -44,15 +41,12 @@ class AirbrakesApplication(App):
     @work
     async def on_mount(self) -> None:
         await self.push_screen("launch_selector", self.create_components, wait_for_dismiss=True)
-        self.update_timer = self.set_interval(1 / 10, self.update_telemetry, pause=True)
         self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
         self.start()
 
     @work
     async def on_unmount(self) -> None:
-        if self.update_timer:
-            self.update_timer.pause()
         if self.airbrakes:
             self.airbrakes.stop()
 
@@ -68,7 +62,6 @@ class AirbrakesApplication(App):
         """Starts the flight display."""
         # Initialize the airbrakes context and display
         self.airbrakes.start()
-        self.call_later(self.update_timer.resume)
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
 
     def change_sim_speed(self, sim_speed: float) -> None:
@@ -115,12 +108,17 @@ class AirbrakesApplication(App):
         """Main flight control loop that runs until shutdown is requested or interrupted."""
 
         worker = get_current_worker()
+        start_time = time.perf_counter()
         while not self.airbrakes.shutdown_requested and not worker.is_cancelled:
             self.airbrakes.update()
 
             # Stop the simulation when the data is exhausted
             if not self.airbrakes.imu.is_running:
                 break
+
+            if self.is_mock and time.perf_counter() - start_time > MOCK_DISPLAY_UPDATE_FREQUENCY:
+                self.call_from_thread(self.update_telemetry)
+                start_time = time.perf_counter()
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Used to shut down the airbrakes system when the data is exhausted."""

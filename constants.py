@@ -46,6 +46,14 @@ class DisplayEndingType(StrEnum):
 
 
 # -------------------------------------------------------
+# Display Configuration
+# -------------------------------------------------------
+
+MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 20  # 20 Hz
+
+REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
+
+# -------------------------------------------------------
 # IMU Configuration
 # -------------------------------------------------------
 
