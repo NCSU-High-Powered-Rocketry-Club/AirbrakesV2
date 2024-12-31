@@ -5,7 +5,7 @@ import multiprocessing
 import psutil
 from textual.app import ComposeResult
 from textual.reactive import reactive, var
-from textual.widgets import Label, Static
+from textual.widgets import Label, Static, Placeholder
 from textual.worker import get_current_worker
 from textual_plotext import PlotextPlot
 
@@ -69,7 +69,7 @@ class DebugTelemetry(Static):
     def watch_apogee_at_convergence(self) -> None:
         apogee_at_convergence_label = self.query_one("#apogee_at_convergence", Label)
         apogee_at_convergence_label.update(
-            f"Pred. Apogee at Convergence: {self.apogee_at_convergence:.2f} m"
+            f"Pred. Ap. @ Conv: {self.apogee_at_convergence:.2f} m"
         )
 
     def watch_log_buffer_size(self) -> None:
@@ -88,6 +88,50 @@ class DebugTelemetry(Static):
         self.state = self.airbrakes.state.name
 
 
+class CPUBar(Static):
+    pass
+
+class CPUBars(Static):
+    LIGHT_SHADE = "\u2591" * 5
+    MEDIUM_SHADE = "\u2592" * 5
+    DARK_SHADE = "\u2593" * 5
+    FULL_BLOCK = "\u2588" * 5
+
+    def compose(self) -> ComposeResult:
+        """Show 10 CPUBars."""
+        for _ in range(10):
+            yield CPUBar("")
+    
+    def update_bars(self, usage: float) -> None:
+        """Update the CPUBars with the new usage."""
+        # There are 10 bars, so a usage of 10.0 would mean that the first bar
+        # is full, and should be changed to FULL_BLOCK.
+        # 0 <= usage <= 2.5 -> Use LIGHT_SHADE
+        # 2.5 < usage <= 5.0 -> Use MEDIUM_SHADE
+        # 5.0 < usage <= 7.5 -> Use DARK_SHADE
+        # 7.5 < usage <= 10.0 -> Use FULL_BLOCK
+        # The other bars will be nothing (empty).
+        # E.g. a usage of 14.5 would mean that the first bar is FULL_BLOCK,
+        # the second bar is MEDIUM_SHADE, and the rest are empty.
+        # Then we do the same for the next bar, and so on.
+        bars = reversed(list(self.children))
+        for i, bar in enumerate(bars):
+            if usage >= 10.0:
+                bar.update(CPUBars.FULL_BLOCK)
+                usage -= 10.0
+            elif usage >= 7.5:
+                bar.update(CPUBars.DARK_SHADE)
+                usage -= 2.5
+            elif usage >= 5.0:
+                bar.update(CPUBars.MEDIUM_SHADE)
+                usage -= 2.5
+            elif usage >= 2.5:
+                bar.update(CPUBars.LIGHT_SHADE)
+                usage -= 2.5
+            else:
+                bar.update(" ")
+
+
 class CPUUsage(Static):
     """Panel displaying the CPU usage."""
 
@@ -95,11 +139,25 @@ class CPUUsage(Static):
     cpu_usages = reactive({})
 
     def __init__(self, *args, **kwargs) -> None:
-        self.processes: dict[str, psutil.Process] = {}
         super().__init__(*args, **kwargs)
+        self.processes: dict[str, psutil.Process] = {}
+        self.set_reactive(CPUUsage.cpu_usages, {})
 
     def compose(self) -> ComposeResult:
-        yield PlotextPlot(id="cpu_usage_plotext")
+        # 3x4 grid:
+        yield CPUBars(id="cpu_main_bar")
+        yield CPUBars(id="cpu_imu_bar")
+        yield CPUBars(id="cpu_log_bar")
+        yield CPUBars(id="cpu_apogee_bar")
+        yield Label("0.00%", id="cpu_main_pct", expand=True)
+        yield Label("0.00%", id="cpu_imu_pct", expand=True)
+        yield Label("0.00%", id="cpu_log_pct", expand=True)
+        yield Label("0.00%", id="cpu_apogee_pct", expand=True)
+        yield Label("Main", id="cpu_main_label")
+        yield Label("IMU", id="cpu_imu_label")
+        yield Label("Log", id="cpu_log_label")
+        yield Label("Apogee", id="cpu_apogee_label")
+        # yield PlotextPlot(id="cpu_usage_plotext")
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self._airbrakes = airbrakes
@@ -107,18 +165,40 @@ class CPUUsage(Static):
     def start(self) -> None:
         self.processes = self.prepare_process_dict()
         self.run_worker(self.update_cpu_usage, name="CPU Polling", thread=True, exclusive=True)
+    
+    def update_labels(self) -> None:
+        main_pct_label = self.query_one("#cpu_main_pct", Label)
+        imu_pct_label = self.query_one("#cpu_imu_pct", Label)
+        log_pct_label = self.query_one("#cpu_log_pct", Label)
+        apogee_pct_label = self.query_one("#cpu_apogee_pct", Label)
+        main_pct_label.update(f"{self.cpu_usages['Main']:.2f}%")
+        imu_pct_label.update(f"{self.cpu_usages['IMU']:.2f}%")
+        log_pct_label.update(f"{self.cpu_usages['Log']:.2f}%")
+        apogee_pct_label.update(f"{self.cpu_usages['Ap']:.2f}%")
+
+    def update_cpu_bars(self) -> None:
+        main_bar = self.query_one("#cpu_main_bar", CPUBars)
+        imu_bar = self.query_one("#cpu_imu_bar", CPUBars)
+        log_bar = self.query_one("#cpu_log_bar", CPUBars)
+        apogee_bar = self.query_one("#cpu_apogee_bar", CPUBars)
+        main_bar.update_bars(self.cpu_usages['Main'])
+        imu_bar.update_bars(self.cpu_usages['IMU'])
+        log_bar.update_bars(self.cpu_usages['Log'])
+        apogee_bar.update_bars(self.cpu_usages['Ap'])
 
     def watch_cpu_usages(self) -> None:
-        plt_obj = self.query_one("#cpu_usage_plotext", PlotextPlot)
-        plt = plt_obj.plt
-        plt.clear_data()
-        plt.ylim(0)
-        names = list(self.cpu_usages.keys())
-        names = [name[0].upper() for name in names]
-        values = list(self.cpu_usages.values())
-        plt.bar(names, values, width=0.01, orientation="horizontal")
-        plt.title("CPU Usage")
-        plt_obj.refresh()
+        self.update_labels()
+        self.update_cpu_bars()
+        # plt_obj = self.query_one("#cpu_usage_plotext", PlotextPlot)
+        # plt = plt_obj.plt
+        # plt.clear_data()
+        # plt.ylim(0)
+        # names = list(self.cpu_usages.keys())
+        # names = [name[0].upper() for name in names]
+        # values = list(self.cpu_usages.values())
+        # plt.bar(names, values, width=0.01, orientation="horizontal")
+        # plt.title("CPU Usage")
+        # plt_obj.refresh()
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
@@ -130,10 +210,11 @@ class CPUUsage(Static):
         log_process = self._airbrakes.logger._log_process
         apogee_process = self._airbrakes.apogee_predictor._prediction_process
         current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process]:
+        process_dict = {"IMU": imu_process, "Log": log_process, "Main": current_process, "Ap": apogee_process}
+        for k,v  in process_dict.items():
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
-            all_processes[p.name] = psutil.Process(p.pid)
+            all_processes[k] = psutil.Process(v.pid)
         return all_processes
 
     def update_cpu_usage(self) -> None:
@@ -147,8 +228,7 @@ class CPUUsage(Static):
                 # We normalize the CPU usage by the number of CPUs to get average cpu usage,
                 # otherwise it's usually > 100%.
                 try:
-                    p_name = name.removesuffix("Process").strip()
-                    self.cpu_usages.update({p_name: process.cpu_percent(interval=0.3) / cpu_count})
+                    self.cpu_usages.update({name: process.cpu_percent(interval=0.3) / cpu_count})
                     # self.cpu_usages[name] = process.cpu_percent(interval=0.3) / cpu_count
                 except psutil.NoSuchProcess:
                     # The process has ended, so we set the CPU usage to 0.

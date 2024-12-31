@@ -2,15 +2,17 @@
     layout: grid;
     grid-size: 1;
     grid-rows: auto 1fr;
-    # background: green;
+    background: green;
 }
 
 #flight-information-panel {
     layout: grid;
     grid-size: 3;  /* 3 columns */
+    grid-rows: auto;
+    # grid-columns: auto;
     height: 100%;
-    overflow-y: auto;
-    # background: maroon;
+    overflow: auto;
+    background: maroon;
 
     #flight_data_panel {
         border: solid;
@@ -19,6 +21,59 @@
 
     #debug-flight-data-panel {
         overflow: auto;
+        # height: auto;
+        border: solid;
+
+        #cpu_usage_widget {
+            layout: grid;
+            border: solid;
+            grid-size: 4 3;
+            overflow: auto;
+            grid-gutter: 1;
+            # grid-columns: 10%;
+            grid-rows: auto;
+
+            CPUBars {
+                layers: below above;
+                max-height: 10;
+                # color: blue;
+                content-align: center middle;
+                # background: yellow;
+            }
+
+            CPUBar {
+                color: initial;
+                # min-height: -1;
+                # height: 1;
+                margin: 0;
+                padding: 0;
+                keyline: thin green;
+                # text-style: underline;
+                # background: orange;
+                # offset-y: -0.3;
+                # position: absolute;
+                # margin: 1;
+            }
+
+            # CPUBar:odd {
+            #     color: red;
+            #     # layer: above;
+            #     # background: orange;
+            #     # offset-y: -1;
+            # }
+            
+            # CPUBar:even {
+            #     color: green;
+            #     # layer: below;
+            #     # background: yellow;
+            #     # offset-y: 1;
+            # }
+
+            Label {
+                content-align: center middle;
+                text-align: center;
+            }
+        }
     }
 }
 

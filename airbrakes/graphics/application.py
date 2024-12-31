@@ -122,6 +122,10 @@ class AirbrakesApplication(App):
                 self.call_from_thread(self.update_telemetry)
                 start_time = time.perf_counter()
 
+                # If the sim is paused, we don't want to overwork the CPU
+                if not self.airbrakes.imu._sim_speed_factor.value:
+                    time.sleep(0.5)
+
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Used to shut down the airbrakes system when the data is exhausted."""
         if event.worker.name == "Flight Loop" and event.state == WorkerState.SUCCESS:
