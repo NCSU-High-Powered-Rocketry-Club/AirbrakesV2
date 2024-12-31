@@ -34,7 +34,9 @@ class DebugTelemetry(Static):
         yield Label("Pred. Ap. @ Conv: ", id="apogee_at_convergence")
         yield Label("Fetched packets: ", id="fetched_packets", expand=True)
         yield Label("Log buffer size: ", id="log_buffer_size")
-        yield CPUUsage(id="cpu_usage_widget")
+        cpu_usage = CPUUsage(id="cpu_usage_widget")
+        cpu_usage.border_title = "CPU Usage"
+        yield cpu_usage
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self.airbrakes = airbrakes
@@ -116,18 +118,15 @@ class CPUBars(Static):
         # E.g. a usage of 14.5 would mean that the first bar is FULL_BLOCK,
         # the second bar is MEDIUM_SHADE, and the rest are empty.
         # Then we do the same for the next bar, and so on.
-        bars = reversed(list(self.children))
+        bars: list[CPUBar] = reversed(list(self.children))
         solid_bars, shaded_block = usage // 10, usage % 10
         bars_to_update = int(solid_bars) + 1 if shaded_block > 0 else int(solid_bars)
 
-        bar: CPUBar
         for i, bar in enumerate(bars):
             if i + 1 < bars_to_update and solid_bars:
-                # print("Updating full bar", i)
                 bar.update(CPUBars.FULL_BLOCK)
                 self.set_only_class(bar, "active")
             elif i + 1 == bars_to_update and shaded_block > 0:
-                # print("Updating shaded block", i)
                 if shaded_block <= 3.3:
                     bar.update(CPUBars.LIGHT_SHADE)
                 elif shaded_block <= 6.66:
@@ -138,6 +137,17 @@ class CPUBars(Static):
             else:
                 bar.update(CPUBars.LIGHT_SHADE)
                 bar.remove_class("active")
+
+        active_bars = [bar for bar in self.children if "active" in bar.classes]
+        if usage < 25:
+            cpu_color_class = "low"
+        elif usage < 50:
+            cpu_color_class = "medium"
+        else:
+            cpu_color_class = "high"
+
+        for bar in active_bars:
+            bar.add_class(cpu_color_class)
 
     def set_only_class(self, obj: Widget, class_name: str) -> None:
         """Sets the only class of the object to the given class name, removes all others."""
@@ -170,7 +180,6 @@ class CPUUsage(Static):
         yield Label("IMU", id="cpu_imu_label", expand=True)
         yield Label("Log", id="cpu_log_label", expand=True)
         yield Label("Apogee", id="cpu_apogee_label", expand=True)
-        # yield PlotextPlot(id="cpu_usage_plotext")
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self._airbrakes = airbrakes

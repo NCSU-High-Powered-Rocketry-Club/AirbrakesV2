@@ -33,7 +33,6 @@
             grid-rows: auto;
 
             CPUBars {
-                layers: below above;
                 max-height: 10;
                 content-align: center middle;
             }
@@ -42,19 +41,26 @@
                 color: grey 50%;
                 margin: 0;
                 padding: 0;
-                keyline: thin green;
                 text-align: center;
 
                 &.active {
-                    color: white 70%;
-                }
+                    &.low {
+                        color: white 80%;
+                    }
 
+                    &.medium {
+                        color: yellow 80%;
+                    }
+
+                    &.high {
+                        color: red 80%;
+                    }
+                }
             }
 
             Label {
                 content-align: center middle;
                 text-align: center;
-                keyline: thin green;
             }
         }
     }

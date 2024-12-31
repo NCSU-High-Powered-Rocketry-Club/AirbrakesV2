@@ -19,6 +19,7 @@ class FlightInformation(Static):
         yield Placeholder("tabbed graphs")
         yield Placeholder("2d rocket vis")
         self.debug_telemetry = DebugTelemetry(id="debug-flight-data-panel")
+        self.debug_telemetry.border_title = "DEBUG TELEMETRY"
         yield self.debug_telemetry
         yield Placeholder("downrange map")
         yield Placeholder("2d rocket vis")
