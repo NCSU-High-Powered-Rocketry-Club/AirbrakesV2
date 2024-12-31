@@ -5,9 +5,9 @@ import multiprocessing
 import psutil
 from textual.app import ComposeResult
 from textual.reactive import reactive, var
-from textual.widgets import Label, Static, Placeholder
+from textual.widget import Widget
+from textual.widgets import Label, Static
 from textual.worker import get_current_worker
-from textual_plotext import PlotextPlot
 
 from airbrakes.airbrakes import AirbrakesContext
 
@@ -31,7 +31,7 @@ class DebugTelemetry(Static):
         yield Label("IMU Queue Size: ", id="imu_queue_size", expand=True)
         yield Label("Convergence Time: ", id="apogee_convergence_time")
         yield Label("Convergence Height: ", id="alt_at_convergence")
-        yield Label("Pred. Apogee at Convergence: ", id="apogee_at_convergence")
+        yield Label("Pred. Ap. @ Conv: ", id="apogee_at_convergence")
         yield Label("Fetched packets: ", id="fetched_packets", expand=True)
         yield Label("Log buffer size: ", id="log_buffer_size")
         yield CPUUsage(id="cpu_usage_widget")
@@ -68,9 +68,7 @@ class DebugTelemetry(Static):
 
     def watch_apogee_at_convergence(self) -> None:
         apogee_at_convergence_label = self.query_one("#apogee_at_convergence", Label)
-        apogee_at_convergence_label.update(
-            f"Pred. Ap. @ Conv: {self.apogee_at_convergence:.2f} m"
-        )
+        apogee_at_convergence_label.update(f"Pred. Ap. @ Conv: {self.apogee_at_convergence:.2f} m")
 
     def watch_log_buffer_size(self) -> None:
         log_buffer_size_label = self.query_one("#log_buffer_size", Label)
@@ -89,9 +87,12 @@ class DebugTelemetry(Static):
 
 
 class CPUBar(Static):
-    pass
+    """Represents a single CPU bar."""
+
 
 class CPUBars(Static):
+    """Represents a group of CPU bars."""
+
     LIGHT_SHADE = "\u2591" * 5
     MEDIUM_SHADE = "\u2592" * 5
     DARK_SHADE = "\u2593" * 5
@@ -100,36 +101,48 @@ class CPUBars(Static):
     def compose(self) -> ComposeResult:
         """Show 10 CPUBars."""
         for _ in range(10):
-            yield CPUBar("")
-    
+            bar = CPUBar(CPUBars.LIGHT_SHADE)
+            bar.set_class(True, "inactive")
+            yield bar
+
     def update_bars(self, usage: float) -> None:
         """Update the CPUBars with the new usage."""
         # There are 10 bars, so a usage of 10.0 would mean that the first bar
         # is full, and should be changed to FULL_BLOCK.
-        # 0 <= usage <= 2.5 -> Use LIGHT_SHADE
-        # 2.5 < usage <= 5.0 -> Use MEDIUM_SHADE
-        # 5.0 < usage <= 7.5 -> Use DARK_SHADE
-        # 7.5 < usage <= 10.0 -> Use FULL_BLOCK
+        # 0 <= usage <= 3.33 -> Use LIGHT_SHADE
+        # usage <= 6.66 -> Use MEDIUM_SHADE
+        # usage <= 10.0 -> Use DARK_SHADE
         # The other bars will be nothing (empty).
         # E.g. a usage of 14.5 would mean that the first bar is FULL_BLOCK,
         # the second bar is MEDIUM_SHADE, and the rest are empty.
         # Then we do the same for the next bar, and so on.
         bars = reversed(list(self.children))
+        solid_bars, shaded_block = usage // 10, usage % 10
+        bars_to_update = int(solid_bars) + 1 if shaded_block > 0 else int(solid_bars)
+
+        bar: CPUBar
         for i, bar in enumerate(bars):
-            if usage >= 10.0:
+            if i + 1 < bars_to_update and solid_bars:
+                # print("Updating full bar", i)
                 bar.update(CPUBars.FULL_BLOCK)
-                usage -= 10.0
-            elif usage >= 7.5:
-                bar.update(CPUBars.DARK_SHADE)
-                usage -= 2.5
-            elif usage >= 5.0:
-                bar.update(CPUBars.MEDIUM_SHADE)
-                usage -= 2.5
-            elif usage >= 2.5:
-                bar.update(CPUBars.LIGHT_SHADE)
-                usage -= 2.5
+                self.set_only_class(bar, "active")
+            elif i + 1 == bars_to_update and shaded_block > 0:
+                # print("Updating shaded block", i)
+                if shaded_block <= 3.3:
+                    bar.update(CPUBars.LIGHT_SHADE)
+                elif shaded_block <= 6.66:
+                    bar.update(CPUBars.MEDIUM_SHADE)
+                elif shaded_block <= 10.0:
+                    bar.update(CPUBars.DARK_SHADE)
+                self.set_only_class(bar, "active")
             else:
-                bar.update(" ")
+                bar.update(CPUBars.LIGHT_SHADE)
+                bar.remove_class("active")
+
+    def set_only_class(self, obj: Widget, class_name: str) -> None:
+        """Sets the only class of the object to the given class name, removes all others."""
+        obj.remove_class(*obj.classes)
+        obj.set_class(True, class_name)
 
 
 class CPUUsage(Static):
@@ -149,14 +162,14 @@ class CPUUsage(Static):
         yield CPUBars(id="cpu_imu_bar")
         yield CPUBars(id="cpu_log_bar")
         yield CPUBars(id="cpu_apogee_bar")
-        yield Label("0.00%", id="cpu_main_pct", expand=True)
-        yield Label("0.00%", id="cpu_imu_pct", expand=True)
-        yield Label("0.00%", id="cpu_log_pct", expand=True)
-        yield Label("0.00%", id="cpu_apogee_pct", expand=True)
-        yield Label("Main", id="cpu_main_label")
-        yield Label("IMU", id="cpu_imu_label")
-        yield Label("Log", id="cpu_log_label")
-        yield Label("Apogee", id="cpu_apogee_label")
+        yield Label("00.0%", id="cpu_main_pct", expand=True)
+        yield Label("00.0%", id="cpu_imu_pct", expand=True)
+        yield Label("00.0%", id="cpu_log_pct", expand=True)
+        yield Label("00.0%", id="cpu_apogee_pct", expand=True)
+        yield Label("Main", id="cpu_main_label", expand=True)
+        yield Label("IMU", id="cpu_imu_label", expand=True)
+        yield Label("Log", id="cpu_log_label", expand=True)
+        yield Label("Apogee", id="cpu_apogee_label", expand=True)
         # yield PlotextPlot(id="cpu_usage_plotext")
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
@@ -165,26 +178,26 @@ class CPUUsage(Static):
     def start(self) -> None:
         self.processes = self.prepare_process_dict()
         self.run_worker(self.update_cpu_usage, name="CPU Polling", thread=True, exclusive=True)
-    
+
     def update_labels(self) -> None:
         main_pct_label = self.query_one("#cpu_main_pct", Label)
         imu_pct_label = self.query_one("#cpu_imu_pct", Label)
         log_pct_label = self.query_one("#cpu_log_pct", Label)
         apogee_pct_label = self.query_one("#cpu_apogee_pct", Label)
-        main_pct_label.update(f"{self.cpu_usages['Main']:.2f}%")
-        imu_pct_label.update(f"{self.cpu_usages['IMU']:.2f}%")
-        log_pct_label.update(f"{self.cpu_usages['Log']:.2f}%")
-        apogee_pct_label.update(f"{self.cpu_usages['Ap']:.2f}%")
+        main_pct_label.update(f"{self.cpu_usages['Main']:.1f}%")
+        imu_pct_label.update(f"{self.cpu_usages['IMU']:.1f}%")
+        log_pct_label.update(f"{self.cpu_usages['Log']:.1f}%")
+        apogee_pct_label.update(f"{self.cpu_usages['Ap']:.1f}%")
 
     def update_cpu_bars(self) -> None:
         main_bar = self.query_one("#cpu_main_bar", CPUBars)
         imu_bar = self.query_one("#cpu_imu_bar", CPUBars)
         log_bar = self.query_one("#cpu_log_bar", CPUBars)
         apogee_bar = self.query_one("#cpu_apogee_bar", CPUBars)
-        main_bar.update_bars(self.cpu_usages['Main'])
-        imu_bar.update_bars(self.cpu_usages['IMU'])
-        log_bar.update_bars(self.cpu_usages['Log'])
-        apogee_bar.update_bars(self.cpu_usages['Ap'])
+        main_bar.update_bars(self.cpu_usages["Main"])
+        imu_bar.update_bars(self.cpu_usages["IMU"])
+        log_bar.update_bars(self.cpu_usages["Log"])
+        apogee_bar.update_bars(self.cpu_usages["Ap"])
 
     def watch_cpu_usages(self) -> None:
         self.update_labels()
@@ -210,8 +223,13 @@ class CPUUsage(Static):
         log_process = self._airbrakes.logger._log_process
         apogee_process = self._airbrakes.apogee_predictor._prediction_process
         current_process = multiprocessing.current_process()
-        process_dict = {"IMU": imu_process, "Log": log_process, "Main": current_process, "Ap": apogee_process}
-        for k,v  in process_dict.items():
+        process_dict = {
+            "IMU": imu_process,
+            "Log": log_process,
+            "Main": current_process,
+            "Ap": apogee_process,
+        }
+        for k, v in process_dict.items():
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
             all_processes[k] = psutil.Process(v.pid)
