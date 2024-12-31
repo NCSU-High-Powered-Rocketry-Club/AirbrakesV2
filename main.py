@@ -13,8 +13,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.graphics.application import AirbrakesApplication
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-
-# from airbrakes.mock.display import FlightDisplay
+from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from constants import IMU_PORT, LOGS_PATH, SERVO_PIN
@@ -30,7 +29,7 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
     if args.mock:
         # Replace hardware with mock objects for simulation
         imu = MockIMU(
-            initial_sim_speed=not args.fast_simulation,
+            simulation_speed=1.0 if not args.fast_simulation else 2.0,
             log_file_path=args.path,
         )
         # If using a real servo, use the real servo object, otherwise use a mock servo object
@@ -50,7 +49,7 @@ def create_components(args: argparse.Namespace) -> tuple[Servo, IMU, Logger]:
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext, flight_display: AirbrakesApplication, is_mock: bool
+    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
@@ -101,7 +100,7 @@ def main(args: argparse.Namespace) -> None:
 
     # Initialize the airbrakes context and display
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
-    flight_display = AirbrakesApplication(airbrakes, sim_time_start, args)
+    flight_display = FlightDisplay(airbrakes, sim_time_start, args)
 
     # Run the main flight loop
     run_flight_loop(airbrakes, flight_display, args.mock)
