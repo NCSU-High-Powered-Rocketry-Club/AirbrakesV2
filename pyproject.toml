@@ -1,7 +1,7 @@
 [project]
 name = "AirbrakesV2"
 description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 version = "0.1.0"
 dependencies = [
     "gpiozero",
@@ -32,7 +32,7 @@ packages = ["airbrakes"]
 # RUFF:
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py313"
 show-fixes = true
 exclude = ["scripts"]
 

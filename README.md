@@ -134,7 +134,7 @@ AirbrakesV2/
 ```
 ## Local Setup
 
-**This project uses Python 3.12. Using an older version may not work since we use newer language features**
+**This project uses Python 3.13. Using an older version may not work since we use newer language features**
 
 ### Clone the repository:
 
