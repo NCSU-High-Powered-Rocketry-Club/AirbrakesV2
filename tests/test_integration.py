@@ -14,7 +14,6 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from constants import (
     GROUND_ALTITUDE_METERS,
-    LANDED_ACCELERATION_METERS_PER_SECOND,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
@@ -124,25 +123,15 @@ class TestIntegration:
         # Let's validate our data!
 
         # Check we have all the states:
-        if launch_name == "purple_launch":
-            # Our Launches don't properly log/reach the LandedState, so we will ignore it for now.
-            assert len(states_dict) == 4
-            assert list(states_dict.keys()) == [
-                "StandbyState",
-                "MotorBurnState",
-                "CoastState",
-                "FreeFallState",
-            ]
-        else:
-            assert len(states_dict) == 5
-            # Order of states matters!
-            assert list(states_dict.keys()) == [
-                "StandbyState",
-                "MotorBurnState",
-                "CoastState",
-                "FreeFallState",
-                "LandedState",
-            ]
+        assert len(states_dict) == 5
+        # Order of states matters!
+        assert list(states_dict.keys()) == [
+            "StandbyState",
+            "MotorBurnState",
+            "CoastState",
+            "FreeFallState",
+            "LandedState",
+        ]
         states_dict = types.SimpleNamespace(**states_dict)
         stand_by_state = states_dict.StandbyState
         motor_burn_state = states_dict.MotorBurnState
@@ -194,14 +183,15 @@ class TestIntegration:
         assert free_fall_state.min_altitude <= GROUND_ALTITUDE_METERS + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
+        # Check landed state values:
+        landed_state = states_dict.LandedState
         if launch_name != "purple_launch":
-            # Generated data for simulated landing for interest launcH:
-            landed_state = states_dict.LandedState
-            assert landed_state.min_velocity >= -LANDED_ACCELERATION_METERS_PER_SECOND
+            # Generated data for simulated landing for interest launch:
+            assert landed_state.min_velocity >= -15.0  # high velocity impact
             assert landed_state.max_velocity <= 0.1
-            assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
-            assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
-            assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
+        assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
+        assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
 
         # Now let's check if everything was logged correctly:
         # some what of a duplicate of test_logger.py:
@@ -258,7 +248,4 @@ class TestIntegration:
             assert line_number > 80_000
 
             # Check if all states were logged:
-            if launch_name == "purple_launch":
-                assert state_list == ["S", "M", "C", "F"]
-            else:
-                assert state_list == ["S", "M", "C", "F", "L"]
+            assert state_list == ["S", "M", "C", "F", "L"]
