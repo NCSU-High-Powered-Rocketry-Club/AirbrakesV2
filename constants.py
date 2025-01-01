@@ -158,9 +158,8 @@ deploying at apogee."""
 
 GROUND_ALTITUDE_METERS = 10.0
 """The altitude in meters that the rocket must be under before we consider it to have landed."""
-LANDED_SPEED_METERS_PER_SECOND = 5.0
-"""The speed in meters per second that the rocket must be under before we consider it to have
-landed."""
+LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 70.0
+"""The acceleration in m/s^2 that the rocket must be above before we consider it to have landed."""
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration

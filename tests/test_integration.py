@@ -14,7 +14,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from constants import (
     GROUND_ALTITUDE_METERS,
-    LANDED_SPEED_METERS_PER_SECOND,
+    LANDED_ACCELERATION_METERS_PER_SECOND,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
@@ -197,7 +197,7 @@ class TestIntegration:
         if launch_name != "purple_launch":
             # Generated data for simulated landing for interest launcH:
             landed_state = states_dict.LandedState
-            assert landed_state.min_velocity >= -LANDED_SPEED_METERS_PER_SECOND
+            assert landed_state.min_velocity >= -LANDED_ACCELERATION_METERS_PER_SECOND
             assert landed_state.max_velocity <= 0.1
             assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
             assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
