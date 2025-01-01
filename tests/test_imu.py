@@ -13,7 +13,7 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.hardware.imu import IMU
-from constants import IMU_PORT
+from constants import IMU_PORT, STOP_SIGNAL
 
 
 class TestIMU:
@@ -56,7 +56,7 @@ class TestIMU:
         assert values.qsize() == 1
         assert values.get() == (IMU_PORT,)
 
-    def test_imu_stop(self, monkeypatch):
+    def test_imu_stop_simple(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
 
         def _fetch_data_loop(self, port: str):
@@ -72,7 +72,27 @@ class TestIMU:
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
-        assert not imu._data_queue.qsize()
+        assert imu._data_queue.qsize() == 1
+
+    def test_imu_stop_signal(self, monkeypatch):
+        """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
+
+        def _fetch_data_loop(self, port: str):
+            """Monkeypatched method for testing."""
+            # The stop_signal is typically put at the end of the mock sim.
+            while self._running.value:
+                self._data_queue.put(EstimatedDataPacket(timestamp=0))
+
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        imu = IMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.001)  # Give the process time to start and put the values
+        packets = imu.get_imu_data_packets()
+        assert packets
+        imu.stop()
+        imu._data_queue.put(STOP_SIGNAL)
+        packets = imu.get_imu_data_packets()
+        assert not packets, f"Expected empty deque, got {len(packets)}"
 
     def test_imu_ctrl_c_handling(self, monkeypatch):
         """Tests whether the IMU's stop() handles Ctrl+C fine."""
@@ -160,7 +180,16 @@ class TestIMU:
                 raw_count += 1
 
         # Practically the ratio may not be exactly 1:2, specially on the raspberry pi
-        assert 2.40 >= raw_count / est_count >= 1.60, f"Actual ratio was: {raw_count / est_count}"
+        assert 2.05 >= raw_count / est_count >= 1.95, f"Actual ratio was: {raw_count / est_count}"
+
+    def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
+        """Tests whether the IMU's get_imu_data_packets() times out correctly."""
+        imu = idle_mock_imu
+        monkeypatch.setattr("airbrakes.hardware.imu.IMU_TIMEOUT_SECONDS", 0.1)
+        imu.start()
+        packets = imu.get_imu_data_packets()
+        assert not packets, "Expected empty deque"
+        imu.stop()
 
     @pytest.mark.skip(reason="Need to install mscl in the CI and ideally auto-build locally.")
     def test_imu_data_loop(self):

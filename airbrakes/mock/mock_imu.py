@@ -27,6 +27,7 @@ from constants import (
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DATA_PACKET_SAMPLING_RATE,
+    STOP_SIGNAL,
 )
 
 
@@ -194,3 +195,4 @@ class MockIMU(IMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
+        self._data_queue.put(STOP_SIGNAL)

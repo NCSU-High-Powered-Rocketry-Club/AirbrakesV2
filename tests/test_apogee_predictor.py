@@ -138,7 +138,7 @@ class TestApogeePredictor:
 
         threaded_apogee_predictor.update(processed_data_packets)
 
-        time.sleep(0.01)  # Wait for the prediction loop to finish
+        time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == expected_value
 

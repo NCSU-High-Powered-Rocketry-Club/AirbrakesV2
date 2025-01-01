@@ -29,6 +29,7 @@ from constants import (
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
+    STOP_SIGNAL,
 )
 
 
@@ -95,11 +96,7 @@ class IMU:
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
         # be empty, and thus the process never .joins().
-        # Case 2: The other process finishes up before we call the below method, so there might be
-        # nothing in the queue, and then calling get_imu_data_packet() will block the main process
-        # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
         with contextlib.suppress(multiprocessing.TimeoutError):
-            self.get_imu_data_packets()
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
@@ -117,14 +114,15 @@ class IMU:
         """
         # We use a deque because it's faster than a list for popping from the left
         try:
-            return collections.deque(
-                self._data_queue.get_many(block=False, max_messages_to_get=MAX_FETCHED_PACKETS)
+            packets = self._data_queue.get_many(
+                block=True, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
-            # If we had done block=True, then Ctrl+C would not have worked, so we use block=False
-            # to allow for KeyboardInterrupts. The library does not seem to handle
-            # KeyboardInterrupts well, so we have to watch that carefully.
-        except Empty:  # If the queue is empty, don't bother waiting.
+        except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
             return collections.deque()
+        else:
+            if STOP_SIGNAL in packets:
+                return collections.deque()
+            return collections.deque(packets)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod

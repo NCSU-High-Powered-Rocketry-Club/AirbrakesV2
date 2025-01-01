@@ -1,3 +1,4 @@
+import threading
 import time
 
 import pytest
@@ -6,7 +7,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.state import CoastState, StandbyState
-from constants import SERVO_DELAY_SECONDS, ServoExtension
+from constants import IMU_TIMEOUT_SECONDS, SERVO_DELAY_SECONDS, ServoExtension
 from tests.auxil.utils import make_est_data_packet
 
 
@@ -46,7 +47,7 @@ class TestAirbrakesContext:
         assert airbrakes.logger.is_running
         airbrakes.stop()
 
-    def test_stop(self, airbrakes):
+    def test_stop_simple(self, airbrakes):
         airbrakes.start()
         airbrakes.stop()
         assert not airbrakes.imu.is_running
@@ -57,7 +58,7 @@ class TestAirbrakesContext:
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert airbrakes.shutdown_requested
 
-    def test_airbrakes_ctrl_c_clean_exit(self, airbrakes):
+    def test_airbrakes_ctrl_c_clean_exit_simple(self, airbrakes):
         """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
         airbrakes.start()
 
@@ -121,7 +122,7 @@ class TestAirbrakesContext:
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(state == "CoastState")
             asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
-            asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
+            asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
             asserts.append(apogee == 0.0)
 
@@ -160,6 +161,50 @@ class TestAirbrakesContext:
         assert all(asserts)
 
         mocked_airbrakes.stop()
+
+    def test_stop_with_random_data_imu_and_update(
+        self, airbrakes: AirbrakesContext, random_data_mock_imu
+    ):
+        """Tests stopping of the airbrakes system while we are using the IMU and
+        calling airbrakes.update().
+        """
+        airbrakes.imu = random_data_mock_imu
+        has_airbrakes_stopped = threading.Event()
+        started_thread = False
+
+        def stop_airbrakes():
+            airbrakes.stop()  # Happens when LandedState requests shutdown in the real flight
+            has_airbrakes_stopped.set()
+
+        airbrakes.start()
+
+        while not airbrakes.shutdown_requested:
+            airbrakes.update()
+
+            if not started_thread:
+                started_thread = True
+                stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
+                stop_airbrakes_thread.start()
+
+        # Wait for the airbrakes to stop. If the stopping took too long, that means something is
+        # wrong with the stopping process. We don't want to hit the "just in case" timeout
+        # in `get_imu_data_packets`.
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        assert not airbrakes.imu.is_running
+        assert not airbrakes.logger.is_running
+        assert not airbrakes.apogee_predictor.is_running
+        assert not airbrakes.imu._running.value
+        assert not airbrakes.imu._data_fetch_process.is_alive()
+        assert not airbrakes.logger._log_process.is_alive()
+        assert not airbrakes.apogee_predictor._prediction_process.is_alive()
+        assert airbrakes.servo.current_extension in (
+            ServoExtension.MIN_EXTENSION,
+            ServoExtension.MIN_NO_BUZZ,
+        )
+
+        # Open the file and check if we have a large number of lines:
+        lines = airbrakes.logger.log_path.open().readlines()
+        assert len(lines) > 100
 
     def test_airbrakes_predict_apogee(
         self, monkeypatch, idle_mock_imu, servo, logger, data_processor, apogee_predictor
