@@ -13,7 +13,7 @@ from airbrakes.state import (
 )
 from constants import (
     GROUND_ALTITUDE_METERS,
-    LANDED_ACCELERATION_METERS_PER_SECOND,
+    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     LOG_BUFFER_SIZE,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
@@ -311,38 +311,37 @@ class TestFreeFallState:
         [
             (
                 GROUND_ALTITUDE_METERS * 4,
-                LANDED_ACCELERATION_METERS_PER_SECOND / 4,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED / 4,
                 FreeFallState,
                 1.0,
             ),
             (
                 GROUND_ALTITUDE_METERS * 2,
-                LANDED_ACCELERATION_METERS_PER_SECOND / 2,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED / 2,
                 FreeFallState,
                 1.0,
             ),
             (
                 GROUND_ALTITUDE_METERS - 5,
-                LANDED_ACCELERATION_METERS_PER_SECOND / 2,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED / 2,
                 FreeFallState,
                 1.0,
             ),
             (
                 GROUND_ALTITUDE_METERS - 5,
-                LANDED_ACCELERATION_METERS_PER_SECOND,
-                1.0,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
                 LandedState,
                 1.0,
             ),
             (
                 GROUND_ALTITUDE_METERS * 4,
-                LANDED_ACCELERATION_METERS_PER_SECOND / 4,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED / 4,
                 FreeFallState,
                 MAX_FREE_FALL_SECONDS - 1.0,
             ),
             (
                 GROUND_ALTITUDE_METERS * 4,
-                LANDED_ACCELERATION_METERS_PER_SECOND * 4,
+                LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED * 4,
                 LandedState,
                 MAX_FREE_FALL_SECONDS,
             ),
@@ -357,10 +356,15 @@ class TestFreeFallState:
         ],
     )
     def test_update(
-        self, free_fall_state, current_altitude, vertical_accel, expected_state, time_length
+        self,
+        free_fall_state,
+        current_altitude,
+        vertical_accel,
+        expected_state,
+        time_length,
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
-        free_fall_state.context.data_processor._vertical_velocities = [vertical_accel]
+        free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
         free_fall_state.start_time_ns = 0
         free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
             time_length * 1e9
