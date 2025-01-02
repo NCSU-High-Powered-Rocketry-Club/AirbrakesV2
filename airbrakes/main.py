@@ -21,14 +21,14 @@ from airbrakes.utils import arg_parser
 
 def run_real_flight() -> None:
     """Entry point for the application to run the real flight. Entered when run with
-    `uv run real` or `uvx real`."""
+    `uv run real` or `uvx --from git+... real`."""
     args = arg_parser()
     run_flight(args)
 
 
 def run_mock_flight() -> None:
     """Entry point for the application to run the mock flight. Entered when run with
-    `uvx mock` or `uv run mock`."""
+    `uvx --from git+... mock` or `uv run mock`."""
     args = arg_parser(mock_invocation=True)
     run_flight(args)
 
@@ -122,9 +122,9 @@ if __name__ == "__main__":
     # Command line args (after these are run, you can press Ctrl+C to exit the program):
     # python -m airbrakes.main -v: Shows the display with much more data
     # python -m airbrakes.main -m: Runs a simulation on your computer
-    # python -m airbrakes.main -r: Runs a simulation on your computer with the real servo
-    # python -m airbrakes.main -l: Runs a simulation on your computer and keeps the log file after
-    # the simulation stops
+    # python -m airbrakes.main -m -r: Runs a simulation on your computer with the real servo
+    # python -m airbrakes.main -m -l: Runs a simulation on your computer and keeps the log file
+    # after the simulation stops
     # python -m airbrakes.main -m -f: Runs a simulation on your computer at full speed
     # python -m airbrakes.main -m -d: Runs a simulation on your computer in debug mode (w/o display)
     args = arg_parser()
