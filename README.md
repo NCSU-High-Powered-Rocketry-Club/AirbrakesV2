@@ -187,6 +187,8 @@ python3 main.py --help
 ### Running Tests
 Our CI pipeline uses [pytest](https://pytest.org) to run tests. You can run the tests locally to ensure that your changes are working as expected.
 
+_Note: Unit tests do not work on Windows (only `test_integration.py` will work)._
+
 To run the tests, run this command from the project root directory:
 ```bash
 pytest

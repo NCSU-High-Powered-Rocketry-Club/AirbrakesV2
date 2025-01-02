@@ -12,7 +12,7 @@ dependencies = [
     "psutil",
     "scipy",
     "pandas",
-    "faster-fifo"
+    "faster-fifo; sys_platform != 'win32'",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
