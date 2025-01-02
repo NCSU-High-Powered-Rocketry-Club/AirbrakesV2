@@ -35,7 +35,7 @@ build-backend = "hatchling.build"
 
 # HATCH:
 [tool.hatch.build.targets.wheel]
-packages = ["src/airbrakes"]
+packages = ["airbrakes"]
 
 # RUFF:
 [tool.ruff]
@@ -53,7 +53,7 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]
-"src/airbrakes/mock/display.py" = ["T201"]
+"airbrakes/mock/display.py" = ["T201"]
 "tests/*.py" = ["T20", "S101", "D100", "ARG001", "RUF012"]
 
 [tool.pytest.ini_options]
@@ -69,7 +69,7 @@ source = ["airbrakes"]
 omit = [
     "*/tests/*",
     "*/site-packages/*",
-    "src/airbrakes/mock/*"
+    "airbrakes/mock/*"
 ]
 
 [tool.coverage.report]
