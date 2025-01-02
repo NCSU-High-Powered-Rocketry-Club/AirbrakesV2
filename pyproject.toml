@@ -3,6 +3,7 @@ name = "AirbrakesV2"
 description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
 requires-python = ">=3.13"
 version = "0.1.0"
+readme = "README.md"
 dependencies = [
     "gpiozero",
     "pigpio",  # Run sudo pigpiod before running the program
@@ -36,6 +37,13 @@ build-backend = "hatchling.build"
 # HATCH:
 [tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
+include = [
+    "launch_data/genesis_launch_1.csv"
+]
+[tool.hatch.build.targets.sdist]
+include = [
+    "launch_data/genesis_launch_1.csv"
+]
 
 # RUFF:
 [tool.ruff]
