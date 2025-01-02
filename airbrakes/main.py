@@ -29,8 +29,7 @@ def run_real_flight() -> None:
 def run_mock_flight() -> None:
     """Entry point for the application to run the mock flight. Entered when run with
     `uvx mock` or `uv run mock`."""
-    args = arg_parser()
-    args.mock = True
+    args = arg_parser(mock_invocation=True)
     run_flight(args)
 
 
@@ -53,7 +52,7 @@ def create_components(
     Creates the system components needed for the airbrakes system. Depending on its arguments, it
     will return either mock or real components.
     :param args: Command line arguments determining the configuration.
-    :return: A tuple containing the servo, IMU, and logger objects.
+    :return: A tuple containing the servo, IMU, Logger, data processor, and apogee predictor objects
     """
     if args.mock:
         # Replace hardware with mock objects for simulation
