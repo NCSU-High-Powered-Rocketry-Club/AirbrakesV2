@@ -1,7 +1,13 @@
 """File which contains a few basic utility functions which can be reused in the project."""
 
 import argparse
+import sys
+from functools import partial
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import multiprocessing
 
 
 def get_all_from_queue(self, *args, **kwargs) -> list:
@@ -18,6 +24,17 @@ def get_always_list(self, *args, **kwargs) -> list:
     if isinstance(fetched, list):
         return fetched
     return [fetched]
+
+
+def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
+    """Initializes the multiprocessing queue on Windows by adding the missing methods from the
+    faster_fifo library. Modifies `obj` in place.
+
+    :param obj: The multiprocessing.Queue object to add the methods to.
+    """
+    if sys.platform == "win32":
+        obj.get_many = partial(get_always_list, obj)
+        obj.put_many = obj.put
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
