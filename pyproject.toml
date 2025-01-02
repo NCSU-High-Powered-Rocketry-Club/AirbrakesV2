@@ -25,9 +25,17 @@ dev = [
     "pre-commit",
 ]
 
-[tool.setuptools]
-packages = ["airbrakes"]
+[project.scripts]
+mock = "airbrakes.main:run_mock_flight"
+real = "airbrakes.main:run_real_flight"
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# HATCH:
+[tool.hatch.build.targets.wheel]
+packages = ["src/airbrakes"]
 
 # RUFF:
 [tool.ruff]

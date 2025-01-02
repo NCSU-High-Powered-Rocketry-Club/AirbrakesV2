@@ -8,9 +8,9 @@ import faster_fifo
 import numpy as np
 import pytest
 
+from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_MIN_PACKETS
 
 
 @pytest.fixture

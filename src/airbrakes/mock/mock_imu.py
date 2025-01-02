@@ -14,21 +14,21 @@ if sys.platform != "win32":
 else:
     from functools import partial
 
-    from utils import get_all_from_queue
+    from airbrakes.utils import get_all_from_queue
 
-from airbrakes.data_handling.imu_data_packet import (
-    EstimatedDataPacket,
-    IMUDataPacket,
-    RawDataPacket,
-)
-from airbrakes.hardware.imu import IMU
-from constants import (
+from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DATA_PACKET_SAMPLING_RATE,
     STOP_SIGNAL,
 )
+from airbrakes.data_handling.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
+)
+from airbrakes.hardware.imu import IMU
 
 
 class MockIMU(IMU):

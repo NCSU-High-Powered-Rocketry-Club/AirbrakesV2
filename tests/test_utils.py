@@ -1,6 +1,6 @@
 import pytest
 
-from utils import convert_str_to_float, convert_to_nanoseconds, deadband
+from airbrakes.utils import convert_str_to_float, convert_to_nanoseconds, deadband
 
 
 @pytest.mark.parametrize(
