@@ -61,7 +61,10 @@ class MockIMU(IMU):
         # Check if the launch data file exists:
         if log_file_path is None:
             # Just use the first file in the `launch_data` directory:
-            self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
+            # Note: We do this convoluted way because we want to make it work with the one liner
+            # `uvx --from git+... mock` on any machine from any state.
+            root_dir = Path(__file__).parent.parent.parent
+            self._log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
         # If it's not a real time sim, we limit how big the queue gets when doing an integration
         # test, because we read the file much faster than update(), sometimes resulting thousands

@@ -3,11 +3,9 @@ and run the main loop."""
 
 import argparse
 import time
-from pathlib import Path
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-import airbrakes
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import IMU_PORT, LOGS_PATH, SERVO_PIN
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
@@ -33,9 +31,6 @@ def run_mock_flight() -> None:
     `uvx mock` or `uv run mock`."""
     args = arg_parser()
     args.mock = True
-    print(Path().cwd())
-    print(airbrakes.__file__)
-    print(airbrakes.__path__)
     run_flight(args)
 
 
