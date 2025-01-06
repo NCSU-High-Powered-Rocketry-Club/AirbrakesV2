@@ -36,10 +36,13 @@ class ServoExtension(Enum):
 # Encoder Configuration
 # -------------------------------------------------------
 
-ENCODER_PIN_A = 16
+ENCODER_RESOLUTION = 20
+"""The points per revolution of the encoder"""
+
+ENCODER_PIN_A = 23
 """The GPIO pin that the encoder's A pin is connected to."""
 
-ENCODER_PIN_B = 18
+ENCODER_PIN_B = 24
 """The GPIO pin that the encoder's B pin is connected to."""
 
 

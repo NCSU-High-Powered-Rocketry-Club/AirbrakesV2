@@ -11,7 +11,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Header, Footer, Static
 from textual.reactive import reactive
 from threading import Event
-from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B
+from airbrakes.constants import ENCODER_RESOLUTION, ENCODER_PIN_A, ENCODER_PIN_B
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 import time
 
@@ -35,7 +35,8 @@ class ServoControllerApp(App):
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
         self.servo = Servo(SERVO_PIN)
-        self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B)
+        # Max steps set to zero indicates that the encoder can infinitely rotate
+        self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B,max_steps=0)
 
     def compose(self) -> ComposeResult:
         """Compose the UI layout."""
@@ -68,12 +69,14 @@ class ServoControllerApp(App):
         self.run_worker(self.update_encoder_position, thread=True, exclusive=True, name="encoder_thread")
 
     def update_encoder_position(self):
-        """Continuously update the encoder position."""
-        while not self.stop_event.is_set():
-            current_position = self.encoder.value
-            # Schedule the label update on the main thread
-            self.encoder_label.update_position(current_position)
-            time.sleep(0.1)
+        """Updates the encoder's position when it changes."""
+        self.encoder.when_rotated = self.update_label
+
+    def update_label(self):
+        """Calls the update_position function to update the encoder label"""
+        # self.encoder.steps counts the number of steps it has turned, divide by the encoder resolution
+        # so that a full revolution of the encoder is either 1.0 or -1.0
+        self.encoder_label.update_position(self.encoder.steps/ENCODER_RESOLUTION)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Catch button press events and handle them."""
