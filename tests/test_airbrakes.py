@@ -6,6 +6,7 @@ import pytest
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
+from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
 from constants import IMU_TIMEOUT_SECONDS, SERVO_DELAY_SECONDS, ServoExtension
 from tests.auxil.utils import make_est_data_packet
@@ -201,6 +202,56 @@ class TestAirbrakesContext:
             ServoExtension.MIN_EXTENSION,
             ServoExtension.MIN_NO_BUZZ,
         )
+
+        # Open the file and check if we have a large number of lines:
+        lines = airbrakes.logger.log_path.open().readlines()
+        assert len(lines) > 100
+
+    def test_stop_with_display_and_update_loop(
+        self, airbrakes: AirbrakesContext, random_data_mock_imu, mocked_args_parser
+    ):
+        """Tests stopping of the airbrakes system while we are using the IMU, the flight display,
+        and calling airbrakes.update().
+        """
+        airbrakes.imu = random_data_mock_imu
+        fd = FlightDisplay(airbrakes=airbrakes, start_time=time.time(), args=mocked_args_parser)
+        has_airbrakes_stopped = threading.Event()
+        started_thread = False
+
+        def stop_airbrakes():
+            fd.end_sim_interrupted.set()
+            fd.stop()
+            airbrakes.stop()  # Happens when LandedState requests shutdown in the real flight
+            has_airbrakes_stopped.set()
+
+        airbrakes.start()
+        fd.start()
+
+        while not airbrakes.shutdown_requested:
+            airbrakes.update()
+
+            if not started_thread:
+                started_thread = True
+                stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
+                stop_airbrakes_thread.start()
+
+        # Wait for the airbrakes to stop. If the stopping took too long, that means something is
+        # wrong with the stopping process. We don't want to hit the "just in case" timeout
+        # in `get_imu_data_packets`.
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        assert not airbrakes.imu.is_running
+        assert not airbrakes.logger.is_running
+        assert not airbrakes.apogee_predictor.is_running
+        assert not airbrakes.imu._running.value
+        assert not airbrakes.imu._data_fetch_process.is_alive()
+        assert not airbrakes.logger._log_process.is_alive()
+        assert not airbrakes.apogee_predictor._prediction_process.is_alive()
+        assert airbrakes.servo.current_extension in (
+            ServoExtension.MIN_EXTENSION,
+            ServoExtension.MIN_NO_BUZZ,
+        )
+
+        assert not fd._running
 
         # Open the file and check if we have a large number of lines:
         lines = airbrakes.logger.log_path.open().readlines()
