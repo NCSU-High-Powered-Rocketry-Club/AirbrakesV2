@@ -11,6 +11,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Header, Footer, Static
 from textual.reactive import reactive
 from threading import Event
+from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 import time
 
@@ -34,9 +35,7 @@ class ServoControllerApp(App):
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
         self.servo = Servo(SERVO_PIN)
-        pin_A = 17
-        pin_B = 27
-        self.encoder = RotaryEncoder(pin_A, pin_B)
+        self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B)
 
     def compose(self) -> ComposeResult:
         """Compose the UI layout."""

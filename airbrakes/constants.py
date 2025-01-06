@@ -33,6 +33,17 @@ class ServoExtension(Enum):
 
 
 # -------------------------------------------------------
+# Encoder Configuration
+# -------------------------------------------------------
+
+ENCODER_PIN_A = 16
+"""The GPIO pin that the encoder's A pin is connected to."""
+
+ENCODER_PIN_B = 18
+"""The GPIO pin that the encoder's B pin is connected to."""
+
+
+# -------------------------------------------------------
 # Display Configuration
 # -------------------------------------------------------
 
