@@ -4,7 +4,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.packets.context_data_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY, ServoExtension
@@ -123,7 +123,7 @@ class TestAirbrakesContext:
             asserts.append(extension == ServoExtension.MAX_EXTENSION.value)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
-            asserts.append(isinstance(debug_packet, DebugPacket))
+            asserts.append(isinstance(debug_packet, ContextPacket))
 
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")

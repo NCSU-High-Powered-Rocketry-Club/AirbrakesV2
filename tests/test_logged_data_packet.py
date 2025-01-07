@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.packets.context_data_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
 
@@ -35,7 +35,7 @@ class TestLoggedDataPacket:
 
         est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
         raw_dp_fields = set(RawDataPacket.__struct_fields__)
-        debug_dp_fields = set(DebugPacket.__struct_fields__)
+        debug_dp_fields = set(ContextPacket.__struct_fields__)
         proc_dp_fields = {"current_altitude", "vertical_velocity", "vertical_acceleration"}
 
         extra_fields = {"state", "extension"}

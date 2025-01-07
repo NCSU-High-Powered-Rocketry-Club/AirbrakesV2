@@ -1,15 +1,20 @@
-"""Module for the DebugPacket class."""
+"""Module for the ContextPacket class."""
 
 import msgspec
 
 
-class DebugPacket(msgspec.Struct):
-    """Debug packet for logging miscellaneous debug information, such as queue sizes."""
+class ContextPacket(msgspec.Struct):
+    """
+    This data packet keeps data owned by the AirbrakesContext as well as metadata about the context.
+    """
 
-    # All the fields below will only be added to the first packet being processed:
-    # Curve coefficients for apogee prediction will only be added in the CoastState:
-    predicted_apogee: float
-    uncertainity_threshold_1: str
-    uncertainity_threshold_2: str
-    fetched_imu_packets: str
-    packets_in_imu_queue: str
+    update_timestamp: int
+    """
+    Our code often processes multiple packets at once, so this keeps track of the time at which the
+    data was used to update the context.
+    """
+    state_name: str
+    imu_queue_size: int
+    data_processor_queue_size: int
+    apogee_predictor_queue_size: int
+

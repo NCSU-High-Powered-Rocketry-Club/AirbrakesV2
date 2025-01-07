@@ -10,7 +10,7 @@ import pytest
 from msgspec import to_builtins
 
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.context_data_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
@@ -24,7 +24,7 @@ from tests.conftest import LOG_PATH
 
 def gen_data_packet(
     kind: Literal["est", "raw", "processed", "debug"],
-) -> IMUDataPacket | ProcessedDataPacket | DebugPacket:
+) -> IMUDataPacket | ProcessedDataPacket | ContextPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
         return EstimatedDataPacket(
@@ -33,7 +33,7 @@ def gen_data_packet(
     if kind == "raw":
         return RawDataPacket(**{k: 1.987654321 for k in RawDataPacket.__struct_fields__})
     if kind == "debug":
-        return DebugPacket(
+        return ContextPacket(
             predicted_apogee=1800.0,
             uncertainity_threshold_1="1.0",
             uncertainity_threshold_2="2.0",
@@ -331,7 +331,7 @@ class TestLogger:
                 expected_output.update(dropped)
 
                 # Add the empty debug packet fields:
-                expected_output.update(**{k: "" for k in DebugPacket.__struct_fields__})
+                expected_output.update(**{k: "" for k in ContextPacket.__struct_fields__})
 
                 # Add the debug packet fields. If we are not in coast state, we should not have
                 # some fields:
@@ -425,7 +425,7 @@ class TestLogger:
         extension: float,
         imu_data_packets: list[IMUDataPacket],
         processed_data_packets: list[ProcessedDataPacket],
-        debug_packet: DebugPacket,
+        debug_packet: ContextPacket,
     ):
         """Tests if the buffer is logged when switching from standby to motor burn and that the
         counter is reset."""

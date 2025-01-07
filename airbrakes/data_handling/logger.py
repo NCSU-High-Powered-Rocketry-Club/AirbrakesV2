@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from msgspec import to_builtins
 
-from airbrakes.data_handling.packets.context_data_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
 from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
@@ -118,7 +118,7 @@ class Logger:
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
-        debug_packet: DebugPacket,
+        debug_packet: ContextPacket,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -177,7 +177,7 @@ class Logger:
         extension: str,
         imu_data_packets: deque[IMUDataPacket],
         processed_data_packets: deque[ProcessedDataPacket],
-        debug_packet: DebugPacket,
+        debug_packet: ContextPacket,
     ) -> deque[LoggedDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.context_data_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -77,7 +77,7 @@ class AirbrakesContext:
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processed_data_packets: deque[ProcessedDataPacket] = deque()
         self.est_data_packets: list[EstimatedDataPacket] = []
-        self.debug_packet: DebugPacket | None = None
+        self.debug_packet: ContextPacket | None = None
 
     def start(self) -> None:
         """
@@ -139,14 +139,14 @@ class AirbrakesContext:
         # Gets what we have currently set the extension of the airbrakes to
         self.current_extension = self.servo.current_extension
 
-        # Create a debug packet for the logger:
-        self.debug_packet = DebugPacket(
-            predicted_apogee=self.apogee_predictor.apogee,
-            uncertainity_threshold_1=str(self.apogee_predictor.uncertainity_threshold_1.value),
-            uncertainity_threshold_2=str(self.apogee_predictor.uncertainity_threshold_2.value),
-            fetched_imu_packets=str(len(self.imu_data_packets)),
-            packets_in_imu_queue=str(self.imu._data_queue.qsize()),
-        )
+        # # Create a debug packet for the logger:
+        # self.debug_packet = ContextPacket(
+        #     predicted_apogee=self.apogee_predictor.apogee,
+        #     uncertainity_threshold_1=str(self.apogee_predictor.uncertainity_threshold_1.value),
+        #     uncertainity_threshold_2=str(self.apogee_predictor.uncertainity_threshold_2.value),
+        #     fetched_imu_packets=str(len(self.imu_data_packets)),
+        #     packets_in_imu_queue=str(self.imu._data_queue.qsize()),
+        # )
 
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
