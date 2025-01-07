@@ -10,7 +10,7 @@ import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.packets.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
 from constants import (
     GROUND_ALTITUDE,
     LANDED_SPEED,

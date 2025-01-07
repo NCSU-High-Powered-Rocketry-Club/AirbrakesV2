@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
-from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
 from constants import APOGEE_PREDICTION_FREQUENCY
 
 

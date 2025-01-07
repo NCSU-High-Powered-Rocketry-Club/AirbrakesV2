@@ -1,8 +1,8 @@
 import pytest
 
-from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import DebugPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.data_handling.packets.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
 
 
 @pytest.fixture

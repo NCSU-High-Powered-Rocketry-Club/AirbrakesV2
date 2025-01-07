@@ -4,7 +4,7 @@ import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import DebugPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.state import CoastState, StandbyState
 from constants import SERVO_DELAY, ServoExtension

@@ -10,14 +10,14 @@ import pytest
 from msgspec import to_builtins
 
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.debug_packet import DebugPacket
+from airbrakes.data_handling.packets.context_data_packet import DebugPacket
 from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.data_handling.packets.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
 from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 

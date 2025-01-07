@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.optimize import curve_fit
 
-from airbrakes.data_handling.packets.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
 from constants import (
     APOGEE_PREDICTION_FREQUENCY,
     CURVE_FIT_INITIAL,
