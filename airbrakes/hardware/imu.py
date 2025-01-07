@@ -129,7 +129,7 @@ class IMU(BaseIMU):
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
 
-        while self._running.value:
+        while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
