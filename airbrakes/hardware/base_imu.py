@@ -84,11 +84,3 @@ class BaseIMU:
         :return: True if the process is running, False otherwise
         """
         return self._running.value
-
-    @is_running.setter
-    def is_running(self, value: bool) -> None:
-        """
-        Setter function for the _running attribute.
-        :param value: Whether the process fetching data from the IMU is running.
-        """
-        self._running.value = value
