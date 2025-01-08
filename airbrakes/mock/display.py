@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import psutil
 from colorama import Fore, Style, init
 
-from constants import DisplayEndingType
+from airbrakes.constants import DisplayEndingType
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
