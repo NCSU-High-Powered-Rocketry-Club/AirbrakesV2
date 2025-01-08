@@ -13,14 +13,14 @@ import pytest
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
+    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
-    # LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
 )
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 
-SNAPSHOT_INTERVAL = 0.01  # seconds
+SNAPSHOT_INTERVAL = 0.001  # seconds
 
 
 class StateInformation(msgspec.Struct):
@@ -204,10 +204,10 @@ class TestIntegration:
 
         # Check landed state values:
         landed_state = states_dict.LandedState
-        if launch_name != "purple_launch":
-            # Generated data for simulated landing for interest launch:
-            assert landed_state.min_velocity >= -15.0  # high velocity impact
-            assert landed_state.max_velocity <= 0.1
+        assert (
+            landed_state.max_avg_vertical_acceleration
+            >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
+        )
         assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
         assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
