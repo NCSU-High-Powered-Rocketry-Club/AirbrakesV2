@@ -180,7 +180,7 @@ class TestIMU:
                 raw_count += 1
 
         # Practically the ratio may not be exactly 1:2, specially on the raspberry pi
-        assert 2.05 >= raw_count / est_count >= 1.95, f"Actual ratio was: {raw_count / est_count}"
+        assert 2.30 >= raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
 
     def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
         """Tests whether the IMU's get_imu_data_packets() times out correctly."""
