@@ -13,7 +13,7 @@ from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.imu import IMU
+from airbrakes.hardware.base_imu import BaseIMU
 from constants import (
     LOG_BUFFER_SIZE,
     MAX_QUEUE_SIZE,
@@ -22,7 +22,7 @@ from constants import (
 )
 
 
-class MockIMU(IMU):
+class MockIMU(BaseIMU):
     """
     A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
     and returns data read from a previous log file.
@@ -54,23 +54,21 @@ class MockIMU(IMU):
             # Just use the first file in the `launch_data` directory:
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
 
-        # If it's not a real time sim, we limit how big the queue gets when doing an integration
-        # test, because we read the file much faster than update(), sometimes resulting thousands
-        # of data packets in the queue, which will obviously mess up data processing calculations.
-        # We limit it to 15 packets, which is more realistic for a real flight.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
-        )
-
         # Starts the process that fetches data from the log file
-        self._data_fetch_process = multiprocessing.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(self._log_file_path, real_time_simulation, start_after_log_buffer),
             name="Mock IMU Process",
         )
 
-        # Makes a boolean value that is shared between processes
-        self._running = multiprocessing.Value("b", False)
+        # If it's not a real time sim, we limit how big the queue gets when doing an integration
+        # test, because we read the file much faster than update(), sometimes resulting thousands
+        # of data packets in the queue, which will obviously mess up data processing calculations.
+        # We limit it to 15 packets, which is more realistic for a real flight.
+        data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
+            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
+        )
+        super().__init__(data_fetch_process, data_queue)
 
     @staticmethod
     def _convert_invalid_fields(value) -> list:
@@ -139,7 +137,7 @@ class MockIMU(IMU):
             row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
 
             # Check if the process should stop:
-            if not self._running.value:
+            if not self.is_running:
                 break
 
             # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is an
