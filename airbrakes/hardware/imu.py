@@ -2,12 +2,19 @@
 
 import contextlib
 import multiprocessing
+import sys
 
 # Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
 # mscl is annoying and we really just have it installed on the pi
 with contextlib.suppress(ImportError):
     import mscl
     # We should print a warning, but that messes with how the sim display looks
+
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    pass
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -16,6 +23,7 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from airbrakes.hardware.base_imu import BaseIMU
 from constants import (
+    BUFFER_SIZE_IN_BYTES,
     ESTIMATED_DESCRIPTOR_SET,
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
@@ -41,16 +49,18 @@ class IMU(BaseIMU):
         Initializes the object that interacts with the physical IMU connected to the pi.
         :param port: the port that the IMU is connected to
         """
+        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
+        # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
+        # it's being logged.
+        # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
+        _data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
+        )
         # Starts the process that fetches data from the IMU
         data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
-
-        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
-        # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
-        # it's being logged.
-        data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(MAX_QUEUE_SIZE)
-        super().__init__(data_fetch_process, data_queue)
+        super().__init__(data_fetch_process, _data_queue)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod

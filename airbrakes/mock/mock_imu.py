@@ -3,10 +3,18 @@
 import ast
 import contextlib
 import multiprocessing
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
+
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from utils import get_all_from_queue
 
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
@@ -16,9 +24,10 @@ from airbrakes.data_handling.imu_data_packet import (
 from airbrakes.hardware.base_imu import BaseIMU
 from constants import (
     LOG_BUFFER_SIZE,
+    MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     RAW_DATA_PACKET_SAMPLING_RATE,
-    SIMULATION_MAX_QUEUE_SIZE,
+    STOP_SIGNAL,
 )
 
 
@@ -54,6 +63,22 @@ class MockIMU(BaseIMU):
             # Just use the first file in the `launch_data` directory:
             self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
 
+        # If it's not a real time sim, we limit how big the queue gets when doing an integration
+        # test, because we read the file much faster than update(), sometimes resulting thousands
+        # of data packets in the queue, which will obviously mess up data processing calculations.
+        # We limit it to 15 packets, which is more realistic for a real flight.
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            data_queue = multiprocessing.Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
+
+            data_queue.get_many = partial(get_all_from_queue, data_queue)
+        else:
+            data_queue: Queue[IMUDataPacket] = Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
@@ -61,13 +86,6 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
-        # If it's not a real time sim, we limit how big the queue gets when doing an integration
-        # test, because we read the file much faster than update(), sometimes resulting thousands
-        # of data packets in the queue, which will obviously mess up data processing calculations.
-        # We limit it to 15 packets, which is more realistic for a real flight.
-        data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
-        )
         super().__init__(data_fetch_process, data_queue)
 
     @staticmethod
@@ -176,3 +194,4 @@ class MockIMU(BaseIMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
+        self._data_queue.put(STOP_SIGNAL)

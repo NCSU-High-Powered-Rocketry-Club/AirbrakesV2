@@ -4,6 +4,7 @@ import signal
 import time
 from collections import deque
 
+import faster_fifo
 import pytest
 
 from airbrakes.data_handling.imu_data_packet import (
@@ -12,7 +13,7 @@ from airbrakes.data_handling.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.hardware.imu import IMU
-from constants import IMU_PORT
+from constants import IMU_PORT, STOP_SIGNAL
 
 
 class TestIMU:
@@ -26,7 +27,7 @@ class TestIMU:
     def test_init(self, imu, mock_imu):
         """Tests whether the IMU and MockIMU objects initialize correctly."""
         # Tests that the data queue is correctly initialized
-        assert isinstance(imu._data_queue, multiprocessing.queues.Queue)
+        assert isinstance(imu._data_queue, faster_fifo.Queue)
         assert type(imu._data_queue) is type(mock_imu._data_queue)
         # Tests that _running is correctly initialized
         assert isinstance(imu._running, multiprocessing.sharedctypes.Synchronized)
@@ -39,7 +40,7 @@ class TestIMU:
 
     def test_imu_start(self, monkeypatch):
         """Tests whether the IMU process starts correctly with the passed arguments."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
@@ -55,7 +56,7 @@ class TestIMU:
         assert values.qsize() == 1
         assert values.get() == (IMU_PORT,)
 
-    def test_imu_stop(self, monkeypatch):
+    def test_imu_stop_simple(self, monkeypatch):
         """Tests whether the IMU process stops correctly."""
 
         def _fetch_data_loop(self, port: str):
@@ -71,11 +72,31 @@ class TestIMU:
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
-        assert not imu._data_queue.qsize()
+        assert imu._data_queue.qsize() == 1
+
+    def test_imu_stop_signal(self, monkeypatch):
+        """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
+
+        def _fetch_data_loop(self, port: str):
+            """Monkeypatched method for testing."""
+            # The stop_signal is typically put at the end of the mock sim.
+            while self._running.value:
+                self._data_queue.put(EstimatedDataPacket(timestamp=0))
+
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        imu = IMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.001)  # Give the process time to start and put the values
+        packets = imu.get_imu_data_packets()
+        assert packets
+        imu.stop()
+        imu._data_queue.put(STOP_SIGNAL)
+        packets = imu.get_imu_data_packets()
+        assert not packets, f"Expected empty deque, got {len(packets)}"
 
     def test_imu_ctrl_c_handling(self, monkeypatch):
         """Tests whether the IMU's stop() handles Ctrl+C fine."""
-        values = multiprocessing.Queue(100000)
+        values = faster_fifo.Queue(maxsize=100000)
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
@@ -105,7 +126,7 @@ class TestIMU:
 
     def test_imu_fetch_loop_exception(self, monkeypatch):
         """Tests whether the IMU's _fetch_loop propogates unknown exceptions."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
@@ -133,18 +154,21 @@ class TestIMU:
         """Tests whether the data fetching loop actually adds data to the queue."""
         imu = random_data_mock_imu
         imu.start()
-        time.sleep(0.3)
+        time.sleep(0.31)  # The raspberry pi is a little slower, so we add 0.01
         # Theoretical number of packets in 0.3s:
         # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 450
         assert imu._data_queue.qsize() > 400, "Queue should have more than 400 packets in 0.3s"
         assert isinstance(imu.get_imu_data_packet(), IMUDataPacket)
 
         # Get all the packets from the queue
-        packets = imu.get_imu_data_packets()
+        packets = deque()
+        imu.stop()
+        while not imu._data_queue.empty():
+            packets.extend(imu.get_imu_data_packets())
+
         assert isinstance(packets, deque)
         assert isinstance(packets[0], IMUDataPacket)
         assert imu._data_queue.empty()
-        imu.stop()
 
         # Assert ratio of EstimatedDataPackets to RawDataPackets is roughly 2:1:
         est_count = 0
@@ -155,8 +179,17 @@ class TestIMU:
             elif isinstance(packet, RawDataPacket):
                 raw_count += 1
 
-        # Practically the ratio may not be exactly 1:2
+        # Practically the ratio may not be exactly 1:2, specially on the raspberry pi
         assert 2.30 >= raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
+
+    def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
+        """Tests whether the IMU's get_imu_data_packets() times out correctly."""
+        imu = idle_mock_imu
+        monkeypatch.setattr("airbrakes.hardware.base_imu.IMU_TIMEOUT_SECONDS", 0.1)
+        imu.start()
+        packets = imu.get_imu_data_packets()
+        assert not packets, "Expected empty deque"
+        imu.stop()
 
     @pytest.mark.skip(reason="Need to install mscl in the CI and ideally auto-build locally.")
     def test_imu_data_loop(self):

@@ -1,7 +1,5 @@
 """Module for processing IMU data on a higher level."""
 
-from collections import deque
-
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
@@ -43,11 +41,11 @@ class IMUDataProcessor:
         maximum velocity of the rocket.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
-        self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
-        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0], dtype=np.float64)
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: R | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
@@ -126,7 +124,7 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
 
-    def get_processed_data_packets(self) -> deque[ProcessedDataPacket]:
+    def get_processed_data_packets(self) -> list[ProcessedDataPacket]:
         """
         Processes the data points and returns a deque of ProcessedDataPacket objects. The length
         of the deque should be the same as the length of the list of estimated data packets most
@@ -134,26 +132,15 @@ class IMUDataProcessor:
 
         :return: A deque of ProcessedDataPacket objects.
         """
-        return deque(
+        return [
             ProcessedDataPacket(
-                current_altitude=current_alt,
-                vertical_velocity=vertical_velocity,
-                vertical_acceleration=vertical_acceleration,
-                time_since_last_data_packet=time_since_last_data_packet,
+                current_altitude=self._current_altitudes[i],
+                vertical_velocity=self._vertical_velocities[i],
+                vertical_acceleration=self._rotated_accelerations[i],
+                time_since_last_data_packet=self._time_differences[i],
             )
-            for (
-                current_alt,
-                vertical_velocity,
-                vertical_acceleration,
-                time_since_last_data_packet,
-            ) in zip(
-                self._current_altitudes,
-                self._vertical_velocities,
-                self._rotated_accelerations,
-                self._time_differences,
-                strict=True,
-            )
-        )
+            for i in range(len(self._data_packets))
+        ]
 
     def _first_update(self) -> None:
         """
@@ -168,7 +155,7 @@ class IMUDataProcessor:
         # This is us getting the rocket's initial altitude from the mean of the first data packets
         self._initial_altitude = np.mean(
             np.array(
-                [data_packet.estPressureAlt for data_packet in self._data_packets], dtype=np.float64
+                [data_packet.estPressureAlt for data_packet in self._data_packets],
             )
         )
 
@@ -192,12 +179,13 @@ class IMUDataProcessor:
         Calculates the current altitudes, by zeroing out the initial altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
-        # Get the pressure altitudes from the data points
-        altitudes = np.array(
-            [data_packet.estPressureAlt for data_packet in self._data_packets], dtype=np.float64
+        # Get the pressure altitudes from the data points and zero out the initial altitude
+        return np.array(
+            [
+                data_packet.estPressureAlt - self._initial_altitude
+                for data_packet in self._data_packets
+            ],
         )
-        # Zero out the initial altitude
-        return altitudes - self._initial_altitude
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
@@ -207,15 +195,14 @@ class IMUDataProcessor:
 
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
-
         # We pre-allocate the space for our accelerations first
         rotated_accelerations = np.zeros(len(self._data_packets))
 
         current_orientation = self._current_orientation_quaternions
         # Iterates through the data points and time differences between the data points
-        for idx, (data_packet, dt) in enumerate(
-            zip(self._data_packets, self._time_differences, strict=True)
-        ):
+        for i in range(len(self._data_packets)):
+            data_packet = self._data_packets[i]
+            dt = self._time_differences[i]
             # Accelerations are in m/s^2
             x_accel = data_packet.estCompensatedAccelX
             y_accel = data_packet.estCompensatedAccelY
@@ -224,10 +211,6 @@ class IMUDataProcessor:
             gyro_x = data_packet.estAngularRateX
             gyro_y = data_packet.estAngularRateY
             gyro_z = data_packet.estAngularRateZ
-
-            # Check for missing data points
-            if any(val is None for val in [x_accel, y_accel, z_accel, gyro_x, gyro_y, gyro_z]):
-                return rotated_accelerations
 
             # scipy docs for more info: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.html
             # Calculate the delta quaternion from the angular rates
@@ -242,7 +225,7 @@ class IMUDataProcessor:
             # regardless of orientation. For simplicity, we multiply by -1 so that acceleration
             # during motor burn is positive, and acceleration due to drag force during coast phase
             # is negative.
-            rotated_accelerations[idx] = -rotated_accel[2]
+            rotated_accelerations[i] = -rotated_accel[2]
 
         # Update the class attribute with the latest quaternion orientation
         self._current_orientation_quaternions = current_orientation
@@ -267,7 +250,7 @@ class IMUDataProcessor:
             ]
         )
         # Technical notes: Trying to vectorize the deadband function via np.vectorize() or
-        # np.frompyfunc() is slower than this approach.
+        # np.frompyfunc() or np.where() is slower than this approach.
 
         # Integrate the accelerations to get the velocities
         vertical_velocities = self._previous_vertical_velocity + np.cumsum(

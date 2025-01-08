@@ -32,6 +32,11 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 0.58
 
 
+# -------------------------------------------------------
+# Display Configuration
+# -------------------------------------------------------
+
+
 class DisplayEndingType(StrEnum):
     """
     Enum that represents the different ways the display can end.
@@ -66,12 +71,24 @@ ESTIMATED_DESCRIPTOR_SET = 130
 RAW_DESCRIPTOR_SET = 128
 """The ID of the raw data packet that the IMU sends"""
 
+# This is used by all queues to keep things consistent:
+MAX_FETCHED_PACKETS = 15
+"""This is used to limit how many packets we fetch from the imu at once."""
+
+# Timeouts for get() queue operations:
+MAX_GET_TIMEOUT_SECONDS = 100  # seconds
+"""The maximum amount of time in seconds to wait for a get operation on the queue."""
+
+# Max bytes to put/get from the queue at once:
+BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
+"""The maximum number of bytes to put or get from the queue at once. This is an increase from the
+default value of 1Mb, which is too small sometimes for our data packets, e.g. when logging the
+entire buffer, which is 5000 packets."""
+
 MAX_QUEUE_SIZE = 100_000
 """The maximum size of the queue that holds the data packets. This is to prevent the queue from"
 growing too large and taking up too much memory. This is a very large number, so it should not be
 reached in normal operation."""
-SIMULATION_MAX_QUEUE_SIZE = 15
-"""This is used for the mock imu to limit the queue size to a more realistic value"""
 
 IMU_TIMEOUT_SECONDS = 3.0
 """The maximum amount of time in seconds the IMU process to do something (e.g. read a packet) before

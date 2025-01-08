@@ -73,7 +73,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: deque[ProcessedDataPacket] = deque()
+        self.processed_data_packets: list[ProcessedDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
 
     def start(self) -> None:
@@ -117,10 +117,8 @@ class AirbrakesContext:
         # logging
         self.est_data_packets = [
             data_packet
-            for data_packet in self.imu_data_packets.copy()
+            for data_packet in self.imu_data_packets
             if isinstance(data_packet, EstimatedDataPacket)
-            # The copy() above is critical to ensure the data here is not modified by the data
-            # processor
         ]
 
         # Update the processed data with the new data packets. We only care about EstDataPackets
@@ -128,7 +126,8 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
-        self.processed_data_packets = self.data_processor.get_processed_data_packets()
+        if self.est_data_packets:
+            self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()
@@ -141,10 +140,6 @@ class AirbrakesContext:
             self.processed_data_packets,
             self.apogee_predictor.apogee,
         )
-        # CAUTION: You would need to copy() self.processed_data_packets in the log line above
-        # if you want to reference it anywhere else after update(), because it would be modified
-        # by the logger. e.g. in tests. For tests, the workaround would be to monkeypatch
-        # the log() method to not modify the processed_data_packets.
 
     def extend_airbrakes(self) -> None:
         """

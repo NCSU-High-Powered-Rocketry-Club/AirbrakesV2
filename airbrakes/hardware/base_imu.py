@@ -3,12 +3,21 @@ the IMU (Inertial measurement unit) on the rocket."""
 
 import collections
 import contextlib
-import multiprocessing
+import sys
 
 from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
 )
-from constants import IMU_TIMEOUT_SECONDS
+from constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
+
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Empty, Queue
+else:
+    from multiprocessing import Queue
+    from multiprocessing.queues import Empty
+
+from multiprocessing import Process, TimeoutError, Value
 
 
 class BaseIMU:
@@ -22,16 +31,14 @@ class BaseIMU:
         "_running",
     )
 
-    def __init__(
-        self, data_fetch_process: multiprocessing.Process, data_queue: multiprocessing.Queue
-    ) -> None:
+    def __init__(self, data_fetch_process: Process, data_queue: Queue) -> None:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
         """
         self._data_fetch_process = data_fetch_process
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
-        self._running = multiprocessing.Value("b", False)
+        self._running = Value("b", False)
 
     def stop(self) -> None:
         """
@@ -42,11 +49,7 @@ class BaseIMU:
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
         # be empty, and thus the process never .joins().
-        # Case 2: The other process finishes up before we call the below method, so there might be
-        # nothing in the queue, and then calling get_imu_data_packet() will block the main process
-        # indefinitely (that's why there's a timeout in the get_imu_data_packet() method).
-        with contextlib.suppress(multiprocessing.TimeoutError):
-            self.get_imu_data_packets()
+        with contextlib.suppress(TimeoutError):
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
     def start(self) -> None:
@@ -67,16 +70,19 @@ class BaseIMU:
     def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
-        :return: A deque containing the specified number of data packets
+        :return: A deque containing the latest data packets from the IMU.
         """
         # We use a deque because it's faster than a list for popping from the left
-        data_packets = collections.deque()
-        # While there is data in the queue, get the data packet and add it to the dequeue which we
-        # return
-        while not self._data_queue.empty():
-            data_packets.append(self.get_imu_data_packet())
-
-        return data_packets
+        try:
+            packets = self._data_queue.get_many(
+                block=True, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
+            )
+        except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
+            return collections.deque()
+        else:
+            if STOP_SIGNAL in packets:
+                return collections.deque()
+            return collections.deque(packets)
 
     @property
     def is_running(self) -> bool:

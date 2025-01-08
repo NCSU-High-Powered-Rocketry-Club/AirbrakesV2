@@ -10,6 +10,7 @@ import scipy.spatial
 
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from tests.auxil.utils import make_est_data_packet
 
 
 def simulate_altitude_sine_wave(
@@ -267,97 +268,58 @@ class TestIMUDataProcessor:
             "data_packets",
             "init_alt",
             "max_alt",
+            "rotation_quat",
         ),
         [
             (
                 [
-                    EstimatedDataPacket(
-                        0 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
-                        estLinearAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=0 * 1e9,
                         estPressureAlt=20,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     )
                 ],
                 20.0,
                 0.0,
+                np.array([0.5, 0.5, 0.5, 0.5]),
             ),
             (
                 [
-                    EstimatedDataPacket(
-                        1 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=1 * 1e9,
                         estPressureAlt=20,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     ),
-                    EstimatedDataPacket(
-                        2 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=2 * 1e9,
                         estPressureAlt=30,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     ),
                 ],
                 25.0,
                 5.0,
+                np.array([0.343268, 0.542269, 0.542269, 0.542269]),
             ),
             (
                 [
-                    EstimatedDataPacket(
-                        1 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=1 * 1e9,
                         estPressureAlt=20,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     ),
-                    EstimatedDataPacket(
-                        2 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=2 * 1e9,
                         estPressureAlt=30,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     ),
-                    EstimatedDataPacket(
-                        3 * 1e9,
-                        estCompensatedAccelX=1,
-                        estCompensatedAccelY=2,
-                        estCompensatedAccelZ=3,
+                    make_est_data_packet(
+                        timestamp=3 * 1e9,
                         estPressureAlt=40,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     ),
                 ],
                 30.0,
                 10.0,
+                np.array([0.176263, 0.568311, 0.568311, 0.568311]),
             ),
         ],
         ids=["one_data_packet", "two_data_packets", "three_data_packets"],
     )
-    def test_first_update(self, data_processor, data_packets, init_alt, max_alt):
+    def test_first_update(self, data_processor, data_packets, init_alt, max_alt, rotation_quat):
         """
         Tests whether the update() method works correctly, for the first update() call,
         along with get_processed_data_packets()
@@ -384,7 +346,7 @@ class TestIMUDataProcessor:
         assert isinstance(d._current_orientation_quaternions, scipy.spatial.transform.Rotation)
         npt.assert_allclose(
             d._current_orientation_quaternions.as_quat(scalar_first=True),
-            np.array([0.182574, 0.365148, 0.547723, 0.730297]),
+            rotation_quat,
             rtol=1e-5,
         )
         assert d.current_altitude == (
@@ -418,19 +380,18 @@ class TestIMUDataProcessor:
         """Tests whether the altitude is correctly zeroed"""
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
-        d._last_data_packet = EstimatedDataPacket(
-            0,
+        d._last_data_packet = make_est_data_packet(
+            timestamp=0,
             estPressureAlt=altitude_reading[0],
-            estOrientQuaternionW=0.1,
-            estOrientQuaternionX=0.2,
-            estOrientQuaternionY=0.3,
-            estOrientQuaternionZ=0.4,
         )
         d._initial_altitude = 20.0
+        d._current_orientation_quaternions = scipy.spatial.transform.Rotation.from_quat(
+            [0.1, 0.1, 0.1, 0.1]
+        )
 
         new_packets = [
-            EstimatedDataPacket(
-                idx + 3,
+            make_est_data_packet(
+                timestamp=idx + 3,
                 estPressureAlt=alt,
                 estOrientQuaternionW=0.1,
                 estOrientQuaternionX=0.2,
@@ -451,13 +412,9 @@ class TestIMUDataProcessor:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [
-                    EstimatedDataPacket(
-                        i,
+                    make_est_data_packet(
+                        timestamp=i,
                         estPressureAlt=alt,
-                        estOrientQuaternionW=0.1,
-                        estOrientQuaternionX=0.2,
-                        estOrientQuaternionY=0.3,
-                        estOrientQuaternionZ=0.4,
                     )
                     for alt in altitudes[i : i + 10]
                 ]
