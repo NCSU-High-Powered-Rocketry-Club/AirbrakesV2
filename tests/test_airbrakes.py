@@ -4,11 +4,11 @@ import time
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.constants import IMU_TIMEOUT_SECONDS, SERVO_DELAY_SECONDS, ServoExtension
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import RawDataPacket
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
-from constants import IMU_TIMEOUT_SECONDS, SERVO_DELAY_SECONDS, ServoExtension
 from tests.auxil.utils import make_est_data_packet
 
 

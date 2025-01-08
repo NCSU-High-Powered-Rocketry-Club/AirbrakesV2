@@ -7,18 +7,18 @@ import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.constants import (
+    EST_DATA_PACKET_SAMPLING_RATE,
+    IMU_PORT,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_PIN,
+)
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import (
-    EST_DATA_PACKET_SAMPLING_RATE,
-    IMU_PORT,
-    RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_PIN,
-)
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")

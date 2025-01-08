@@ -1,8 +1,9 @@
 [project]
 name = "AirbrakesV2"
 description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 version = "0.1.0"
+readme = "README.md"
 dependencies = [
     "gpiozero",
     "pigpio",  # Run sudo pigpiod before running the program
@@ -17,7 +18,7 @@ dependencies = [
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest",
     "pytest-cov",
@@ -25,14 +26,26 @@ dev = [
     "pre-commit",
 ]
 
-[tool.setuptools]
+[project.scripts]
+mock = "airbrakes.main:run_mock_flight"
+real = "airbrakes.main:run_real_flight"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# HATCH:
+[tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
 
+[tool.hatch.build.targets.wheel.force-include]
+# specify one launch file so that the mock flight can be run as a demo with uvx.
+"launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
 
 # RUFF:
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py313"
 show-fixes = true
 exclude = ["scripts"]
 

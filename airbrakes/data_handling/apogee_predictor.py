@@ -16,8 +16,7 @@ if sys.platform != "win32":
 
 from scipy.optimize import curve_fit
 
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import (
+from airbrakes.constants import (
     APOGEE_PREDICTION_MIN_PACKETS,
     BUFFER_SIZE_IN_BYTES,
     CURVE_FIT_INITIAL,
@@ -28,7 +27,8 @@ from constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
-from utils import modify_multiprocessing_queue_windows
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.utils import modify_multiprocessing_queue_windows
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 

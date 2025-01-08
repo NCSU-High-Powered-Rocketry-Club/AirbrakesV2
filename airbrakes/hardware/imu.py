@@ -16,18 +16,18 @@ if sys.platform != "win32":
 else:
     pass
 
+from airbrakes.constants import (
+    BUFFER_SIZE_IN_BYTES,
+    ESTIMATED_DESCRIPTOR_SET,
+    MAX_QUEUE_SIZE,
+    RAW_DESCRIPTOR_SET,
+)
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
 from airbrakes.hardware.base_imu import BaseIMU
-from constants import (
-    BUFFER_SIZE_IN_BYTES,
-    ESTIMATED_DESCRIPTOR_SET,
-    MAX_QUEUE_SIZE,
-    RAW_DESCRIPTOR_SET,
-)
 
 
 class IMU(BaseIMU):
