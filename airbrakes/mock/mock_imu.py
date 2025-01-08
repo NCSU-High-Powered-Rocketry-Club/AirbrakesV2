@@ -137,7 +137,7 @@ class MockIMU(BaseIMU):
             row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
 
             # Check if the process should stop:
-            if not self._running.value:
+            if not self.is_running:
                 break
 
             # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is an
