@@ -1,4 +1,5 @@
-"""Module defining the base class (BaseIMU) for interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""Module defining the base class (BaseIMU) for interacting with
+the IMU (Inertial measurement unit) on the rocket."""
 
 import collections
 import contextlib
