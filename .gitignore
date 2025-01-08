@@ -73,3 +73,5 @@ AirbrakesV2.egg-info/
 .venv/
 
 test_logs/
+
+.coverage
