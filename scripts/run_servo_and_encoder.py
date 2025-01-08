@@ -65,18 +65,13 @@ class ServoControllerApp(App):
     async def on_mount(self):
         """Called when the app is mounted. Start the encoder updater thread."""
         self.encoder_label = self.query_one("#encoder_label", EncoderPositionLabel)
-        # Start the encoder updater in a separate thread
-        self.run_worker(self.update_encoder_position, thread=True, exclusive=True, name="encoder_thread")
-
-    def update_encoder_position(self):
-        """Updates the encoder's position when it changes."""
         self.encoder.when_rotated = self.update_label
 
     def update_label(self):
         """Calls the update_position function to update the encoder label"""
         # self.encoder.steps counts the number of steps it has turned, divide by the encoder resolution
         # so that a full revolution of the encoder is either 1.0 or -1.0
-        self.encoder_label.update_position(self.encoder.steps/ENCODER_RESOLUTION)
+        self.encoder_label.update_position(self.encoder.steps)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Catch button press events and handle them."""
