@@ -1,6 +1,5 @@
 """Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
 
-import collections
 import contextlib
 import multiprocessing
 import sys
@@ -13,27 +12,25 @@ with contextlib.suppress(ImportError):
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
+    from faster_fifo import Queue
 else:
-    from multiprocessing.queues import Empty
+    pass
 
+from airbrakes.constants import (
+    BUFFER_SIZE_IN_BYTES,
+    ESTIMATED_DESCRIPTOR_SET,
+    MAX_QUEUE_SIZE,
+    RAW_DESCRIPTOR_SET,
+)
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from constants import (
-    BUFFER_SIZE_IN_BYTES,
-    ESTIMATED_DESCRIPTOR_SET,
-    IMU_TIMEOUT_SECONDS,
-    MAX_FETCHED_PACKETS,
-    MAX_QUEUE_SIZE,
-    RAW_DESCRIPTOR_SET,
-    STOP_SIGNAL,
-)
+from airbrakes.hardware.base_imu import BaseIMU
 
 
-class IMU:
+class IMU(BaseIMU):
     """
     Represents the IMU on the rocket. It's used to get the current acceleration of the rocket.
     This is used to interact with the data collected by the Parker-LORD 3DMCX5-AR.
@@ -47,12 +44,6 @@ class IMU:
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
-    __slots__ = (
-        "_data_fetch_process",
-        "_data_queue",
-        "_running",
-    )
-
     def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
@@ -62,67 +53,14 @@ class IMU:
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
-        self._data_queue: Queue[IMUDataPacket] = Queue(
+        _data_queue: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
         )
-        # Makes a boolean value that is shared between processes
-        self._running = multiprocessing.Value("b", False)
         # Starts the process that fetches data from the IMU
-        self._data_fetch_process = multiprocessing.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
-
-    @property
-    def is_running(self) -> bool:
-        """
-        Returns whether the process fetching data from the IMU is running.
-        :return: True if the process is running, False otherwise
-        """
-        return self._running.value
-
-    def start(self) -> None:
-        """
-        Starts the process separate from the main process for fetching data from the IMU.
-        """
-        self._running.value = True
-        self._data_fetch_process.start()
-
-    def stop(self) -> None:
-        """
-        Stops the process separate from the main process for fetching data from the IMU.
-        """
-        self._running.value = False
-        # Fetch all packets which are not yet fetched and discard them, so main() does not get
-        # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
-        # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
-        # be empty, and thus the process never .joins().
-        with contextlib.suppress(multiprocessing.TimeoutError):
-            self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
-
-    def get_imu_data_packet(self) -> IMUDataPacket | None:
-        """
-        Gets the last available data packet from the IMU.
-        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
-        available, it will be None.
-        """
-        return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
-
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
-        """
-        Returns all available data packets from the IMU.
-        :return: A deque containing the latest data packets from the IMU.
-        """
-        # We use a deque because it's faster than a list for popping from the left
-        try:
-            packets = self._data_queue.get_many(
-                block=True, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
-            )
-        except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
-            return collections.deque()
-        else:
-            if STOP_SIGNAL in packets:
-                return collections.deque()
-            return collections.deque(packets)
+        super().__init__(data_fetch_process, _data_queue)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -201,7 +139,7 @@ class IMU:
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
 
-        while self._running.value:
+        while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 

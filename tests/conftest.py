@@ -7,18 +7,18 @@ import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.constants import (
+    EST_DATA_PACKET_SAMPLING_RATE,
+    IMU_PORT,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_PIN,
+)
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import (
-    EST_DATA_PACKET_SAMPLING_RATE,
-    IMU_PORT,
-    RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_PIN,
-)
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")
@@ -83,6 +83,20 @@ def mock_imu(request):
     return MockIMU(
         log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True
     )
+
+
+@pytest.fixture
+def mocked_args_parser():
+    """Fixture that returns a mocked argument parser."""
+
+    class MockArgs:
+        mock = True
+        real_servo = False
+        keep_log_file = False
+        fast_simulation = False
+        debug = True
+
+    return MockArgs()
 
 
 @pytest.fixture

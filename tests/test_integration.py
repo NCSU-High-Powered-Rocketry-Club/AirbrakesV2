@@ -11,14 +11,14 @@ import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import (
+from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
     # LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
 )
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 
 SNAPSHOT_INTERVAL = 0.01  # seconds
 
@@ -97,8 +97,12 @@ class TestIntegration:
                     state_info.max_velocity = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
-                    state_info.min_avg_vertical_acceleration = ab.data_processor.average_vertical_acceleration
-                    state_info.max_avg_vertical_acceleration = ab.data_processor.average_vertical_acceleration
+                    state_info.min_avg_vertical_acceleration = (
+                        ab.data_processor.average_vertical_acceleration
+                    )
+                    state_info.max_avg_vertical_acceleration = (
+                        ab.data_processor.average_vertical_acceleration
+                    )
                     state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 state_info.min_velocity = min(
@@ -196,7 +200,6 @@ class TestIntegration:
         assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=1e2)
         # free fall should be close to ground:
         assert free_fall_state.min_altitude <= GROUND_ALTITUDE_METERS + 10.0
-        # assert free_fall_state.max_avg_vertical_acceleration >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
         # Check landed state values:

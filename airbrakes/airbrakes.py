@@ -3,6 +3,7 @@
 from collections import deque
 from typing import TYPE_CHECKING
 
+from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
@@ -10,7 +11,6 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
-from constants import ServoExtension
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket

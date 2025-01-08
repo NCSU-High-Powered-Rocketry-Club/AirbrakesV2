@@ -4,10 +4,13 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
+from airbrakes.constants import (
+    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+)
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED, GRAVITY_METERS_PER_SECOND_SQUARED
-from utils import deadband
+from airbrakes.utils import deadband
 
 
 class IMUDataProcessor:

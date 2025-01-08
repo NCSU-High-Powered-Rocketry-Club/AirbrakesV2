@@ -2,6 +2,14 @@ from abc import ABC
 
 import pytest
 
+from airbrakes.constants import (
+    GROUND_ALTITUDE_METERS,
+    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    LOG_BUFFER_SIZE,
+    MAX_FREE_FALL_SECONDS,
+    MAX_VELOCITY_THRESHOLD,
+    ServoExtension,
+)
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
@@ -10,14 +18,6 @@ from airbrakes.state import (
     MotorBurnState,
     StandbyState,
     State,
-)
-from constants import (
-    GROUND_ALTITUDE_METERS,
-    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    LOG_BUFFER_SIZE,
-    MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
-    ServoExtension,
 )
 
 

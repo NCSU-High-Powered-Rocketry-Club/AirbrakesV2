@@ -8,26 +8,23 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
+from airbrakes.utils import modify_multiprocessing_queue_windows
+
 if sys.platform != "win32":
     from faster_fifo import Queue
-else:
-    from functools import partial
-
-    from utils import get_always_list
-
 
 from msgspec import to_builtins
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import (
+from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
 )
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
 class Logger:
@@ -89,8 +86,7 @@ class Logger:
             self._log_queue: multiprocessing.Queue[list[LoggedDataPacket] | Literal["STOP"]] = (
                 multiprocessing.Queue()
             )
-            self._log_queue.get_many = partial(get_always_list, self._log_queue)
-            self._log_queue.put_many = self._log_queue.put
+            modify_multiprocessing_queue_windows(self._log_queue)
         else:
             self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES
@@ -270,6 +266,11 @@ class Logger:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+
+        # Unfortunately, we need to modify the queue here again because the modifications made in
+        # the __init__ are not copied to the new process.
+        modify_multiprocessing_queue_windows(self._log_queue)
+
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))

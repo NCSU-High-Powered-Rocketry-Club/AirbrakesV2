@@ -13,15 +13,10 @@ import numpy.typing as npt
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
     from faster_fifo import Queue
-else:
-    from functools import partial
-
-    from utils import get_always_list
 
 from scipy.optimize import curve_fit
 
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import (
+from airbrakes.constants import (
     APOGEE_PREDICTION_MIN_PACKETS,
     BUFFER_SIZE_IN_BYTES,
     CURVE_FIT_INITIAL,
@@ -32,6 +27,8 @@ from constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.utils import modify_multiprocessing_queue_windows
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
@@ -82,8 +79,7 @@ class ApogeePredictor:
             self._prediction_queue: multiprocessing.Queue[
                 list[ProcessedDataPacket] | Literal["STOP"]
             ] = multiprocessing.Queue()
-            self._prediction_queue.get_many = partial(get_always_list, self._prediction_queue)
-            self._prediction_queue.put_many = self._prediction_queue.put
+            modify_multiprocessing_queue_windows(self._prediction_queue)
         else:
             self._prediction_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES
@@ -228,6 +224,11 @@ class ApogeePredictor:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+
+        # Unfortunately, we need to modify the queue here again because the modifications made in
+        # the __init__ are not copied to the new process.
+        modify_multiprocessing_queue_windows(self._prediction_queue)
+
         last_run_length = 0
 
         # Keep checking for new data packets until the stop signal is received:

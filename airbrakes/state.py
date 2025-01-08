@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from constants import (
+from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_FREE_FALL_SECONDS,
@@ -12,7 +12,7 @@ from constants import (
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_ALTITUDE_METERS,
 )
-from utils import convert_to_seconds
+from airbrakes.utils import convert_to_seconds
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
