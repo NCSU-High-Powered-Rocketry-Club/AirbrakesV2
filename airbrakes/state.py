@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
-    LANDED_SPEED_METERS_PER_SECOND,
+    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_HEIGHT_METERS,
@@ -180,10 +180,10 @@ class FreeFallState(State):
 
         data = self.context.data_processor
 
-        # If our altitude and speed are around 0, we have landed
+        # If our altitude is around 0, and we have an acceleration spike, we have landed
         if (
             data.current_altitude <= GROUND_ALTITUDE_METERS
-            and abs(data.vertical_velocity) <= LANDED_SPEED_METERS_PER_SECOND
+            and data.average_vertical_acceleration >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
         ):
             self.next_state()
 

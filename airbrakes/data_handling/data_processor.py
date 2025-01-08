@@ -89,6 +89,11 @@ class IMUDataProcessor:
         return float(self._max_vertical_velocity)
 
     @property
+    def average_vertical_acceleration(self) -> float:
+        """The average vertical acceleration of the rocket in m/s^2."""
+        return float(np.mean(self._rotated_accelerations))
+
+    @property
     def current_timestamp(self) -> int:
         """The timestamp of the last data packet in nanoseconds."""
         try:
