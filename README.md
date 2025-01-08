@@ -200,7 +200,7 @@ _Note 2: The more "correct" command to run is `uv sync`. This will install the p
 
 ### 3. Install the pre-commit hook:
 ```
-pre-commit install
+uv run pre-commit install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
 
@@ -244,8 +244,10 @@ _Note: Unit tests do not work on Windows (only `test_integration.py` will work).
 
 To run the tests, run this command from the project root directory:
 ```bash
-pytest
+uv run pytest
 ```
+
+If your virtual environment is activated, you can simply run the tests with `pytest`
 
 To generate a coverage report from the tests:
 ```bash
