@@ -17,12 +17,7 @@ if sys.platform != "win32":
 else:
     from multiprocessing.queues import Empty
 
-from airbrakes.data_handling.imu_data_packet import (
-    EstimatedDataPacket,
-    IMUDataPacket,
-    RawDataPacket,
-)
-from constants import (
+from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
     ESTIMATED_DESCRIPTOR_SET,
     IMU_TIMEOUT_SECONDS,
@@ -30,6 +25,11 @@ from constants import (
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
     STOP_SIGNAL,
+)
+from airbrakes.data_handling.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
 )
 
 

@@ -9,6 +9,7 @@ from typing import Literal
 import faster_fifo
 import pytest
 
+from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
@@ -17,7 +18,6 @@ from airbrakes.data_handling.imu_data_packet import (
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 

@@ -11,14 +11,14 @@ import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import (
+from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_SPEED_METERS_PER_SECOND,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 
 SNAPSHOT_INTERVAL = 0.01  # seconds
 

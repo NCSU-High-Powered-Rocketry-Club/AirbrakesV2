@@ -1,5 +1,31 @@
 # AirbrakesV2 🚀
 
+# Table of Contents
+
+- [Overview](#overview)
+- [Design](#design)
+- [System Architecture Flowchart](#system-architecture-flowchart)
+- [Launch Data](#launch-data)
+- [File Structure](#file-structure)
+- [Quick Start](#quick-start)
+- [Local Setup](#local-setup)
+  - [1. Clone the repository](#1-clone-the-repository)
+  - [2. Install the project](#2-install-the-project)
+  - [3. Install the pre-commit hook](#3-install-the-pre-commit-hook)
+  - [4. Make your changes and commit](#4-make-your-changes-and-commit)
+- [Advanced Local Usage](#advanced-local-usage)
+  - [Running Mock Launches](#running-mock-launches)
+  - [Running Tests](#running-tests)
+  - [Running the Linter](#running-the-linter)
+- [Pi Usage](#pi-usage)
+  - [Connecting to the Pi (SSH)](#connecting-to-the-pi-ssh)
+  - [Install and start the pigpio daemon on the Raspberry Pi](#install-and-start-the-pigpio-daemon-on-the-raspberry-pi)
+  - [Run a real flight with real hardware](#run-a-real-flight-with-real-hardware)
+  - [Running Test Scripts](#running-test-scripts)
+- [Contributing](#contributing)
+- [License](#license)
+
+
 ## Overview
 This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
@@ -121,67 +147,94 @@ AirbrakesV2/
 |   ├── data_handling/
 │   │   ├── [files related to the processing of data ...]
 │   ├── [files which control the airbrakes at a high level ...]
+|   ├── main.py [main file used to run on the rocket]
+|   ├── constants.py [file for constants used in the project]
 ├── tests/  [used for testing all the code]
 │   ├── ...
 ├── logs/  [log files made by the logger]
 │   ├── ...
+├── launch_data/  [real flight data collected from the rocket]
+│   ├── ...
 ├── scripts/  [small files to test individual components like the servo]
 │   ├── ...
-├── main.py [main file used to run on the rocket]
-├── constants.py [file for constants used in the project]
 ├── pyproject.toml [configuration file for the project]
 ├── README.md
 ```
+
+## Quick Start
+
+This project strongly recommends using [`uv`](https://docs.astral.sh/uv/) to manage and install
+the project. To quickly run the mock simulation, simply run:
+
+```bash
+uvx --from git+https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git mock
+```
+
+You should see the mock simulation running with a display!
+
+_Note: We will continue using `uv` for the rest of this README, if you don't want to use `uv`, you can set up the project using Python. See [Legacy Project Setup](legacy_project_setup.md) for more information._
+
 ## Local Setup
 
-**This project uses Python 3.13. Using an older version may not work since we use newer language features**
+If you want to contribute to the project, you will need to set up the project locally. Luckily, 
+the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
-### Clone the repository:
+### 1. Clone the repository:
 
 ```
 git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 cd AirbrakesV2
 ```
 
-### Set up a virtual environment:
-
+### 2. Install the project:
 ```bash
-python -m venv .venv
-
-# For Linux
-source .venv/bin/activate
-# For Windows
-.\.venv\Scripts\activate
+uv run mock
 ```
 
-### Install the required dependencies:
+This will install the project, including development dependencies, activate the virtual environment and run the mock simulation.
 
-```bash
-pip install .[dev]
-```
-_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+_Note: It is important to use `uv run` instead of `uvx` since the `uvx` environment is isolated from
+the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools/#relationship-to-uv-run) for more information._
 
+_Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock simulation._
+
+### 3. Install the pre-commit hook:
 ```
-pre-commit install
+uv run pre-commit install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
 
-## Local Usage
+### 4. Make your changes and commit:
+
+After you have made your changes, you can commit them:
+```bash
+git add .
+git commit -m "Your commit message"
+```
+
+You will see the linter run now. If one of the checks failed, you can resolve them by following the 
+instructions in [Running the Linter](#running-the-linter).
+
+```bash
+git push -u origin branch-name
+```
+
+## Advanced Local Usage
 
 ### Running Mock Launches
 Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
 
-To run a mock launch, make sure to first specify the path to the CSV file for the previous launch's data in `constants.py` and then run:
+To run a mock launch, run:
 ```bash
-python3 main.py -m
+uv run mock
 ```
 If you want to run a mock launch, but with the real servo running, run:
 ```bash
-python3 main.py -m -r
+uv run mock -r
 ```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash
-python3 main.py --help
+uv run mock --help
 ```
 
 ### Running Tests
@@ -191,8 +244,10 @@ _Note: Unit tests do not work on Windows (only `test_integration.py` will work).
 
 To run the tests, run this command from the project root directory:
 ```bash
-pytest
+uv run pytest
 ```
+
+If your virtual environment is activated, you can simply run the tests with `pytest`
 
 To generate a coverage report from the tests:
 ```bash
@@ -216,11 +271,14 @@ ruff format .
 
 ## Pi Usage
 
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+
+
 ### Connecting to the Pi (SSH)
 In order to connect to the Pi, you need first to set up a mobile hotspot with the name `HPRC`, password `tacholycos`, and `2.4 GHz` band. Next, turn on the Pi and it will automatically connect to your hotspot. Once it's connected, find the Pi's IP Address, and in your terminal run:
 ```bash
 ssh pi@[IP.ADDRESS]
-# Its password is raspberry
+# Its password is "raspberry"
 cd AirbrakesV2/
 ```
 
@@ -231,11 +289,16 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 sudo pigpiod
 ```
 
+### Run a real flight with real hardware:
+```bash
+uv run real
+```
+
 ### Running Test Scripts
 During development, you may want to run individual scripts to test components. For example, to test the servo, run:
 ```bash
-# Make sure you are in the root directory,
-python3 -m scripts.run_servo
+# Make sure you are in the root directory:
+uv run scripts/run_servo.py
 ```
 
 ## Contributing

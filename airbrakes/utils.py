@@ -76,8 +76,11 @@ def deadband(input_value: float, threshold: float) -> float:
     return input_value
 
 
-def arg_parser() -> argparse.Namespace:
+def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     """Handles the command line arguments for the main airbrakes script.
+
+    :param mock_invocation: Whether the application is running in mock mode from `uv run mock`.
+    Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
 
     :return: The parsed arguments as a class with attributes.
     """
@@ -92,7 +95,7 @@ def arg_parser() -> argparse.Namespace:
         "--mock",
         help="Run in simulation mode with mock data and mock servo",
         action="store_true",
-        default=False,
+        default=mock_invocation,
     )
 
     parser.add_argument(

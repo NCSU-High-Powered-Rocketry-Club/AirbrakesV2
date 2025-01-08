@@ -8,23 +8,23 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
-from utils import modify_multiprocessing_queue_windows
+from airbrakes.utils import modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
     from faster_fifo import Queue
 
 from msgspec import to_builtins
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import (
+from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
 )
+from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
 
 
 class Logger:
