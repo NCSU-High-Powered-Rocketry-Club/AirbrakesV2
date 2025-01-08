@@ -5,8 +5,7 @@ import collections
 import contextlib
 import sys
 
-from constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
-
+from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.data_handling.imu_data_packet import (
     IMUDataPacket,
 )
