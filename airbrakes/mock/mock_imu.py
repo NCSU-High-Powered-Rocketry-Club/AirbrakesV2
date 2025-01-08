@@ -74,7 +74,7 @@ class MockIMU(BaseIMU):
                 maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
             )
 
-            data_queue.get_many = partial(get_all_from_queue, self._data_queue)
+            data_queue.get_many = partial(get_all_from_queue, data_queue)
         else:
             data_queue: Queue[IMUDataPacket] = Queue(
                 maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
