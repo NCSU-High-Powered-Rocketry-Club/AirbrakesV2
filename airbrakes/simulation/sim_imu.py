@@ -32,7 +32,7 @@ class SimIMU(BaseIMU):
     and returns randomly generated data.
     """
 
-    def __init__(self, sim_type: str, real_time_simulation: bool) -> None:
+    def __init__(self, sim_type: str, real_time_replay: bool) -> None:
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
@@ -46,13 +46,13 @@ class SimIMU(BaseIMU):
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
             data_queue = multiprocessing.Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
             )
 
             data_queue.get_many = partial(get_all_from_queue, data_queue)
         else:
             data_queue: Queue[IMUDataPacket] = Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
             )
 
         # Starts the process that fetches the generated data

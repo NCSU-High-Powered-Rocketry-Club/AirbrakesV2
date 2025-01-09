@@ -35,12 +35,12 @@ def run_mock_flight() -> None:
 
 
 def run_flight(args: argparse.Namespace) -> None:
-    sim_time_start = time.time()
+    mock_time_start = time.time()
 
     servo, imu, logger, data_processor, apogee_predictor = create_components(args)
     # Initialize the airbrakes context and display
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
-    flight_display = FlightDisplay(airbrakes, sim_time_start, args)
+    flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
     # Run the main flight loop
     run_flight_loop(airbrakes, flight_display, args.mock)
@@ -58,10 +58,10 @@ def create_components(
     if args.mock:
         # Replace hardware with mock objects for simulation
         if args.sim:
-            imu = SimIMU(sim_type=args.sim, real_time_simulation=not args.fast_simulation)
+            imu = SimIMU(sim_type=args.sim, real_time_replay=not args.fast_replay)
         else:
             imu = MockIMU(
-                real_time_simulation=not args.fast_simulation,
+                real_time_replay=not args.fast_replay,
                 log_file_path=args.path,
             )
         # If using a real servo, use the real servo object, otherwise use a mock servo object
@@ -90,7 +90,7 @@ def run_flight_loop(
     Main flight control loop that runs until shutdown is requested or interrupted.
     :param airbrakes: The airbrakes context managing the state machine.
     :param flight_display: Display interface for flight data.
-    :param is_mock: Whether running in simulation mode.
+    :param is_mock: Whether running in mock replay mode.
     """
     try:
         # Starts the airbrakes system and display
@@ -101,18 +101,18 @@ def run_flight_loop(
             # Update the state machine
             airbrakes.update()
 
-            # Stop the simulation when the data is exhausted
+            # Stop the replay when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:
                 break
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
         if is_mock:
-            flight_display.end_sim_interrupted.set()
+            flight_display.end_mock_interrupted.set()
     else:  # This is run if we have landed and the program is not interrupted (see state.py)
         if is_mock:
-            # Stop the mock simulation naturally if not interrupted
-            flight_display.end_sim_natural.set()
+            # Stop the mock replay naturally if not interrupted
+            flight_display.end_mock_natural.set()
     finally:
         # Stop the display and airbrakes
         flight_display.stop()
@@ -125,11 +125,12 @@ if __name__ == "__main__":
 
     # Command line args (after these are run, you can press Ctrl+C to exit the program):
     # python -m airbrakes.main -v: Shows the display with much more data
-    # python -m airbrakes.main -m: Runs a simulation on your computer
-    # python -m airbrakes.main -m -r: Runs a simulation on your computer with the real servo
-    # python -m airbrakes.main -m -l: Runs a simulation on your computer and keeps the log file
-    # after the simulation stops
-    # python -m airbrakes.main -m -f: Runs a simulation on your computer at full speed
-    # python -m airbrakes.main -m -d: Runs a simulation on your computer in debug mode (w/o display)
+    # python -m airbrakes.main -m: Runs a mock replay on your computer
+    # python -m airbrakes.main -m -r: Runs a mock replay on your computer with the real servo
+    # python -m airbrakes.main -m -l: Runs a mock replay on your computer and keeps the log file
+    # after the mock replay stops
+    # python -m airbrakes.main -m -f: Runs a mock replay on your computer at full speed
+    # python -m airbrakes.main -m -d: Runs a mock replay on your computer in debug
+    # mode (w/o display)
     args = arg_parser()
     run_flight(args)

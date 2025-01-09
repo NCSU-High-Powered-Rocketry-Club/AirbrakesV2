@@ -39,7 +39,7 @@ class MockIMU(BaseIMU):
 
     def __init__(
         self,
-        real_time_simulation: bool,
+        real_time_replay: bool,
         log_file_path: Path | None = None,
         start_after_log_buffer: bool = True,
     ):
@@ -50,7 +50,7 @@ class MockIMU(BaseIMU):
         We don't call the parent constructor as the IMU class has different parameters, so we
         manually start the process that fetches data from the log file
         :param log_file_path: The path of the log file to read data from.
-        :param real_time_simulation: Whether to simulate a real flight by sleeping for a set
+        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set
         period, or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
@@ -64,7 +64,7 @@ class MockIMU(BaseIMU):
             root_dir = Path(__file__).parent.parent.parent
             self._log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
-        # If it's not a real time sim, we limit how big the queue gets when doing an integration
+        # If it's not a real time replay, we limit how big the queue gets when doing an integration
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
@@ -72,18 +72,18 @@ class MockIMU(BaseIMU):
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
             data_queue = multiprocessing.Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
             )
 
             data_queue.get_many = partial(get_all_from_queue, data_queue)
         else:
             data_queue: Queue[IMUDataPacket] = Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
             )
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
-            args=(self._log_file_path, real_time_simulation, start_after_log_buffer),
+            args=(self._log_file_path, real_time_replay, start_after_log_buffer),
             name="Mock IMU Process",
         )
 
@@ -119,12 +119,12 @@ class MockIMU(BaseIMU):
         return 0
 
     def _read_file(
-        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
+        self, log_file_path: Path, real_time_replay: bool, start_after_log_buffer: bool = False
     ) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
         :param log_file_path: the name of the log file to read data from located in scripts/imu_data
-        :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
+        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
         or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
@@ -169,21 +169,21 @@ class MockIMU(BaseIMU):
             # Put the packet in the queue
             self._data_queue.put(imu_data_packet)
 
-            # sleep only if we are running a real-time simulation
+            # sleep only if we are running a real-time replay
             # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
             # pretend to be real-time
-            if real_time_simulation and isinstance(imu_data_packet, RawDataPacket):
-                # Simulate polling interval
+            if real_time_replay and isinstance(imu_data_packet, RawDataPacket):
+                # Mimmick polling interval
                 end_time = time.time()
                 time.sleep(max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - (end_time - start_time)))
 
     def _fetch_data_loop(
-        self, log_file_path: Path, real_time_simulation: bool, start_after_log_buffer: bool = False
+        self, log_file_path: Path, real_time_replay: bool, start_after_log_buffer: bool = False
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
         :param log_file_path: the name of the log file to read data from located in scripts/imu_data
-        :param real_time_simulation: Whether to simulate a real flight by sleeping for a set period,
+        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
         or run at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
@@ -191,7 +191,7 @@ class MockIMU(BaseIMU):
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(log_file_path, real_time_simulation, start_after_log_buffer)
+            self._read_file(log_file_path, real_time_replay, start_after_log_buffer)
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False

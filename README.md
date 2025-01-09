@@ -166,13 +166,13 @@ AirbrakesV2/
 ## Quick Start
 
 This project strongly recommends using [`uv`](https://docs.astral.sh/uv/) to manage and install
-the project. To quickly run the mock simulation, simply run:
+the project. To quickly run the mock replay, simply run:
 
 ```bash
 uvx --from git+https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git mock
 ```
 
-You should see the mock simulation running with a display!
+You should see the mock replay running with a display!
 
 _Note: We will continue using `uv` for the rest of this README, if you don't want to use `uv`, you can set up the project using Python. See [Legacy Project Setup](legacy_project_setup.md) for more information._
 
@@ -193,12 +193,12 @@ cd AirbrakesV2
 uv run mock
 ```
 
-This will install the project, including development dependencies, activate the virtual environment and run the mock simulation.
+This will install the project, including development dependencies, activate the virtual environment and run the mock replay.
 
 _Note: It is important to use `uv run` instead of `uvx` since the `uvx` environment is isolated from
 the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools/#relationship-to-uv-run) for more information._
 
-_Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock simulation._
+_Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock replay._
 
 ### 3. Install the pre-commit hook:
 ```

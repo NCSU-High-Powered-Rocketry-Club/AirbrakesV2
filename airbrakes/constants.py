@@ -43,7 +43,7 @@ class DisplayEndingType(StrEnum):
     """
 
     NATURAL = "natural"
-    """The display ends naturally, when the rocket lands, in a mock sim."""
+    """The display ends naturally, when the rocket lands, in a mock replay."""
     INTERRUPTED = "interrupted"
     """The display ends because the user interrupted the program."""
     TAKEOFF = "takeoff"

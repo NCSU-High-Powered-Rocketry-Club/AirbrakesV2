@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 def get_all_from_queue(self, *args, **kwargs) -> list:
     """Used to get all the items from a queue at once. Only relevant if you are running the mock
-    sim on Windows, as the multiprocessing.Queue doesn't have a `get_many` method"""
+    replay on Windows, as the multiprocessing.Queue doesn't have a `get_many` method"""
     kwargs.pop("max_messages_to_get", None)  # Argument only used in the Linux version
     return [self.get(*args, **kwargs) for _ in range(self.qsize())]
 
@@ -93,7 +93,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     parser.add_argument(
         "-m",
         "--mock",
-        help="Run in simulation mode with mock data and mock servo",
+        help="Run in replay mode with mock data and mock servo",
         action="store_true",
         default=mock_invocation,
     )
@@ -101,7 +101,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     parser.add_argument(
         "-r",
         "--real-servo",
-        help="Run the mock sim with the real servo",
+        help="Run the mock replay with the real servo",
         action="store_true",
         default=False,
     )
@@ -109,15 +109,15 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     parser.add_argument(
         "-l",
         "--keep-log-file",
-        help="Keep the log file after the mock sim stops",
+        help="Keep the log file after the mock replay stops",
         action="store_true",
         default=False,
     )
 
     parser.add_argument(
         "-f",
-        "--fast-simulation",
-        help="Run the mock sim at full speed instead of in real time.",
+        "--fast-replay",
+        help="Run the mock replay at full speed instead of in real time.",
         action="store_true",
         default=False,
     )
@@ -125,7 +125,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     parser.add_argument(
         "-d",
         "--debug",
-        help="Run the mock sim in debug mode. This will not "
+        help="Run the mock replay in debug mode. This will not "
         "print the flight data and allow you to inspect the values of your print() statements.",
         action="store_true",
         default=False,
@@ -134,7 +134,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     parser.add_argument(
         "-p",
         "--path",
-        help="Define the pathname of flight data to use in mock simulation. Interest Launch data"
+        help="Define the pathname of flight data to use in mock replay. Interest Launch data"
         " is used by default",
         type=Path,
         default=None,
@@ -155,20 +155,20 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         choices=["full-scale", "sub-scale"],
         nargs="?",  # Allows an optional argument
         const="full-scale",  # Default when `-s` is provided without a value
-        default="None",  # Default when `-s` is not provided at all
+        default=False,  # Default when `-s` is not provided at all
     )
 
     args = parser.parse_args()
 
-    # Check if the user has passed any options that are only available in simulation mode:
+    # Check if the user has passed any options that are only available in mock replay mode:
     if (
-        any([args.real_servo, args.keep_log_file, args.fast_simulation, args.path, args.sim])
+        any([args.real_servo, args.keep_log_file, args.fast_replay, args.path, args.sim])
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-simulation`, `--sim`, and `--path` "
-            "options are only available in simulation mode. Please pass `-m` or `--mock` "
-            "to run in simulation mode."
+            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, `--sim`, and `--path` "
+            "options are only available in mock replay mode. Please pass `-m` or `--mock` "
+            "to run in mock replay mode."
         )
 
     if args.verbose and args.debug:
