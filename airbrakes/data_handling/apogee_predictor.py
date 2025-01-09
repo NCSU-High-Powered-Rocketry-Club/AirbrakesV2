@@ -87,13 +87,14 @@ class ApogeePredictor:
             ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
             # This queue is for the data out
-            self._apogee_predictor_packet_queue: multiprocessing.Queue[ApogeePredictorDataPacket] =\
-                multiprocessing.Queue()
+            self._apogee_predictor_packet_queue: multiprocessing.Queue[
+                ApogeePredictorDataPacket
+            ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
         else:
-            self._processed_data_packet_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES
-            )
+            self._processed_data_packet_queue: Queue[
+                list[ProcessedDataPacket] | Literal["STOP"]
+            ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
             self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue()
 
         self._prediction_process = multiprocessing.Process(
@@ -149,10 +150,10 @@ class ApogeePredictor:
         """
         Gets the apogee prediction data packets from the queue.
         """
-        apogee_predictor_data_packets = []
-        for _ in range(self._apogee_predictor_packet_queue.qsize()):
-            apogee_predictor_data_packets.append(self._apogee_predictor_packet_queue.get())
-        return apogee_predictor_data_packets
+        return [
+            self._apogee_predictor_packet_queue.get()
+            for _ in range(self._apogee_predictor_packet_queue.qsize())
+        ]
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -287,14 +288,16 @@ class ApogeePredictor:
                 last_run_length = len(self._accelerations)
 
                 # Send the apogee prediction to the main process
-                self._apogee_predictor_packet_queue.put(ApogeePredictorDataPacket(
-                    predicted_apogee=apogee,
-                    prediction_has_converged=self._has_apogee_converged,
-                    a_coefficient=float(curve_coefficients.A),
-                    b_coefficient=float(curve_coefficients.B),
-                    uncertainty_threshold_1=self.uncertainty_threshold_1.value,
-                    uncertainty_threshold_2=self.uncertainty_threshold_2.value,
-                ))
+                self._apogee_predictor_packet_queue.put(
+                    ApogeePredictorDataPacket(
+                        predicted_apogee=apogee,
+                        prediction_has_converged=self._has_apogee_converged,
+                        a_coefficient=float(curve_coefficients.A),
+                        b_coefficient=float(curve_coefficients.B),
+                        uncertainty_threshold_1=self.uncertainty_threshold_1.value,
+                        uncertainty_threshold_2=self.uncertainty_threshold_2.value,
+                    )
+                )
 
     def _extract_processed_data_packets(self, data_packets: list[ProcessedDataPacket]) -> None:
         """
@@ -314,7 +317,7 @@ class ApogeePredictor:
         It gets the change in height from the lookup table, and adds it to the
         current height, thus giving you the predicted apogee.
         """
-        predicted_apogee = (
+        return (
             np.interp(
                 self._current_velocity,
                 self.lookup_table.velocities,
@@ -322,4 +325,3 @@ class ApogeePredictor:
             )
             + self._current_altitude
         )
-        return predicted_apogee
