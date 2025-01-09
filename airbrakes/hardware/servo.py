@@ -38,7 +38,7 @@ class Servo:
             warnings.filterwarnings(message="To reduce servo jitter", action="ignore")
             gpiozero.Device.pin_factory = pin_factory
 
-        self.servo = gpiozero.Servo(gpio_pin_number)
+        self.servo = gpiozero.Servo(gpio_pin_number, initial_value=ServoExtension.MIN_NO_BUZZ.value)
 
         # We have to use threading to avoid blocking the main thread because our extension methods
         # need to run at a specific time. Yes this is bad practice but we had a mechanical issue and
