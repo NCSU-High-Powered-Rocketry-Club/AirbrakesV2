@@ -3,26 +3,35 @@
 import ast
 import contextlib
 import multiprocessing
+import sys
 import time
 from pathlib import Path
 
 import pandas as pd
 
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from airbrakes.utils import get_all_from_queue
+
+from airbrakes.constants import (
+    LOG_BUFFER_SIZE,
+    MAX_FETCHED_PACKETS,
+    MAX_QUEUE_SIZE,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    STOP_SIGNAL,
+)
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.imu import IMU
-from constants import (
-    LOG_BUFFER_SIZE,
-    MAX_QUEUE_SIZE,
-    RAW_DATA_PACKET_SAMPLING_RATE,
-    SIMULATION_MAX_QUEUE_SIZE,
-)
+from airbrakes.hardware.base_imu import BaseIMU
 
 
-class MockIMU(IMU):
+class MockIMU(BaseIMU):
     """
     A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
     and returns data read from a previous log file.
@@ -50,25 +59,35 @@ class MockIMU(IMU):
         # Check if the launch data file exists:
         if log_file_path is None:
             # Just use the first file in the `launch_data` directory:
-            self._log_file_path = next(iter(Path("launch_data").glob("*.csv")))
+            # Note: We do this convoluted way because we want to make it work with the one liner
+            # `uvx --from git+... mock` on any machine from any state.
+            root_dir = Path(__file__).parent.parent.parent
+            self._log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
         # If it's not a real time sim, we limit how big the queue gets when doing an integration
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE if real_time_simulation else SIMULATION_MAX_QUEUE_SIZE
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            data_queue = multiprocessing.Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
 
+            data_queue.get_many = partial(get_all_from_queue, data_queue)
+        else:
+            data_queue: Queue[IMUDataPacket] = Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
         # Starts the process that fetches data from the log file
-        self._data_fetch_process = multiprocessing.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(self._log_file_path, real_time_simulation, start_after_log_buffer),
             name="Mock IMU Process",
         )
 
-        # Makes a boolean value that is shared between processes
-        self._running = multiprocessing.Value("b", False)
+        super().__init__(data_fetch_process, data_queue)
 
     @staticmethod
     def _convert_invalid_fields(value) -> list:
@@ -137,7 +156,7 @@ class MockIMU(IMU):
             row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
 
             # Check if the process should stop:
-            if not self._running.value:
+            if not self.is_running:
                 break
 
             # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is an
@@ -176,3 +195,4 @@ class MockIMU(IMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
+        self._data_queue.put(STOP_SIGNAL)
