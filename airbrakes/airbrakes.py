@@ -138,15 +138,6 @@ class AirbrakesContext:
         # Gets what we have currently set the extension of the airbrakes to
         self.current_extension = self.servo.current_extension
 
-        # # Create a debug packet for the logger:
-        # self.debug_packet = ContextPacket(
-        #     predicted_apogee=self.apogee_predictor.apogee,
-        #     uncertainity_threshold_1=str(self.apogee_predictor.uncertainity_threshold_1.value),
-        #     uncertainity_threshold_2=str(self.apogee_predictor.uncertainity_threshold_2.value),
-        #     fetched_imu_packets=str(len(self.imu_data_packets)),
-        #     packets_in_imu_queue=str(self.imu._data_queue.qsize()),
-        # )
-
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
             self.state.name,

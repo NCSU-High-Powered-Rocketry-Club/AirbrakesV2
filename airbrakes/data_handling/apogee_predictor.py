@@ -10,6 +10,8 @@ import msgspec
 import numpy as np
 import numpy.typing as npt
 
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
     from faster_fifo import Queue
@@ -59,40 +61,46 @@ class ApogeePredictor:
 
     __slots__ = (
         "_accelerations",
-        "_apogee_prediction_value",
+        "_apogee_predictor_packet_queue",
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
         "_has_apogee_converged",
         "_initial_velocity",
         "_prediction_process",
-        "_prediction_queue",
+        "_processed_data_packet_queue",
         "_time_differences",
         "lookup_table",
-        "uncertainity_threshold_1",
-        "uncertainity_threshold_2",
+        "uncertainty_threshold_1",
+        "uncertainty_threshold_2",
     )
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
         if sys.platform == "win32":
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
-            self._prediction_queue: multiprocessing.Queue[
+
+            # This queue is for the data in
+            self._processed_data_packet_queue: multiprocessing.Queue[
                 list[ProcessedDataPacket] | Literal["STOP"]
             ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._prediction_queue)
+            modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
+            # This queue is for the data out
+            self._apogee_predictor_packet_queue: multiprocessing.Queue[ApogeePredictorDataPacket] =\
+                multiprocessing.Queue()
+            modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
         else:
-            self._prediction_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
+            self._processed_data_packet_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES
             )
+            self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue()
 
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
-        self.uncertainity_threshold_1 = multiprocessing.Value("d", 0.0)
-        self.uncertainity_threshold_2 = multiprocessing.Value("d", 0.0)
+        self.uncertainty_threshold_1 = multiprocessing.Value("d", 0.0)
+        self.uncertainty_threshold_2 = multiprocessing.Value("d", 0.0)
 
         # ------ Variables which can only be referenced in the prediction process ------
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
@@ -106,14 +114,6 @@ class ApogeePredictor:
         self._initial_velocity = None
         self.lookup_table: LookupTable = LookupTable()
         # ------------------------------------------------------------------------
-
-    @property
-    def apogee(self) -> float:
-        """
-        Returns the predicted apogee of the rocket
-        :return: predicted apogee as a float.
-        """
-        return float(self._apogee_prediction_value.value)
 
     @property
     def is_running(self) -> bool:
@@ -133,7 +133,7 @@ class ApogeePredictor:
         Stops the prediction process.
         """
         # Waits for the process to finish before stopping it
-        self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._processed_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
     def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
@@ -143,7 +143,7 @@ class ApogeePredictor:
 
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
-        self._prediction_queue.put_many(processed_data_packets)
+        self._processed_data_packet_queue.put_many(processed_data_packets)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -160,8 +160,8 @@ class ApogeePredictor:
         """
         Sends the curve coefficients to the main process.
         """
-        self.uncertainity_threshold_1.value = curve_coefficients.uncertainties[0]
-        self.uncertainity_threshold_2.value = curve_coefficients.uncertainties[1]
+        self.uncertainty_threshold_1.value = curve_coefficients.uncertainties[0]
+        self.uncertainty_threshold_2.value = curve_coefficients.uncertainties[1]
 
     def _curve_fit(self) -> CurveCoefficients:
         """
@@ -239,7 +239,7 @@ class ApogeePredictor:
 
         # Unfortunately, we need to modify the queue here again because the modifications made in
         # the __init__ are not copied to the new process.
-        modify_multiprocessing_queue_windows(self._prediction_queue)
+        modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
 
         last_run_length = 0
 
@@ -251,7 +251,7 @@ class ApogeePredictor:
             # packets from the queue and add them to its own arrays.
 
             data_packets: list[ProcessedDataPacket | Literal["STOP"]] = (
-                self._prediction_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+                self._processed_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
             )
 
             if STOP_SIGNAL in data_packets:
@@ -261,16 +261,31 @@ class ApogeePredictor:
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
-                # We only want to keep curve fitting if the curve fit hasn't converged yet
-                if not self._has_apogee_converged:
+
+                # Placeholder values for the curve coefficients and apogee
+                curve_coefficients = -1, -1
+                apogee = -1
+
+                # Get the predicted apogee if the curve fit has converged:
+                if self._has_apogee_converged:
+                    apogee = self._predict_apogee()
+                else:
+                    # We only want to keep curve fitting if the curve fit hasn't converged yet
                     curve_coefficients = self._curve_fit()
                     self._send_to_main_process(curve_coefficients)
                     self._update_prediction_lookup_table(curve_coefficients)
 
-                # Get the predicted apogee if the curve fit has converged:
-                if self._has_apogee_converged:
-                    self._predict_apogee()
                 last_run_length = len(self._accelerations)
+
+                # Send the apogee prediction to the main process
+                self._apogee_predictor_packet_queue.put(ApogeePredictorDataPacket(
+                    predicted_apogee=apogee,
+                    prediction_has_converged=self._has_apogee_converged,
+                    a_coefficient=float(curve_coefficients.A),
+                    b_coefficient=float(curve_coefficients.B),
+                    uncertainty_threshold_1=self.uncertainty_threshold_1.value,
+                    uncertainty_threshold_2=self.uncertainty_threshold_2.value,
+                ))
 
     def _extract_processed_data_packets(self, data_packets: list[ProcessedDataPacket]) -> None:
         """
@@ -284,7 +299,7 @@ class ApogeePredictor:
         self._current_altitude = data_packets[-1].current_altitude
         self._current_velocity = data_packets[-1].vertical_velocity
 
-    def _predict_apogee(self) -> None:
+    def _predict_apogee(self) -> float:
         """
         Predicts the apogee using the lookup table and linear interpolation.
         It gets the change in height from the lookup table, and adds it to the
@@ -298,4 +313,4 @@ class ApogeePredictor:
             )
             + self._current_altitude
         )
-        self._apogee_prediction_value.value = predicted_apogee
+        return predicted_apogee

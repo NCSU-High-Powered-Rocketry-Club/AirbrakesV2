@@ -42,7 +42,7 @@ class TestApogeePredictor:
         ap = apogee_predictor
         # Test attributes on init
         assert ap._apogee_prediction_value.value == 0.0
-        assert isinstance(ap._prediction_queue, faster_fifo.Queue)
+        assert isinstance(ap._processed_data_packet_queue, faster_fifo.Queue)
         assert isinstance(ap._prediction_process, multiprocessing.Process)
         assert not ap._prediction_process.is_alive()
         assert isinstance(ap._cumulative_time_differences, np.ndarray)
@@ -82,8 +82,8 @@ class TestApogeePredictor:
         # important to not .start() the process, as we don't want it to run as it will fetch
         # it from the queue and we want to check if it's added to the queue.
         apogee_predictor.update(packet.copy())
-        assert apogee_predictor._prediction_queue.qsize() == 1
-        assert apogee_predictor._prediction_queue.get_many() == packet
+        assert apogee_predictor._processed_data_packet_queue.qsize() == 1
+        assert apogee_predictor._processed_data_packet_queue.get_many() == packet
 
     @pytest.mark.parametrize(
         (
@@ -141,8 +141,8 @@ class TestApogeePredictor:
         time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == expected_value
-        assert threaded_apogee_predictor.uncertainity_threshold_1
-        assert threaded_apogee_predictor.uncertainity_threshold_2
+        assert threaded_apogee_predictor.uncertainty_threshold_1
+        assert threaded_apogee_predictor.uncertainty_threshold_2
 
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
@@ -172,7 +172,7 @@ class TestApogeePredictor:
         unique_apogees.remove(0.0)
         # amount of apogees we have is number of packets, divided by the frequency
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_MIN_PACKETS
-        assert threaded_apogee_predictor._prediction_queue.qsize() == 0
+        assert threaded_apogee_predictor._processed_data_packet_queue.qsize() == 0
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == max(apogees)
         assert threaded_apogee_predictor.is_running
