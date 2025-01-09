@@ -16,6 +16,7 @@ from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.utils import arg_parser
 
 
@@ -56,10 +57,13 @@ def create_components(
     """
     if args.mock:
         # Replace hardware with mock objects for simulation
-        imu = MockIMU(
-            real_time_simulation=not args.fast_simulation,
-            log_file_path=args.path,
-        )
+        if args.sim:
+            imu = SimIMU(sim_type=args.sim, real_time_simulation=not args.fast_simulation)
+        else:
+            imu = MockIMU(
+                real_time_simulation=not args.fast_simulation,
+                log_file_path=args.path,
+            )
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
             Servo(SERVO_PIN)

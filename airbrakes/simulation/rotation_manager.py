@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
-from constants import GRAVITY_METERS_PER_SECOND_SQUARED
+from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED
 
 
 class RotationManager:

@@ -155,7 +155,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         choices=["full-scale", "sub-scale"],
         nargs="?",  # Allows an optional argument
         const="full-scale",  # Default when `-s` is provided without a value
-        default=None,  # Default when `-s` is not provided at all
+        default="None",  # Default when `-s` is not provided at all
     )
 
     args = parser.parse_args()

@@ -2,28 +2,37 @@
 
 import contextlib
 import multiprocessing
+import sys
 import time
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+if sys.platform != "win32":
+    from faster_fifo import Queue
+else:
+    from functools import partial
+
+    from airbrakes.utils import get_all_from_queue
+
 
 from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.imu_data_packet import IMUDataPacket
 
-from airbrakes.hardware.imu import IMU
+from airbrakes.constants import MAX_FETCHED_PACKETS, MAX_QUEUE_SIZE, ServoExtension
+from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.simulation.data_generator import DataGenerator
-from constants import MAX_QUEUE_SIZE, ServoExtension
 
 
-class SimIMU(IMU):
+class SimIMU(BaseIMU):
     """
     A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
     and returns randomly generated data.
     """
 
-    def __init__(self, sim_type: str) -> None:
+    def __init__(self, sim_type: str, real_time_simulation: bool) -> None:
         """
         Initializes the object that pretends to be an IMU for testing purposes by returning
         randomly generated data.
@@ -33,19 +42,27 @@ class SimIMU(IMU):
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
-        # This limits the queue size to a very high limit
-        # TODO: should be smaller limit
-        self._data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-            MAX_QUEUE_SIZE
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            data_queue = multiprocessing.Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
+
+            data_queue.get_many = partial(get_all_from_queue, data_queue)
+        else:
+            data_queue: Queue[IMUDataPacket] = Queue(
+                maxsize=MAX_QUEUE_SIZE if real_time_simulation else MAX_FETCHED_PACKETS
+            )
 
         # Starts the process that fetches the generated data
-        self._data_fetch_process = multiprocessing.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             name="Sim IMU Process",
             args=(config,),
         )
 
+        super().__init__(data_fetch_process, data_queue)
         # Makes boolean values that are shared between processes
         self._running = multiprocessing.Value("b", False)
         self._airbrakes_extended = multiprocessing.Value("b", False)

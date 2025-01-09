@@ -7,18 +7,18 @@ from pathlib import Path
 import numpy as np
 import numpy.typing as npt
 
+from airbrakes.constants import (
+    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+    MAX_VELOCITY_THRESHOLD,
+)
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
 from airbrakes.simulation.rotation_manager import RotationManager
 from airbrakes.simulation.sim_config import SimulationConfig
-from constants import (
-    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
-    GRAVITY_METERS_PER_SECOND_SQUARED,
-    MAX_VELOCITY_THRESHOLD,
-)
-from utils import deadband
+from airbrakes.utils import deadband
 
 
 class DataGenerator:
