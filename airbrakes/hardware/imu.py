@@ -4,11 +4,10 @@ import contextlib
 import multiprocessing
 import sys
 
-# Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
-# mscl is annoying and we really just have it installed on the pi
-# with contextlib.suppress(ImportError):
-#     import mscl
-from python_mscl import mscl
+# Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
+# Python 3.13.
+with contextlib.suppress(ImportError):
+    from python_mscl import mscl
 
 # We should print a warning, but that messes with how the sim display looks
 
