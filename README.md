@@ -167,7 +167,7 @@ This project strongly recommends using [`uv`](https://docs.astral.sh/uv/) to man
 the project. To quickly run the mock simulation, simply run:
 
 ```bash
-uvx --from git+https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git mock
+uvx --from git+https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git --python-preference only-managed mock
 ```
 
 You should see the mock simulation running with a display!

@@ -14,8 +14,6 @@ dependencies = [
     "scipy",
     "pandas",
     "faster-fifo; sys_platform != 'win32'",
-    # Installation instructions for the following dependencies can be found in the README:
-    # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
     "python-mscl>=67.0.0",
 ]
 
