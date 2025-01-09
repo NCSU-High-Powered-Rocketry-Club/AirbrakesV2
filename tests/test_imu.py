@@ -111,7 +111,7 @@ class TestIMU:
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
-        time.sleep(0.001)  # Give the process time to start and simulate the actual loop
+        time.sleep(0.001)  # Give the process time to start and recreate the actual loop
         # send a KeyboardInterrupt to test if the process stops cleanly
         try:
             raise KeyboardInterrupt

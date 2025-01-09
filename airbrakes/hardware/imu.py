@@ -8,7 +8,7 @@ import sys
 # mscl is annoying and we really just have it installed on the pi
 with contextlib.suppress(ImportError):
     import mscl
-    # We should print a warning, but that messes with how the sim display looks
+    # We should print a warning, but that messes with how the mock replay display looks
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":

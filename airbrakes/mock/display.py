@@ -49,8 +49,8 @@ class FlightDisplay:
         "_start_time",
         "_thread_target",
         "_verbose",
-        "end_sim_interrupted",
-        "end_sim_natural",
+        "end_mock_interrupted",
+        "end_mock_natural",
     )
 
     def __init__(
@@ -58,7 +58,7 @@ class FlightDisplay:
     ) -> None:
         """
         :param airbrakes: The AirbrakesContext object.
-        :param start_time: The time (in seconds) the simulation started.
+        :param start_time: The time (in seconds) the replay started.
         """
         init(autoreset=True)  # Automatically reset colors after each print
         self._airbrakes = airbrakes
@@ -70,7 +70,7 @@ class FlightDisplay:
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
         self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
-        # Prepare the processes for monitoring in the simulation:
+        # Prepare the processes for monitoring in the replay:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
         # daemon threads are killed when the main thread exits.
@@ -80,9 +80,9 @@ class FlightDisplay:
         self._cpu_thread = threading.Thread(
             target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread"
         )
-        # Create events to signal the end of the simulation.
-        self.end_sim_natural = threading.Event()
-        self.end_sim_interrupted = threading.Event()
+        # Create events to signal the end of the replay.
+        self.end_mock_natural = threading.Event()
+        self.end_mock_interrupted = threading.Event()
 
         try:
             # Try to get the launch file name (only available in MockIMU)
@@ -92,7 +92,7 @@ class FlightDisplay:
 
     def start(self) -> None:
         """Starts the display and cpu monitoring thread. Also prepares the processes for monitoring
-        in the simulation. This should only be done *after* airbrakes.start() is called, because we
+        in the replay. This should only be done *after* airbrakes.start() is called, because we
         need the process IDs.
         """
         self._running = True
@@ -127,7 +127,7 @@ class FlightDisplay:
     def update_display(self) -> None:
         """
         Updates the display with real-time data. Runs in another thread. Automatically stops when
-        the simulation ends.
+        the replay ends.
         """
         # Don't print the flight data if we are in debug mode
         if self._args.debug:
@@ -143,15 +143,15 @@ class FlightDisplay:
                 break
 
         # The program has ended, so we print the final display, depending on how it ended:
-        if self.end_sim_natural.is_set():
+        if self.end_mock_natural.is_set():
             self._update_display(DisplayEndingType.NATURAL)
-        if self.end_sim_interrupted.is_set():
+        if self.end_mock_interrupted.is_set():
             self._update_display(DisplayEndingType.INTERRUPTED)
 
     def _update_display(self, end_type: DisplayEndingType | None = None) -> None:
         """
         Updates the display with real-time data.
-        :param end_sim: Whether the simulation ended or was interrupted.
+        :param end_type: Whether the replay ended or was interrupted.
         """
         try:
             current_queue_size = self._airbrakes.imu._data_queue.qsize()
@@ -192,9 +192,9 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {"SIMULATION" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",  # noqa: E501
-            f"Sim file:                  {C}{self._launch_file}{RESET}",
-            f"Time since sim start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+            f"{Y}{'=' * 15} {"REPLAY" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",
+            f"Replay file:                  {C}{self._launch_file}{RESET}",
+            f"Time since replay start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             # Format time as MM:SS:
             f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(time_since_launch))}{RESET}",  # noqa: E501
@@ -236,16 +236,16 @@ class FlightDisplay:
         # Print the output
         print("\n".join(output))
 
-        # Move the cursor up for the next update, if the simulation hasn't ended:
+        # Move the cursor up for the next update, if the replay hasn't ended:
         if not end_type:
             print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
 
-        # Print the end of simulation message if the simulation has ended
+        # Print the end of replay message if the replay has ended
         match end_type:
             case DisplayEndingType.NATURAL:
-                print(f"{R}{'=' * 14} END OF SIMULATION {'=' * 14}{RESET}")
+                print(f"{R}{'=' * 14} END OF REPLAY {'=' * 14}{RESET}")
             case DisplayEndingType.INTERRUPTED:
-                print(f"{R}{'=' * 12} INTERRUPTED SIMULATION {'=' * 13}{RESET}")
+                print(f"{R}{'=' * 12} INTERRUPTED REPLAY {'=' * 13}{RESET}")
             case DisplayEndingType.TAKEOFF:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
