@@ -86,6 +86,20 @@ def mock_imu(request):
 
 
 @pytest.fixture
+def mocked_args_parser():
+    """Fixture that returns a mocked argument parser."""
+
+    class MockArgs:
+        mock = True
+        real_servo = False
+        keep_log_file = False
+        fast_simulation = False
+        debug = True
+
+    return MockArgs()
+
+
+@pytest.fixture
 def target_altitude(request):
     """Fixture to return the target altitude based on the mock IMU log file name."""
     # This will be used to set the constants for the test, since they change for different flights:

@@ -145,6 +145,7 @@ class TestIMUDataProcessor:
         assert d.vertical_velocity == 0.0
         assert d.max_vertical_velocity == 0.0
         assert d.current_timestamp == 0
+        assert d.average_vertical_acceleration == 0.0
 
     def test_str(self, data_processor):
         data_str = (
@@ -361,6 +362,8 @@ class TestIMUDataProcessor:
             assert data.vertical_velocity == d._vertical_velocities[idx]
             assert data.vertical_acceleration == d._rotated_accelerations[idx]
             assert data.time_since_last_data_packet == d._time_differences[idx]
+
+        assert d.average_vertical_acceleration == np.mean(d._rotated_accelerations)
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
