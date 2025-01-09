@@ -33,6 +33,10 @@ real = "airbrakes.main:run_real_flight"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# UV:
+[tool.uv]
+python-preference = "only-managed"
+
 # HATCH:
 [tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
