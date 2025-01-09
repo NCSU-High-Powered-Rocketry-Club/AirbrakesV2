@@ -76,6 +76,7 @@ omit = [
     "*/site-packages/*",
     "airbrakes/mock/*",
     "airbrakes/simulation/*",
+    "airbrakes/main.py",
 ]
 
 [tool.coverage.report]
