@@ -6,7 +6,7 @@ version = "0.1.0"
 readme = "README.md"
 dependencies = [
     "gpiozero",
-    "pigpio",  # Run sudo pigpiod before running the program
+    "pigpio", # Run sudo pigpiod before running the program
     "msgspec",
     "numpy",
     "colorama",
@@ -16,6 +16,7 @@ dependencies = [
     "faster-fifo; sys_platform != 'win32'",
     # Installation instructions for the following dependencies can be found in the README:
     # "mscl" https://github.com/LORD-MicroStrain/MSCL/blob/master/BuildScripts/buildReadme_Linux.md
+    "python-mscl>=67.0.0",
 ]
 
 [dependency-groups]

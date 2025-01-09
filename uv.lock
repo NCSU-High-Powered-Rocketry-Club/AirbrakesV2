@@ -14,6 +14,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pigpio" },
     { name = "psutil" },
+    { name = "python-mscl" },
     { name = "scipy" },
 ]
 
@@ -35,6 +36,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "pigpio" },
     { name = "psutil" },
+    { name = "python-mscl", specifier = ">=67.0.0" },
     { name = "scipy" },
 ]
 
@@ -351,6 +353,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892 },
 ]
+
+[[package]]
+name = "python-mscl"
+version = "67.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/bf/e92ef871fcc2278356ea3fb6c1434100e77841e6bb47fb3f3d4c7c97e944/python_mscl-67.0.0.tar.gz", hash = "sha256:a4da187be942a237f554984b3ed3582f54b3481ee1be9486a6119e8340e8f510", size = 6801 }
 
 [[package]]
 name = "pytz"
