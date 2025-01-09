@@ -3,17 +3,17 @@
 from collections import deque
 from typing import TYPE_CHECKING
 
+from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
-from constants import ServoExtension
 
 if TYPE_CHECKING:
+    from airbrakes.data_handling.packets.context_data_packet import ContextPacket
     from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
@@ -58,7 +58,7 @@ class AirbrakesContext:
         :param servo: The servo object that controls the extension of the airbrakes. This can be a
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
-            a mock IMU.
+        a mock IMU.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
@@ -75,7 +75,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: deque[ProcessedDataPacket] = deque()
+        self.processed_data_packets: list[ProcessedDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.debug_packet: ContextPacket | None = None
 
@@ -120,10 +120,8 @@ class AirbrakesContext:
         # logging
         self.est_data_packets = [
             data_packet
-            for data_packet in self.imu_data_packets.copy()
+            for data_packet in self.imu_data_packets
             if isinstance(data_packet, EstimatedDataPacket)
-            # The copy() above is critical to ensure the data here is not modified by the data
-            # processor
         ]
 
         # Update the processed data with the new data packets. We only care about EstDataPackets
@@ -131,7 +129,8 @@ class AirbrakesContext:
 
         # Get the processed data packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
-        self.processed_data_packets = self.data_processor.get_processed_data_packets()
+        if self.est_data_packets:
+            self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()
@@ -156,10 +155,6 @@ class AirbrakesContext:
             self.processed_data_packets,
             self.debug_packet,
         )
-        # CAUTION: You would need to copy() self.processed_data_packets in the log line above
-        # if you want to reference it anywhere else after update(), because it would be modified
-        # by the logger. e.g. in tests. For tests, the workaround would be to monkeypatch
-        # the log() method to not modify the processed_data_packets.
 
     def extend_airbrakes(self) -> None:
         """

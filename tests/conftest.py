@@ -7,14 +7,19 @@ import pytest
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.constants import (
+    EST_DATA_PACKET_SAMPLING_RATE,
+    IMU_PORT,
+    RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_PIN,
+)
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
-from constants import FREQUENCY, PORT, SERVO_PIN
+from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
@@ -23,8 +28,6 @@ LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
 LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000  # 1kHz
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500  # 500Hz
 
 
 @pytest.fixture
@@ -42,7 +45,7 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=PORT, frequency=FREQUENCY)
+    return IMU(port=IMU_PORT)
 
 
 @pytest.fixture
@@ -63,13 +66,13 @@ def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
 @pytest.fixture
 def random_data_mock_imu():
     # A mock IMU that outputs random data packets
-    return RandomDataIMU(port=PORT, frequency=FREQUENCY)
+    return RandomDataIMU(port=IMU_PORT)
 
 
 @pytest.fixture
 def idle_mock_imu():
     # A sleeping IMU that doesn't output any data packets
-    return IdleIMU(port=PORT, frequency=FREQUENCY)
+    return IdleIMU(port=IMU_PORT)
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
@@ -80,6 +83,20 @@ def mock_imu(request):
     return MockIMU(
         log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True
     )
+
+
+@pytest.fixture
+def mocked_args_parser():
+    """Fixture that returns a mocked argument parser."""
+
+    class MockArgs:
+        mock = True
+        real_servo = False
+        keep_log_file = False
+        fast_simulation = False
+        debug = True
+
+    return MockArgs()
 
 
 @pytest.fixture
@@ -102,33 +119,33 @@ def target_altitude(request):
 class RandomDataIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
 
-    def _fetch_data_loop(self, _: str, __: int) -> None:
+    def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
-        next_estimated_packet_time = time.time()
-        next_raw_packet_time = time.time()
+        next_estimated_packet_time = time.time_ns()
+        next_raw_packet_time = time.time_ns()
 
         while self._running.value:
-            current_time = time.time()
+            current_time = time.time_ns()
             # Generate dummy packets, 1 EstimatedDataPacket every 500Hz, and 1 RawDataPacket
             # every 1000Hz
             # sleep for the time it would take to get the next packet
             if current_time >= next_estimated_packet_time:
-                estimated_packet = EstimatedDataPacket(timestamp=current_time * 1e9)
+                estimated_packet = make_est_data_packet(timestamp=current_time * 1e9)
                 self._data_queue.put(estimated_packet)
-                next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE
+                next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE * 1e9
 
             if current_time >= next_raw_packet_time:
-                raw_packet = RawDataPacket(timestamp=current_time * 1e9)
+                raw_packet = make_raw_data_packet(timestamp=current_time * 1e9)
                 self._data_queue.put(raw_packet)
-                next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE
+                next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE * 1e9
 
             # Sleep a little to prevent busy-waiting
-            time.sleep(0.001)
+            time.sleep(0.0005)
 
 
 class IdleIMU(IMU):
     """Mocks the IMU data fetch loop, but doesn't output any data packets."""
 
-    def _fetch_data_loop(self, _: str, __: int) -> None:
+    def _fetch_data_loop(self, _: str) -> None:
         while self._running.value:
             time.sleep(0.1)

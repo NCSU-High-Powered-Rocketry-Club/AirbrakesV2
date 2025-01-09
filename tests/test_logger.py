@@ -6,9 +6,11 @@ import time
 from collections import deque
 from typing import Literal
 
+import faster_fifo
 import pytest
 from msgspec import to_builtins
 
+from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from airbrakes.data_handling.logger import Logger
 from airbrakes.data_handling.packets.context_data_packet import ContextPacket
 from airbrakes.data_handling.packets.imu_data_packet import (
@@ -18,7 +20,6 @@ from airbrakes.data_handling.packets.imu_data_packet import (
 )
 from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
 from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
@@ -63,7 +64,7 @@ class TestLogger:
     """Tests the Logger() class in logger.py"""
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
-    def clear_directory(self):
+    def _clear_directory(self):
         """Clear the tests/logs directory after running each test."""
         yield  # This is where the test runs
         # Test run is over, now clean up
@@ -81,7 +82,7 @@ class TestLogger:
         assert logger.log_path.parent.name == "logs"
 
         # Test if all attributes are created correctly
-        assert isinstance(logger._log_queue, multiprocessing.queues.Queue)
+        assert isinstance(logger._log_queue, faster_fifo.Queue)
         assert isinstance(logger._log_process, multiprocessing.Process)
 
         # Test that the process is not running
@@ -145,7 +146,7 @@ class TestLogger:
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(self):
             """Monkeypatched method for testing."""
@@ -173,7 +174,7 @@ class TestLogger:
 
     def test_logger_loop_exception_raised(self, monkeypatch):
         """Tests whether the Logger loop properly propogates unknown exceptions."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(_):
             """Monkeypatched method for testing."""
@@ -227,9 +228,16 @@ class TestLogger:
             "file_lines",
         ),
         [
-            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), gen_data_packet("debug"), 1),
             (
-                "S",
+                "StandbyState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+                1,
+            ),
+            (
+                "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -237,8 +245,8 @@ class TestLogger:
                 1,
             ),
             (
-                "M",
-                0.0,
+                "MotorBurnState",
+                0.5,
                 deque([gen_data_packet("raw"), gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
                 gen_data_packet("debug"),
@@ -307,7 +315,7 @@ class TestLogger:
 
                 # Also checks if truncation is working correctly:
                 expected_output = {
-                    "state": state,
+                    "state": state[0],
                     "extension": str(extension),
                     **{
                         attr: f"{getattr(imu_data_packets[idx], attr, 0.0):.8f}"
@@ -348,9 +356,15 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
-            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), gen_data_packet("debug")),
             (
-                "S",
+                "StandbyState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+            ),
+            (
+                "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -404,9 +418,15 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("states", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
-            (("S", "M"), 0.0, deque([gen_data_packet("raw")]), deque([]), gen_data_packet("debug")),
             (
-                ("S", "M"),
+                ("StandbyState", "MotorBurnState"),
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                0.0,
+            ),
+            (
+                ("StandbyState", "MotorBurnState"),
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -477,9 +497,15 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
-            ("L", 0.0, deque([gen_data_packet("raw")]), deque([]), gen_data_packet("debug")),
             (
-                "L",
+                "LandedState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+            ),
+            (
+                "LandedState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),

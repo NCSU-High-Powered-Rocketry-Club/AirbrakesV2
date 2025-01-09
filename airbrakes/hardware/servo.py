@@ -6,7 +6,7 @@ import warnings
 
 import gpiozero
 
-from constants import SERVO_DELAY, ServoExtension
+from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
 
 
 class Servo:
@@ -20,13 +20,13 @@ class Servo:
 
     def __init__(self, gpio_pin_number: int, pin_factory=None) -> None:
         """
-        Initializes the servo object with the specified GPIO pin number.
-        :param gpio_pin_number: The GPIO pin number that the servo is connected to.
+        Initializes the servo object with the specified GPIO pin.
+        :param gpio_pin_number: The GPIO pin that the servo is connected to.
         :param pin_factory: The pin factory to use for controlling the GPIO pins. If None, the
-            default PiGPIOFactory from the gpiozero library is used, which is commonly used on
-            Raspberry Pi for more precise servo control. The pin factory provides an abstraction
-            layer that allows the Servo class to work across different hardware platforms or with
-            different GPIO libraries (e.g., RPi.GPIO or pigpio).
+        default PiGPIOFactory from the gpiozero library is used, which is commonly used on
+        Raspberry Pi for more precise servo control. The pin factory provides an abstraction
+        layer that allows the Servo class to work across different hardware platforms or with
+        different GPIO libraries (e.g., RPi.GPIO or pigpio).
         """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
@@ -39,10 +39,12 @@ class Servo:
             gpiozero.Device.pin_factory = pin_factory
 
         self.servo = gpiozero.Servo(gpio_pin_number)
+
         # We have to use threading to avoid blocking the main thread because our extension methods
-        # need to run at a specific time.
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY, self._set_max_no_buzz)
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY, self._set_min_no_buzz)
+        # need to run at a specific time. Yes this is bad practice but we had a mechanical issue and
+        # we had to fix it in code.
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     def set_extended(self) -> None:
         """
@@ -56,7 +58,7 @@ class Servo:
         self._set_extension(ServoExtension.MAX_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the maximum extension
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY, self._set_max_no_buzz)
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
         self._go_to_max_no_buzz.start()
 
     def set_retracted(self) -> None:
@@ -71,7 +73,7 @@ class Servo:
         self._set_extension(ServoExtension.MIN_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the minimum extension
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY, self._set_min_no_buzz)
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
         self._go_to_min_no_buzz.start()
 
     def _set_max_no_buzz(self) -> None:
@@ -93,6 +95,5 @@ class Servo:
         Sets the extension of the servo.
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
-        # Sets the servo extension
         self.current_extension = extension
         self.servo.value = self.current_extension.value

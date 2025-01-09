@@ -2,24 +2,35 @@
 
 import multiprocessing
 import signal
+import sys
 from collections import deque
 from typing import Literal
 
 import msgspec
 import numpy as np
 import numpy.typing as npt
+
+# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
+if sys.platform != "win32":
+    from faster_fifo import Queue
+
 from scipy.optimize import curve_fit
 
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
-from constants import (
-    APOGEE_PREDICTION_FREQUENCY,
+from airbrakes.constants import (
+    APOGEE_PREDICTION_MIN_PACKETS,
+    BUFFER_SIZE_IN_BYTES,
     CURVE_FIT_INITIAL,
     FLIGHT_LENGTH_SECONDS,
-    GRAVITY,
-    INTEGRATION_TIME_STEP,
+    GRAVITY_METERS_PER_SECOND_SQUARED,
+    INTEGRATION_TIME_STEP_SECONDS,
+    MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
+from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.utils import modify_multiprocessing_queue_windows
+
+PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
 
 class LookupTable(msgspec.Struct):
@@ -65,9 +76,18 @@ class ApogeePredictor:
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
         self._apogee_prediction_value = multiprocessing.Value("d", 0.0)
-        self._prediction_queue: multiprocessing.Queue[
-            deque[ProcessedDataPacket] | Literal["STOP"]
-        ] = multiprocessing.Queue()
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            self._prediction_queue: multiprocessing.Queue[
+                list[ProcessedDataPacket] | Literal["STOP"]
+            ] = multiprocessing.Queue()
+            modify_multiprocessing_queue_windows(self._prediction_queue)
+        else:
+            self._prediction_queue: Queue[list[ProcessedDataPacket] | Literal["STOP"]] = Queue(
+                max_size_bytes=BUFFER_SIZE_IN_BYTES
+            )
+
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
@@ -116,18 +136,16 @@ class ApogeePredictor:
         self._prediction_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
-    def update(self, processed_data_packets: deque[ProcessedDataPacket]) -> None:
+    def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
         """
         Updates the apogee predictor to include the most recent processed data packets. This method
         should only be called during the coast phase of the rocket's flight.
 
         :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
         """
-        # The .copy() below is critical to ensure the data is actually transferred correctly to
-        # the apogee prediction process.
-        self._prediction_queue.put(processed_data_packets.copy())
+        self._prediction_queue.put_many(processed_data_packets)
 
-    # --------------------- ALL THE METHODS BELOW RUN IN A SEPARATE PROCESS -----------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _curve_fit_function(
         t: npt.NDArray[np.float64], a: np.float64, b: np.float64
@@ -189,21 +207,20 @@ class ApogeePredictor:
         # altitude.
 
         # This is all the x values that we will use to integrate the acceleration function
-        predicted_coast_timestamps = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP)
-
         predicted_accelerations = (
             self._curve_fit_function(
-                predicted_coast_timestamps, curve_coefficients.A, curve_coefficients.B
+                PREDICTED_COAST_TIMESTAMPS, curve_coefficients.A, curve_coefficients.B
             )
-            - GRAVITY
+            - GRAVITY_METERS_PER_SECOND_SQUARED
         )
         predicted_velocities = (
-            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP + self._initial_velocity
+            np.cumsum(predicted_accelerations) * INTEGRATION_TIME_STEP_SECONDS
+            + self._initial_velocity
         )
         # We don't care about velocity values less than 0 as those correspond with the rocket
         # falling
         predicted_velocities = predicted_velocities[predicted_velocities >= 0]
-        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP
+        predicted_altitudes = np.cumsum(predicted_velocities) * INTEGRATION_TIME_STEP_SECONDS
         predicted_apogee = np.max(predicted_altitudes)
         # We need to flip the lookup table because the velocities are in descending order, not
         # ascending order. We need them to be in ascending order for the interpolation to work.
@@ -219,6 +236,11 @@ class ApogeePredictor:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+
+        # Unfortunately, we need to modify the queue here again because the modifications made in
+        # the __init__ are not copied to the new process.
+        modify_multiprocessing_queue_windows(self._prediction_queue)
+
         last_run_length = 0
 
         # Keep checking for new data packets until the stop signal is received:
@@ -228,14 +250,16 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets = self._prediction_queue.get()
+            data_packets: list[ProcessedDataPacket | Literal["STOP"]] = (
+                self._prediction_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+            )
 
-            if data_packets == STOP_SIGNAL:
+            if STOP_SIGNAL in data_packets:
                 break
 
             self._extract_processed_data_packets(data_packets)
 
-            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_FREQUENCY:
+            if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:
@@ -248,7 +272,7 @@ class ApogeePredictor:
                     self._predict_apogee()
                 last_run_length = len(self._accelerations)
 
-    def _extract_processed_data_packets(self, data_packets) -> None:
+    def _extract_processed_data_packets(self, data_packets: list[ProcessedDataPacket]) -> None:
         """
         Extracts the processed data packets from the data packets and appends them to the
         respective internal lists.

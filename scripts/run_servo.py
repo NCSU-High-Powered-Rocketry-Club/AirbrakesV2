@@ -4,7 +4,7 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from constants import ServoExtension, SERVO_PIN
+from airbrakes.constants import ServoExtension, SERVO_PIN
 from airbrakes.hardware.servo import Servo
 
 servo = Servo(SERVO_PIN)
