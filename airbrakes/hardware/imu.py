@@ -62,6 +62,13 @@ class IMU(BaseIMU):
         )
         super().__init__(data_fetch_process, _data_queue)
 
+    @property
+    def queue_size(self) -> int:
+        """
+        :return: The number of data packets in the queue.
+        """
+        return self._data_queue.qsize()
+
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:

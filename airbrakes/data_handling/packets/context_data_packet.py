@@ -15,5 +15,4 @@ class ContextPacket(msgspec.Struct):
     """
     state_name: str
     imu_queue_size: int
-    data_processor_queue_size: int
     apogee_predictor_queue_size: int

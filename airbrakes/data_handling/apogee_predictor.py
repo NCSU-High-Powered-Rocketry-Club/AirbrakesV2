@@ -123,6 +123,13 @@ class ApogeePredictor:
         """
         return self._prediction_process.is_alive()
 
+    @property
+    def queue_size(self) -> int:
+        """
+        :return: The number of data packets in the processed data packet queue.
+        """
+        return self._processed_data_packet_queue.qsize()
+
     def start(self) -> None:
         """
         Starts the prediction process. This is called before the main while loop starts.

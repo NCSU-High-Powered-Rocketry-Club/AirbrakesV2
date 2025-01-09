@@ -149,6 +149,13 @@ class AirbrakesContext:
         # Gets what we have currently set the extension of the airbrakes to
         self.current_extension = self.servo.current_extension
 
+        context_packet = ContextPacket(
+            update_timestamp=self.imu_data_packets[-1].timestamp,
+            state_name=self.state.name,
+            imu_queue_size=self.imu.queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.queue_size,
+        )
+
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
             self.state.name,
