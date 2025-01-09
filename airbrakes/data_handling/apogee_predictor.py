@@ -145,6 +145,15 @@ class ApogeePredictor:
         """
         self._processed_data_packet_queue.put_many(processed_data_packets)
 
+    def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
+        """
+        Gets the apogee prediction data packets from the queue.
+        """
+        apogee_predictor_data_packets = []
+        for _ in range(self._apogee_predictor_packet_queue.qsize()):
+            apogee_predictor_data_packets.append(self._apogee_predictor_packet_queue.get())
+        return apogee_predictor_data_packets
+
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _curve_fit_function(

@@ -144,7 +144,8 @@ class CoastState(State):
         # This is our bang-bang controller for the airbrakes. If we predict we are going to
         # overshoot our target altitude, we extend the airbrakes. If we predict we are going to
         # undershoot our target altitude, we retract the airbrakes.
-        apogee = self.context.apogee_predictor.apogee
+        # Gets the latest apogee prediction
+        apogee = self.context.apogee_predictor_data_packets[-1].predicted_apogee
         if apogee > TARGET_ALTITUDE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True

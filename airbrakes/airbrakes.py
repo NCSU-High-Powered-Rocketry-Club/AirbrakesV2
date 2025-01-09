@@ -7,6 +7,7 @@ from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -30,6 +31,7 @@ class AirbrakesContext:
 
     __slots__ = (
         "apogee_predictor",
+        "apogee_predictor_data_packets",
         "current_extension",
         "data_processor",
         "debug_packet",
@@ -76,6 +78,7 @@ class AirbrakesContext:
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processed_data_packets: list[ProcessedDataPacket] = []
+        self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.debug_packet: ContextPacket | None = None
 
@@ -131,6 +134,12 @@ class AirbrakesContext:
         # as the number of EstimatedDataPackets in data_packets
         if self.est_data_packets:
             self.processed_data_packets = self.data_processor.get_processed_data_packets()
+
+        # Gets the apogee predictor packets
+        apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
+        if apogee_predictor_data_packets:
+            # We only want to update the apogee predictor data packets if we have new data
+            self.apogee_predictor_data_packets = apogee_predictor_data_packets
 
         # Update the state machine based on the latest processed data
         self.state.update()
