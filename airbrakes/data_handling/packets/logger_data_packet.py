@@ -1,6 +1,6 @@
 """Module for describing the data packet for the logger to log"""
 
-from typing import Required, TypedDict
+from typing import TypedDict
 
 
 class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired

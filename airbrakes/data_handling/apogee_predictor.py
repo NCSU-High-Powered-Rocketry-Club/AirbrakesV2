@@ -84,7 +84,7 @@ class ApogeePredictor:
             # This queue is for the data in
             self._processed_data_packet_queue: multiprocessing.Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]
-                ] = multiprocessing.Queue()
+            ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
             # This queue is for the data out
             self._apogee_predictor_packet_queue: multiprocessing.Queue[
@@ -94,7 +94,7 @@ class ApogeePredictor:
         else:
             self._processed_data_packet_queue: Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]
-                ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
+            ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
             self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue()
 
         self._prediction_process = multiprocessing.Process(
