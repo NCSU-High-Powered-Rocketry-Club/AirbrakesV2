@@ -41,7 +41,7 @@ class Logger:
     our logs in real time.
     """
 
-    LOG_BUFFER_STATES = ("StandbyState", "LandedState")
+    LOG_BUFFER_STATES = ("S", "L")
 
     __slots__ = (
         "_log_buffer",
@@ -80,7 +80,7 @@ class Logger:
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
-        # the back and pop from front, meaning that things will be logger in the order they were
+        # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
         if sys.platform == "win32":
@@ -133,7 +133,7 @@ class Logger:
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> list[LoggerDataPacket]:
         """
-        Creates a data packet dictionary representing a row of data to be logger.
+        Creates a data packet dictionary representing a row of data to be logged.
         :param context_data_packet: The context data packet to log.
         :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.

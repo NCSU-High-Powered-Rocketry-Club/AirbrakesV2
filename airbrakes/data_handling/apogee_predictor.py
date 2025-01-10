@@ -60,11 +60,13 @@ class ApogeePredictor:
     """
 
     __slots__ = (
+        "_apogee",
         "_accelerations",
         "_apogee_predictor_packet_queue",
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
+        "_curve_coefficients",
         "_has_apogee_converged",
         "_initial_velocity",
         "_prediction_process",
@@ -100,10 +102,11 @@ class ApogeePredictor:
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
         )
-        self.uncertainty_threshold_1 = multiprocessing.Value("d", 0.0)
-        self.uncertainty_threshold_2 = multiprocessing.Value("d", 0.0)
 
         # ------ Variables which can only be referenced in the prediction process ------
+        # Placeholder values for the curve coefficients and apogee
+        self._apogee = 0.0
+        self._curve_coefficients: CurveCoefficients = CurveCoefficients()
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
         # list of all the accelerations since motor burn out:
         self._accelerations: deque[np.float64] = deque()
@@ -124,7 +127,7 @@ class ApogeePredictor:
         return self._prediction_process.is_alive()
 
     @property
-    def queue_size(self) -> int:
+    def processed_data_packet_queue_size(self) -> int:
         """
         :return: The number of data packets in the processed data packet queue.
         """
@@ -157,10 +160,7 @@ class ApogeePredictor:
         """
         Gets the apogee prediction data packets from the queue.
         """
-        return [
-            self._apogee_predictor_packet_queue.get()
-            for _ in range(self._apogee_predictor_packet_queue.qsize())
-        ]
+        return self._apogee_predictor_packet_queue.get_many()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -172,13 +172,6 @@ class ApogeePredictor:
         while creating the lookup table.
         """
         return a * (1 - b * t) ** 4
-
-    def _send_to_main_process(self, curve_coefficients: CurveCoefficients) -> None:
-        """
-        Sends the curve coefficients to the main process.
-        """
-        self.uncertainty_threshold_1.value = curve_coefficients.uncertainties[0]
-        self.uncertainty_threshold_2.value = curve_coefficients.uncertainties[1]
 
     def _curve_fit(self) -> CurveCoefficients:
         """
@@ -279,30 +272,24 @@ class ApogeePredictor:
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
 
-                # Placeholder values for the curve coefficients and apogee
-                curve_coefficients = -1, -1
-                apogee = -1
-
                 # Get the predicted apogee if the curve fit has converged:
                 if self._has_apogee_converged:
-                    apogee = self._predict_apogee()
+                    self._apogee = self._predict_apogee()
                 else:
                     # We only want to keep curve fitting if the curve fit hasn't converged yet
-                    curve_coefficients = self._curve_fit()
-                    self._send_to_main_process(curve_coefficients)
-                    self._update_prediction_lookup_table(curve_coefficients)
+                    self._curve_coefficients = self._curve_fit()
+                    self._update_prediction_lookup_table(self._curve_coefficients)
 
                 last_run_length = len(self._accelerations)
 
                 # Send the apogee prediction to the main process
                 self._apogee_predictor_packet_queue.put(
                     ApogeePredictorDataPacket(
-                        predicted_apogee=apogee,
-                        prediction_has_converged=self._has_apogee_converged,
-                        a_coefficient=float(curve_coefficients.A),
-                        b_coefficient=float(curve_coefficients.B),
-                        uncertainty_threshold_1=self.uncertainty_threshold_1.value,
-                        uncertainty_threshold_2=self.uncertainty_threshold_2.value,
+                        predicted_apogee=self._apogee,
+                        a_coefficient=self._curve_coefficients.A,
+                        b_coefficient=self._curve_coefficients.B,
+                        uncertainty_threshold_1=self.uncertainty_threshold_1,
+                        uncertainty_threshold_2=self.uncertainty_threshold_2,
                     )
                 )
 

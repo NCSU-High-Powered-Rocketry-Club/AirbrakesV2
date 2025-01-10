@@ -7,6 +7,7 @@ from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.hardware.imu import IMU
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
-    from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
@@ -37,13 +37,14 @@ class AirbrakesContext:
         "apogee_predictor_data_packets",
         "current_extension",
         "data_processor",
-        "debug_packet",
+        "context_data_packet",
         "est_data_packets",
         "imu",
         "imu_data_packets",
         "logger",
         "processed_data_packets",
         "servo",
+        "servo_data_packet",
         "shutdown_requested",
         "state",
     )
@@ -83,7 +84,8 @@ class AirbrakesContext:
         self.processed_data_packets: list[ProcessorDataPacket] = []
         self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
-        self.debug_packet: ContextDataPacket | None = None
+        self.context_data_packet: ContextDataPacket | None = None
+        self.servo_data_packet: ServoDataPacket | None = None
 
     def start(self) -> None:
         """
@@ -139,34 +141,17 @@ class AirbrakesContext:
             self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
         # Gets the apogee predictor packets
-        apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
-        if apogee_predictor_data_packets:
-            # We only want to update the apogee predictor data packets if we have new data
-            self.apogee_predictor_data_packets = apogee_predictor_data_packets
+        self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
 
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        # Gets what we have currently set the extension of the airbrakes to
-        self.current_extension = self.servo.current_extension
-
-        # Create a context data packet to log the current state of the airbrakes system
-        context_data_packet = ContextDataPacket(
-            update_timestamp=self.imu_data_packets[-1].timestamp,
-            state_name=self.state.name,
-            imu_queue_size=self.imu.queue_size,
-            apogee_predictor_queue_size=self.apogee_predictor.queue_size,
-        )
-
-        # Creates a servo data packet to log the current state of the servo
-        servo_data_packet = ServoDataPacket(
-            set_extension=self.current_extension.value,
-        )
+        self.generate_data_packets()
 
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
-            context_data_packet,
-            servo_data_packet,
+            self.context_data_packet,
+            self.servo_data_packet,
             self.imu_data_packets,
             self.processed_data_packets,
             self.apogee_predictor_data_packets,
@@ -197,3 +182,20 @@ class AirbrakesContext:
         # This would result in a very slow convergence and inaccurate predictions.
         if self.est_data_packets:
             self.apogee_predictor.update(self.processed_data_packets)
+
+    def generate_data_packets(self) -> None:
+        """
+        Generates the context data packet and servo data packet to be logged.
+        """
+        # Create a context data packet to log the current state of the airbrakes system
+        self.context_data_packet = ContextDataPacket(
+            update_timestamp=self.imu_data_packets[-1].timestamp,
+            state_name=self.state.name[0],
+            imu_queue_size=self.imu.queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.processed_data_packet_queue_size,
+        )
+
+        # Creates a servo data packet to log the current state of the servo
+        self.servo_data_packet = ServoDataPacket(
+            set_extension=self.current_extension.value,
+        )

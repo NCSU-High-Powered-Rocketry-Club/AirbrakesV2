@@ -10,7 +10,6 @@ class ApogeePredictorDataPacket(msgspec.Struct):
     """
 
     predicted_apogee: float
-    prediction_has_converged: bool
     a_coefficient: float
     b_coefficient: float
     uncertainty_threshold_1: float

@@ -9,8 +9,14 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     filled in every packet.
     """
 
-    state: str
-    extension: str
+    # Fields in ContextDataPacket
+    update_timestamp: int | None
+    state_name: str | None
+    imu_queue_size: int | None
+    apogee_predictor_queue_size: int | None
+
+    # Fields in ServoDataPacket
+    set_extension: int | None
 
     # IMU Data Packet Fields
     timestamp: int
@@ -59,9 +65,9 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     vertical_velocity: float | None
     vertical_acceleration: float | None
 
-    # fields in a DebugPacket:
+    # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None
-    uncertainity_threshold_1: str | None
-    uncertainity_threshold_2: str | None
-    fetched_imu_packets: str | None
-    packets_in_imu_queue: str | None
+    a_coefficient: float | None
+    b_coefficient: float | None
+    uncertainty_threshold_1: float | None
+    uncertainty_threshold_2: float | None
