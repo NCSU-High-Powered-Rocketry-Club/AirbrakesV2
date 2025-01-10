@@ -4,11 +4,12 @@ import contextlib
 import multiprocessing
 import sys
 
-# Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
-# mscl is annoying and we really just have it installed on the pi
+# Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
+# Python 3.13.
 with contextlib.suppress(ImportError):
-    import mscl
-    # We should print a warning, but that messes with how the mock replay display looks
+    from python_mscl import mscl
+
+# We should print a warning, but that messes with how the replay display looks
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
