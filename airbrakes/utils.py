@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from datetime import datetime
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -35,6 +36,20 @@ def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
     if sys.platform == "win32":
         obj.get_many = partial(get_always_list, obj)
         obj.put_many = obj.put
+
+
+def format_date_string(input_string: str) -> str:
+    datetime_obj = datetime.fromisoformat(input_string)
+    return datetime_obj.strftime("%d{} %B, %Y").format(
+        "th"
+        if 11 <= datetime_obj.day <= 13
+        else {1: "st", 2: "nd", 3: "rd"}.get(datetime_obj.day % 10, "th")
+    )
+
+
+def format_seconds_to_mins_and_secs(seconds: int) -> str:
+    """Converts seconds to a string in the format 'm:ss'."""
+    return f"{seconds // 60:.0f}:{seconds % 60:02.0f}"
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:
@@ -144,6 +159,14 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         "-v",
         "--verbose",
         help="Shows the display with much more data.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-o",
+        "--old-display",
+        help="Use the legacy display instead of the new one.",
         action="store_true",
         default=False,
     )
