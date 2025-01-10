@@ -9,7 +9,7 @@ import sys
 with contextlib.suppress(ImportError):
     from python_mscl import mscl
 
-# We should print a warning, but that messes with how the sim display looks
+# We should print a warning, but that messes with how the replay display looks
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
