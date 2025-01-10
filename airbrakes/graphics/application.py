@@ -3,7 +3,6 @@
 import time
 from typing import ClassVar
 
-from constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 from textual import work
 from textual.app import App, ComposeResult
@@ -12,6 +11,7 @@ from textual.widgets import Footer
 from textual.worker import Worker, WorkerState, get_current_worker
 
 from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
@@ -74,7 +74,7 @@ class AirbrakesApplication(App):
         """Create the system components needed for the airbrakes system."""
         if launch_config.launch_options is not None:
             imu = MockIMU(
-                simulation_speed=2.0 if launch_config.launch_options.fast_simulation else 1.0,
+                real_time_replay=2.0 if launch_config.launch_options.fast_simulation else 1.0,
                 log_file_path=launch_config.selected_button,
             )
             logger = MockLogger(

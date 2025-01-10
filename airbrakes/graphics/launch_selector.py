@@ -18,9 +18,9 @@ from textual.widgets import (
     Static,
     Switch,
 )
-from utils import format_date_string, format_seconds_to_mins_and_secs
 
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.utils import format_date_string, format_seconds_to_mins_and_secs
 
 AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 
@@ -68,10 +68,10 @@ class LaunchMetadataDisplay(Widget):
             "Flight Length": format_seconds_to_mins_and_secs(
                 launch_metadata["flight_data"]["flight_length_seconds"]
             ),
-            "Apogee": f"{launch_metadata["flight_data"]["apogee_meters"]} m",
-            "Wind Speed": f"{launch_metadata["launch_site"]["wind_speed_kmh"]} km/h",
-            "Wind Direction": f"{launch_metadata["launch_site"]["wind_direction"]}",
-            "Temperature": f"{launch_metadata["launch_site"]["air_temperature_celsius"]} °C",
+            "Apogee": f"{launch_metadata['flight_data']['apogee_meters']} m",
+            "Wind Speed": f"{launch_metadata['launch_site']['wind_speed_kmh']} km/h",
+            "Wind Direction": f"{launch_metadata['launch_site']['wind_direction']}",
+            "Temperature": f"{launch_metadata['launch_site']['air_temperature_celsius']} °C",
         }
 
         for key, value in fields.items():

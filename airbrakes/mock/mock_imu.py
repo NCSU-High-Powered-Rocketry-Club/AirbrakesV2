@@ -79,8 +79,8 @@ class MockIMU(BaseIMU):
             # Note: We do this convoluted way because we want to make it work with the one liner
             # `uvx --from git+... mock` on any machine from any state.
             root_dir = Path(__file__).parent.parent.parent
-            self._log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
-        self._log_file_path: Path = typing.cast(Path, self._log_file_path)
+            log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
+        self._log_file_path: Path = typing.cast(Path, log_file_path)
 
         self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
         self._needed_fields = list(
