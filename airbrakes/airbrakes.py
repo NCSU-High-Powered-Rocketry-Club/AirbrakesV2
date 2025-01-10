@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
-    from airbrakes.data_handling.packets.context_data_packet import ContextPacket
-    from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+    from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
 
@@ -79,10 +79,10 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: list[ProcessedDataPacket] = []
+        self.processed_data_packets: list[ProcessorDataPacket] = []
         self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
-        self.debug_packet: ContextPacket | None = None
+        self.debug_packet: ContextDataPacket | None = None
 
     def start(self) -> None:
         """
@@ -149,7 +149,7 @@ class AirbrakesContext:
         # Gets what we have currently set the extension of the airbrakes to
         self.current_extension = self.servo.current_extension
 
-        context_packet = ContextPacket(
+        context_data_packet = ContextDataPacket(
             update_timestamp=self.imu_data_packets[-1].timestamp,
             state_name=self.state.name,
             imu_queue_size=self.imu.queue_size,

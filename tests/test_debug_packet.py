@@ -1,11 +1,11 @@
 import pytest
 
-from airbrakes.data_handling.packets.context_data_packet import ContextPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 
 
 @pytest.fixture
 def debug_packet():
-    return ContextPacket(
+    return ContextDataPacket(
         predicted_apogee=TestDebugPacket.predicted_apogee,
         uncertainity_threshold_1=TestDebugPacket.uncertainity_threshold_1,
         uncertainity_threshold_2=TestDebugPacket.uncertainity_threshold_2,
@@ -33,4 +33,4 @@ class TestDebugPacket:
 
     def test_required_args(self):
         with pytest.raises(TypeError):
-            ContextPacket()
+            ContextDataPacket()

@@ -12,20 +12,20 @@ from msgspec import to_builtins
 
 from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.context_data_packet import ContextPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.conftest import LOG_PATH
 
 
 def gen_data_packet(
     kind: Literal["est", "raw", "processed", "debug"],
-) -> IMUDataPacket | ProcessedDataPacket | ContextPacket:
+) -> IMUDataPacket | ProcessorDataPacket | ContextDataPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
         return EstimatedDataPacket(
@@ -34,14 +34,14 @@ def gen_data_packet(
     if kind == "raw":
         return RawDataPacket(**{k: 1.987654321 for k in RawDataPacket.__struct_fields__})
     if kind == "debug":
-        return ContextPacket(
+        return ContextDataPacket(
             predicted_apogee=1800.0,
             uncertainity_threshold_1="1.0",
             uncertainity_threshold_2="2.0",
             fetched_imu_packets="10",
             packets_in_imu_queue="20",
         )
-    return ProcessedDataPacket(**{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__})
+    return ProcessorDataPacket(**{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__})
 
 
 def patched_stop(self):
@@ -108,7 +108,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             keys = reader.fieldnames
-            assert list(keys) == list(LoggedDataPacket.__annotations__)
+            assert list(keys) == list(LoggerDataPacket.__annotations__)
 
     def test_log_buffer_is_full_property(self, logger):
         """Tests whether the property is_log_buffer_full works correctly."""
@@ -208,7 +208,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
@@ -295,7 +295,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
 
             processed_data_packet_fields = {
                 "current_altitude",
@@ -339,7 +339,7 @@ class TestLogger:
                 expected_output.update(dropped)
 
                 # Add the empty debug packet fields:
-                expected_output.update(**{k: "" for k in ContextPacket.__struct_fields__})
+                expected_output.update(**{k: "" for k in ContextDataPacket.__struct_fields__})
 
                 # Add the debug packet fields. If we are not in coast state, we should not have
                 # some fields:
@@ -444,8 +444,8 @@ class TestLogger:
         states: tuple[str, str],
         extension: float,
         imu_data_packets: list[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        debug_packet: ContextPacket,
+        processed_data_packets: list[ProcessorDataPacket],
+        debug_packet: ContextDataPacket,
     ):
         """Tests if the buffer is logged when switching from standby to motor burn and that the
         counter is reset."""
@@ -579,7 +579,7 @@ class TestLogger:
                         "state": "S",
                         "extension": "0.1",
                         **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
                         **remove_debug_packet_fields(to_builtins(gen_data_packet("debug")), "S"),
                     }
                 ],
@@ -600,7 +600,7 @@ class TestLogger:
                         "state": "M",
                         "extension": "0.1",
                         **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
                     },
                 ],
             ),
@@ -620,7 +620,7 @@ class TestLogger:
                         "state": "C",
                         "extension": "0.5",
                         **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
                     },
                 ],
             ),

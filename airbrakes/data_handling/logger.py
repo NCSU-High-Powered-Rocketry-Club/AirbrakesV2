@@ -22,10 +22,10 @@ from airbrakes.constants import (
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
 )
-from airbrakes.data_handling.packets.context_data_packet import ContextPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
-from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 class Logger:
@@ -74,7 +74,7 @@ class Logger:
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
         with self.log_path.open(mode="w", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))
+            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
@@ -84,12 +84,12 @@ class Logger:
         if sys.platform == "win32":
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
-            self._log_queue: multiprocessing.Queue[list[LoggedDataPacket] | Literal["STOP"]] = (
+            self._log_queue: multiprocessing.Queue[list[LoggerDataPacket] | Literal["STOP"]] = (
                 multiprocessing.Queue()
             )
             modify_multiprocessing_queue_windows(self._log_queue)
         else:
-            self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
+            self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES
             )
 
@@ -124,15 +124,14 @@ class Logger:
 
     @staticmethod
     def _prepare_log_dict(
-        state: str,
+        context_data_packet: ContextDataPacket,
         extension: str,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        debug_packet: ContextPacket,
-    ) -> list[LoggedDataPacket]:
+        processed_data_packets: list[ProcessorDataPacket],
+    ) -> list[LoggerDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.
-        :param state: The current state of the airbrakes.
+        :param context_data_packet: The context data packet to log.
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
@@ -140,24 +139,16 @@ class Logger:
         data packets.
         :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: list[LoggedDataPacket] = []
+        logged_data_packets: list[LoggerDataPacket] = []
 
         # The debug packet will only be added to the first packet:
-        debug_packet_dict = to_builtins(debug_packet)
-        # predicted apogee and curve coefficients will only be added if we are in CoastState:
-        if state != "C":
-            debug_packet_dict["predicted_apogee"] = ""
-            debug_packet_dict["uncertainity_threshold_1"] = ""
-            debug_packet_dict["uncertainity_threshold_2"] = ""
+        context_data_packet_dict = to_builtins(context_data_packet)
 
         index = 0  # Index to loop over processed data packets:
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
-            logged_fields: LoggedDataPacket = {
-                "state": state,
-                "extension": extension,
-            }
+            logged_fields: LoggerDataPacket = {}
             # Convert the imu data packet to a dictionary
             # Using to_builtins() is much faster than asdict() for some reason
             imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
@@ -177,8 +168,8 @@ class Logger:
                 index += 1
 
             logged_data_packets.append(logged_fields)
-        # Add the debug packet to the first logged data packet:
-        logged_data_packets[0].update(debug_packet_dict)
+        # Add the context data packet to the first logged data packet:
+        logged_data_packets[0].update(context_data_packet_dict)
 
         return logged_data_packets
 
@@ -200,15 +191,15 @@ class Logger:
 
     def log(
         self,
-        state: str,
+        context_data_packet: ContextDataPacket,
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        debug_packet: ContextPacket,
+        processed_data_packets: list[ProcessorDataPacket],
+        debug_packet: ContextDataPacket,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-        :param state: The current state of the airbrakes.
+        :param context_data_packet: The context data packet to log.
         :param extension: The current extension of the airbrakes.
         :param imu_data_packets: The IMU data packets to log.
         :param processed_data_packets: The processed data packets to log.
@@ -216,11 +207,9 @@ class Logger:
         from the apogee predictor, which runs in a separate process, it may not be the most recent
         value, nor would it correspond to the respective data packet being logged.
         """
-        # We only want the first letter of the state to save space
-        state_letter = state[0]
         # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: list[LoggedDataPacket] = Logger._prepare_log_dict(
-            state_letter,
+        logged_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
+            context_data_packet,
             str(extension),
             imu_data_packets,
             processed_data_packets,
@@ -228,7 +217,7 @@ class Logger:
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if state in self.LOG_BUFFER_STATES:
+        if context_data_packet.state_name in self.LOG_BUFFER_STATES:
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
             to_log = logged_data_packets[:log_capacity]
@@ -258,7 +247,7 @@ class Logger:
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
-    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
+    def _truncate_floats(data: LoggerDataPacket) -> dict[str, str | object]:
         """
         Truncates the decimal place of the floats in the dictionary to 8 decimal places.
         :param data: The dictionary to truncate.
@@ -282,11 +271,11 @@ class Logger:
 
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))
+            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields: list[LoggedDataPacket | Literal["STOP"]] = self._log_queue.get_many(
+                message_fields: list[LoggerDataPacket | Literal["STOP"]] = self._log_queue.get_many(
                     timeout=MAX_GET_TIMEOUT_SECONDS
                 )
                 # If the message is the stop signal, break out of the loop

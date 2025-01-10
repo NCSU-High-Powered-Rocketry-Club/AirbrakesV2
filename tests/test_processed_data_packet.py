@@ -1,11 +1,11 @@
 import pytest
 
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 @pytest.fixture
 def processed_data_packet():
-    return ProcessedDataPacket(
+    return ProcessorDataPacket(
         current_altitude=TestProcessedDataPacket.current_altitude,
         vertical_velocity=TestProcessedDataPacket.vertical_velocity,
         vertical_acceleration=TestProcessedDataPacket.vertical_acceleration,
@@ -30,4 +30,4 @@ class TestProcessedDataPacket:
 
     def test_required_args(self):
         with pytest.raises(TypeError):
-            ProcessedDataPacket()
+            ProcessorDataPacket()

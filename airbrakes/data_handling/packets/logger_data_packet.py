@@ -3,14 +3,14 @@
 from typing import Required, TypedDict
 
 
-class LoggedDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired
+class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired
     """
     Represents a collection of all data that the logger can log in a line. Not every field will be
     filled in every packet.
     """
 
-    state: Required[str]
-    extension: Required[str]
+    state: str
+    extension: str
 
     # IMU Data Packet Fields
     timestamp: int

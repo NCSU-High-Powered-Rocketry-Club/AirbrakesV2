@@ -10,7 +10,7 @@ import pytest
 
 from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ class TestApogeePredictor:
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
         """Tests that the predictor adds to the queue when update is called"""
         packet = [
-            ProcessedDataPacket(
+            ProcessorDataPacket(
                 current_altitude=100,
                 vertical_velocity=50,
                 vertical_acceleration=-5,
@@ -93,7 +93,7 @@ class TestApogeePredictor:
         [
             (
                 [
-                    ProcessedDataPacket(
+                    ProcessorDataPacket(
                         current_altitude=100,
                         vertical_velocity=0.0,
                         vertical_acceleration=9.798,
@@ -106,7 +106,7 @@ class TestApogeePredictor:
             ),
             (
                 [
-                    ProcessedDataPacket(
+                    ProcessorDataPacket(
                         current_altitude=float(
                             i**3 / 15000 - i**2 / 20 - i**2 * 9.798 / 200 + 20 * i + 100
                         ),
@@ -151,7 +151,7 @@ class TestApogeePredictor:
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
             packets = [
-                ProcessedDataPacket(
+                ProcessorDataPacket(
                     current_altitude=100 + i,  # add random alt so our prediction is different
                     vertical_velocity=2.0 + i,
                     vertical_acceleration=10.798,

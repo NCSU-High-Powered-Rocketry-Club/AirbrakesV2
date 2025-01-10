@@ -17,7 +17,7 @@ from airbrakes.constants import (
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
-from airbrakes.data_handling.packets.logger_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 
@@ -247,7 +247,7 @@ class TestIntegration:
             reader = csv.DictReader(f)
             # Check if all headers were logged:
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
 
             # Let's just test the first line (excluding the headers) for a few things:
             line = next(reader)

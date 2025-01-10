@@ -29,7 +29,7 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
-from airbrakes.data_handling.packets.processor_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import modify_multiprocessing_queue_windows
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
@@ -83,8 +83,8 @@ class ApogeePredictor:
 
             # This queue is for the data in
             self._processed_data_packet_queue: multiprocessing.Queue[
-                list[ProcessedDataPacket] | Literal["STOP"]
-            ] = multiprocessing.Queue()
+                list[ProcessorDataPacket] | Literal["STOP"]
+                ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
             # This queue is for the data out
             self._apogee_predictor_packet_queue: multiprocessing.Queue[
@@ -93,8 +93,8 @@ class ApogeePredictor:
             modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
         else:
             self._processed_data_packet_queue: Queue[
-                list[ProcessedDataPacket] | Literal["STOP"]
-            ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
+                list[ProcessorDataPacket] | Literal["STOP"]
+                ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
             self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue()
 
         self._prediction_process = multiprocessing.Process(
@@ -144,7 +144,7 @@ class ApogeePredictor:
         self._processed_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
-    def update(self, processed_data_packets: list[ProcessedDataPacket]) -> None:
+    def update(self, processed_data_packets: list[ProcessorDataPacket]) -> None:
         """
         Updates the apogee predictor to include the most recent processed data packets. This method
         should only be called during the coast phase of the rocket's flight.
@@ -267,7 +267,7 @@ class ApogeePredictor:
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
 
-            data_packets: list[ProcessedDataPacket | Literal["STOP"]] = (
+            data_packets: list[ProcessorDataPacket | Literal["STOP"]] = (
                 self._processed_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
             )
 
@@ -306,7 +306,7 @@ class ApogeePredictor:
                     )
                 )
 
-    def _extract_processed_data_packets(self, data_packets: list[ProcessedDataPacket]) -> None:
+    def _extract_processed_data_packets(self, data_packets: list[ProcessorDataPacket]) -> None:
         """
         Extracts the processed data packets from the data packets and appends them to the
         respective internal lists.

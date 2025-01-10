@@ -1,9 +1,9 @@
-"""Module for the ContextPacket class."""
+"""Module for the ContextDataPacket class."""
 
 import msgspec
 
 
-class ContextPacket(msgspec.Struct):
+class ContextDataPacket(msgspec.Struct):
     """
     This data packet keeps data owned by the AirbrakesContext as well as metadata about the context.
     """
