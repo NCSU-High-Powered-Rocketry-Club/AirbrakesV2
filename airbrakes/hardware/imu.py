@@ -23,7 +23,7 @@ from airbrakes.constants import (
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
@@ -62,6 +62,13 @@ class IMU(BaseIMU):
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
         super().__init__(data_fetch_process, _data_queue)
+
+    @property
+    def queue_size(self) -> int:
+        """
+        :return: The number of data packets in the queue.
+        """
+        return self._data_queue.qsize()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod

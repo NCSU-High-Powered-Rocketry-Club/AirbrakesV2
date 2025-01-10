@@ -8,22 +8,24 @@ from typing import Literal
 
 import faster_fifo
 import pytest
+from msgspec import to_builtins
 
 from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.conftest import LOG_PATH
 
 
 def gen_data_packet(
-    kind: Literal["est", "raw", "processed"],
-) -> IMUDataPacket | ProcessedDataPacket:
+    kind: Literal["est", "raw", "processed", "debug"],
+) -> IMUDataPacket | ProcessorDataPacket | ContextDataPacket:
     """Generates a dummy data packet with all the values pre-filled."""
     if kind == "est":
         return EstimatedDataPacket(
@@ -31,7 +33,15 @@ def gen_data_packet(
         )
     if kind == "raw":
         return RawDataPacket(**{k: 1.987654321 for k in RawDataPacket.__struct_fields__})
-    return ProcessedDataPacket(**{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__})
+    if kind == "debug":
+        return ContextDataPacket(
+            predicted_apogee=1800.0,
+            uncertainity_threshold_1="1.0",
+            uncertainity_threshold_2="2.0",
+            fetched_imu_packets="10",
+            packets_in_imu_queue="20",
+        )
+    return ProcessorDataPacket(**{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__})
 
 
 def patched_stop(self):
@@ -39,6 +49,15 @@ def patched_stop(self):
     # Make sure the rest of the code is the same as the original method!
     self._log_queue.put(STOP_SIGNAL)
     self._log_process.join()
+
+
+def remove_debug_packet_fields(debug_packet: dict[str, str], state: str) -> dict[str, str]:
+    """Helper method which removes the debug packet fields that are not logged in the CSV file."""
+    if state != "C":
+        debug_packet["predicted_apogee"] = ""
+        debug_packet["uncertainity_threshold_1"] = ""
+        debug_packet["uncertainity_threshold_2"] = ""
+    return debug_packet
 
 
 class TestLogger:
@@ -89,7 +108,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             keys = reader.fieldnames
-            assert list(keys) == list(LoggedDataPacket.__annotations__)
+            assert list(keys) == list(LoggerDataPacket.__annotations__)
 
     def test_log_buffer_is_full_property(self, logger):
         """Tests whether the property is_log_buffer_full works correctly."""
@@ -189,7 +208,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
@@ -205,17 +224,24 @@ class TestLogger:
             "extension",
             "imu_data_packets",
             "processed_data_packets",
-            "predicted_apogee",
+            "debug_packet",
             "file_lines",
         ),
         [
-            ("StandbyState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0, 1),
+            (
+                "StandbyState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+                1,
+            ),
             (
                 "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
-                1800.0,
+                gen_data_packet("debug"),
                 1,
             ),
             (
@@ -223,14 +249,23 @@ class TestLogger:
                 0.5,
                 deque([gen_data_packet("raw"), gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
-                1800.0,
+                gen_data_packet("debug"),
+                2,
+            ),
+            (
+                "C",
+                0.4,
+                deque([gen_data_packet("raw"), gen_data_packet("est")]),
+                deque([gen_data_packet("processed")]),
+                gen_data_packet("debug"),
                 2,
             ),
         ],
         ids=[
             "RawDataPacket",
             "EstimatedDataPacket",
-            "BothDataPackets",
+            "BothDataPackets in MotorBurn",
+            "BothDataPackets in Coast",
         ],
     )
     def test_log_method(
@@ -240,7 +275,7 @@ class TestLogger:
         extension,
         imu_data_packets,
         processed_data_packets,
-        predicted_apogee,
+        debug_packet,
         file_lines,
     ):
         """Tests whether the log method logs the data correctly to the CSV file."""
@@ -251,7 +286,7 @@ class TestLogger:
             extension,
             imu_data_packets.copy(),
             processed_data_packets.copy(),
-            predicted_apogee,
+            debug_packet,
         )
         time.sleep(0.01)  # Give the process time to log to file
         logger.stop()
@@ -260,7 +295,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
 
             processed_data_packet_fields = {
                 "current_altitude",
@@ -282,7 +317,6 @@ class TestLogger:
                 expected_output = {
                     "state": state[0],
                     "extension": str(extension),
-                    "predicted_apogee": "" if not is_est_data_packet else f"{predicted_apogee:.8f}",
                     **{
                         attr: f"{getattr(imu_data_packets[idx], attr, 0.0):.8f}"
                         for attr in RawDataPacket.__struct_fields__
@@ -304,20 +338,37 @@ class TestLogger:
                 dropped = {k: "" for k, v in expected_output.items() if v == "0.00000000"}
                 expected_output.update(dropped)
 
+                # Add the empty debug packet fields:
+                expected_output.update(**{k: "" for k in ContextDataPacket.__struct_fields__})
+
+                # Add the debug packet fields. If we are not in coast state, we should not have
+                # some fields:
+                if idx == 0:  # Tests that we only log the debug packet in the first row
+                    debug_packet_dict = to_builtins(debug_packet)
+                    debug_packet_dict = remove_debug_packet_fields(debug_packet_dict, state)
+                    debug_packet_dict = Logger._truncate_floats(debug_packet_dict)
+                    expected_output.update(debug_packet_dict)
+
                 assert row == expected_output
 
             assert idx + 1 == file_lines
 
     @pytest.mark.parametrize(
-        ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
+        ("state", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
-            ("StandbyState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
+            (
+                "StandbyState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+            ),
             (
                 "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
-                1800.0,
+                gen_data_packet("debug"),
             ),
         ],
         ids=[
@@ -331,7 +382,7 @@ class TestLogger:
         extension,
         imu_data_packets,
         processed_data_packets,
-        predicted_apogee,
+        debug_packet,
         monkeypatch,
     ):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
@@ -346,7 +397,7 @@ class TestLogger:
             extension,
             imu_data_packets * (IDLE_LOG_CAPACITY + 10),
             processed_data_packets * (IDLE_LOG_CAPACITY + 10),
-            predicted_apogee,
+            debug_packet,
         )
 
         time.sleep(0.1)  # Give the process time to log to file
@@ -365,7 +416,7 @@ class TestLogger:
             assert logger._log_counter == IDLE_LOG_CAPACITY
 
     @pytest.mark.parametrize(
-        ("states", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
+        ("states", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
             (
                 ("StandbyState", "MotorBurnState"),
@@ -379,7 +430,7 @@ class TestLogger:
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
-                1800.0,
+                gen_data_packet("debug"),
             ),
         ],
         ids=[
@@ -390,11 +441,11 @@ class TestLogger:
     def test_log_buffer_reset_after_standby(
         self,
         logger,
-        states: tuple[str],
+        states: tuple[str, str],
         extension: float,
         imu_data_packets: list[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        predicted_apogee: float,
+        processed_data_packets: list[ProcessorDataPacket],
+        debug_packet: ContextDataPacket,
     ):
         """Tests if the buffer is logged when switching from standby to motor burn and that the
         counter is reset."""
@@ -408,7 +459,7 @@ class TestLogger:
             extension,
             imu_data_packets * (IDLE_LOG_CAPACITY + 10),
             processed_data_packets * (IDLE_LOG_CAPACITY + 10),
-            predicted_apogee,
+            debug_packet,
         )
         time.sleep(0.1)  # Give the process time to log to file
 
@@ -417,7 +468,7 @@ class TestLogger:
         # Let's test that switching to MotorBurn will log those packets:
 
         logger.log(
-            states[1], extension, imu_data_packets * 8, processed_data_packets * 8, predicted_apogee
+            states[1], extension, imu_data_packets * 8, processed_data_packets * 8, debug_packet
         )
         assert len(logger._log_buffer) == 0
         logger.stop()
@@ -444,15 +495,21 @@ class TestLogger:
             assert count + 1 == IDLE_LOG_CAPACITY + 10 + 8
 
     @pytest.mark.parametrize(
-        ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
+        ("state", "extension", "imu_data_packets", "processed_data_packets", "debug_packet"),
         [
-            ("LandedState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
+            (
+                "LandedState",
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                gen_data_packet("debug"),
+            ),
             (
                 "LandedState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
-                1800.0,
+                gen_data_packet("debug"),
             ),
         ],
         ids=[
@@ -461,7 +518,7 @@ class TestLogger:
         ],
     )
     def test_log_buffer_reset_after_landed(
-        self, logger, state, extension, imu_data_packets, processed_data_packets, predicted_apogee
+        self, logger, state, extension, imu_data_packets, processed_data_packets, debug_packet
     ):
         """Tests if we've hit the idle log capacity when are in LandedState and that it is
         logged."""
@@ -476,7 +533,7 @@ class TestLogger:
             extension,
             imu_data_packets * (IDLE_LOG_CAPACITY + 100),
             processed_data_packets * (IDLE_LOG_CAPACITY + 100),
-            predicted_apogee,
+            debug_packet,
         )
         time.sleep(0.1)
         assert len(logger._log_buffer) == 100
@@ -508,6 +565,7 @@ class TestLogger:
                         "state": "S",
                         "extension": "0.1",
                         **{k: 1.987654321 for k in RawDataPacket.__struct_fields__},
+                        **remove_debug_packet_fields(to_builtins(gen_data_packet("debug")), "S"),
                     }
                 ],
             ),
@@ -521,8 +579,8 @@ class TestLogger:
                         "state": "S",
                         "extension": "0.1",
                         **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
-                        "predicted_apogee": 1800.0,
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
+                        **remove_debug_packet_fields(to_builtins(gen_data_packet("debug")), "S"),
                     }
                 ],
             ),
@@ -536,13 +594,33 @@ class TestLogger:
                         "state": "M",
                         "extension": "0.1",
                         **{k: 1.987654321 for k in RawDataPacket.__struct_fields__},
+                        **remove_debug_packet_fields(to_builtins(gen_data_packet("debug")), "M"),
                     },
                     {
                         "state": "M",
                         "extension": "0.1",
                         **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
-                        **{k: 1.887766554 for k in ProcessedDataPacket.__struct_fields__},
-                        "predicted_apogee": 1800.0,
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
+                    },
+                ],
+            ),
+            (
+                "C",
+                "0.5",
+                deque([gen_data_packet("raw"), gen_data_packet("est")]),
+                deque([gen_data_packet("processed")]),
+                [
+                    {
+                        "state": "C",
+                        "extension": "0.5",
+                        **{k: 1.987654321 for k in RawDataPacket.__struct_fields__},
+                        **remove_debug_packet_fields(to_builtins(gen_data_packet("debug")), "C"),
+                    },
+                    {
+                        "state": "C",
+                        "extension": "0.5",
+                        **{k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__},
+                        **{k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__},
                     },
                 ],
             ),
@@ -550,7 +628,8 @@ class TestLogger:
         ids=[
             "RawDataPacket",
             "EstimatedDataPacket",
-            "both",
+            "both in motor burn",
+            "both in coast",
         ],
     )
     def test_prepare_log_dict(
@@ -568,7 +647,7 @@ class TestLogger:
 
         # Now let's test the method
         logged_data_packets = logger._prepare_log_dict(
-            state, extension, imu_data_packets, processed_data_packets, 1800.0
+            state, extension, imu_data_packets, processed_data_packets, gen_data_packet("debug")
         )
         # Check that we log every packet:
         assert len(logged_data_packets) == len(expected_outputs)

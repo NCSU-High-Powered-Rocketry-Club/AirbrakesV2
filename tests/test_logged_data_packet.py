@@ -1,12 +1,13 @@
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 
 
 @pytest.fixture
 def logged_data_packet():
-    return LoggedDataPacket(
+    return LoggerDataPacket(
         state=TestLoggedDataPacket.state,
         extension=TestLoggedDataPacket.extension,
         timestamp=TestLoggedDataPacket.timestamp,
@@ -30,12 +31,14 @@ class TestLoggedDataPacket:
     def test_logged_data_packet_has_all_fields_of_imu_data_packet(self):
         """Tests whether the LoggedDataPacket class has all the fields of the IMUDataPacket
         classes."""
+        log_dp_fields = set(LoggerDataPacket.__annotations__)
+
         est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
         raw_dp_fields = set(RawDataPacket.__struct_fields__)
-        log_dp_fields = set(LoggedDataPacket.__annotations__)
+        debug_dp_fields = set(ContextDataPacket.__struct_fields__)
         proc_dp_fields = {"current_altitude", "vertical_velocity", "vertical_acceleration"}
 
-        extra_fields = {"state", "extension", "timestamp", "predicted_apogee"}
+        extra_fields = {"state", "extension"}
 
         assert est_dp_fields.issubset(
             log_dp_fields
@@ -48,7 +51,10 @@ class TestLoggedDataPacket:
         ), f"Missing fields: {proc_dp_fields - log_dp_fields}"
 
         available_fields = (
-            est_dp_fields.union(raw_dp_fields).union(proc_dp_fields).union(extra_fields)
+            est_dp_fields.union(raw_dp_fields)
+            .union(proc_dp_fields)
+            .union(extra_fields)
+            .union(debug_dp_fields)
         )
         assert (
             log_dp_fields == available_fields

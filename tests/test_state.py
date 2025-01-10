@@ -10,7 +10,7 @@ from airbrakes.constants import (
     MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,

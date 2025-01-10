@@ -4,7 +4,7 @@ import msgspec
 import numpy as np
 
 
-class ProcessedDataPacket(msgspec.Struct):
+class ProcessorDataPacket(msgspec.Struct):
     """
     Represents a packet of processed data from the IMU. All of these fields are the processed
     values of the estimated data.

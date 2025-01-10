@@ -6,14 +6,19 @@ from typing import TYPE_CHECKING
 from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
 
@@ -29,14 +34,17 @@ class AirbrakesContext:
 
     __slots__ = (
         "apogee_predictor",
+        "apogee_predictor_data_packets",
         "current_extension",
         "data_processor",
+        "context_data_packet",
         "est_data_packets",
         "imu",
         "imu_data_packets",
         "logger",
         "processed_data_packets",
         "servo",
+        "servo_data_packet",
         "shutdown_requested",
         "state",
     )
@@ -61,11 +69,11 @@ class AirbrakesContext:
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
-        self.servo = servo
-        self.imu = imu
-        self.logger = logger
-        self.data_processor = data_processor
-        self.apogee_predictor = apogee_predictor
+        self.servo: Servo = servo
+        self.imu: IMU = imu
+        self.logger: Logger = logger
+        self.data_processor: IMUDataProcessor = data_processor
+        self.apogee_predictor: ApogeePredictor = apogee_predictor
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
@@ -73,8 +81,11 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: list[ProcessedDataPacket] = []
+        self.processed_data_packets: list[ProcessorDataPacket] = []
+        self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
+        self.context_data_packet: ContextDataPacket | None = None
+        self.servo_data_packet: ServoDataPacket | None = None
 
     def start(self) -> None:
         """
@@ -129,16 +140,21 @@ class AirbrakesContext:
         if self.est_data_packets:
             self.processed_data_packets = self.data_processor.get_processed_data_packets()
 
+        # Gets the apogee predictor packets
+        self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
+
         # Update the state machine based on the latest processed data
         self.state.update()
 
+        self.generate_data_packets()
+
         # Logs the current state, extension, IMU data, and processed data
         self.logger.log(
-            self.state.name,
-            self.current_extension.value,
+            self.context_data_packet,
+            self.servo_data_packet,
             self.imu_data_packets,
             self.processed_data_packets,
-            self.apogee_predictor.apogee,
+            self.apogee_predictor_data_packets,
         )
 
     def extend_airbrakes(self) -> None:
@@ -146,14 +162,14 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
-        self.current_extension = ServoExtension.MAX_EXTENSION
+        self.current_extension = self.servo.current_extension
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the airbrakes to the minimum extension.
         """
         self.servo.set_retracted()
-        self.current_extension = ServoExtension.MIN_EXTENSION
+        self.current_extension = self.servo.current_extension
 
     def predict_apogee(self) -> None:
         """
@@ -166,3 +182,20 @@ class AirbrakesContext:
         # This would result in a very slow convergence and inaccurate predictions.
         if self.est_data_packets:
             self.apogee_predictor.update(self.processed_data_packets)
+
+    def generate_data_packets(self) -> None:
+        """
+        Generates the context data packet and servo data packet to be logged.
+        """
+        # Create a context data packet to log the current state of the airbrakes system
+        self.context_data_packet = ContextDataPacket(
+            update_timestamp=self.imu_data_packets[-1].timestamp,
+            state_name=self.state.name[0],
+            imu_queue_size=self.imu.queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.processed_data_packet_queue_size,
+        )
+
+        # Creates a servo data packet to log the current state of the servo
+        self.servo_data_packet = ServoDataPacket(
+            set_extension=self.current_extension.value,
+        )
