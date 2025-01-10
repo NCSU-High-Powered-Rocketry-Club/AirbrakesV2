@@ -1,7 +1,6 @@
 """Module that creates randomly generated data to sent to the simulation IMU"""
 
 import csv
-import random
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +17,7 @@ from airbrakes.data_handling.imu_data_packet import (
 )
 from airbrakes.simulation.rotation_manager import RotationManager
 from airbrakes.simulation.sim_config import SimulationConfig
+from airbrakes.simulation.sim_utils import get_random_value
 from airbrakes.utils import deadband
 
 
@@ -46,7 +46,7 @@ class DataGenerator:
         :param config: the configuration object for the simulation
         """
 
-        self._config = config
+        self._config: SimulationConfig = config
 
         self._last_est_packet: EstimatedDataPacket | None = None
         self._last_raw_packet: RawDataPacket | None = None
@@ -68,25 +68,6 @@ class DataGenerator:
     def velocity_vector(self) -> npt.NDArray:
         """Returns the last calculated velocity vectors of the rocket"""
         return self._last_velocities
-
-    def _get_random(self, identifier: str) -> np.float64:
-        """
-        Gets a random value for the selected identifier, using the standard deviation if given.
-        :param identifier: string that matches a config variable in sim_config.py
-        :return: float containing a random value for the selected identifier, between
-        the bounds specified in the config.
-        """
-        parameters = getattr(self._config, identifier)
-        if len(parameters) == 1:
-            return parameters[0]
-        if len(parameters) == 3:
-            # uses standard deviation to get random number
-            mean = float(np.mean([parameters[0], parameters[1]]))
-            val = random.gauss(mean, parameters[2])
-            # restricts the value to the bounds
-            return np.max(parameters[0], np.min(parameters[1], val))
-        # if no standard deviation is given, just return a uniform distribution
-        return random.uniform(parameters[0], parameters[1])
 
     def _load_thrust_curve(self) -> npt.NDArray:
         """
@@ -139,8 +120,8 @@ class DataGenerator:
         :return: a 2 element array containing the raw rotation manager and the estimated rotation
         manager, respectively.
         """
-        launch_rod_pitch = self._get_random("launch_rod_pitch")
-        launch_rod_azimuth = self._get_random("launch_rod_azimuth")
+        launch_rod_pitch = self._config.launch_rod_pitch
+        launch_rod_azimuth = self._config.launch_rod_azimuth
         raw_manager = RotationManager(
             self._config.wgs_vertical,
             launch_rod_pitch,
@@ -317,6 +298,18 @@ class DataGenerator:
             force_accelerations[0],
             force_accelerations[1],
         )
+
+        # adds noise to compensated acceleration
+        # the acceleration noise uses a linear regression model to apply more noise as the
+        # magnitude of acceleration increases
+        # The magnitude of noise is then split to all 3 directions of the compensated acceleration
+        # vectors, to apply evenly.
+        comp_accel_mag = np.linalg.norm(compensated_accel)
+        comp_accel_noise_mag = get_random_value(
+            self._config.rand_config.acceleration_noise_coefficients, comp_accel_mag
+        )
+        comp_accel_noise = (compensated_accel / comp_accel_mag) * comp_accel_noise_mag
+        compensated_accel += comp_accel_noise
 
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],

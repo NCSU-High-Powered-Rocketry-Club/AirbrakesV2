@@ -1,12 +1,19 @@
-"""Module containing config settings for simulation"""
+"""Module containing static config settings for simulation"""
 
 import numpy as np
 import numpy.typing as npt
 
+from airbrakes.simulation.random_config import (
+    DEFAULT_RAND_CONFIG,
+    SUB_SCALE_RAND_CONFIG,
+    RandomConfig,
+)
+
 
 class SimulationConfig:
     """
-    Configuration settings for the simulation. Includes presets of full-scale and sub-scale flights.
+    Configuration settings for static values in the simulation. Includes presets of full-scale
+    and sub-scale flights.
     """
 
     def __init__(
@@ -19,10 +26,11 @@ class SimulationConfig:
         rocket_mass: np.float64,
         reference_area: np.float64,
         wgs_vertical: npt.NDArray[np.float64],
-        launch_rod_pitch: npt.NDArray[np.float64],
-        launch_rod_azimuth: npt.NDArray[np.float64],
+        launch_rod_pitch: np.float64,
+        launch_rod_azimuth: np.float64,
         air_temperature: np.float64,
         airbrakes_reference_area: np.float64,
+        rand_config: RandomConfig,
     ):
         # Time steps for data packet generation in the simulation
         self.raw_time_step = raw_time_step
@@ -41,12 +49,13 @@ class SimulationConfig:
         # Atmospheric properties
         self.air_temperature = air_temperature  # ground temperature, in celcius
 
-        # Rocket orientation on the launch pad
+        # Rocket orientation and initial direction on the launch pad
         self.wgs_vertical = wgs_vertical
-
-        # Config for randomness in the simulation
         self.launch_rod_pitch = launch_rod_pitch
         self.launch_rod_azimuth = launch_rod_azimuth
+
+        # The randomness configuration settings for the specified flight
+        self.rand_config = rand_config
 
 
 FULL_SCALE_CONFIG = SimulationConfig(
@@ -60,8 +69,9 @@ FULL_SCALE_CONFIG = SimulationConfig(
     airbrakes_reference_area=np.float64(0.01),
     air_temperature=np.float64(25),
     wgs_vertical=np.array([0, 0, -1]),
-    launch_rod_pitch=np.array([5]),
-    launch_rod_azimuth=np.array([0]),
+    launch_rod_pitch=np.float64(5.0),
+    launch_rod_azimuth=np.float64(0.0),
+    rand_config=DEFAULT_RAND_CONFIG,
 )
 
 SUB_SCALE_CONFIG = SimulationConfig(
@@ -75,8 +85,9 @@ SUB_SCALE_CONFIG = SimulationConfig(
     airbrakes_reference_area=np.float64(0.00487741),
     air_temperature=np.float64(15),
     wgs_vertical=np.array([-1, 0, 0]),
-    launch_rod_pitch=np.array([5]),
-    launch_rod_azimuth=np.array([0]),
+    launch_rod_pitch=np.float64(5.0),
+    launch_rod_azimuth=np.float64(0.0),
+    rand_config=SUB_SCALE_RAND_CONFIG,
 )
 
 

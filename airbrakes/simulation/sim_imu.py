@@ -17,6 +17,7 @@ else:
 
 
 from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
+from airbrakes.simulation.sim_utils import update_timestamp
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.imu_data_packet import IMUDataPacket
@@ -67,43 +68,6 @@ class SimIMU(BaseIMU):
         self._running = multiprocessing.Value("b", False)
         self._airbrakes_extended = multiprocessing.Value("b", False)
 
-    @staticmethod
-    def _update_timestamp(current_timestamp: np.float64, config: SimulationConfig) -> np.float64:
-        """
-        Updates the current timestamp of the data generator, based off time step defined in config.
-        Will also determine if the next timestamp will be a raw packet, estimated packet, or both.
-        :param current_timestamp: the current timestamp of the simulation
-        :return: the updated current timestamp, rounded to 3 decimals
-        """
-
-        # finding whether the raw or estimated data packets have a lower time_step
-        lowest_dt = min(config.raw_time_step, config.est_time_step)
-        highest_dt = max(config.raw_time_step, config.est_time_step)
-
-        # checks if current time is a multiple of the highest and/or lowest time step
-        at_low = any(np.isclose(current_timestamp % lowest_dt, [0, lowest_dt]))
-        at_high = any(np.isclose(current_timestamp % highest_dt, [0, highest_dt]))
-
-        # If current timestamp is a multiple of both, the next timestamp will be the
-        # current timestamp + the lower time steps
-        if all([at_low, at_high]):
-            return np.round(current_timestamp + lowest_dt, 3)
-
-        # If timestamp is a multiple of just the lowest time step, the next will be
-        # either current + lowest, or the next timestamp that is divisible by the highest
-        if at_low and not at_high:
-            dt = min(lowest_dt, highest_dt - (current_timestamp % highest_dt))
-            return np.round(current_timestamp + dt, 3)
-
-        # If timestamp is a multiple of only the highest time step, the next will
-        # always be the next timestamp that is divisible by the lowest
-        if at_high and not at_low:
-            return np.round(current_timestamp + lowest_dt - (current_timestamp % lowest_dt), 3)
-
-        # This would happen if the input current timestamp is not a multiple of the raw
-        # or estimated time steps, or if there is a rounding/floating point error.
-        raise ValueError("Could not update timestamp, time stamp is invalid")
-
     def set_airbrakes_status(self, servo_extension: ServoExtension) -> None:
         """
         Sets the value of the shared boolean that indicates whether the airbrakes are extended.
@@ -143,7 +107,7 @@ class SimIMU(BaseIMU):
                     self._data_queue.put(data_generator.generate_estimated_data_packet())
 
                 # updates the timestamp and sleeps until next packet is ready in real-time
-                time_step = self._update_timestamp(timestamp, config) - timestamp
+                time_step = update_timestamp(timestamp, config) - timestamp
                 timestamp += time_step
                 end_time = time.time()
                 time.sleep(max(0.0, time_step - (end_time - start_time)))
