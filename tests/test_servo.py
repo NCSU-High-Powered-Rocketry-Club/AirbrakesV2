@@ -3,8 +3,8 @@ import time
 
 import gpiozero
 
+from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
 from airbrakes.hardware.servo import Servo
-from constants import SERVO_DELAY_SECONDS, ServoExtension
 
 
 class TestServo:

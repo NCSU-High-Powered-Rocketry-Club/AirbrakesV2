@@ -18,9 +18,9 @@ from textual.widgets import (
     Static,
     Switch,
 )
+from utils import format_date_string, format_seconds_to_mins_and_secs
 
 from airbrakes.mock.mock_imu import MockIMU
-from utils import format_date_string, format_seconds_to_mins_and_secs
 
 AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 

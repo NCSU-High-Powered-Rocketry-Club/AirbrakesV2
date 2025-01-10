@@ -3,6 +3,7 @@
 import time
 from typing import ClassVar
 
+from constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 from textual import work
 from textual.app import App, ComposeResult
@@ -22,7 +23,6 @@ from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
-from constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
 
 
 class AirbrakesApplication(App):

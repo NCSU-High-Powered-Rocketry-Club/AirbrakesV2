@@ -55,7 +55,7 @@
             },
             "flight_length_seconds": 136.47
         },
-        "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to simulate a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
+        "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to mimmick a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
     "genesis_launch_1.csv": {
         "date": "2024-11-16T13:45:58.732-05:00",

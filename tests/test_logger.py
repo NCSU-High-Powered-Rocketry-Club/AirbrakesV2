@@ -6,8 +6,10 @@ import time
 from collections import deque
 from typing import Literal
 
+import faster_fifo
 import pytest
 
+from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from airbrakes.data_handling.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
@@ -16,7 +18,6 @@ from airbrakes.data_handling.imu_data_packet import (
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.logger import Logger
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 from tests.conftest import LOG_PATH
 
 
@@ -62,7 +63,7 @@ class TestLogger:
         assert logger.log_path.parent.name == "logs"
 
         # Test if all attributes are created correctly
-        assert isinstance(logger._log_queue, multiprocessing.queues.Queue)
+        assert isinstance(logger._log_queue, faster_fifo.Queue)
         assert isinstance(logger._log_process, multiprocessing.Process)
 
         # Test that the process is not running
@@ -126,7 +127,7 @@ class TestLogger:
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(self):
             """Monkeypatched method for testing."""
@@ -154,7 +155,7 @@ class TestLogger:
 
     def test_logger_loop_exception_raised(self, monkeypatch):
         """Tests whether the Logger loop properly propogates unknown exceptions."""
-        values = multiprocessing.Queue()
+        values = faster_fifo.Queue()
 
         def _logging_loop(_):
             """Monkeypatched method for testing."""
@@ -208,9 +209,9 @@ class TestLogger:
             "file_lines",
         ),
         [
-            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0, 1),
+            ("StandbyState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0, 1),
             (
-                "S",
+                "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -218,7 +219,7 @@ class TestLogger:
                 1,
             ),
             (
-                "M",
+                "MotorBurnState",
                 0.5,
                 deque([gen_data_packet("raw"), gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -279,7 +280,7 @@ class TestLogger:
 
                 # Also checks if truncation is working correctly:
                 expected_output = {
-                    "state": state,
+                    "state": state[0],
                     "extension": str(extension),
                     "predicted_apogee": "" if not is_est_data_packet else f"{predicted_apogee:.8f}",
                     **{
@@ -310,9 +311,9 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
         [
-            ("S", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
+            ("StandbyState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
             (
-                "S",
+                "StandbyState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -366,9 +367,15 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("states", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
         [
-            (("S", "M"), 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
             (
-                ("S", "M"),
+                ("StandbyState", "MotorBurnState"),
+                0.0,
+                deque([gen_data_packet("raw")]),
+                deque([]),
+                0.0,
+            ),
+            (
+                ("StandbyState", "MotorBurnState"),
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),
@@ -439,9 +446,9 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("state", "extension", "imu_data_packets", "processed_data_packets", "predicted_apogee"),
         [
-            ("L", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
+            ("LandedState", 0.0, deque([gen_data_packet("raw")]), deque([]), 0.0),
             (
-                "L",
+                "LandedState",
                 0.0,
                 deque([gen_data_packet("est")]),
                 deque([gen_data_packet("processed")]),

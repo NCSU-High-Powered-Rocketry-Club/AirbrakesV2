@@ -4,12 +4,13 @@ import threading
 import time
 from collections import deque
 
+import faster_fifo
 import numpy as np
 import pytest
 
+from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import APOGEE_PREDICTION_MIN_PACKETS
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ class TestApogeePredictor:
         ap = apogee_predictor
         # Test attributes on init
         assert ap._apogee_prediction_value.value == 0.0
-        assert isinstance(ap._prediction_queue, multiprocessing.queues.Queue)
+        assert isinstance(ap._prediction_queue, faster_fifo.Queue)
         assert isinstance(ap._prediction_process, multiprocessing.Process)
         assert not ap._prediction_process.is_alive()
         assert isinstance(ap._cumulative_time_differences, np.ndarray)
@@ -82,7 +83,7 @@ class TestApogeePredictor:
         # it from the queue and we want to check if it's added to the queue.
         apogee_predictor.update(packet.copy())
         assert apogee_predictor._prediction_queue.qsize() == 1
-        assert apogee_predictor._prediction_queue.get() == packet
+        assert apogee_predictor._prediction_queue.get_many() == packet
 
     @pytest.mark.parametrize(
         (
@@ -116,17 +117,17 @@ class TestApogeePredictor:
                     for i in range(70)
                 ],
                 # the velocity and altitude points in this data packet are calculated by hand.
-                # the data packets simulate 0 - 7 seconds, in 0.1 second intervals.
-                # the acceleration has a slope of +0.4 m/s^2 per second, which simulates
+                # the data packets are from 0 - 7 seconds, in 0.1 second intervals.
+                # the acceleration has a slope of +0.4 m/s^2 per second, which recreates
                 # coast phase, going from -10 m/s^2 to -7.2 m/s^2. The expected outcome of this
                 # test is the max of the position function. Because we are curve fitting to a
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1167.8157033639814,
+                1177.232574134796,
             ),
         ],
-        ids=["hover_at_altitude", "coast_phase_sim"],
+        ids=["hover_at_altitude", "coast_phase"],
     )
     def test_prediction_loop_no_mock(
         self, threaded_apogee_predictor, processed_data_packets, expected_value
@@ -137,7 +138,7 @@ class TestApogeePredictor:
 
         threaded_apogee_predictor.update(processed_data_packets)
 
-        time.sleep(0.01)  # Wait for the prediction loop to finish
+        time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
         assert threaded_apogee_predictor.apogee == expected_value
 

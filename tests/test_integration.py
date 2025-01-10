@@ -11,16 +11,16 @@ import msgspec
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from constants import (
+from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
-    LANDED_SPEED_METERS_PER_SECOND,
+    LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
+from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 
-SNAPSHOT_INTERVAL = 0.01  # seconds
+SNAPSHOT_INTERVAL = 0.001  # seconds
 
 
 class StateInformation(msgspec.Struct):
@@ -31,6 +31,8 @@ class StateInformation(msgspec.Struct):
     extensions: list[float] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
+    min_avg_vertical_acceleration: float | None = None
+    max_avg_vertical_acceleration: float | None = None
     apogee_prediction: list[float] = []
 
 
@@ -95,6 +97,12 @@ class TestIntegration:
                     state_info.max_velocity = ab.data_processor.vertical_velocity
                     state_info.max_altitude = ab.data_processor.current_altitude
                     state_info.min_altitude = ab.data_processor.current_altitude
+                    state_info.min_avg_vertical_acceleration = (
+                        ab.data_processor.average_vertical_acceleration
+                    )
+                    state_info.max_avg_vertical_acceleration = (
+                        ab.data_processor.average_vertical_acceleration
+                    )
                     state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 state_info.min_velocity = min(
@@ -110,6 +118,15 @@ class TestIntegration:
                 state_info.max_altitude = max(
                     ab.data_processor.current_altitude, state_info.max_altitude
                 )
+                state_info.min_avg_vertical_acceleration = min(
+                    ab.data_processor.average_vertical_acceleration,
+                    state_info.min_avg_vertical_acceleration,
+                )
+                state_info.max_avg_vertical_acceleration = max(
+                    ab.data_processor.average_vertical_acceleration,
+                    state_info.max_avg_vertical_acceleration,
+                )
+
                 state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
                 # Update the state information in the dictionary
@@ -124,25 +141,15 @@ class TestIntegration:
         # Let's validate our data!
 
         # Check we have all the states:
-        if launch_name == "purple_launch":
-            # Our Launches don't properly log/reach the LandedState, so we will ignore it for now.
-            assert len(states_dict) == 4
-            assert list(states_dict.keys()) == [
-                "StandbyState",
-                "MotorBurnState",
-                "CoastState",
-                "FreeFallState",
-            ]
-        else:
-            assert len(states_dict) == 5
-            # Order of states matters!
-            assert list(states_dict.keys()) == [
-                "StandbyState",
-                "MotorBurnState",
-                "CoastState",
-                "FreeFallState",
-                "LandedState",
-            ]
+        assert len(states_dict) == 5
+        # Order of states matters!
+        assert list(states_dict.keys()) == [
+            "StandbyState",
+            "MotorBurnState",
+            "CoastState",
+            "FreeFallState",
+            "LandedState",
+        ]
         states_dict = types.SimpleNamespace(**states_dict)
         stand_by_state = states_dict.StandbyState
         motor_burn_state = states_dict.MotorBurnState
@@ -158,6 +165,7 @@ class TestIntegration:
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in stand_by_state.extensions)
 
         assert motor_burn_state.min_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
+        assert motor_burn_state.max_avg_vertical_acceleration >= 90.0
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert motor_burn_state.min_altitude >= -2.5  # detecting takeoff from velocity data
         assert motor_burn_state.max_altitude >= TAKEOFF_HEIGHT_METERS
@@ -194,14 +202,15 @@ class TestIntegration:
         assert free_fall_state.min_altitude <= GROUND_ALTITUDE_METERS + 10.0
         assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
 
-        if launch_name != "purple_launch":
-            # Generated data for simulated landing for interest launcH:
-            landed_state = states_dict.LandedState
-            assert landed_state.min_velocity >= -LANDED_SPEED_METERS_PER_SECOND
-            assert landed_state.max_velocity <= 0.1
-            assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
-            assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
-            assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
+        # Check landed state values:
+        landed_state = states_dict.LandedState
+        assert (
+            landed_state.max_avg_vertical_acceleration
+            >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
+        )
+        assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
+        assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
 
         # Now let's check if everything was logged correctly:
         # some what of a duplicate of test_logger.py:
@@ -258,7 +267,4 @@ class TestIntegration:
             assert line_number > 80_000
 
             # Check if all states were logged:
-            if launch_name == "purple_launch":
-                assert state_list == ["S", "M", "C", "F"]
-            else:
-                assert state_list == ["S", "M", "C", "F", "L"]
+            assert state_list == ["S", "M", "C", "F", "L"]

@@ -3,16 +3,28 @@
 import csv
 import multiprocessing
 import signal
+import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
+from airbrakes.utils import modify_multiprocessing_queue_windows
+
+if sys.platform != "win32":
+    from faster_fifo import Queue
+
 from msgspec import to_builtins
 
+from airbrakes.constants import (
+    BUFFER_SIZE_IN_BYTES,
+    IDLE_LOG_CAPACITY,
+    LOG_BUFFER_SIZE,
+    MAX_GET_TIMEOUT_SECONDS,
+    STOP_SIGNAL,
+)
 from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
 from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
-from constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
 
 
 class Logger:
@@ -26,7 +38,15 @@ class Logger:
     our logs in real time.
     """
 
-    __slots__ = ("_log_buffer", "_log_counter", "_log_process", "_log_queue", "log_path")
+    LOG_BUFFER_STATES = ("StandbyState", "LandedState")
+
+    __slots__ = (
+        "_log_buffer",
+        "_log_counter",
+        "_log_process",
+        "_log_queue",
+        "log_path",
+    )
 
     def __init__(self, log_dir: Path) -> None:
         """
@@ -60,9 +80,17 @@ class Logger:
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        self._log_queue: multiprocessing.Queue[LoggedDataPacket | Literal["STOP"]] = (
-            multiprocessing.Queue()
-        )
+        if sys.platform == "win32":
+            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
+            # available on Windows
+            self._log_queue: multiprocessing.Queue[list[LoggedDataPacket] | Literal["STOP"]] = (
+                multiprocessing.Queue()
+            )
+            modify_multiprocessing_queue_windows(self._log_queue)
+        else:
+            self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
+                max_size_bytes=BUFFER_SIZE_IN_BYTES
+            )
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
@@ -98,9 +126,9 @@ class Logger:
         state: str,
         extension: str,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
         predicted_apogee: float,
-    ) -> deque[LoggedDataPacket]:
+    ) -> list[LoggedDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.
         :param state: The current state of the airbrakes.
@@ -111,8 +139,9 @@ class Logger:
         data packets.
         :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: deque[LoggedDataPacket] = deque()
+        logged_data_packets: list[LoggedDataPacket] = []
 
+        index = 0  # Index to loop over processed data packets:
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
@@ -130,7 +159,7 @@ class Logger:
                 # Convert the processed data packet to a dictionary. Unknown types such as numpy
                 # float64 are converted to strings with 8 decimal places (that's enc_hook)
                 processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets.popleft(), enc_hook=Logger._convert_unknown_type
+                    processed_data_packets[index], enc_hook=Logger._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processed_data_packet_dict.pop("time_since_last_data_packet", None)
@@ -138,6 +167,7 @@ class Logger:
 
                 # Add the predicted apogee field:
                 logged_fields["predicted_apogee"] = predicted_apogee
+                index += 1
 
             logged_data_packets.append(logged_fields)
 
@@ -164,7 +194,7 @@ class Logger:
         state: str,
         extension: float,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: deque[ProcessedDataPacket],
+        processed_data_packets: list[ProcessedDataPacket],
         predicted_apogee: float,
     ) -> None:
         """
@@ -180,7 +210,7 @@ class Logger:
         # We only want the first letter of the state to save space
         state_letter = state[0]
         # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: deque[LoggedDataPacket] = Logger._prepare_log_dict(
+        logged_data_packets: list[LoggedDataPacket] = Logger._prepare_log_dict(
             state_letter,
             str(extension),
             imu_data_packets,
@@ -188,34 +218,33 @@ class Logger:
             predicted_apogee,
         )
 
-        # Loop through all the IMU data packets
-        for logged_data_packet in logged_data_packets:
-            # If the state is StandbyState or LandedState, we create a buffer for data packets
-            # because otherwise we could have gigabytes of data in the log file just for when the
-            # rocket is on the ground.
-            if state_letter in ["S", "L"]:  # S: StandbyState, L: LandedState
-                if self._log_counter < IDLE_LOG_CAPACITY:
-                    # add the count:
-                    self._log_counter += 1
-                else:
-                    self._log_buffer.append(logged_data_packet)
-                    continue  # skip because we don't want to put the message in the queue
-            else:
-                if self._log_buffer:
-                    # Log the buffer before logging the new message
-                    self._log_the_buffer()
+        # If we are in Standby or Landed State, we need to buffer the data packets:
+        if state in self.LOG_BUFFER_STATES:
+            # Determine how many packets to log and buffer
+            log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
+            to_log = logged_data_packets[:log_capacity]
+            to_buffer = logged_data_packets[log_capacity:]
 
-                self._log_counter = 0  # Reset the counter for other states
+            # Update counter and handle logging/buffering
+            self._log_counter += len(to_log)
+            if to_log:
+                self._log_queue.put_many(to_log)
+            if to_buffer:
+                self._log_buffer.extend(to_buffer)
+        else:
+            # If we are not in Standby or Landed State, we should log the buffer if it's not empty:
+            if self._log_buffer:
+                self._log_the_buffer()
 
-            # Put the message in the queue
-            self._log_queue.put(logged_data_packet)
+            # Reset the counter for other states
+            self._log_counter = 0
+            self._log_queue.put_many(logged_data_packets)
 
     def _log_the_buffer(self):
         """
         Adds the log buffer to the queue, so it can be logged to file.
         """
-        for buffered_message in self._log_buffer:
-            self._log_queue.put(buffered_message)
+        self._log_queue.put_many(list(self._log_buffer))
         self._log_buffer.clear()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
@@ -237,14 +266,22 @@ class Logger:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+
+        # Unfortunately, we need to modify the queue here again because the modifications made in
+        # the __init__ are not copied to the new process.
+        modify_multiprocessing_queue_windows(self._log_queue)
+
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields = self._log_queue.get()
+                message_fields: list[LoggedDataPacket | Literal["STOP"]] = self._log_queue.get_many(
+                    timeout=MAX_GET_TIMEOUT_SECONDS
+                )
                 # If the message is the stop signal, break out of the loop
-                if message_fields == STOP_SIGNAL:
-                    break
-                writer.writerow(Logger._truncate_floats(message_fields))
+                for message_field in message_fields:
+                    if message_field == STOP_SIGNAL:
+                        return
+                    writer.writerow(Logger._truncate_floats(message_field))
