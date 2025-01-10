@@ -8,6 +8,8 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.utils import modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
@@ -78,7 +80,7 @@ class Logger:
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
-        # the back and pop from front, meaning that things will be logged in the order they were
+        # the back and pop from front, meaning that things will be logger in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
         if sys.platform == "win32":
@@ -125,53 +127,61 @@ class Logger:
     @staticmethod
     def _prepare_log_dict(
         context_data_packet: ContextDataPacket,
-        extension: str,
+        servo_data_packet: ServoDataPacket,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessorDataPacket],
+        processor_data_packets: list[ProcessorDataPacket],
+        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> list[LoggerDataPacket]:
         """
-        Creates a data packet dictionary representing a row of data to be logged.
+        Creates a data packet dictionary representing a row of data to be logger.
         :param context_data_packet: The context data packet to log.
-        :param extension: The current extension of the airbrakes.
+        :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :param: predicted_apogee: The predicted apogee of the rocket. Only logged with estimated
-        data packets.
+        :param processor_data_packets: The processor data packets to log.
+        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         :return: A deque of LoggedDataPacket objects.
         """
-        logged_data_packets: list[LoggerDataPacket] = []
+        logger_data_packets: list[LoggerDataPacket] = []
 
-        # The debug packet will only be added to the first packet:
-        context_data_packet_dict = to_builtins(context_data_packet)
-
-        index = 0  # Index to loop over processed data packets:
+        index = 0  # Index to loop over processor data packets:
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
-            logged_fields: LoggerDataPacket = {}
-            # Convert the imu data packet to a dictionary
+            logger_fields: LoggerDataPacket = {}
+            # Convert the packets to a dictionary
+            context_data_packet_dict: dict[str, int | str] = to_builtins(context_data_packet)
+            logger_fields.update(context_data_packet_dict)
+            servo_data_packet_dict: dict[str, int | float] = to_builtins(servo_data_packet)
+            logger_fields.update(servo_data_packet_dict)
             # Using to_builtins() is much faster than asdict() for some reason
             imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
-            logged_fields.update(imu_data_packet_dict)
+            logger_fields.update(imu_data_packet_dict)
 
-            # Get the processed data packet fields:
+            # Get the processor data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
-                # Convert the processed data packet to a dictionary. Unknown types such as numpy
+                # Convert the processor data packet to a dictionary. Unknown types such as numpy
                 # float64 are converted to strings with 8 decimal places (that's enc_hook)
-                processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets[index], enc_hook=Logger._convert_unknown_type
+                processor_data_packet_dict: dict[str, float] = to_builtins(
+                    processor_data_packets[index], enc_hook=Logger._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
-                processed_data_packet_dict.pop("time_since_last_data_packet", None)
-                logged_fields.update(processed_data_packet_dict)
+                processor_data_packet_dict.pop("time_since_last_data_packet", None)
+                logger_fields.update(processor_data_packet_dict)
 
                 index += 1
 
-            logged_data_packets.append(logged_fields)
-        # Add the context data packet to the first logged data packet:
-        logged_data_packets[0].update(context_data_packet_dict)
+            # Apogee Prediction happens asynchronously, so we need to check if we have a packet
+            # This means that rather than belonging to a specific IMU packet, it belongs to the
+            # context packet
+            if apogee_predictor_data_packets:
+                apogee_predictor_data_packet_dict: dict[str, float] = to_builtins(
+                    apogee_predictor_data_packets.pop(0)
+                )
+                logger_fields.update(apogee_predictor_data_packet_dict)
 
-        return logged_data_packets
+            logger_data_packets.append(logger_fields)
+
+        return logger_data_packets
 
     def start(self) -> None:
         """
@@ -192,36 +202,34 @@ class Logger:
     def log(
         self,
         context_data_packet: ContextDataPacket,
-        extension: float,
+        servo_data_packet: ServoDataPacket,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessorDataPacket],
-        debug_packet: ContextDataPacket,
+        processor_data_packets: list[ProcessorDataPacket],
+        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
         :param context_data_packet: The context data packet to log.
-        :param extension: The current extension of the airbrakes.
+        :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched
-        from the apogee predictor, which runs in a separate process, it may not be the most recent
-        value, nor would it correspond to the respective data packet being logged.
+        :param processor_data_packets: The processor data packets to log.
+        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         """
-        # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
+        # We are populating a dictionary with the fields of the logger data packet
+        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
             context_data_packet,
-            str(extension),
+            servo_data_packet,
             imu_data_packets,
-            processed_data_packets,
-            debug_packet,
+            processor_data_packets,
+            apogee_predictor_data_packets,
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
         if context_data_packet.state_name in self.LOG_BUFFER_STATES:
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
-            to_log = logged_data_packets[:log_capacity]
-            to_buffer = logged_data_packets[log_capacity:]
+            to_log = logger_data_packets[:log_capacity]
+            to_buffer = logger_data_packets[log_capacity:]
 
             # Update counter and handle logging/buffering
             self._log_counter += len(to_log)
@@ -236,11 +244,11 @@ class Logger:
 
             # Reset the counter for other states
             self._log_counter = 0
-            self._log_queue.put_many(logged_data_packets)
+            self._log_queue.put_many(logger_data_packets)
 
     def _log_the_buffer(self):
         """
-        Adds the log buffer to the queue, so it can be logged to file.
+        Adds the log buffer to the queue, so it can be logger to file.
         """
         self._log_queue.put_many(list(self._log_buffer))
         self._log_buffer.clear()
