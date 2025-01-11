@@ -200,7 +200,6 @@ class IMUDataProcessor:
         Calculates the rotated acceleration vector. Converts gyroscope data into a delta
         quaternion, and adds onto the last quaternion. Will most likely be replaced by IMU
         quaternion data in the future, this is a work-around due to bad datasets.
-
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
         # We pre-allocate the space for our accelerations first
@@ -276,7 +275,7 @@ class IMUDataProcessor:
         This cannot be called on the first update as _last_data_packet is None. Units are in
         seconds.
         :return: A numpy array of the time difference between each data packet and the previous
-            data packet.
+        data packet.
         """
         # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
