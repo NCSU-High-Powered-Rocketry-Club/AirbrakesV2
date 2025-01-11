@@ -70,7 +70,7 @@ FULL_SCALE_CONFIG = SimulationConfig(
     air_temperature=np.float64(25),
     wgs_vertical=np.array([0, 0, -1]),
     launch_rod_pitch=np.float64(5.0),
-    launch_rod_azimuth=np.float64(0.0),
+    launch_rod_azimuth=np.float64(90.0),
     rand_config=DEFAULT_RAND_CONFIG,
 )
 

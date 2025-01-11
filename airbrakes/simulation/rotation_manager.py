@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
-from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED
+from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED, MAX_VELOCITY_THRESHOLD
 
 
 class RotationManager:
@@ -41,7 +41,7 @@ class RotationManager:
         self._azimuth: np.float64 = np.float64((launch_rod_azimuth * np.pi) / 180)
         self._last_orientation: R | None = None
         self._orientation: R | None = None
-        self.update_orientation(1)
+        self.update_orientation(MAX_VELOCITY_THRESHOLD)
 
     @property
     def gravity_vector(self) -> npt.NDArray:
