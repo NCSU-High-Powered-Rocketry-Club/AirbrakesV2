@@ -144,6 +144,7 @@ class Logger:
         logger_data_packets: list[LoggerDataPacket] = []
 
         index = 0  # Index to loop over processor data packets:
+
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
@@ -172,10 +173,15 @@ class Logger:
 
             # Apogee Prediction happens asynchronously, so we need to check if we have a packet
             # This means that rather than belonging to a specific IMU packet, it belongs to the
-            # context packet
+            # context packet.
+
+            # There is a small possibility that we won't log all the apogee predictor data packets
+            # if the length of the IMU data packets is less than the length of the apogee predictor
+            # data packets. However, this is unlikely to happen in practice. This particular case
+            # is NOT covered by tests.
             if apogee_predictor_data_packets:
                 apogee_predictor_data_packet_dict: dict[str, float] = to_builtins(
-                    apogee_predictor_data_packets.pop(0)
+                    apogee_predictor_data_packets.pop(0), enc_hook=Logger._convert_unknown_type
                 )
                 logger_fields.update(apogee_predictor_data_packet_dict)
 
@@ -225,7 +231,7 @@ class Logger:
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if context_data_packet.state_name in self.LOG_BUFFER_STATES:
+        if context_data_packet.state_letter in self.LOG_BUFFER_STATES:
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
             to_log = logger_data_packets[:log_capacity]
