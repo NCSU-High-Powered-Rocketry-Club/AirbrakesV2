@@ -6,17 +6,15 @@ from typing import TypedDict
 class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired
     """
     Represents a collection of all data that the logger can log in a line. Not every field will be
-    filled in every packet.
+    filled in every packet. The order in which the fields are defined determines the order in which
+    they will be logged.
     """
 
-    # Fields in ContextDataPacket
-    update_timestamp: int | None
-    state_name: str | None
-    imu_queue_size: int | None
-    apogee_predictor_queue_size: int | None
+    # Field in ContextDataPacket
+    state_letter: str | None
 
     # Fields in ServoDataPacket
-    set_extension: int | None
+    set_extension: str | None
 
     # IMU Data Packet Fields
     timestamp: int
@@ -71,3 +69,8 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     b_coefficient: float | None
     uncertainty_threshold_1: float | None
     uncertainty_threshold_2: float | None
+
+    # Other fields in ContextDataPacket
+    batch_number: int | None
+    imu_queue_size: int | None
+    apogee_predictor_queue_size: int | None
