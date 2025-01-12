@@ -33,11 +33,13 @@ class AirbrakesContext:
     """
 
     __slots__ = (
+        "_apogee",
+        "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
+        "context_data_packet",
         "current_extension",
         "data_processor",
-        "context_data_packet",
         "est_data_packets",
         "imu",
         "imu_data_packets",
@@ -86,6 +88,22 @@ class AirbrakesContext:
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
+
+        self._update_count: int = 1
+        self._apogee: float = 0.0
+
+    @property
+    def predicted_apogee(self) -> float:
+        """
+        :return: The predicted apogee of the rocket in meters. Returns 0.0 if an predicted
+        apogee is not available.
+        """
+        if self.apogee_predictor_data_packets and (
+            pred_apogee := self.apogee_predictor_data_packets[-1].predicted_apogee
+        ):
+            # Cache the apogee value so we don't have to keep recalculating it
+            self._apogee = float(pred_apogee)
+        return self._apogee
 
     def start(self) -> None:
         """
@@ -146,6 +164,7 @@ class AirbrakesContext:
         # Update the state machine based on the latest processed data
         self.state.update()
 
+        # Create packets representing the current state of the airbrakes system:
         self.generate_data_packets()
 
         # Logs the current state, extension, IMU data, and processed data
@@ -154,8 +173,13 @@ class AirbrakesContext:
             self.servo_data_packet,
             self.imu_data_packets,
             self.processed_data_packets,
-            self.apogee_predictor_data_packets,
+            self.apogee_predictor_data_packets.copy(),
         )
+        # The .copy() above is critical to make sure that things like the `predicted_apogee`
+        # property works. This is because log() modifies the list in place :(
+
+        # Increment the loop count
+        self._update_count += 1
 
     def extend_airbrakes(self) -> None:
         """
@@ -189,13 +213,13 @@ class AirbrakesContext:
         """
         # Create a context data packet to log the current state of the airbrakes system
         self.context_data_packet = ContextDataPacket(
-            update_timestamp=self.imu_data_packets[-1].timestamp,
-            state_name=self.state.name[0],
+            batch_number=self._update_count,
+            state_letter=self.state.name[0],
             imu_queue_size=self.imu.queue_size,
             apogee_predictor_queue_size=self.apogee_predictor.processed_data_packet_queue_size,
         )
 
         # Creates a servo data packet to log the current state of the servo
         self.servo_data_packet = ServoDataPacket(
-            set_extension=self.current_extension.value,
+            set_extension=str(self.current_extension.value),
         )
