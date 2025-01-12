@@ -1,5 +1,6 @@
 """Module for predicting apogee"""
 
+import contextlib
 import multiprocessing
 import signal
 import sys
@@ -14,7 +15,9 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeeP
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
-    from faster_fifo import Queue
+    from faster_fifo import Empty, Queue
+else:
+    from queue import Empty
 
 from scipy.optimize import curve_fit
 
@@ -60,8 +63,8 @@ class ApogeePredictor:
     """
 
     __slots__ = (
-        "_apogee",
         "_accelerations",
+        "_apogee",
         "_apogee_predictor_packet_queue",
         "_cumulative_time_differences",
         "_current_altitude",
@@ -73,8 +76,6 @@ class ApogeePredictor:
         "_processed_data_packet_queue",
         "_time_differences",
         "lookup_table",
-        "uncertainty_threshold_1",
-        "uncertainty_threshold_2",
     )
 
     def __init__(self):
@@ -97,7 +98,9 @@ class ApogeePredictor:
             self._processed_data_packet_queue: Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]
             ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
-            self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue()
+            self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
+                max_size_bytes=BUFFER_SIZE_IN_BYTES
+            )
 
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
@@ -105,7 +108,7 @@ class ApogeePredictor:
 
         # ------ Variables which can only be referenced in the prediction process ------
         # Placeholder values for the curve coefficients and apogee
-        self._apogee = 0.0
+        self._apogee: float = 0.0
         self._curve_coefficients: CurveCoefficients = CurveCoefficients()
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
         # list of all the accelerations since motor burn out:
@@ -160,7 +163,9 @@ class ApogeePredictor:
         """
         Gets the apogee prediction data packets from the queue.
         """
-        return self._apogee_predictor_packet_queue.get_many()
+        with contextlib.suppress(Empty):
+            return self._apogee_predictor_packet_queue.get_many(block=False)
+        return []
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -250,6 +255,7 @@ class ApogeePredictor:
         # Unfortunately, we need to modify the queue here again because the modifications made in
         # the __init__ are not copied to the new process.
         modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
+        modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
 
         last_run_length = 0
 
@@ -272,13 +278,14 @@ class ApogeePredictor:
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
 
+                # We only want to keep curve fitting if the curve fit hasn't converged yet
+                if not self._has_apogee_converged:
+                    self._curve_coefficients = self._curve_fit()
+                    self._update_prediction_lookup_table(self._curve_coefficients)
+
                 # Get the predicted apogee if the curve fit has converged:
                 if self._has_apogee_converged:
                     self._apogee = self._predict_apogee()
-                else:
-                    # We only want to keep curve fitting if the curve fit hasn't converged yet
-                    self._curve_coefficients = self._curve_fit()
-                    self._update_prediction_lookup_table(self._curve_coefficients)
 
                 last_run_length = len(self._accelerations)
 
@@ -288,8 +295,8 @@ class ApogeePredictor:
                         predicted_apogee=self._apogee,
                         a_coefficient=self._curve_coefficients.A,
                         b_coefficient=self._curve_coefficients.B,
-                        uncertainty_threshold_1=self.uncertainty_threshold_1,
-                        uncertainty_threshold_2=self.uncertainty_threshold_2,
+                        uncertainty_threshold_1=self._curve_coefficients.uncertainties[0],
+                        uncertainty_threshold_2=self._curve_coefficients.uncertainties[1],
                     )
                 )
 
@@ -305,7 +312,7 @@ class ApogeePredictor:
         self._current_altitude = data_packets[-1].current_altitude
         self._current_velocity = data_packets[-1].vertical_velocity
 
-    def _predict_apogee(self) -> float:
+    def _predict_apogee(self) -> np.float64:
         """
         Predicts the apogee using the lookup table and linear interpolation.
         It gets the change in height from the lookup table, and adds it to the
