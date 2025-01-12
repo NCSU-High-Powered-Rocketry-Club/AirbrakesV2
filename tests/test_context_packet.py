@@ -14,7 +14,7 @@ def context_packet():
 
 
 class TestContextDataPacket:
-    """Tests for the ProcessedDataPacket class."""
+    """Tests for the ContextDataPacket class."""
 
     batch_number = 0
     state_letter = "S"
