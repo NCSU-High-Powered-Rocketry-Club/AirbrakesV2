@@ -190,8 +190,3 @@ class TestIMU:
         packets = imu.get_imu_data_packets()
         assert not packets, "Expected empty deque"
         imu.stop()
-
-    @pytest.mark.skip(reason="Need to install mscl in the CI and ideally auto-build locally.")
-    def test_imu_data_loop(self):
-        # Mock the MSCL library and related methods/classes to test the IMU data loop completely:
-        pass
