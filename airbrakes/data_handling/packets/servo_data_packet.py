@@ -9,5 +9,5 @@ class ServoDataPacket(msgspec.Struct):
     encoder position of the servo.
     """
 
-    set_extension: float
-    # encoder_position: float TODO: Implement this in a future PR
+    set_extension: str
+    # encoder_position: str TODO: Implement this in a future PR
