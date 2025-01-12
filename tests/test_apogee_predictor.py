@@ -3,14 +3,20 @@ import multiprocessing.queues
 import threading
 import time
 from collections import deque
+from typing import TYPE_CHECKING
 
 import faster_fifo
 import numpy as np
 import pytest
 
-from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
+from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS, UNCERTAINTY_THRESHOLD
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor, CurveCoefficients, LookupTable
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+
+if TYPE_CHECKING:
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
 
 
 @pytest.fixture
@@ -41,7 +47,7 @@ class TestApogeePredictor:
         """Tests whether the IMUDataProcessor is correctly initialized"""
         ap = apogee_predictor
         # Test attributes on init
-        assert ap._apogee_prediction_value.value == 0.0
+        assert ap._apogee == 0.0
         assert isinstance(ap._processed_data_packet_queue, faster_fifo.Queue)
         assert isinstance(ap._prediction_process, multiprocessing.Process)
         assert not ap._prediction_process.is_alive()
@@ -57,9 +63,9 @@ class TestApogeePredictor:
         assert isinstance(ap.lookup_table, LookupTable)
         assert ap.lookup_table.velocities.size == 2
         assert ap.lookup_table.delta_heights.size == 2
+        assert isinstance(ap._curve_coefficients, CurveCoefficients)
 
         # Test properties on init
-        assert ap.apogee == 0.0
         assert not ap.is_running
 
     def test_apogee_loop_start_stop(self, apogee_predictor):
@@ -124,7 +130,7 @@ class TestApogeePredictor:
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1177.232574134796,
+                1177.8066285250015,
             ),
         ],
         ids=["hover_at_altitude", "coast_phase_sim"],
@@ -134,15 +140,25 @@ class TestApogeePredictor:
     ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
-        predict it correctly."""
+        predict it correctly. Also tests that we have sent the apogee predictor packet
+        to the main process."""
 
+        assert not threaded_apogee_predictor._apogee_predictor_packet_queue.qsize()
         threaded_apogee_predictor.update(processed_data_packets)
 
         time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
-        assert threaded_apogee_predictor.apogee == expected_value
-        assert threaded_apogee_predictor.uncertainty_threshold_1
-        assert threaded_apogee_predictor.uncertainty_threshold_2
+        assert threaded_apogee_predictor._apogee == expected_value
+
+        assert threaded_apogee_predictor._apogee_predictor_packet_queue.qsize() == 2
+        packet: ApogeePredictorDataPacket = threaded_apogee_predictor.get_prediction_data_packets()[
+            -1
+        ]
+        assert packet.predicted_apogee == expected_value
+        assert packet.a_coefficient
+        assert packet.b_coefficient
+        assert packet.uncertainty_threshold_1 < UNCERTAINTY_THRESHOLD[0]
+        assert packet.uncertainty_threshold_2 < UNCERTAINTY_THRESHOLD[1]
 
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
@@ -160,7 +176,7 @@ class TestApogeePredictor:
             ]
             threaded_apogee_predictor.update(packets)
             time.sleep(0.001)  # allows update to finish
-            apogees.append(threaded_apogee_predictor.apogee)
+            apogees.append(threaded_apogee_predictor._apogee)
 
         # Assert that apogees are ascending:
         assert all(apogees[i] <= apogees[i + 1] for i in range(len(apogees) - 1))
@@ -170,11 +186,12 @@ class TestApogeePredictor:
         # of packets.
         assert 0.0 in unique_apogees
         unique_apogees.remove(0.0)
+
+        assert threaded_apogee_predictor._processed_data_packet_queue.qsize() == 0
         # amount of apogees we have is number of packets, divided by the frequency
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_MIN_PACKETS
-        assert threaded_apogee_predictor._processed_data_packet_queue.qsize() == 0
         assert threaded_apogee_predictor._has_apogee_converged
-        assert threaded_apogee_predictor.apogee == max(apogees)
+        assert threaded_apogee_predictor._apogee == max(apogees)
         assert threaded_apogee_predictor.is_running
 
     @pytest.mark.parametrize(

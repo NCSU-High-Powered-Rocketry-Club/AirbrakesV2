@@ -4,13 +4,20 @@ import time
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.constants import IMU_TIMEOUT_SECONDS, SERVO_DELAY_SECONDS, ServoExtension
+from airbrakes.constants import (
+    APOGEE_PREDICTION_MIN_PACKETS,
+    IMU_TIMEOUT_SECONDS,
+    SERVO_DELAY_SECONDS,
+    UNCERTAINTY_THRESHOLD,
+    ServoExtension,
+)
 from airbrakes.data_handling.data_processor import IMUDataProcessor
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import RawDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
-from tests.auxil.utils import make_est_data_packet
+from tests.auxil.utils import make_est_data_packet, make_processed_data_packet, make_raw_data_packet
 
 
 class TestAirbrakesContext:
@@ -119,15 +126,26 @@ class TestAirbrakesContext:
                 self.context.predict_apogee()
                 self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
-        def log(self, state, extension, imu_data_packets, processed_data_packets, debug_packet):
+        def log(self, ctx_dp, servo_dp, imu_data_packets, processed_data_packets, apg_dps):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
-            asserts.append(state == "CoastState")
-            asserts.append(extension == ServoExtension.MIN_EXTENSION.value)
+            asserts.append(isinstance(ctx_dp, ContextDataPacket))
+            asserts.append(
+                ctx_dp.batch_number == 1
+                and ctx_dp.state_letter == "C"
+                and ctx_dp.imu_queue_size > 0
+                and ctx_dp.apogee_predictor_queue_size >= 0
+            )
+            asserts.append(servo_dp.set_extension == str(ServoExtension.MIN_EXTENSION.value))
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processed_data_packets[0].current_altitude == 0.0)
-            asserts.append(isinstance(debug_packet, ContextDataPacket))
+            asserts.append(isinstance(apg_dps, list))
+            asserts.append(len(apg_dps) >= 0)
+            # More testing of whether we got ApogeePredictorDataPackets is done in
+            # `test_airbrakes_receives_apogee_predictor_packets`. The reason why it wasn't tested
+            # here is because state.update() is called before apogee_predictor.update(), so the
+            # packets aren't sent to the apogee predictor for prediction.
 
         def apogee_update(self, processed_data_packets):
             calls.append("apogee update called")
@@ -259,7 +277,7 @@ class TestAirbrakesContext:
         lines = airbrakes.logger.log_path.open().readlines()
         assert len(lines) > 100
 
-    def test_airbrakes_predict_apogee(
+    def test_airbrakes_sends_packets_to_apogee_predictor(
         self, monkeypatch, idle_mock_imu, servo, logger, data_processor, apogee_predictor
     ):
         """Tests whether the airbrakes predict_apogee method works correctly by calling the
@@ -287,12 +305,13 @@ class TestAirbrakesContext:
         assert not airbrakes.imu._data_queue.qsize()
         assert airbrakes.state.name == "StandbyState"
         assert airbrakes.data_processor._last_data_packet is None
+        assert not airbrakes.apogee_predictor_data_packets
 
         monkeypatch.setattr(airbrakes.apogee_predictor.__class__, "update", apogee_update)
         monkeypatch.setattr(logger.__class__, "log", fake_log)
 
         # Insert 1 raw, then 2 estimated, then 1 raw data packet:
-        raw_1 = RawDataPacket(timestamp=time.time())
+        raw_1 = make_raw_data_packet(timestamp=time.time())
         airbrakes.imu._data_queue.put(raw_1)
         time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
         airbrakes.update()
@@ -300,6 +319,8 @@ class TestAirbrakesContext:
         assert list(airbrakes.imu_data_packets) == [raw_1]
         assert not airbrakes.est_data_packets
         assert len(airbrakes.processed_data_packets) == 0
+        assert not airbrakes.apogee_predictor_data_packets
+        assert airbrakes._update_count == 2
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         airbrakes.predict_apogee()
         assert not calls
@@ -322,6 +343,7 @@ class TestAirbrakesContext:
         airbrakes.update()
         time.sleep(0.01)
         # Check if we processed the estimated data packet:
+        assert airbrakes._update_count == 3
         assert list(airbrakes.imu_data_packets) == [est_1, est_2]
         assert airbrakes.est_data_packets == [est_1, est_2]
         assert len(airbrakes.processed_data_packets) == 2
@@ -337,11 +359,12 @@ class TestAirbrakesContext:
         assert packets[-1].current_altitude == 2.0
 
         # Insert 1 raw data packet:
-        raw_2 = RawDataPacket(timestamp=time.time())
+        raw_2 = make_raw_data_packet(timestamp=time.time())
         airbrakes.imu._data_queue.put(raw_2)
         time.sleep(0.001)
         airbrakes.update()
         # Check if we processed the raw data packet:
+        assert airbrakes._update_count == 4
         assert list(airbrakes.imu_data_packets) == [raw_2]
         assert not airbrakes.est_data_packets
         assert airbrakes.processed_data_packets[-1].current_altitude == 2.0
@@ -357,3 +380,66 @@ class TestAirbrakesContext:
         # That ensures that we don't send duplicate data to the predictor.
 
         airbrakes.stop()
+
+    def test_airbrakes_receives_apogee_predictor_packets(
+        self, airbrakes: AirbrakesContext, monkeypatch, random_data_mock_imu
+    ):
+        """Tests whether the airbrakes receives packets from the apogee predictor and that the
+        attribute `predicted_apogee` is updated correctly."""
+
+        monkeypatch.setattr("airbrakes.hardware.base_imu.MAX_FETCHED_PACKETS", 100)
+        monkeypatch.setattr(airbrakes, "imu", random_data_mock_imu)
+
+        airbrakes.start()
+        time.sleep(0.01)
+        # Need to assert that we have these many packets otherwise apogee prediction won't run:
+        assert airbrakes.imu.queue_size > APOGEE_PREDICTION_MIN_PACKETS
+
+        # We have to do this convoluted manual way of updating instead of airbrakes.update() because
+        # 1) faster-fifo does not guarantee that all packets will be fetched in a single get_many()
+        # call.
+        # 2) We don't want other things in airbrakes.update() to execute, like the state machine.
+        est_packets = 0
+        while est_packets < APOGEE_PREDICTION_MIN_PACKETS:
+            fetched = airbrakes.imu.get_imu_data_packets()
+            est_data_packets = [x for x in fetched if isinstance(x, EstimatedDataPacket)]
+            airbrakes.est_data_packets.extend(est_data_packets)
+            airbrakes.data_processor.update(est_data_packets)
+            if est_data_packets:
+                # Generate dummy pdps:
+                pdps = [make_processed_data_packet() for _ in range(len(est_data_packets))]
+                airbrakes.processed_data_packets.extend(pdps)
+            est_packets += len(est_data_packets)
+
+        # Now we will have enough packets to run the apogee predictor:
+        airbrakes.predict_apogee()
+        # Nothing should be fetched yet:
+        assert not airbrakes.apogee_predictor_data_packets
+
+        time.sleep(0.01)  # sleep so apogee prediction runs
+        apg_packets = airbrakes.apogee_predictor.get_prediction_data_packets()
+        airbrakes.apogee_predictor_data_packets.extend(apg_packets)
+
+        assert len(apg_packets) > 0
+        ap_dp: ApogeePredictorDataPacket = apg_packets[0]
+        assert isinstance(ap_dp, ApogeePredictorDataPacket)
+        assert ap_dp.predicted_apogee
+        assert airbrakes.predicted_apogee
+        assert ap_dp.uncertainty_threshold_1 < UNCERTAINTY_THRESHOLD[0]
+        assert ap_dp.uncertainty_threshold_2 < UNCERTAINTY_THRESHOLD[1]
+
+        airbrakes.stop()
+
+        # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
+        # predicted_apogee attribute:
+        airbrakes.apogee_predictor_data_packets = []
+        assert airbrakes.predicted_apogee
+
+    def test_generate_data_packets(self, airbrakes):
+        """Tests whether the airbrakes generates the correct data packets for logging."""
+        airbrakes.generate_data_packets()
+        assert airbrakes.context_data_packet.batch_number == 1
+        assert airbrakes.context_data_packet.state_letter == "S"
+        assert airbrakes.context_data_packet.imu_queue_size >= 0
+        assert airbrakes.context_data_packet.apogee_predictor_queue_size >= 0
+        assert airbrakes.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)

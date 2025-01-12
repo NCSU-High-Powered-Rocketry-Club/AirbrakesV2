@@ -27,7 +27,7 @@ class StateInformation(msgspec.Struct):
 
     min_velocity: float | None = None
     max_velocity: float | None = None
-    extensions: list[float] = []
+    extensions: list[ServoExtension] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
     min_avg_vertical_acceleration: float | None = None
@@ -102,7 +102,7 @@ class TestIntegration:
                     state_info.max_avg_vertical_acceleration = (
                         ab.data_processor.average_vertical_acceleration
                     )
-                    state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
+                    state_info.apogee_prediction.append(ab.predicted_apogee)
 
                 state_info.min_velocity = min(
                     ab.data_processor.vertical_velocity, state_info.min_velocity
@@ -126,7 +126,7 @@ class TestIntegration:
                     state_info.max_avg_vertical_acceleration,
                 )
 
-                state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
+                state_info.apogee_prediction.append(ab.predicted_apogee)
 
                 # Update the state information in the dictionary
                 states_dict[ab.state.name] = state_info
@@ -241,7 +241,7 @@ class TestIntegration:
             )
 
         # Now let's check if everything was logged correctly:
-        # some what of a duplicate of test_logger.py:
+        # somewhat of a duplicate of test_logger.py:
 
         with ab.logger.log_path.open() as f:
             reader = csv.DictReader(f)
@@ -263,24 +263,33 @@ class TestIntegration:
             assert int(timestamp) > 1e9
 
             # Check if the state field has only a single letter:
-            state: str = line["state"]
+            state: str = line["state_letter"]
             assert len(state) == 1
 
             line_number = 0
+            batch_number = 0
             state_list = []
+            pred_apogees_in_coast = []
+            uncertainities_in_coast = []
+
             for row in reader:
                 line_number += 1
-                state: str = row["state"]
-                extension: str = row["extension"]
+                state: str = row["state_letter"]
+                extension: str = row["set_extension"]
                 is_est_data_packet: bool = row["estLinearAccelX"] != ""
 
                 if state not in state_list:
                     state_list.append(state)
 
                 # Check if we logged convergence params in CoastState:
-                if state == "C" and row["fetched_imu_packets"] != "":
-                    assert row["uncertainity_threshold_1"] != ""
-                    assert row["predicted_apogee"] != ""
+                if state == "C":
+                    if row["predicted_apogee"]:
+                        pred_apogees_in_coast.append(row["predicted_apogee"])
+                    if row["uncertainty_threshold_1"]:
+                        uncertainities_in_coast.append(row["uncertainty_threshold_1"])
+                # else:
+                #     assert row["predicted_apogee"] == ""
+                #     assert row["uncertainty_threshold_1"] == ""
 
                 # Check if we logged our main calculations for estimated data packets:
                 if is_est_data_packet:
@@ -296,9 +305,19 @@ class TestIntegration:
                     ServoExtension.MAX_NO_BUZZ.value,
                 ]
 
+                batch_number = int(row["batch_number"])
+
             # Check if we have a lot of lines in the log file:
             # arbitrary value, depends on length of log buffer and flight data.
             assert line_number > 80_000
+
+            # More than 1000 iterations:
+            assert batch_number > 1000
+
+            # Predicted apogees and uncertainties should be logged in CoastState:
+            assert pred_apogees_in_coast
+            assert uncertainities_in_coast
+            assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
 
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]
