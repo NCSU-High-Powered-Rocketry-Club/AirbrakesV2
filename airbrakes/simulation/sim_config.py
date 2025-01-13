@@ -70,7 +70,7 @@ FULL_SCALE_CONFIG = SimulationConfig(
     air_temperature=np.float64(25),
     wgs_vertical=np.array([0, 0, -1]),
     launch_rod_pitch=np.float64(5.0),
-    launch_rod_azimuth=np.float64(90.0),
+    launch_rod_azimuth=np.float64(180.0),
     rand_config=DEFAULT_RAND_CONFIG,
 )
 
@@ -80,10 +80,26 @@ SUB_SCALE_CONFIG = SimulationConfig(
     motor="AeroTech_J500G",
     airbrake_retracted_cd=np.array([[0.05, 0.2, 0.3], [0.5, 0.445, 0.43]]),
     airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.65, 0.595, 0.58]]),
-    rocket_mass=np.float64(6.172),
+    rocket_mass=np.float64(6.391),
     reference_area=np.float64(0.008205),
     airbrakes_reference_area=np.float64(0.00487741),
     air_temperature=np.float64(15),
+    wgs_vertical=np.array([-1, 0, 0]),
+    launch_rod_pitch=np.float64(5.0),
+    launch_rod_azimuth=np.float64(0.0),
+    rand_config=SUB_SCALE_RAND_CONFIG,
+)
+
+LEGACY_CONFIG = SimulationConfig(
+    raw_time_step=np.float64(0.001),
+    est_time_step=np.float64(0.002),
+    motor="AeroTech_J500G",
+    airbrake_retracted_cd=np.array([[0.05, 0.2, 0.3], [0.5, 0.445, 0.43]]),
+    airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.65, 0.595, 0.58]]),
+    rocket_mass=np.float64(5.103),
+    reference_area=np.float64(0.008107),
+    airbrakes_reference_area=np.float64(0.00487741),
+    air_temperature=np.float64(10),
     wgs_vertical=np.array([-1, 0, 0]),
     launch_rod_pitch=np.float64(5.0),
     launch_rod_azimuth=np.float64(0.0),
@@ -103,5 +119,7 @@ def get_configuration(config_type: str) -> SimulationConfig:
             return FULL_SCALE_CONFIG
         case "sub-scale":
             return SUB_SCALE_CONFIG
+        case "legacy":
+            return LEGACY_CONFIG
         case _:
             raise ValueError(f"Invalid config type: {config_type}")

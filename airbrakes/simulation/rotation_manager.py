@@ -146,11 +146,11 @@ class RotationManager:
         # first have to take the current orientation and the last orientation, which rotates
         # from Earth frame to vehicle frame, and convert to rotations from vehicle frame to
         # Earth frame.
-        imu_adjusted_orientation = self._orientation.inv()
-        imu_adjusted_last_orientation = self._last_orientation.inv()
+        imu_adjusted_orientation = self._orientation
+        imu_adjusted_last_orientation = self._last_orientation
 
         # Calculate the relative rotation from the new inverted rotations
-        relative_rotation = imu_adjusted_orientation * imu_adjusted_last_orientation.inv()
+        relative_rotation = imu_adjusted_last_orientation * imu_adjusted_orientation.inv()
 
         # Expresses as a rotation vector
         return relative_rotation.as_rotvec()

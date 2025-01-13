@@ -152,7 +152,7 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         "-s",
         "--sim",
         help="Runs the data simulation alongside the mock simulation, with an optional scale",
-        choices=["full-scale", "sub-scale"],
+        choices=["full-scale", "sub-scale", "legacy"],
         nargs="?",  # Allows an optional argument
         const="full-scale",  # Default when `-s` is provided without a value
         default=False,  # Default when `-s` is not provided at all

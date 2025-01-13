@@ -304,13 +304,22 @@ class DataGenerator:
         # magnitude of acceleration increases
         # The magnitude of noise is then split to all 3 directions of the compensated acceleration
         # vectors, to apply evenly.
-        comp_accel_mag = np.linalg.norm(compensated_accel)
-        comp_accel_noise_mag = get_random_value(
-            self._config.rand_config.acceleration_noise_coefficients, comp_accel_mag
-        )
-        comp_accel_noise = (compensated_accel / comp_accel_mag) * comp_accel_noise_mag
-        compensated_accel += comp_accel_noise
 
+        # First checks if we are in coast phase
+        # TODO: don't repeat this check statement, as it is already done above. find cleaner way
+        # to check current state in the sim.
+        if (
+            self._last_velocities[2] < self._max_vertical_velocity * MAX_VELOCITY_THRESHOLD
+            and self._last_est_packet.timestamp > 1e9
+        ):
+            comp_accel_mag = np.linalg.norm(compensated_accel)
+            comp_accel_noise_mag = get_random_value(
+                self._config.rand_config.acceleration_noise_coefficients, comp_accel_mag
+            )
+            comp_accel_noise = (compensated_accel / comp_accel_mag) * comp_accel_noise_mag
+            compensated_accel += comp_accel_noise
+
+        # gets linear acceleration from the rotation manager
         linear_accel = self._est_rotation_manager.calculate_linear_accel(
             force_accelerations[0],
             force_accelerations[1],
