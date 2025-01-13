@@ -42,8 +42,11 @@ def run_flight(args: argparse.Namespace) -> None:
     airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
+    if args.sim:
+        imu.set_airbrakes_status(airbrakes.current_extension)
+
     # Run the main flight loop
-    run_flight_loop(airbrakes, flight_display, args.mock)
+    run_flight_loop(airbrakes, flight_display, args.mock, args.sim)
 
 
 def create_components(
@@ -84,7 +87,10 @@ def create_components(
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
+    airbrakes: AirbrakesContext,
+    flight_display: FlightDisplay,
+    is_mock: bool,
+    is_sim: bool,
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
@@ -104,6 +110,8 @@ def run_flight_loop(
             # Stop the replay when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:
                 break
+            if is_sim:
+                airbrakes.imu.set_airbrakes_status(airbrakes.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
