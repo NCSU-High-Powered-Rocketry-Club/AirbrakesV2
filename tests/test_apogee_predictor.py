@@ -9,9 +9,10 @@ import faster_fifo
 import numpy as np
 import pytest
 
-from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS, UNCERTAINTY_THRESHOLD
+from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS, STOP_SIGNAL, UNCERTAINTY_THRESHOLD
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor, CurveCoefficients, LookupTable
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from tests.auxil.utils import make_processed_data_packet
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
@@ -77,19 +78,32 @@ class TestApogeePredictor:
 
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
         """Tests that the predictor adds to the queue when update is called"""
-        packet = [
-            ProcessorDataPacket(
-                current_altitude=100,
-                vertical_velocity=50,
-                vertical_acceleration=-5,
-                time_since_last_data_packet=0.1,
-            )
-        ]
+        packet = [make_processed_data_packet()]
         # important to not .start() the process, as we don't want it to run as it will fetch
         # it from the queue and we want to check if it's added to the queue.
         apogee_predictor.update(packet.copy())
         assert apogee_predictor._processed_data_packet_queue.qsize() == 1
         assert apogee_predictor._processed_data_packet_queue.get_many() == packet
+
+    def test_queue_hits_timeout_and_continues(self, threaded_apogee_predictor, monkeypatch):
+        """Tests whether the apogee predictor continues to fetch packets after hitting a timeout."""
+        monkeypatch.setattr(
+            "airbrakes.data_handling.apogee_predictor.MAX_GET_TIMEOUT_SECONDS", 0.01
+        )
+        time.sleep(0.05)  # hit the timeout
+        sample_packet = make_processed_data_packet()
+        threaded_apogee_predictor._processed_data_packet_queue.put(sample_packet)
+        time.sleep(0.01)  # wait for the thread to fetch the packet
+        assert threaded_apogee_predictor._processed_data_packet_queue.qsize() == 0
+        assert len(threaded_apogee_predictor._accelerations) == 1
+        assert threaded_apogee_predictor._accelerations[0] == sample_packet.vertical_acceleration
+
+    def test_apogee_predictor_stop_signal(self, threaded_apogee_predictor):
+        """Tests that the apogee predictor stops when the stop signal is sent."""
+        assert threaded_apogee_predictor.is_running
+        threaded_apogee_predictor._processed_data_packet_queue.put(STOP_SIGNAL)
+        time.sleep(0.001)  # wait for the thread to fetch the packet
+        assert not threaded_apogee_predictor.is_running
 
     @pytest.mark.parametrize(
         (

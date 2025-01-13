@@ -13,7 +13,9 @@ from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.utils import modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
-    from faster_fifo import Queue
+    from faster_fifo import Empty, Queue
+else:
+    from queue import Empty
 
 from msgspec import to_builtins
 
@@ -289,9 +291,12 @@ class Logger:
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields: list[LoggerDataPacket | Literal["STOP"]] = self._log_queue.get_many(
-                    timeout=MAX_GET_TIMEOUT_SECONDS
-                )
+                try:
+                    message_fields: list[LoggerDataPacket | Literal["STOP"]] = (
+                        self._log_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+                    )
+                except Empty:
+                    continue
                 # If the message is the stop signal, break out of the loop
                 for message_field in message_fields:
                     if message_field == STOP_SIGNAL:

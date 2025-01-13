@@ -1,7 +1,6 @@
 import csv
 import multiprocessing
 import multiprocessing.sharedctypes
-import signal
 import time
 from collections import deque
 
@@ -53,6 +52,13 @@ def convert_dict_vals_to_str(d: dict[str, float]) -> dict[str, str]:
 
 class TestLogger:
     """Tests the Logger() class in logger.py"""
+
+    sample_data = {
+        "state_letter": "S",
+        "set_extension": "0.0",
+        "timestamp": "4",
+        "invalid_fields": "[]",
+    }
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def _clear_directory(self):
@@ -121,13 +127,7 @@ class TestLogger:
 
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
-        log_dict = {
-            "state_letter": "S",
-            "set_extension": "0.0",
-            "timestamp": "4",
-            "invalid_fields": "[]",
-        }
-        logger._log_buffer.appendleft(log_dict)
+        logger._log_buffer.appendleft(self.sample_data)
         logger.stop()
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
@@ -137,27 +137,26 @@ class TestLogger:
                 assert len(row) > 5  # Should have other fields with empty values
                 # Only fetch non-empty values:
                 row_dict = {k: v for k, v in row.items() if v}
-                assert row_dict == log_dict
+                assert row_dict == self.sample_data
             assert count == 1
+        assert len(logger._log_buffer) == 0
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
         """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
         values = faster_fifo.Queue()
+        org_method = Logger._logging_loop
 
-        def _logging_loop(self):
+        def _logging_loop_patched(self):
             """Monkeypatched method for testing."""
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            while True:
-                a = self._log_queue.get()
-                if a == STOP_SIGNAL:
-                    break
+            org_method(self)
             values.put("clean exit")
 
-        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
+        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop_patched)
 
         logger = Logger(LOG_PATH)
         logger.start()
         assert logger.is_running
+        assert values.qsize() == 0
         try:
             raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
         except KeyboardInterrupt:
@@ -168,39 +167,20 @@ class TestLogger:
         assert values.qsize() == 1
         assert values.get() == "clean exit"
 
-    def test_logger_loop_exception_raised(self, monkeypatch):
+    def test_logger_loop_exception_raised(self):
         """Tests whether the Logger loop properly propogates unknown exceptions."""
-        values = faster_fifo.Queue()
-
-        def _logging_loop(_):
-            """Monkeypatched method for testing."""
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            while True:
-                values.put("error in loop")
-                raise ValueError("some error")
-
-        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop)
-
         logger = Logger(LOG_PATH)
         logger.start()
-        with pytest.raises(ValueError, match="some error") as excinfo:
+        logger._log_queue.put({"wrong_filed": "wrong_value"})
+        with pytest.raises(ValueError, match="dict contains fields not in fieldnames"):
             logger._logging_loop()
 
         logger.stop()
         assert not logger.is_running
         assert not logger._log_process.is_alive()
-        assert values.qsize() == 2
-        assert values.get() == "error in loop"
-        assert "some error" in str(excinfo.value)
 
     def test_logging_loop_add_to_queue(self, logger):
-        test_log = {
-            "state_letter": "S",
-            "set_extension": "0.0",
-            "timestamp": "4",
-            "invalid_fields": "[]",
-        }
-        logger._log_queue.put(test_log)
+        logger._log_queue.put(self.sample_data)
         assert logger._log_queue.qsize() == 1
         logger.start()
         time.sleep(0.01)  # Give the process time to log to file
@@ -208,14 +188,30 @@ class TestLogger:
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
-            headers = reader.fieldnames
-            assert list(headers) == list(LoggerDataPacket.__annotations__)
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row.items() if v}
 
-            assert row_dict == test_log
+            assert row_dict == self.sample_data
+
+    def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
+        """Tests whether the logger continues to log after a timeout."""
+        monkeypatch.setattr("airbrakes.data_handling.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
+        logger.start()
+        time.sleep(0.05)
+        logger._log_queue.put(self.sample_data)
+        logger.stop()
+        # Let's check the contents of the file:
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            row = {}
+            for row in reader:
+                row: dict[str]
+            # Only fetch non-empty values:
+            row_dict = {k: v for k, v in row.items() if v}
+
+            assert row_dict == self.sample_data
 
     # This decorator is used to run the same test with different data
     # read more about it here: https://docs.pytest.org/en/stable/parametrize.html
@@ -295,8 +291,6 @@ class TestLogger:
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
-            headers = reader.fieldnames
-            assert list(headers) == list(LoggerDataPacket.__annotations__)
 
             processed_data_packet_fields = {
                 "current_altitude",

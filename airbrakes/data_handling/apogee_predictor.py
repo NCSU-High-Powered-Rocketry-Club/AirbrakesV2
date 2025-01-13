@@ -265,10 +265,12 @@ class ApogeePredictor:
             # communicate between the main process and the prediction process. The main process
             # will add the data packets to the queue, and the prediction process will get the data
             # packets from the queue and add them to its own arrays.
-
-            data_packets: list[ProcessorDataPacket | Literal["STOP"]] = (
-                self._processed_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
-            )
+            try:
+                data_packets: list[ProcessorDataPacket | Literal["STOP"]] = (
+                    self._processed_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+                )
+            except Empty:
+                continue
 
             if STOP_SIGNAL in data_packets:
                 break
