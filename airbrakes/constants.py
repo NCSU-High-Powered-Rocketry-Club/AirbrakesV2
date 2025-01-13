@@ -133,8 +133,6 @@ ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
 like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
 we deadband the accel to prevent this."""
 
-TAKEOFF_HEIGHT_METERS = 10
-"""The height in meters that the rocket must reach before we consider it to have taken off."""
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
