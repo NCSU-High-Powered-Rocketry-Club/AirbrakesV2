@@ -138,6 +138,9 @@ TAKEOFF_HEIGHT_METERS = 10
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
+TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED = 25
+"""The acceleration in meters per second squared that the rocket must reach before we consider it
+to have taken off."""
 
 # ---------------- MotorBurn to Coasting ----------------
 MAX_VELOCITY_THRESHOLD = 0.96

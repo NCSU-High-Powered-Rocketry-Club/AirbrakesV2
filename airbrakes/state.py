@@ -8,6 +8,7 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
+    TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED,
     TAKEOFF_HEIGHT_METERS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_ALTITUDE_METERS,
@@ -91,6 +92,10 @@ class StandbyState(State):
             return
 
         if data.current_altitude > TAKEOFF_HEIGHT_METERS:
+            self.next_state()
+            return
+
+        if data.average_vertical_acceleration > TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED:
             self.next_state()
             return
 
