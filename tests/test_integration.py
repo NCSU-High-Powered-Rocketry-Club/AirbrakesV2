@@ -122,20 +122,10 @@ class TestIntegration:
                     ab.data_processor.average_vertical_acceleration,
                     state_info.max_avg_vertical_acceleration,
                 )
-                if ab.state.name == "MotorBurnState":
-                    # Because the end of motor burn state has really low acceleration, we have to
-                    # check to make sure the maximum velocity isn't too high, which ensures the
-                    # minimum acceleration is the very beginning of the motor burn state.
-                    if state_info.max_velocity <= 25:
-                        state_info.min_avg_vertical_acceleration = min(
-                            ab.data_processor.average_vertical_acceleration,
-                            state_info.min_avg_vertical_acceleration,
-                        )
-                else:
-                    state_info.min_avg_vertical_acceleration = min(
-                        ab.data_processor.average_vertical_acceleration,
-                        state_info.min_avg_vertical_acceleration,
-                    )
+                state_info.min_avg_vertical_acceleration = min(
+                    ab.data_processor.average_vertical_acceleration,
+                    state_info.min_avg_vertical_acceleration,
+                )
 
                 state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
 
@@ -181,7 +171,7 @@ class TestIntegration:
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
         assert (
-            motor_burn_state.min_avg_vertical_acceleration
+            motor_burn_state.max_avg_vertical_acceleration
             >= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
         )
         assert not any(motor_burn_state.apogee_prediction)

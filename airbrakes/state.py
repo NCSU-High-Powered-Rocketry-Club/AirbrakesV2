@@ -81,8 +81,8 @@ class StandbyState(State):
         # For that we can check:
         # 1) Velocity - If the velocity of the rocket is above a threshold, the rocket has
         # launched.
-        # 2) Altitude - If the altitude is above a threshold, the rocket has launched.
-        # Ideally we would directly communicate with the motor, but we don't have that capability.
+        # 2) Acceleration - If the acceleration of the rocket is above a threshold, the rocket has
+        # launched.
 
         data = self.context.data_processor
 
