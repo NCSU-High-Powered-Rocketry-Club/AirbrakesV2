@@ -80,9 +80,7 @@ def mock_imu(request):
     """Fixture that returns a MockIMU object with the specified log file."""
     # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is
     # False.
-    return MockIMU(
-        log_file_path=request.param, real_time_simulation=False, start_after_log_buffer=True
-    )
+    return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
 
 
 @pytest.fixture
@@ -93,7 +91,7 @@ def mocked_args_parser():
         mock = True
         real_servo = False
         keep_log_file = False
-        fast_simulation = False
+        fast_replay = False
         debug = True
 
     return MockArgs()
