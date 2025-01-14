@@ -34,7 +34,7 @@ class ServoControllerApp(App):
         super().__init__(**kwargs)
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
-        self.servo = Servo(SERVO_PIN, initial_value=ServoExtension.MIN_NO_BUZZ.value)
+        self.servo = Servo(SERVO_PIN)
         # Max steps set to zero indicates that the encoder can infinitely rotate
         self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B,max_steps=0)
 
