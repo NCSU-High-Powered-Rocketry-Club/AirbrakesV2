@@ -28,7 +28,7 @@ class BuzzerControllerApp(App):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bz = Buzzer(24)
-        self.tonal_bz = TonalBuzzer(24)
+        # self.tonal_bz = TonalBuzzer(24)
 
     def compose(self) -> ComposeResult:
         """Compose the UI layout."""
