@@ -14,6 +14,7 @@ dependencies = [
     "scipy",
     "pandas",
     "faster-fifo; sys_platform != 'win32'",
+    "textual",
     "python-mscl>=67.0.0",
 ]
 

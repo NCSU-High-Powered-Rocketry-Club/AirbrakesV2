@@ -26,10 +26,24 @@ class ServoExtension(Enum):
     maximum rotation. We obtained these values through guess and check.
     """
 
-    MIN_EXTENSION = -0.4
-    MAX_EXTENSION = 0.7
-    MIN_NO_BUZZ = -0.23
-    MAX_NO_BUZZ = 0.58
+    MIN_EXTENSION = -0.55
+    MAX_EXTENSION = 0.45
+    MIN_NO_BUZZ = -0.5
+    MAX_NO_BUZZ = 0.37
+
+
+# -------------------------------------------------------
+# Encoder Configuration
+# -------------------------------------------------------
+
+ENCODER_RESOLUTION = 20
+"""The points per revolution of the encoder"""
+
+ENCODER_PIN_A = 23
+"""The GPIO pin that the encoder's A pin is connected to."""
+
+ENCODER_PIN_B = 24
+"""The GPIO pin that the encoder's B pin is connected to."""
 
 
 # -------------------------------------------------------
