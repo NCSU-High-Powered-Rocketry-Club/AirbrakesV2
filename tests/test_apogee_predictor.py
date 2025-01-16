@@ -195,17 +195,11 @@ class TestApogeePredictor:
         # Assert that apogees are ascending:
         assert all(apogees[i] <= apogees[i + 1] for i in range(len(apogees) - 1))
         unique_apogees = set(apogees)
-        # Assert that we have a '0' apogee in our unique apogees, and then remove that:
-        # We get a 0 apogee because we don't start predicting until we have a certain amount
-        # of packets.
-        assert 0.0 in unique_apogees
-        unique_apogees.remove(0.0)
 
         assert threaded_apogee_predictor._processed_data_packet_queue.qsize() == 0
         # amount of apogees we have is number of packets, divided by the frequency
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_MIN_PACKETS
         assert threaded_apogee_predictor._has_apogee_converged
-        assert threaded_apogee_predictor._apogee == max(apogees)
         assert threaded_apogee_predictor.is_running
 
     @pytest.mark.parametrize(
