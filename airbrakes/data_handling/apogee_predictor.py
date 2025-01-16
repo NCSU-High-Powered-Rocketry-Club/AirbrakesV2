@@ -71,7 +71,7 @@ class ApogeePredictor:
         "_has_apogee_converged",
         "_initial_velocity",
         "_prediction_process",
-        "_processed_data_packet_queue",
+        "_processor_data_packet_queue",
         "_time_differences",
         "lookup_table",
     )
@@ -83,17 +83,17 @@ class ApogeePredictor:
             # available on Windows
 
             # This queue is for the data in
-            self._processed_data_packet_queue: multiprocessing.Queue[
+            self._processor_data_packet_queue: multiprocessing.Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]
             ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
+            modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
             # This queue is for the data out
             self._apogee_predictor_packet_queue: multiprocessing.Queue[
                 ApogeePredictorDataPacket
             ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
         else:
-            self._processed_data_packet_queue: Queue[
+            self._processor_data_packet_queue: Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]
             ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
             self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
@@ -125,11 +125,11 @@ class ApogeePredictor:
         return self._prediction_process.is_alive()
 
     @property
-    def processed_data_packet_queue_size(self) -> int:
+    def processor_data_packet_queue_size(self) -> int:
         """
-        :return: The number of data packets in the processed data packet queue.
+        :return: The number of data packets in the processor data packet queue.
         """
-        return self._processed_data_packet_queue.qsize()
+        return self._processor_data_packet_queue.qsize()
 
     def start(self) -> None:
         """
@@ -142,17 +142,17 @@ class ApogeePredictor:
         Stops the prediction process.
         """
         # Waits for the process to finish before stopping it
-        self._processed_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._processor_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
-    def update(self, processed_data_packets: list[ProcessorDataPacket]) -> None:
+    def update(self, processor_data_packets: list[ProcessorDataPacket]) -> None:
         """
-        Updates the apogee predictor to include the most recent processed data packets. This method
+        Updates the apogee predictor to include the most recent processor data packets. This method
         should only be called during the coast phase of the rocket's flight.
 
-        :param processed_data_packets: A list of ProcessedDataPacket objects to add to the queue.
+        :param processor_data_packets: A list of ProcessorDataPacket objects to add to the queue.
         """
-        self._processed_data_packet_queue.put_many(processed_data_packets)
+        self._processor_data_packet_queue.put_many(processor_data_packets)
 
     def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
         """
@@ -256,7 +256,7 @@ class ApogeePredictor:
 
         # Unfortunately, we need to modify the queue here again because the modifications made in
         # the __init__ are not copied to the new process.
-        modify_multiprocessing_queue_windows(self._processed_data_packet_queue)
+        modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
         modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
 
         last_run_length = 0
@@ -273,7 +273,7 @@ class ApogeePredictor:
             # packets from the queue and add them to its own arrays.
             try:
                 data_packets: list[ProcessorDataPacket | Literal["STOP"]] = (
-                    self._processed_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+                    self._processor_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
                 )
             except Empty:
                 continue
@@ -281,7 +281,7 @@ class ApogeePredictor:
             if STOP_SIGNAL in data_packets:
                 break
 
-            self._extract_processed_data_packets(data_packets)
+            self._extract_processor_data_packets(data_packets)
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
@@ -308,9 +308,9 @@ class ApogeePredictor:
                     )
                 )
 
-    def _extract_processed_data_packets(self, data_packets: list[ProcessorDataPacket]) -> None:
+    def _extract_processor_data_packets(self, data_packets: list[ProcessorDataPacket]) -> None:
         """
-        Extracts the processed data packets from the data packets and appends them to the
+        Extracts the processor data packets from the data packets and appends them to the
         respective internal lists.
         """
         for data_packet in data_packets:

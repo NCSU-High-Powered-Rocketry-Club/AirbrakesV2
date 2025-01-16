@@ -17,7 +17,7 @@ from airbrakes.data_handling.packets.context_data_packet import ContextDataPacke
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
-from tests.auxil.utils import make_est_data_packet, make_processed_data_packet, make_raw_data_packet
+from tests.auxil.utils import make_est_data_packet, make_processor_data_packet, make_raw_data_packet
 
 
 class TestAirbrakesContext:
@@ -126,7 +126,7 @@ class TestAirbrakesContext:
                 self.context.predict_apogee()
                 self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
-        def log(self, ctx_dp, servo_dp, imu_data_packets, processed_data_packets, apg_dps):
+        def log(self, ctx_dp, servo_dp, imu_data_packets, processor_data_packets, apg_dps):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
@@ -139,7 +139,7 @@ class TestAirbrakesContext:
             )
             asserts.append(servo_dp.set_extension == str(ServoExtension.MIN_EXTENSION.value))
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
-            asserts.append(processed_data_packets[0].current_altitude == 0.0)
+            asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
             asserts.append(len(apg_dps) >= 0)
             # More testing of whether we got ApogeePredictorDataPackets is done in
@@ -147,7 +147,7 @@ class TestAirbrakesContext:
             # here is because state.update() is called before apogee_predictor.update(), so the
             # packets aren't sent to the apogee predictor for prediction.
 
-        def apogee_update(self, processed_data_packets):
+        def apogee_update(self, processor_data_packets):
             calls.append("apogee update called")
 
         mocked_airbrakes = AirbrakesContext(
@@ -293,8 +293,8 @@ class TestAirbrakesContext:
         def fake_log(self, *args, **kwargs):
             pass
 
-        def apogee_update(self, processed_data_packets):
-            packets.extend(processed_data_packets)
+        def apogee_update(self, processor_data_packets):
+            packets.extend(processor_data_packets)
             calls.append("apogee update called")
 
         airbrakes = AirbrakesContext(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
@@ -318,7 +318,7 @@ class TestAirbrakesContext:
         # Check if we processed the raw data packet:
         assert list(airbrakes.imu_data_packets) == [raw_1]
         assert not airbrakes.est_data_packets
-        assert len(airbrakes.processed_data_packets) == 0
+        assert len(airbrakes.processor_data_packets) == 0
         assert not airbrakes.apogee_predictor_data_packets
         assert airbrakes._update_count == 2
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
@@ -346,10 +346,10 @@ class TestAirbrakesContext:
         assert airbrakes._update_count == 3
         assert list(airbrakes.imu_data_packets) == [est_1, est_2]
         assert airbrakes.est_data_packets == [est_1, est_2]
-        assert len(airbrakes.processed_data_packets) == 2
-        assert airbrakes.processed_data_packets[-1].current_altitude == 2.0
+        assert len(airbrakes.processor_data_packets) == 2
+        assert airbrakes.processor_data_packets[-1].current_altitude == 2.0
         assert float(
-            airbrakes.processed_data_packets[-1].time_since_last_data_packet
+            airbrakes.processor_data_packets[-1].time_since_last_data_packet
         ) == pytest.approx(2.0 + 1e-9, rel=1e1)
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         airbrakes.predict_apogee()
@@ -367,9 +367,9 @@ class TestAirbrakesContext:
         assert airbrakes._update_count == 4
         assert list(airbrakes.imu_data_packets) == [raw_2]
         assert not airbrakes.est_data_packets
-        assert airbrakes.processed_data_packets[-1].current_altitude == 2.0
+        assert airbrakes.processor_data_packets[-1].current_altitude == 2.0
         assert float(
-            airbrakes.processed_data_packets[-1].time_since_last_data_packet
+            airbrakes.processor_data_packets[-1].time_since_last_data_packet
         ) == pytest.approx(2.0 + 1e-9, rel=1e1)
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         airbrakes.predict_apogee()
@@ -407,8 +407,8 @@ class TestAirbrakesContext:
             airbrakes.data_processor.update(est_data_packets)
             if est_data_packets:
                 # Generate dummy pdps:
-                pdps = [make_processed_data_packet() for _ in range(len(est_data_packets))]
-                airbrakes.processed_data_packets.extend(pdps)
+                pdps = [make_processor_data_packet() for _ in range(len(est_data_packets))]
+                airbrakes.processor_data_packets.extend(pdps)
             est_packets += len(est_data_packets)
 
         # Now we will have enough packets to run the apogee predictor:

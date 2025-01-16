@@ -23,8 +23,8 @@ def make_raw_data_packet(**kwargs) -> RawDataPacket:
     return RawDataPacket(**{**dummy_values, **kwargs})
 
 
-def make_processed_data_packet(**kwargs) -> ProcessorDataPacket:
-    """Creates a ProcessedDataPacket with the specified keyword arguments. Provides dummy values
+def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
+    """Creates a ProcessorDataPacket with the specified keyword arguments. Provides dummy values
     for arguments not specified."""
 
     dummy_values = {k: 1.887766554 for k in ProcessorDataPacket.__struct_fields__}

@@ -323,7 +323,7 @@ class TestIMUDataProcessor:
     def test_first_update(self, data_processor, data_packets, init_alt, max_alt, rotation_quat):
         """
         Tests whether the update() method works correctly, for the first update() call,
-        along with get_processed_data_packets()
+        along with get_processor_data_packets()
         """
         d = data_processor
         d.update(data_packets.copy())
@@ -355,7 +355,7 @@ class TestIMUDataProcessor:
         )
         assert d._max_altitude == d.max_altitude == max_alt
 
-        processed_data = d.get_processed_data_packets()
+        processed_data = d.get_processor_data_packets()
         assert len(processed_data) == len(data_packets)
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]

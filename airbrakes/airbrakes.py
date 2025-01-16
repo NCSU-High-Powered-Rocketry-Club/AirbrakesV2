@@ -44,7 +44,7 @@ class AirbrakesContext:
         "imu_data_packets",
         "last_apogee_predictor_packet",
         "logger",
-        "processed_data_packets",
+        "processor_data_packets",
         "servo",
         "servo_data_packet",
         "shutdown_requested",
@@ -83,7 +83,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
-        self.processed_data_packets: list[ProcessorDataPacket] = []
+        self.processor_data_packets: list[ProcessorDataPacket] = []
         self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
@@ -140,10 +140,10 @@ class AirbrakesContext:
         # Update the processed data with the new data packets. We only care about EstDataPackets
         self.data_processor.update(self.est_data_packets)
 
-        # Get the processed data packets from the data processor, this will have the same length
+        # Get the processor data packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
         if self.est_data_packets:
-            self.processed_data_packets = self.data_processor.get_processed_data_packets()
+            self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
         # Gets the apogee predictor packets
         self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
@@ -163,7 +163,7 @@ class AirbrakesContext:
             self.context_data_packet,
             self.servo_data_packet,
             self.imu_data_packets,
-            self.processed_data_packets,
+            self.processor_data_packets,
             self.apogee_predictor_data_packets,
         )
 
@@ -191,10 +191,10 @@ class AirbrakesContext:
         """
         # We have to only run this for estimated data packets, otherwise we send duplicate
         # data to the predictor (because for a raw data packet, we still have the 'old'
-        # processed_data_packets)
+        # processor_data_packets)
         # This would result in a very slow convergence and inaccurate predictions.
         if self.est_data_packets:
-            self.apogee_predictor.update(self.processed_data_packets)
+            self.apogee_predictor.update(self.processor_data_packets)
 
     def generate_data_packets(self) -> None:
         """
@@ -205,7 +205,7 @@ class AirbrakesContext:
             batch_number=self._update_count,
             state_letter=self.state.name[0],
             imu_queue_size=self.imu.queue_size,
-            apogee_predictor_queue_size=self.apogee_predictor.processed_data_packet_queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
         )
 
         # Creates a servo data packet to log the current state of the servo

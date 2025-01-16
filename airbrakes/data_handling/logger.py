@@ -141,7 +141,7 @@ class Logger:
         :param imu_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.
-        :return: A deque of LoggedDataPacket objects.
+        :return: A deque of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
 

@@ -9,30 +9,30 @@ from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
 @pytest.fixture
-def logged_data_packet():
+def logger_data_packet():
     return LoggerDataPacket(
-        state_letter=TestLoggedDataPacket.state_letter,
-        set_extension=TestLoggedDataPacket.set_extension,
-        timestamp=TestLoggedDataPacket.timestamp,
+        state_letter=TestLoggerDataPacket.state_letter,
+        set_extension=TestLoggerDataPacket.set_extension,
+        timestamp=TestLoggerDataPacket.timestamp,
     )
 
 
-class TestLoggedDataPacket:
-    """Tests for the LoggedDataPacket class."""
+class TestLoggerDataPacket:
+    """Tests for the LoggerDataPacket class."""
 
     state_letter = "test"
     set_extension = "0.0"
     timestamp = 10
 
-    def test_init(self, logged_data_packet):
-        packet = logged_data_packet
+    def test_init(self, logger_data_packet):
+        packet = logger_data_packet
         assert isinstance(packet, dict)
         assert packet["state_letter"] == self.state_letter
         assert packet["set_extension"] == self.set_extension
         assert packet["timestamp"] == self.timestamp
 
-    def test_logged_data_packet_has_all_fields_of_data_packets(self):
-        """Tests whether the LoggedDataPacket class has all the fields of the data packet
+    def test_logger_data_packet_has_all_fields_of_data_packets(self):
+        """Tests whether the LoggerDataPacket class has all the fields of the data packet
         classes."""
         log_dp_fields = set(LoggerDataPacket.__annotations__)
 
@@ -76,8 +76,8 @@ class TestLoggedDataPacket:
             log_dp_fields == available_fields
         ), f"Extra fields: {log_dp_fields - available_fields}"
 
-    def test_logged_data_packet_field_order(self):
-        """Tests whether the LoggedDataPacket class has the correct field order."""
+    def test_logger_data_packet_field_order(self):
+        """Tests whether the LoggerDataPacket class has the correct field order."""
 
         # Only context data packet has a different order - one field - "state_letter" is in the
         # beginning, the rest at the end.

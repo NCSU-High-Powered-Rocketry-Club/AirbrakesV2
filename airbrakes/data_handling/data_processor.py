@@ -132,13 +132,13 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
 
-    def get_processed_data_packets(self) -> list[ProcessorDataPacket]:
+    def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
-        Processes the data points and returns a deque of ProcessedDataPacket objects. The length
+        Processes the data points and returns a deque of ProcessorDataPacket objects. The length
         of the deque should be the same as the length of the list of estimated data packets most
         recently passed in by update()
 
-        :return: A deque of ProcessedDataPacket objects.
+        :return: A deque of ProcessorDataPacket objects.
         """
         return [
             ProcessorDataPacket(
