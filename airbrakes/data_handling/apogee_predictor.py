@@ -158,9 +158,16 @@ class ApogeePredictor:
         """
         Gets the apogee prediction data packets from the queue.
         """
+        total_packets = []
+        # get_many doesn't actually get all of the packets, so we need to keep checking until
+        # there are no more packets left
         with contextlib.suppress(Empty):
-            return self._apogee_predictor_packet_queue.get_many(block=False)
-        return []
+            while True:
+                new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
+                if not new_packets:
+                    break
+                total_packets.extend(new_packets)
+        return total_packets
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
