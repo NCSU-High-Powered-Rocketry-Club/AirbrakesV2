@@ -16,6 +16,8 @@ dependencies = [
     "faster-fifo; sys_platform != 'win32'",
     "textual",
     "python-mscl>=67.0.0",
+    # Need to run `sudo apt install libcap-dev` to build and install `python-prctl`.
+    "picamera2>=0.3.24",
 ]
 
 [dependency-groups]
