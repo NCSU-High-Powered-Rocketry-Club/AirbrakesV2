@@ -16,6 +16,8 @@ dependencies = [
     { name = "pigpio" },
     { name = "psutil" },
     { name = "python-mscl" },
+    { name = "rpi-kms" },
+    { name = "rpi-libcamera" },
     { name = "scipy" },
     { name = "textual" },
 ]
@@ -40,6 +42,8 @@ requires-dist = [
     { name = "pigpio" },
     { name = "psutil" },
     { name = "python-mscl", specifier = ">=67.0.0" },
+    { name = "rpi-kms", specifier = ">=0.1a1" },
+    { name = "rpi-libcamera", specifier = ">=0.1a7" },
     { name = "scipy" },
     { name = "textual" },
 ]
@@ -645,6 +649,18 @@ wheels = [
 ]
 
 [[package]]
+name = "rpi-kms"
+version = "0.1a1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/31/a306b6d82322b9d98053f2f1ee85ee4a8f8625f1c965d28367ec89af6c64/rpi_kms-0.1a1.tar.gz", hash = "sha256:f9328b8d3802ce7ac63bd285b015f47160fa1b64b1643b9f793533e4438d07f8", size = 3402 }
+
+[[package]]
+name = "rpi-libcamera"
+version = "0.1a7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/bd/18876345dffac79613440e6547c8d7fa62f6ae8359d27447f089ce131f7d/rpi_libcamera-0.1a7.tar.gz", hash = "sha256:aee02b80eaa8dd6e6e6c4a9244a3aedde132de3b568a9d682a8103eeb07ecd96", size = 5073 }
+
+[[package]]
 name = "ruff"
 version = "0.8.4"
 source = { registry = "https://pypi.org/simple" }
@@ -742,7 +758,7 @@ name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
