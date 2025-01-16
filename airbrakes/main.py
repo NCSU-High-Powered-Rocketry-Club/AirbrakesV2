@@ -111,6 +111,7 @@ def run_flight_loop(
             if is_mock and not airbrakes.imu.is_running:
                 break
             if is_sim:
+                # Janky way to extend airbrakes in the sim and change the drag
                 airbrakes.imu.set_airbrakes_status(airbrakes.current_extension)
 
     # Handle user interrupt gracefully
