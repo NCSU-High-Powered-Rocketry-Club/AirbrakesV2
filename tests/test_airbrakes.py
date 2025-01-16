@@ -419,12 +419,13 @@ class TestAirbrakesContext:
         time.sleep(0.01)  # sleep so apogee prediction runs
         apg_packets = airbrakes.apogee_predictor.get_prediction_data_packets()
         airbrakes.apogee_predictor_data_packets.extend(apg_packets)
+        airbrakes.last_apogee_predictor_packet = apg_packets[-1]
 
         assert len(apg_packets) > 0
         ap_dp: ApogeePredictorDataPacket = apg_packets[0]
         assert isinstance(ap_dp, ApogeePredictorDataPacket)
         assert ap_dp.predicted_apogee
-        assert airbrakes.predicted_apogee
+        assert airbrakes.last_apogee_predictor_packet.predicted_apogee
         assert ap_dp.uncertainty_threshold_1 < UNCERTAINTY_THRESHOLD[0]
         assert ap_dp.uncertainty_threshold_2 < UNCERTAINTY_THRESHOLD[1]
 
@@ -433,7 +434,7 @@ class TestAirbrakesContext:
         # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
         # predicted_apogee attribute:
         airbrakes.apogee_predictor_data_packets = []
-        assert airbrakes.predicted_apogee
+        assert airbrakes.last_apogee_predictor_packet.predicted_apogee
 
     def test_generate_data_packets(self, airbrakes):
         """Tests whether the airbrakes generates the correct data packets for logging."""

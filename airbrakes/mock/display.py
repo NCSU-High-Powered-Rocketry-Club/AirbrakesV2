@@ -184,10 +184,16 @@ class FlightDisplay:
         else:
             time_since_launch = 0
 
-        if self._coast_time and not self._convergence_time and self._airbrakes.predicted_apogee:
+        if (
+            self._coast_time
+            and not self._convergence_time
+            and self._airbrakes.last_apogee_predictor_packet.predicted_apogee
+        ):
             self._convergence_time = (data_processor.current_timestamp - self._coast_time) * 1e-9
             self._convergence_height = data_processor.current_altitude
-            self._apogee_at_convergence = self._airbrakes.predicted_apogee
+            self._apogee_at_convergence = (
+                self._airbrakes.last_apogee_predictor_packet.predicted_apogee
+            )
 
         # Prepare output
         output = [
@@ -202,7 +208,7 @@ class FlightDisplay:
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Predicted Apogee:          {G}{self._airbrakes.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+            f"Predicted Apogee:          {G}{self._airbrakes.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Airbrakes extension:       {G}{self._airbrakes.current_extension.value}{RESET}",
         ]
 

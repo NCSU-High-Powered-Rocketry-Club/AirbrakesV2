@@ -7,6 +7,9 @@ from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+    ApogeePredictorDataPacket,
+)
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
@@ -15,9 +18,6 @@ from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
-        ApogeePredictorDataPacket,
-    )
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
 
@@ -33,7 +33,6 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "_apogee",
         "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
@@ -43,6 +42,7 @@ class AirbrakesContext:
         "est_data_packets",
         "imu",
         "imu_data_packets",
+        "last_apogee_predictor_packet",
         "logger",
         "processed_data_packets",
         "servo",
@@ -88,22 +88,9 @@ class AirbrakesContext:
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
+        self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
 
         self._update_count: int = 1
-        self._apogee: float = 0.0
-
-    @property
-    def predicted_apogee(self) -> float:
-        """
-        :return: The predicted apogee of the rocket in meters. Returns 0.0 if an predicted
-        apogee is not available.
-        """
-        if self.apogee_predictor_data_packets and (
-            pred_apogee := self.apogee_predictor_data_packets[-1].predicted_apogee
-        ):
-            # Cache the apogee value so we don't have to keep recalculating it
-            self._apogee = float(pred_apogee)
-        return self._apogee
 
     def start(self) -> None:
         """
@@ -161,6 +148,10 @@ class AirbrakesContext:
         # Gets the apogee predictor packets
         self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
 
+        # Update the last apogee predictor packet
+        if self.apogee_predictor_data_packets:
+            self.last_apogee_predictor_packet = self.apogee_predictor_data_packets[-1]
+
         # Update the state machine based on the latest processed data
         self.state.update()
 
@@ -173,10 +164,8 @@ class AirbrakesContext:
             self.servo_data_packet,
             self.imu_data_packets,
             self.processed_data_packets,
-            self.apogee_predictor_data_packets.copy(),
+            self.apogee_predictor_data_packets,
         )
-        # The .copy() above is critical to make sure that things like the `predicted_apogee`
-        # property works. This is because log() modifies the list in place :(
 
         # Increment the loop count
         self._update_count += 1

@@ -271,15 +271,14 @@ class TestCoastState:
     def test_update_with_controls(
         self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
     ):
-        coast_state.context.apogee_predictor_data_packets = [
-            ApogeePredictorDataPacket(
-                predicted_apogee=predicted_apogee,
-                a_coefficient=1.0,
-                b_coefficient=1.0,
-                uncertainty_threshold_1=1.0,
-                uncertainty_threshold_2=1.0,
-            )
-        ]
+        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+            predicted_apogee=predicted_apogee,
+            a_coefficient=1.0,
+            b_coefficient=1.0,
+            uncertainty_threshold_1=1.0,
+            uncertainty_threshold_2=1.0,
+        )
+
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
@@ -299,15 +298,13 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
-        coast_state.context.apogee_predictor_data_packets = [
-            ApogeePredictorDataPacket(
-                predicted_apogee=1000.0,
-                a_coefficient=1.0,
-                b_coefficient=1.0,
-                uncertainty_threshold_1=1.0,
-                uncertainty_threshold_2=1.0,
-            )
-        ]
+        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+            predicted_apogee=1000.0,
+            a_coefficient=1.0,
+            b_coefficient=1.0,
+            uncertainty_threshold_1=1.0,
+            uncertainty_threshold_2=1.0,
+        )
 
         coast_state.update()
         assert calls == 1
@@ -316,7 +313,7 @@ class TestCoastState:
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
         """Check that if we don't have an apogee prediction, we don't extend the airbrakes."""
-        assert not coast_state.context.predicted_apogee
+        assert not coast_state.context.last_apogee_predictor_packet.predicted_apogee
         coast_state.update()
         assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
 

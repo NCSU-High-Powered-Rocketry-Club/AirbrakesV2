@@ -102,7 +102,9 @@ class TestIntegration:
                     state_info.max_avg_vertical_acceleration = (
                         ab.data_processor.average_vertical_acceleration
                     )
-                    state_info.apogee_prediction.append(ab.predicted_apogee)
+                    state_info.apogee_prediction.append(
+                        ab.last_apogee_predictor_packet.predicted_apogee
+                    )
 
                 state_info.min_velocity = min(
                     ab.data_processor.vertical_velocity, state_info.min_velocity

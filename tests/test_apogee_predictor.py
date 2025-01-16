@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS, STOP_SIGNAL, UNCERTAINTY_THRESHOLD
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor, CurveCoefficients, LookupTable
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_processed_data_packet
 
@@ -48,7 +48,6 @@ class TestApogeePredictor:
         """Tests whether the IMUDataProcessor is correctly initialized"""
         ap = apogee_predictor
         # Test attributes on init
-        assert ap._apogee == 0.0
         assert isinstance(ap._processed_data_packet_queue, faster_fifo.Queue)
         assert isinstance(ap._prediction_process, multiprocessing.Process)
         assert not ap._prediction_process.is_alive()
@@ -64,7 +63,6 @@ class TestApogeePredictor:
         assert isinstance(ap.lookup_table, LookupTable)
         assert ap.lookup_table.velocities.size == 2
         assert ap.lookup_table.delta_heights.size == 2
-        assert isinstance(ap._curve_coefficients, CurveCoefficients)
 
         # Test properties on init
         assert not ap.is_running
@@ -162,7 +160,6 @@ class TestApogeePredictor:
 
         time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
-        assert threaded_apogee_predictor._apogee == expected_value
 
         assert threaded_apogee_predictor._apogee_predictor_packet_queue.qsize() == 2
         packet: ApogeePredictorDataPacket = threaded_apogee_predictor.get_prediction_data_packets()[
@@ -177,7 +174,6 @@ class TestApogeePredictor:
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
         """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
 
-        apogees = []
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
             packets = [
@@ -190,7 +186,11 @@ class TestApogeePredictor:
             ]
             threaded_apogee_predictor.update(packets)
             time.sleep(0.001)  # allows update to finish
-            apogees.append(threaded_apogee_predictor._apogee)
+
+        apogees = [
+            packet.predicted_apogee
+            for packet in threaded_apogee_predictor.get_prediction_data_packets()
+        ]
 
         # Assert that apogees are ascending:
         assert all(apogees[i] <= apogees[i + 1] for i in range(len(apogees) - 1))

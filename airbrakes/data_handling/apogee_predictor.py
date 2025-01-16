@@ -64,12 +64,10 @@ class ApogeePredictor:
 
     __slots__ = (
         "_accelerations",
-        "_apogee",
         "_apogee_predictor_packet_queue",
         "_cumulative_time_differences",
         "_current_altitude",
         "_current_velocity",
-        "_curve_coefficients",
         "_has_apogee_converged",
         "_initial_velocity",
         "_prediction_process",
@@ -107,9 +105,6 @@ class ApogeePredictor:
         )
 
         # ------ Variables which can only be referenced in the prediction process ------
-        # Placeholder values for the curve coefficients and apogee
-        self._apogee: float = 0.0
-        self._curve_coefficients: CurveCoefficients = CurveCoefficients()
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
         # list of all the accelerations since motor burn out:
         self._accelerations: deque[np.float64] = deque()
@@ -259,6 +254,10 @@ class ApogeePredictor:
 
         last_run_length = 0
 
+        # Makes placeholder values for the curve coefficients and apogee
+        curve_coefficients = CurveCoefficients()
+        apogee = 0.0
+
         # Keep checking for new data packets until the stop signal is received:
         while True:
             # Rather than having the queue store all the data packets, it is only used to
@@ -282,23 +281,23 @@ class ApogeePredictor:
 
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:
-                    self._curve_coefficients = self._curve_fit()
-                    self._update_prediction_lookup_table(self._curve_coefficients)
+                    curve_coefficients = self._curve_fit()
+                    self._update_prediction_lookup_table(curve_coefficients)
 
                 # Get the predicted apogee if the curve fit has converged:
                 if self._has_apogee_converged:
-                    self._apogee = self._predict_apogee()
+                    apogee = self._predict_apogee()
 
                 last_run_length = len(self._accelerations)
 
                 # Send the apogee prediction to the main process
                 self._apogee_predictor_packet_queue.put(
                     ApogeePredictorDataPacket(
-                        predicted_apogee=self._apogee,
-                        a_coefficient=self._curve_coefficients.A,
-                        b_coefficient=self._curve_coefficients.B,
-                        uncertainty_threshold_1=self._curve_coefficients.uncertainties[0],
-                        uncertainty_threshold_2=self._curve_coefficients.uncertainties[1],
+                        predicted_apogee=apogee,
+                        a_coefficient=curve_coefficients.A,
+                        b_coefficient=curve_coefficients.B,
+                        uncertainty_threshold_1=curve_coefficients.uncertainties[0],
+                        uncertainty_threshold_2=curve_coefficients.uncertainties[1],
                     )
                 )
 
