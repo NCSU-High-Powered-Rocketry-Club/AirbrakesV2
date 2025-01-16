@@ -6,7 +6,7 @@ import contextlib
 import sys
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     IMUDataPacket,
 )
 
@@ -15,7 +15,7 @@ if sys.platform != "win32":
     from faster_fifo import Empty, Queue
 else:
     from multiprocessing import Queue
-    from multiprocessing.queues import Empty
+    from queue import Empty
 
 from multiprocessing import Process, TimeoutError, Value
 
@@ -39,6 +39,21 @@ class BaseIMU:
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
         self._running = Value("b", False)
+
+    @property
+    def queue_size(self) -> int:
+        """
+        :return: The number of data packets in the queue.
+        """
+        return self._data_queue.qsize()
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the process fetching data from the IMU is running.
+        :return: True if the process is running, False otherwise
+        """
+        return self._running.value
 
     def stop(self) -> None:
         """
@@ -83,11 +98,3 @@ class BaseIMU:
             if STOP_SIGNAL in packets:
                 return collections.deque()
             return collections.deque(packets)
-
-    @property
-    def is_running(self) -> bool:
-        """
-        Returns whether the process fetching data from the IMU is running.
-        :return: True if the process is running, False otherwise
-        """
-        return self._running.value

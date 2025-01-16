@@ -162,7 +162,6 @@ class FlightDisplay:
         fetched_packets = len(self._airbrakes.imu_data_packets)
 
         data_processor = self._airbrakes.data_processor
-        apogee_predictor = self._airbrakes.apogee_predictor
 
         if data_processor._last_data_packet:
             invalid_fields = data_processor._last_data_packet.invalid_fields
@@ -185,10 +184,16 @@ class FlightDisplay:
         else:
             time_since_launch = 0
 
-        if self._coast_time and not self._convergence_time and apogee_predictor.apogee:
+        if (
+            self._coast_time
+            and not self._convergence_time
+            and self._airbrakes.last_apogee_predictor_packet.predicted_apogee
+        ):
             self._convergence_time = (data_processor.current_timestamp - self._coast_time) * 1e-9
             self._convergence_height = data_processor.current_altitude
-            self._apogee_at_convergence = apogee_predictor.apogee
+            self._apogee_at_convergence = (
+                self._airbrakes.last_apogee_predictor_packet.predicted_apogee
+            )
 
         # Prepare output
         output = [
@@ -203,7 +208,7 @@ class FlightDisplay:
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Predicted Apogee:          {G}{apogee_predictor.apogee:<10.2f}{RESET} {R}m{RESET}",
+            f"Predicted Apogee:          {G}{self._airbrakes.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Airbrakes extension:       {G}{self._airbrakes.current_extension.value}{RESET}",
         ]
 
@@ -218,7 +223,7 @@ class FlightDisplay:
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Invalid fields:                  {G}{invalid_fields}{G}{RESET}",
+                    f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
                 ]
             )

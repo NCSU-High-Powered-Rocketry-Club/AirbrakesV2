@@ -4,11 +4,12 @@ import contextlib
 import multiprocessing
 import sys
 
-# Try to import the MSCL library, if it fails, warn the user, this is necessary because installing
-# mscl is annoying and we really just have it installed on the pi
+# Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
+# Python 3.13.
 with contextlib.suppress(ImportError):
-    import mscl
-    # We should print a warning, but that messes with how the mock replay display looks
+    from python_mscl import mscl
+
+# We should print a warning, but that messes with how the replay display looks
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
@@ -22,7 +23,7 @@ from airbrakes.constants import (
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
@@ -154,7 +155,7 @@ class IMU(BaseIMU):
                 # Process the packet's data and populate the data packet object.
                 IMU._process_packet_data(packet, imu_data_packet)
 
-                # Add the processed data packet to the shared queue.
+                # Add the processor data packet to the shared queue.
                 self._data_queue.put(imu_data_packet)
 
     def _query_imu_for_data_packets(self, port: str) -> None:

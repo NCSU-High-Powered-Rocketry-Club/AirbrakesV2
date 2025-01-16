@@ -8,7 +8,7 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
-    TAKEOFF_HEIGHT_METERS,
+    TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_ALTITUDE_METERS,
 )
@@ -81,16 +81,16 @@ class StandbyState(State):
         # For that we can check:
         # 1) Velocity - If the velocity of the rocket is above a threshold, the rocket has
         # launched.
-        # 2) Altitude - If the altitude is above a threshold, the rocket has launched.
-        # Ideally we would directly communicate with the motor, but we don't have that capability.
+        # 2) Acceleration - If the acceleration of the rocket is above a threshold, the rocket has
+        # launched.
 
         data = self.context.data_processor
 
-        if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
+        if data.average_vertical_acceleration > TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED:
             self.next_state()
             return
 
-        if data.current_altitude > TAKEOFF_HEIGHT_METERS:
+        if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
 
@@ -144,7 +144,10 @@ class CoastState(State):
         # This is our bang-bang controller for the airbrakes. If we predict we are going to
         # overshoot our target altitude, we extend the airbrakes. If we predict we are going to
         # undershoot our target altitude, we retract the airbrakes.
-        apogee = self.context.apogee_predictor.apogee
+
+        # Gets the latest apogee prediction
+        apogee = self.context.last_apogee_predictor_packet.predicted_apogee
+
         if apogee > TARGET_ALTITUDE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
