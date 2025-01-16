@@ -23,7 +23,7 @@ from airbrakes.constants import (
     RAW_DATA_PACKET_SAMPLING_RATE,
     STOP_SIGNAL,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

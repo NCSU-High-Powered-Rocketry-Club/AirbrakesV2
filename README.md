@@ -95,15 +95,15 @@ flowchart TD
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
     IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
-    Velocity -->  ProcessedData[(Processed Data Packet)]:::outputSquare
-    Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
-    Rotated_Accel -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Velocity -->  ProcessedData[(Processor Data Packet)]:::outputSquare
+    Altitude -->  ProcessedData[(Processor Data Packet)]:::outputSquare
+    Rotated_Accel -->  ProcessorData[(Processor Data Packet)]:::outputSquare
     
-    ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
+    ProcessorData[(Processor Data Packet)]:::outputSquare --> Update
 
     %% Logging Mechanism
     Logger --> LogFunction[log]:::bubble
-    Update --> LogData[(Logged Data Packet)]:::outputSquare
+    Update --> LogData[(Logger Data Packet)]:::outputSquare
     LogData --> LogFunction
 
     %% Airbrake Control Methods with Parentheses Displayed
@@ -121,7 +121,7 @@ flowchart TD
 | Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
 | Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
 | Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processed Data Packet, Logged Data Packet                                                     |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                     |
 
 ### Launch Data
 

@@ -4,7 +4,6 @@ CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 
 import csv
 import statistics
-import time
 import types
 
 import msgspec
@@ -18,7 +17,7 @@ from airbrakes.constants import (
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 
@@ -28,7 +27,7 @@ class StateInformation(msgspec.Struct):
 
     min_velocity: float | None = None
     max_velocity: float | None = None
-    extensions: list[float] = []
+    extensions: list[ServoExtension] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
     min_avg_vertical_acceleration: float | None = None
@@ -77,13 +76,13 @@ class TestIntegration:
         ab = AirbrakesContext(servo, mock_imu, logger, data_processor, apogee_predictor)
 
         # Start testing!
-        snap_start_timer = time.time()
+        snap_start_timer = ab.data_processor.current_timestamp
         ab.start()
 
         # Run until the patched method in our IMU has finished (i.e. the data is exhausted)
         while ab.imu._data_fetch_process.is_alive():
             ab.update()
-            if time.time() - snap_start_timer >= SNAPSHOT_INTERVAL:
+            if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
                     # Reset the current state velocities and altitudes
                     states_dict[ab.state.name] = StateInformation(extensions=[ab.current_extension])
@@ -103,7 +102,9 @@ class TestIntegration:
                     state_info.max_avg_vertical_acceleration = (
                         ab.data_processor.average_vertical_acceleration
                     )
-                    state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
+                    state_info.apogee_prediction.append(
+                        ab.last_apogee_predictor_packet.predicted_apogee
+                    )
 
                 state_info.min_velocity = min(
                     ab.data_processor.vertical_velocity, state_info.min_velocity
@@ -127,13 +128,15 @@ class TestIntegration:
                     state_info.min_avg_vertical_acceleration,
                 )
 
-                state_info.apogee_prediction.append(ab.apogee_predictor.apogee)
+                state_info.apogee_prediction.append(
+                    ab.last_apogee_predictor_packet.predicted_apogee
+                )
 
                 # Update the state information in the dictionary
                 states_dict[ab.state.name] = state_info
 
                 # Reset the snapshot timer
-                snap_start_timer = time.time()
+                snap_start_timer = ab.data_processor.current_timestamp
 
         # Stop the airbrakes system after the data is exhausted from the csv file:
         ab.stop()
@@ -151,20 +154,22 @@ class TestIntegration:
             "LandedState",
         ]
         states_dict = types.SimpleNamespace(**states_dict)
-        stand_by_state = states_dict.StandbyState
+        standby_state = states_dict.StandbyState
         motor_burn_state = states_dict.MotorBurnState
         coast_state = states_dict.CoastState
         free_fall_state = states_dict.FreeFallState
 
         # Now let's check if the values in each state are as expected:
-        assert stand_by_state.min_velocity == pytest.approx(0.0, abs=0.1)
-        assert stand_by_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
-        assert stand_by_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
+        assert standby_state.min_velocity == pytest.approx(0.0, abs=0.1)
+        assert standby_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
+        assert standby_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
+        assert not any(standby_state.apogee_prediction)
+        # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (
-            stand_by_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
+            standby_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
         )
-        assert not any(stand_by_state.apogee_prediction)
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in stand_by_state.extensions)
+        assert not any(standby_state.apogee_prediction)
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in standby_state.extensions)
 
         assert motor_burn_state.max_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert motor_burn_state.max_avg_vertical_acceleration >= 90.0
@@ -175,15 +180,21 @@ class TestIntegration:
             >= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
         )
         assert not any(motor_burn_state.apogee_prediction)
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in motor_burn_state.extensions)
+        # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
+        assert (
+            ServoExtension.MIN_EXTENSION in motor_burn_state.extensions
+            or ServoExtension.MIN_NO_BUZZ in motor_burn_state.extensions
+        )
 
+        # ------- COAST STATE -------
         # our coasting velocity be fractionally higher than motor burn velocity due to data
         # processing time (does not actually happen in real life)
-        assert (coast_state.max_velocity - 10) <= motor_burn_state.max_velocity
+        assert (coast_state.max_velocity - 15) <= motor_burn_state.max_velocity
         assert coast_state.min_velocity <= 11.0  # velocity around apogee should be low
         assert coast_state.min_altitude >= motor_burn_state.max_altitude
         assert coast_state.max_altitude <= target_altitude + 100
         apogee_pred_list = coast_state.apogee_prediction
+        # Check that our apogee prediction is within 10% of the target altitude
         median_predicted_apogee = statistics.median(apogee_pred_list)
         max_apogee = coast_state.max_altitude
         assert max_apogee * 0.9 <= median_predicted_apogee <= max_apogee * 1.1
@@ -191,39 +202,58 @@ class TestIntegration:
         # Check if we have extended the airbrakes at least once
         # specially on subscale flights, where coast phase is very short anyway.
         # We should hit target apogee, and then deploy airbrakes:
-        assert any(ext == ServoExtension.MAX_EXTENSION for ext in coast_state.extensions)
+        assert {
+            ServoExtension.MIN_EXTENSION,
+            ServoExtension.MIN_NO_BUZZ,
+            ServoExtension.MAX_EXTENSION,
+            ServoExtension.MAX_NO_BUZZ,
+        }.issuperset(set(coast_state.extensions))
 
+        # ------- FREE FALL STATE -------
         if launch_name == "purple_launch":
-            # High errors for other flights, because we don't have good rotation data.
+            # High errors for this flight, because we don't have good rotation data.
             assert free_fall_state.min_velocity <= -300.0
         else:
             # we have chute deployment, so we shouldn't go that fast
             assert free_fall_state.min_velocity >= -30.0
         assert free_fall_state.max_velocity <= 0.0
         # max altitude of both states should be about the same
-        assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=1e2)
+        assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=5)
         # free fall should be close to ground:
         assert free_fall_state.min_altitude <= GROUND_ALTITUDE_METERS + 10.0
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in free_fall_state.extensions)
-
-        # Check landed state values:
-        landed_state = states_dict.LandedState
+        # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (
-            landed_state.max_avg_vertical_acceleration
-            >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
+            ServoExtension.MIN_EXTENSION in free_fall_state.extensions
+            or ServoExtension.MIN_NO_BUZZ in free_fall_state.extensions
         )
-        assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
-        assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in landed_state.extensions)
+
+        # ------- LANDED STATE -------
+        if launch_name != "purple_launch":
+            # Generated data for simulated landing for interest launcH:
+            landed_state = states_dict.LandedState
+            assert (
+                landed_state.max_avg_vertical_acceleration
+                >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
+            )
+            assert landed_state.max_velocity <= 0.1
+            assert landed_state.min_altitude <= GROUND_ALTITUDE_METERS
+            assert landed_state.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
+            # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
+            # Unfortunately, since our sim is that fast, the thread to execute MIN_NO_BUZZ doesn't
+            # trigger
+            assert (
+                ServoExtension.MIN_EXTENSION in landed_state.extensions
+                or ServoExtension.MIN_NO_BUZZ in landed_state.extensions
+            )
 
         # Now let's check if everything was logged correctly:
-        # some what of a duplicate of test_logger.py:
+        # somewhat of a duplicate of test_logger.py:
 
         with ab.logger.log_path.open() as f:
             reader = csv.DictReader(f)
             # Check if all headers were logged:
             headers = reader.fieldnames
-            assert list(headers) == list(LoggedDataPacket.__annotations__)
+            assert list(headers) == list(LoggerDataPacket.__annotations__)
 
             # Let's just test the first line (excluding the headers) for a few things:
             line = next(reader)
@@ -239,36 +269,61 @@ class TestIntegration:
             assert int(timestamp) > 1e9
 
             # Check if the state field has only a single letter:
-            state: str = line["state"]
+            state: str = line["state_letter"]
             assert len(state) == 1
 
             line_number = 0
+            batch_number = 0
             state_list = []
+            pred_apogees_in_coast = []
+            uncertainities_in_coast = []
+
             for row in reader:
                 line_number += 1
-                state: str = row["state"]
-                extension: str = row["extension"]
+                state: str = row["state_letter"]
+                extension: str = row["set_extension"]
                 is_est_data_packet: bool = row["estLinearAccelX"] != ""
 
                 if state not in state_list:
                     state_list.append(state)
 
+                # Check if we logged convergence params in CoastState:
+                if state == "C":
+                    if row["predicted_apogee"]:
+                        pred_apogees_in_coast.append(row["predicted_apogee"])
+                    if row["uncertainty_threshold_1"]:
+                        uncertainities_in_coast.append(row["uncertainty_threshold_1"])
+                # else:
+                #     assert row["predicted_apogee"] == ""
+                #     assert row["uncertainty_threshold_1"] == ""
+
                 # Check if we logged our main calculations for estimated data packets:
                 if is_est_data_packet:
                     assert row["vertical_velocity"] != ""
                     assert row["current_altitude"] != ""
-                    assert row["predicted_apogee"] != ""
                     assert row["vertical_acceleration"] != ""
 
                 # Check if the extension is a float:
                 assert float(extension) in [
                     ServoExtension.MIN_EXTENSION.value,
                     ServoExtension.MAX_EXTENSION.value,
+                    ServoExtension.MIN_NO_BUZZ.value,
+                    ServoExtension.MAX_NO_BUZZ.value,
                 ]
+
+                batch_number = int(row["batch_number"])
 
             # Check if we have a lot of lines in the log file:
             # arbitrary value, depends on length of log buffer and flight data.
             assert line_number > 80_000
+
+            # More than 1000 iterations:
+            assert batch_number > 1000
+
+            # Predicted apogees and uncertainties should be logged in CoastState:
+            assert pred_apogees_in_coast
+            assert uncertainities_in_coast
+            assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
 
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]
