@@ -239,7 +239,7 @@ class TestAirbrakesContext:
         started_thread = False
 
         def stop_airbrakes():
-            fd.end_sim_interrupted.set()
+            fd.end_mock_interrupted.set()
             fd.stop()
             airbrakes.stop()  # Happens when LandedState requests shutdown in the real flight
             has_airbrakes_stopped.set()

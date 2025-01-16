@@ -135,8 +135,8 @@ class TestApogeePredictor:
                     for i in range(70)
                 ],
                 # the velocity and altitude points in this data packet are calculated by hand.
-                # the data packets simulate 0 - 7 seconds, in 0.1 second intervals.
-                # the acceleration has a slope of +0.4 m/s^2 per second, which simulates
+                # the data packets are from 0 - 7 seconds, in 0.1 second intervals.
+                # the acceleration has a slope of +0.4 m/s^2 per second, which recreates
                 # coast phase, going from -10 m/s^2 to -7.2 m/s^2. The expected outcome of this
                 # test is the max of the position function. Because we are curve fitting to a
                 # quartic function though, it's off by a bit, because a quartic function
@@ -145,7 +145,7 @@ class TestApogeePredictor:
                 1177.8066285250015,
             ),
         ],
-        ids=["hover_at_altitude", "coast_phase_sim"],
+        ids=["hover_at_altitude", "coast_phase"],
     )
     def test_prediction_loop_no_mock(
         self, threaded_apogee_predictor, processed_data_packets, expected_value

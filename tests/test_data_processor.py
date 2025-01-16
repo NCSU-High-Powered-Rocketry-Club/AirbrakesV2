@@ -13,11 +13,11 @@ from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
 
 
-def simulate_altitude_sine_wave(
+def generate_altitude_sine_wave(
     n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
 ):
     """Generates a random distribution of altitudes that follow a sine wave pattern, with some
-    noise added to simulate variations in the readings.
+    noise added to mimmick variations in the readings.
 
     :param n_points: The number of altitude points to generate.
     :param frequency: The frequency of the sine wave.
@@ -410,8 +410,8 @@ class TestIMUDataProcessor:
     def test_max_altitude(self, data_processor):
         """Tests whether the max altitude is correctly calculated even when altitude decreases"""
         d = data_processor
-        altitudes = simulate_altitude_sine_wave(n_points=1000)
-        # run update_data every 10 packets, to simulate actual data processing in real time:
+        altitudes = generate_altitude_sine_wave(n_points=1000)
+        # run update_data every 10 packets, to mimmick actual data processing in real time:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [

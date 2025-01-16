@@ -13,7 +13,7 @@ from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    TAKEOFF_HEIGHT_METERS,
+    TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
@@ -119,13 +119,13 @@ class TestIntegration:
                 state_info.max_altitude = max(
                     ab.data_processor.current_altitude, state_info.max_altitude
                 )
-                state_info.min_avg_vertical_acceleration = min(
-                    ab.data_processor.average_vertical_acceleration,
-                    state_info.min_avg_vertical_acceleration,
-                )
                 state_info.max_avg_vertical_acceleration = max(
                     ab.data_processor.average_vertical_acceleration,
                     state_info.max_avg_vertical_acceleration,
+                )
+                state_info.min_avg_vertical_acceleration = min(
+                    ab.data_processor.average_vertical_acceleration,
+                    state_info.min_avg_vertical_acceleration,
                 )
 
                 state_info.apogee_prediction.append(
@@ -163,20 +163,22 @@ class TestIntegration:
         assert standby_state.min_velocity == pytest.approx(0.0, abs=0.1)
         assert standby_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert standby_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
-        assert standby_state.max_altitude <= TAKEOFF_HEIGHT_METERS
         assert not any(standby_state.apogee_prediction)
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (
-            ServoExtension.MIN_EXTENSION in standby_state.extensions
-            or ServoExtension.MIN_NO_BUZZ in standby_state.extensions
+            standby_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
         )
+        assert not any(standby_state.apogee_prediction)
+        assert all(ext == ServoExtension.MIN_EXTENSION for ext in standby_state.extensions)
 
-        assert motor_burn_state.min_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
+        assert motor_burn_state.max_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert motor_burn_state.max_avg_vertical_acceleration >= 90.0
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
-        assert motor_burn_state.min_altitude >= -2.5  # detecting takeoff from velocity data
-        assert motor_burn_state.max_altitude >= TAKEOFF_HEIGHT_METERS
         assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
+        assert (
+            motor_burn_state.max_avg_vertical_acceleration
+            >= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
+        )
         assert not any(motor_burn_state.apogee_prediction)
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (
