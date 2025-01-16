@@ -128,7 +128,9 @@ class TestIntegration:
                     state_info.max_avg_vertical_acceleration,
                 )
 
-                state_info.apogee_prediction.append(ab.predicted_apogee)
+                state_info.apogee_prediction.append(
+                    ab.last_apogee_predictor_packet.predicted_apogee
+                )
 
                 # Update the state information in the dictionary
                 states_dict[ab.state.name] = state_info
