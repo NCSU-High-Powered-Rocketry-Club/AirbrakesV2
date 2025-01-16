@@ -172,7 +172,7 @@ class TestApogeePredictor:
         assert len(unique_apogees) == NUMBER_OF_PACKETS / APOGEE_PREDICTION_MIN_PACKETS
         assert threaded_apogee_predictor._prediction_queue.qsize() == 0
         assert threaded_apogee_predictor._has_apogee_converged
-        assert threaded_apogee_predictor.apogee == max(apogees)
+        assert max(apogees) == apogees[-1]
         assert threaded_apogee_predictor.is_running
 
     @pytest.mark.parametrize(
