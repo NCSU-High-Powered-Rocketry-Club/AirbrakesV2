@@ -3,7 +3,6 @@
 from collections import deque
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
@@ -13,6 +12,7 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
@@ -36,8 +36,8 @@ class AirbrakesContext:
         "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
+        "camera",
         "context_data_packet",
-        "current_extension",
         "data_processor",
         "est_data_packets",
         "imu",
@@ -55,6 +55,7 @@ class AirbrakesContext:
         self,
         servo: Servo,
         imu: IMU,
+        camera: Camera,
         logger: Logger,
         data_processor: IMUDataProcessor,
         apogee_predictor: ApogeePredictor,
@@ -67,18 +68,18 @@ class AirbrakesContext:
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
+        :param camera: The camera object that records video from the rocket.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: Servo = servo
         self.imu: IMU = imu
+        self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
 
-        # Placeholder for the current airbrake extension until they are set
-        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
@@ -99,6 +100,7 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
+        self.camera.start()
 
     def stop(self) -> None:
         """
@@ -111,6 +113,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
+        self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:
@@ -175,14 +178,12 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
-        self.current_extension = self.servo.current_extension
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the airbrakes to the minimum extension.
         """
         self.servo.set_retracted()
-        self.current_extension = self.servo.current_extension
 
     def predict_apogee(self) -> None:
         """
@@ -210,5 +211,6 @@ class AirbrakesContext:
 
         # Creates a servo data packet to log the current state of the servo
         self.servo_data_packet = ServoDataPacket(
-            set_extension=str(self.current_extension.value),
+            set_extension=str(self.servo.current_extension.value),
+            encoder_position=str(self.servo.get_encoder_reading()),
         )

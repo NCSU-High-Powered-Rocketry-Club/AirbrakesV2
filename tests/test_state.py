@@ -172,7 +172,7 @@ class TestMotorBurnState:
         motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestCoastState:
@@ -185,7 +185,7 @@ class TestCoastState:
 
     def test_init(self, coast_state, airbrakes):
         assert coast_state.context == airbrakes
-        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(coast_state.__class__, State)
 
     def test_name(self, coast_state):
@@ -243,7 +243,7 @@ class TestCoastState:
         assert isinstance(
             coast_state.context.state, expected_state
         ), f"Got {coast_state.context.state.name}, expected {expected_state!r}"
-        assert coast_state.context.current_extension == airbrakes_ext
+        assert coast_state.context.servo.current_extension == airbrakes_ext
 
     @pytest.mark.parametrize(
         (
@@ -283,7 +283,7 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
         coast_state.update()
-        assert coast_state.context.current_extension == expected_airbrakes
+        assert coast_state.context.servo.current_extension == expected_airbrakes
 
     def test_update_control_only_once(self, coast_state, monkeypatch):
         """Check that we only tell the airbrakes to extend once, and not send the command
@@ -315,7 +315,7 @@ class TestCoastState:
         """Check that if we don't have an apogee prediction, we don't extend the airbrakes."""
         assert not coast_state.context.last_apogee_predictor_packet.predicted_apogee
         coast_state.update()
-        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestFreeFallState:
@@ -328,7 +328,7 @@ class TestFreeFallState:
 
     def test_init(self, free_fall_state, airbrakes):
         assert free_fall_state.context == airbrakes
-        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(free_fall_state.__class__, State)
 
     def test_name(self, free_fall_state):
@@ -399,7 +399,7 @@ class TestFreeFallState:
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestLandedState:
@@ -412,7 +412,7 @@ class TestLandedState:
 
     def test_init(self, landed_state, airbrakes):
         assert landed_state.context == airbrakes
-        assert landed_state.context.current_extension == ServoExtension.MIN_EXTENSION
+        assert landed_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):

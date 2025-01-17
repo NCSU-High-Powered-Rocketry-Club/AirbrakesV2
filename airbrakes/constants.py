@@ -110,6 +110,12 @@ it is considered to have timed out. This is used to prevent the program from dea
 stops sending data."""
 
 # -------------------------------------------------------
+# Camera Configuration
+# -------------------------------------------------------
+
+CAMERA_IDLE_TIMEOUT_SECONDS = 0.1
+
+# -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
 

@@ -22,6 +22,10 @@ class TestServo:
         assert isinstance(servo.servo, gpiozero.Servo)
         assert isinstance(servo._go_to_max_no_buzz, threading.Timer)
         assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
+        if servo.encoder:
+            assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
+        else:
+            assert servo.encoder is None
 
     def test_set_extension(self, servo):
         servo._set_extension(ServoExtension.MAX_EXTENSION)

@@ -32,7 +32,7 @@ class TestAirbrakesContext:
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
-        assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandbyState)
@@ -96,7 +96,14 @@ class TestAirbrakesContext:
         assert airbrakes.shutdown_requested
 
     def test_airbrakes_update(
-        self, monkeypatch, random_data_mock_imu, servo, logger, data_processor, apogee_predictor
+        self,
+        monkeypatch,
+        random_data_mock_imu,
+        servo,
+        logger,
+        data_processor,
+        apogee_predictor,
+        camera,
     ):
         """Tests whether the Airbrakes update method works correctly by calling the relevant methods
 
@@ -137,7 +144,7 @@ class TestAirbrakesContext:
                 and ctx_dp.imu_queue_size > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
             )
-            asserts.append(servo_dp.set_extension == str(ServoExtension.MIN_EXTENSION.value))
+            asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
@@ -151,7 +158,7 @@ class TestAirbrakesContext:
             calls.append("apogee update called")
 
         mocked_airbrakes = AirbrakesContext(
-            servo, random_data_mock_imu, logger, data_processor, apogee_predictor
+            servo, random_data_mock_imu, camera, logger, data_processor, apogee_predictor
         )
         mocked_airbrakes.state = CoastState(
             mocked_airbrakes
@@ -278,7 +285,7 @@ class TestAirbrakesContext:
         assert len(lines) > 100
 
     def test_airbrakes_sends_packets_to_apogee_predictor(
-        self, monkeypatch, idle_mock_imu, servo, logger, data_processor, apogee_predictor
+        self, monkeypatch, idle_mock_imu, servo, logger, data_processor, apogee_predictor, camera
     ):
         """Tests whether the airbrakes predict_apogee method works correctly by calling the
         relevant methods.
@@ -297,7 +304,9 @@ class TestAirbrakesContext:
             packets.extend(processor_data_packets)
             calls.append("apogee update called")
 
-        airbrakes = AirbrakesContext(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
+        airbrakes = AirbrakesContext(
+            servo, idle_mock_imu, camera, logger, data_processor, apogee_predictor
+        )
         airbrakes.start()
 
         time.sleep(0.01)

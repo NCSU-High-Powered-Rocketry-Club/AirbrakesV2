@@ -5,8 +5,9 @@ import threading
 import warnings
 
 import gpiozero
+from gpiozero import RotaryEncoder
 
-from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
+from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B, SERVO_DELAY_SECONDS, ServoExtension
 
 
 class Servo:
@@ -16,7 +17,13 @@ class Servo:
     controlling GPIO pins on the Raspberry Pi.
     """
 
-    __slots__ = ("_go_to_max_no_buzz", "_go_to_min_no_buzz", "current_extension", "servo")
+    __slots__ = (
+        "_go_to_max_no_buzz",
+        "_go_to_min_no_buzz",
+        "current_extension",
+        "encoder",
+        "servo",
+    )
 
     def __init__(self, gpio_pin_number: int, pin_factory=None) -> None:
         """
@@ -34,9 +41,14 @@ class Servo:
         # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
         if pin_factory is None:
             gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
+            # Max steps set to zero indicates that the encoder can infinitely rotate
+            self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B, max_steps=0)
         else:
+            # The servo always prints a warning about jitter, so we suppress it here
             warnings.filterwarnings(message="To reduce servo jitter", action="ignore")
             gpiozero.Device.pin_factory = pin_factory
+            # When running the mock, we don't have an encoder
+            self.encoder = None
 
         self.servo = gpiozero.Servo(gpio_pin_number, initial_value=ServoExtension.MIN_NO_BUZZ.value)
 
@@ -75,6 +87,16 @@ class Servo:
         # Creates a timer to stop the buzzing after the servo reaches the minimum extension
         self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
         self._go_to_min_no_buzz.start()
+
+    def get_encoder_reading(self) -> float | None:
+        """
+        Gets the current reading (in steps) of the rotary encoder. If the encoder hasn't been
+        initialized, such as in the mock, returns None.
+        :return: The current reading of the rotary encoder
+        """
+        if self.encoder:
+            return self.encoder.steps
+        return None
 
     def _set_max_no_buzz(self) -> None:
         """

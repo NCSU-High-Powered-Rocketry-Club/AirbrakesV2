@@ -15,6 +15,7 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
 
     # Fields in ServoDataPacket
     set_extension: str | None
+    encoder_position: str | None
 
     # IMU Data Packet Fields
     timestamp: int
