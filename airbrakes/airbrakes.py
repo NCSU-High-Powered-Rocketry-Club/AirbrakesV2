@@ -3,7 +3,6 @@
 from collections import deque
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import ServoExtension
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger

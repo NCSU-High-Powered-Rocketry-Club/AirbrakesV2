@@ -85,7 +85,9 @@ class TestIntegration:
             if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
                     # Reset the current state velocities and altitudes
-                    states_dict[ab.state.name] = StateInformation(extensions=[ab.servo.current_extension])
+                    states_dict[ab.state.name] = StateInformation(
+                        extensions=[ab.servo.current_extension]
+                    )
 
                 # Let's update all our values:
                 state_info = states_dict[ab.state.name]

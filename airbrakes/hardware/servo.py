@@ -7,7 +7,7 @@ import warnings
 import gpiozero
 from gpiozero import RotaryEncoder
 
-from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension, ENCODER_PIN_A, ENCODER_PIN_B
+from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B, SERVO_DELAY_SECONDS, ServoExtension
 
 
 class Servo:
@@ -17,7 +17,13 @@ class Servo:
     controlling GPIO pins on the Raspberry Pi.
     """
 
-    __slots__ = ("_go_to_max_no_buzz", "_go_to_min_no_buzz", "current_extension", "servo", "encoder")
+    __slots__ = (
+        "_go_to_max_no_buzz",
+        "_go_to_min_no_buzz",
+        "current_extension",
+        "encoder",
+        "servo",
+    )
 
     def __init__(self, gpio_pin_number: int, pin_factory=None) -> None:
         """
