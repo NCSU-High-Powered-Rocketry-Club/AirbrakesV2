@@ -158,7 +158,7 @@ class TestAirbrakesContext:
             calls.append("apogee update called")
 
         mocked_airbrakes = AirbrakesContext(
-            servo, random_data_mock_imu, logger, data_processor, apogee_predictor, camera
+            servo, random_data_mock_imu, camera, logger, data_processor, apogee_predictor
         )
         mocked_airbrakes.state = CoastState(
             mocked_airbrakes
@@ -305,7 +305,7 @@ class TestAirbrakesContext:
             calls.append("apogee update called")
 
         airbrakes = AirbrakesContext(
-            servo, idle_mock_imu, logger, data_processor, apogee_predictor, camera
+            servo, idle_mock_imu, camera, logger, data_processor, apogee_predictor
         )
         airbrakes.start()
 

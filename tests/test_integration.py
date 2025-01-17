@@ -74,7 +74,7 @@ class TestIntegration:
 
         states_dict: dict[str, StateInformation] = {}
 
-        ab = AirbrakesContext(servo, mock_imu, logger, data_processor, apogee_predictor, camera)
+        ab = AirbrakesContext(servo, mock_imu, camera, logger, data_processor, apogee_predictor)
 
         # Start testing!
         snap_start_timer = ab.data_processor.current_timestamp

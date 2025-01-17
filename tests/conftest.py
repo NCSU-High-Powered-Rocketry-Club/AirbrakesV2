@@ -61,7 +61,7 @@ def apogee_predictor():
 
 @pytest.fixture
 def airbrakes(imu, logger, servo, data_processor, apogee_predictor, camera):
-    return AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor, camera)
+    return AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
 
 
 @pytest.fixture
