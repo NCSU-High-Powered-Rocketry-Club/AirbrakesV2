@@ -37,7 +37,6 @@ class AirbrakesContext:
         "apogee_predictor",
         "apogee_predictor_data_packets",
         "context_data_packet",
-        "current_extension",
         "data_processor",
         "est_data_packets",
         "imu",
@@ -77,8 +76,6 @@ class AirbrakesContext:
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
 
-        # Placeholder for the current airbrake extension until they are set
-        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
         self.shutdown_requested = False
@@ -175,7 +172,6 @@ class AirbrakesContext:
         Extends the airbrakes to the maximum extension.
         """
         self.servo.set_extended()
-        self.current_extension = self.servo.current_extension
 
     def retract_airbrakes(self) -> None:
         """
@@ -210,5 +206,5 @@ class AirbrakesContext:
 
         # Creates a servo data packet to log the current state of the servo
         self.servo_data_packet = ServoDataPacket(
-            set_extension=str(self.current_extension.value),
+            set_extension=str(self.servo.current_extension.value),
         )
