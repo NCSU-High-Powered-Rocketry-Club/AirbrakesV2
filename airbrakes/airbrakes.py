@@ -12,6 +12,7 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
@@ -35,6 +36,7 @@ class AirbrakesContext:
         "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
+        "camera",
         "context_data_packet",
         "data_processor",
         "est_data_packets",
@@ -53,6 +55,7 @@ class AirbrakesContext:
         self,
         servo: Servo,
         imu: IMU,
+        camera: Camera,
         logger: Logger,
         data_processor: IMUDataProcessor,
         apogee_predictor: ApogeePredictor,
@@ -65,12 +68,14 @@ class AirbrakesContext:
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
+        :param camera: The camera object that records video from the rocket.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: Servo = servo
         self.imu: IMU = imu
+        self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
@@ -95,6 +100,7 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
+        self.camera.start()
 
     def stop(self) -> None:
         """
@@ -107,6 +113,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
+        self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:

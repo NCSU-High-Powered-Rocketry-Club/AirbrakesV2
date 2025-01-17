@@ -263,8 +263,9 @@ class FlightDisplay:
         imu_process = self._airbrakes.imu._data_fetch_process
         log_process = self._airbrakes.logger._log_process
         apogee_process = self._airbrakes.apogee_predictor._prediction_process
+        camera_process = self._airbrakes.camera.camera_control_process
         current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process]:
+        for p in [imu_process, log_process, current_process, apogee_process, camera_process]:
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)

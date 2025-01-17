@@ -49,6 +49,7 @@ class TestIntegration:
         apogee_predictor,
         request,
         target_altitude,
+        camera,
         monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
@@ -73,7 +74,7 @@ class TestIntegration:
 
         states_dict: dict[str, StateInformation] = {}
 
-        ab = AirbrakesContext(servo, mock_imu, logger, data_processor, apogee_predictor)
+        ab = AirbrakesContext(servo, mock_imu, camera, logger, data_processor, apogee_predictor)
 
         # Start testing!
         snap_start_timer = ab.data_processor.current_timestamp
