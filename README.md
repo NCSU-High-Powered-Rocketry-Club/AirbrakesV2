@@ -271,7 +271,7 @@ ruff format .
 
 ## Pi Usage
 
-_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl, picamera2), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
 
 ### Connecting to the Pi (SSH)
@@ -288,6 +288,15 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 ```bash
 sudo pigpiod
 ```
+
+### Install the dependencies needed for the camera integration:
+
+```bash
+sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev
+
+uv sync --all-groups
+```
+
 
 ### Run a real flight with real hardware:
 ```bash
