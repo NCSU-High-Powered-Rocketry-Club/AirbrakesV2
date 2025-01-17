@@ -10,4 +10,4 @@ class ServoDataPacket(msgspec.Struct):
     """
 
     set_extension: str
-    encoder_position: str
+    encoder_position: str | None

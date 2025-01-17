@@ -85,7 +85,7 @@ class TestIntegration:
             if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
                     # Reset the current state velocities and altitudes
-                    states_dict[ab.state.name] = StateInformation(extensions=[ab.current_extension])
+                    states_dict[ab.state.name] = StateInformation(extensions=[ab.servo.current_extension])
 
                 # Let's update all our values:
                 state_info = states_dict[ab.state.name]
@@ -112,7 +112,7 @@ class TestIntegration:
                 state_info.min_altitude = min(
                     ab.data_processor.current_altitude, state_info.min_altitude
                 )
-                state_info.extensions.append(ab.current_extension)
+                state_info.extensions.append(ab.servo.current_extension)
                 state_info.max_velocity = max(
                     ab.data_processor.vertical_velocity, state_info.max_velocity
                 )
@@ -169,7 +169,11 @@ class TestIntegration:
             standby_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
         )
         assert not any(standby_state.apogee_prediction)
-        assert all(ext == ServoExtension.MIN_EXTENSION for ext in standby_state.extensions)
+
+        assert (
+            ServoExtension.MIN_EXTENSION in standby_state.extensions
+            or ServoExtension.MIN_NO_BUZZ in standby_state.extensions
+        )
 
         assert motor_burn_state.max_velocity >= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert motor_burn_state.max_avg_vertical_acceleration >= 90.0

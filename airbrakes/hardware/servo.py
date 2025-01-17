@@ -41,6 +41,8 @@ class Servo:
             # The servo always prints a warning about jitter, so we suppress it here
             warnings.filterwarnings(message="To reduce servo jitter", action="ignore")
             gpiozero.Device.pin_factory = pin_factory
+            # When running the mock, we don't have an encoder
+            self.encoder = None
 
         self.servo = gpiozero.Servo(gpio_pin_number, initial_value=ServoExtension.MIN_NO_BUZZ.value)
 

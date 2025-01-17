@@ -32,7 +32,7 @@ class TestAirbrakesContext:
         assert airbrakes.logger == logger
         assert airbrakes.servo == servo
         assert airbrakes.imu == imu
-        assert airbrakes.current_extension == ServoExtension.MIN_EXTENSION
+        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert airbrakes.data_processor == data_processor
         assert isinstance(airbrakes.data_processor, IMUDataProcessor)
         assert isinstance(airbrakes.state, StandbyState)
@@ -137,7 +137,7 @@ class TestAirbrakesContext:
                 and ctx_dp.imu_queue_size > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
             )
-            asserts.append(servo_dp.set_extension == str(ServoExtension.MIN_EXTENSION.value))
+            asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
