@@ -11,7 +11,7 @@ from airbrakes.constants import (
     GRAVITY_METERS_PER_SECOND_SQUARED,
     MAX_VELOCITY_THRESHOLD,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
