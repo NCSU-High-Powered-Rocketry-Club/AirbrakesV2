@@ -19,6 +19,7 @@ from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
@@ -60,8 +61,8 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def airbrakes(imu, logger, servo, data_processor, apogee_predictor, camera):
-    return AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
+def airbrakes(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
+    return AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
 
 
 @pytest.fixture
@@ -87,6 +88,11 @@ def mock_imu(request):
 @pytest.fixture
 def camera():
     return Camera()
+
+
+@pytest.fixture
+def mock_camera():
+    return MockCamera()
 
 
 @pytest.fixture
