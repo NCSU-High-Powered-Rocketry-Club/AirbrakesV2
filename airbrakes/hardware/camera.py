@@ -1,11 +1,13 @@
 """Module to handle recording of the airbrakes with a camera."""
 
 import time
+from contextlib import suppress
 from multiprocessing import Event, Process
 
-from picamera2 import Picamera2
-from picamera2.encoders import H264Encoder
-from picamera2.outputs import CircularOutput
+with suppress(ImportError):
+    from picamera2 import Picamera2
+    from picamera2.encoders import H264Encoder
+    from picamera2.outputs import CircularOutput
 
 
 class Camera:
@@ -22,22 +24,23 @@ class Camera:
 
     def _camera_control_loop(self):
         """Starts the camera process"""
-        self.camera = Picamera2()
-        encoder = H264Encoder()
-        output = CircularOutput()
-        self.camera.configure(self.camera.create_video_configuration())
-        self.camera.start_recording(encoder, output)
+        with suppress(ImportError):
+            camera = Picamera2()
+            encoder = H264Encoder()
+            output = CircularOutput()
+            camera.configure(camera.create_video_configuration())
+            camera.start_recording(encoder, output)
 
-        while not self.motor_burn_started.is_set():
-            time.sleep(0.1)
+            while not self.motor_burn_started.is_set():
+                time.sleep(0.1)
 
-        output.fileoutput = "file.h264"
-        output.start()
+            output.fileoutput = "file.h264"
+            output.start()
 
-        while not self.stop_cam_event.is_set():
-            time.sleep(0.1)
+            while not self.stop_cam_event.is_set():
+                time.sleep(0.1)
 
-        output.stop()
+            output.stop()
 
     def start(self):
         """Start the video recording, with a buffer. This starts recording in a different process"""
