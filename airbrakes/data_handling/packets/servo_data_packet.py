@@ -10,4 +10,4 @@ class ServoDataPacket(msgspec.Struct):
     """
 
     set_extension: str
-    # encoder_position: str TODO: Implement this in a future PR
+    encoder_position: str

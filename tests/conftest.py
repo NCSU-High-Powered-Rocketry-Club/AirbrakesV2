@@ -24,6 +24,7 @@ from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
 LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
+print(LAUNCH_DATA)
 # Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
 LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 # Use the filenames as the ids for the fixtures:
