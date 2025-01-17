@@ -11,7 +11,7 @@ with suppress(ImportError):
 
 
 class Camera:
-    """Camera which records stuff"""
+    """This is the class used to interact with the camera on our rocket. It records on a separate process."""
 
     __slots__ = ("camera_control_process", "motor_burn_started", "stop_cam_event")
 
