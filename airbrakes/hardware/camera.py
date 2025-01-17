@@ -28,26 +28,42 @@ class Camera:
             target=self._camera_control_loop, name="Camera process"
         )
 
+    @property
+    def is_running(self):
+        """Returns whether the camera is currently recording."""
+        return self.camera_control_process.is_alive()
+
     def _camera_control_loop(self):
-        """Starts the camera process"""
-        with suppress(NameError):
-            camera = Picamera2()
-            encoder = H264Encoder()
-            output = CircularOutput()
-            camera.configure(camera.create_video_configuration())
-            camera.start_recording(encoder, output)
+        """Controls the camera recording process."""
+        camera = Picamera2()
+        # We use the H264 encoder and a circular output to save the video to a file.
+        encoder = H264Encoder()
+        # The circular output is a buffer with a default size of 150 bytes? which according to
+        # the docs is enough for 5 seconds of video at 30 fps.
+        output = CircularOutput()
+        # Create a basic video configuration
+        camera.configure(camera.create_video_configuration())
 
-            # TODO: this is ass
-            while not self.motor_burn_started.is_set():
-                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+        # Start recording with the buffer. This operation is non-blocking.
+        camera.start_recording(encoder, output)
 
-            output.fileoutput = "file.h264"
-            output.start()
+        # TODO: this is ass
+        # Check if motor burn has started, if it has, we can stop buffering and start saving
+        # the video. This way we get a few seconds of video before liftoff too. Otherwise, just
+        # sleep and wait.
+        while not self.motor_burn_started.is_set():
+            # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work... hence this
+            # ugly while loop instead.
+            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
-            while not self.stop_context_event.is_set():
-                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+        output.fileoutput = "file.h264"
+        output.start()
 
-            output.stop()
+        # Keep recoding until we have landed:
+        while not self.stop_context_event.is_set():
+            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+
+        output.stop()
 
     def start(self):
         """Start the video recording, with a buffer. This starts recording in a different process"""
