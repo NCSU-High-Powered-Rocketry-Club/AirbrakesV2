@@ -55,6 +55,7 @@ class Camera:
 
     def stop(self):
         """Stop the video recording."""
+        self.motor_burn_started.set()  # in case we stop before motor burn
         self.stop_context_event.set()
         self.camera_control_process.join()
 
