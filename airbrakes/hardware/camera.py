@@ -3,6 +3,7 @@
 import time
 from contextlib import suppress
 from multiprocessing import Event, Process
+from pathlib import Path
 
 from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS
 
@@ -33,6 +34,21 @@ class Camera:
         """Returns whether the camera is currently recording."""
         return self.camera_control_process.is_alive()
 
+    def start(self):
+        """Start the video recording, with a buffer. This starts recording in a different process"""
+        self.camera_control_process.start()
+
+    def stop(self):
+        """Stop the video recording."""
+        self.motor_burn_started.set()  # in case we stop before motor burn
+        self.stop_context_event.set()
+        self.camera_control_process.join()
+
+    def start_recording(self):
+        """Start recording when motor burn has started."""
+        self.motor_burn_started.set()
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self):
         """Controls the camera recording process."""
         camera = Picamera2()
@@ -56,7 +72,7 @@ class Camera:
             # ugly while loop instead.
             time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
-        output.fileoutput = "file.h264"
+        output.fileoutput = Path("logs/video.h264")
         output.start()
 
         # Keep recoding until we have landed:
@@ -64,17 +80,3 @@ class Camera:
             time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
         output.stop()
-
-    def start(self):
-        """Start the video recording, with a buffer. This starts recording in a different process"""
-        self.camera_control_process.start()
-
-    def stop(self):
-        """Stop the video recording."""
-        self.motor_burn_started.set()  # in case we stop before motor burn
-        self.stop_context_event.set()
-        self.camera_control_process.join()
-
-    def start_recording(self):
-        """Start recording when motor burn has started."""
-        self.motor_burn_started.set()
