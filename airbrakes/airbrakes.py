@@ -57,10 +57,10 @@ class AirbrakesContext:
         self,
         servo: Servo,
         imu: IMU,
+        camera: Camera,
         logger: Logger,
         data_processor: IMUDataProcessor,
         apogee_predictor: ApogeePredictor,
-        camera: Camera,
     ) -> None:
         """
         Initializes the airbrakes context with the specified hardware objects, logger, and data
@@ -70,16 +70,17 @@ class AirbrakesContext:
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
+        :param camera: The camera object that records video from the rocket.
         :param logger: The logger object that logs data to a CSV file.
         :param data_processor: The data processor object that processes IMU data on a higher level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: Servo = servo
         self.imu: IMU = imu
+        self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
-        self.camera: Camera = camera
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION

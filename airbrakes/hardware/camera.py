@@ -4,6 +4,9 @@ import time
 from contextlib import suppress
 from multiprocessing import Event, Process
 
+from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS
+
+# These libraries are only available on the Raspberry Pi so we ignore them if they are not available
 with suppress(ImportError):
     from picamera2 import Picamera2
     from picamera2.encoders import H264Encoder
@@ -11,12 +14,15 @@ with suppress(ImportError):
 
 
 class Camera:
-    """This is the class used to interact with the camera on our rocket. It records on a separate process."""
+    """
+    This is the class used to interact with the camera on our rocket. It records on a separate
+    process.
+    """
 
-    __slots__ = ("camera_control_process", "motor_burn_started", "stop_cam_event")
+    __slots__ = ("camera_control_process", "motor_burn_started", "stop_context_event")
 
     def __init__(self):
-        self.stop_cam_event = Event()
+        self.stop_context_event = Event()
         self.motor_burn_started = Event()
         self.camera_control_process = Process(
             target=self._camera_control_loop, name="Camera process"
@@ -24,21 +30,22 @@ class Camera:
 
     def _camera_control_loop(self):
         """Starts the camera process"""
-        with suppress(ImportError):
+        with suppress(NameError):
             camera = Picamera2()
             encoder = H264Encoder()
             output = CircularOutput()
             camera.configure(camera.create_video_configuration())
             camera.start_recording(encoder, output)
 
+            # TODO: this is ass
             while not self.motor_burn_started.is_set():
-                time.sleep(0.1)
+                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
             output.fileoutput = "file.h264"
             output.start()
 
-            while not self.stop_cam_event.is_set():
-                time.sleep(0.1)
+            while not self.stop_context_event.is_set():
+                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
             output.stop()
 
@@ -48,7 +55,7 @@ class Camera:
 
     def stop(self):
         """Stop the video recording."""
-        self.stop_cam_event.set()
+        self.stop_context_event.set()
         self.camera_control_process.join()
 
     def start_recording(self):

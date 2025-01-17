@@ -37,9 +37,9 @@ def run_mock_flight() -> None:
 def run_flight(args: argparse.Namespace) -> None:
     mock_time_start = time.time()
 
-    servo, imu, logger, data_processor, apogee_predictor, camera = create_components(args)
+    servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)
     # Initialize the airbrakes context and display
-    airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor, camera)
+    airbrakes = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
     # Run the main flight loop
@@ -48,7 +48,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[Servo, IMU, Logger, IMUDataProcessor, ApogeePredictor, Camera]:
+) -> tuple[Servo, IMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the airbrakes system. Depending on its arguments, it
     will return either mock or real components.
@@ -78,7 +78,7 @@ def create_components(
     data_processor = IMUDataProcessor()
     apogee_predictor = ApogeePredictor()
     camera = Camera()
-    return servo, imu, logger, data_processor, apogee_predictor, camera
+    return servo, imu, camera, logger, data_processor, apogee_predictor
 
 
 def run_flight_loop(
