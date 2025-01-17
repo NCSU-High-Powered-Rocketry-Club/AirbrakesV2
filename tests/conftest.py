@@ -16,6 +16,7 @@ from airbrakes.constants import (
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_imu import MockIMU
@@ -59,8 +60,8 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def airbrakes(imu, logger, servo, data_processor, apogee_predictor):
-    return AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
+def airbrakes(imu, logger, servo, data_processor, apogee_predictor, camera):
+    return AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor, camera)
 
 
 @pytest.fixture
@@ -81,6 +82,11 @@ def mock_imu(request):
     # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is
     # False.
     return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
+
+
+@pytest.fixture
+def camera():
+    return Camera()
 
 
 @pytest.fixture
