@@ -13,6 +13,7 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
@@ -47,6 +48,7 @@ class AirbrakesContext:
         "processor_data_packets",
         "servo",
         "servo_data_packet",
+        "camera",
         "shutdown_requested",
         "state",
     )
@@ -58,6 +60,7 @@ class AirbrakesContext:
         logger: Logger,
         data_processor: IMUDataProcessor,
         apogee_predictor: ApogeePredictor,
+        camera: Camera,
     ) -> None:
         """
         Initializes the airbrakes context with the specified hardware objects, logger, and data
@@ -76,6 +79,7 @@ class AirbrakesContext:
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
+        self.camera: Camera = camera
 
         # Placeholder for the current airbrake extension until they are set
         self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
@@ -99,6 +103,7 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
+        self.camera.start()
 
     def stop(self) -> None:
         """
@@ -111,6 +116,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
+        self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:
