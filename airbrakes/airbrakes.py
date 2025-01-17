@@ -37,6 +37,7 @@ class AirbrakesContext:
         "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
+        "camera",
         "context_data_packet",
         "current_extension",
         "data_processor",
@@ -48,7 +49,6 @@ class AirbrakesContext:
         "processor_data_packets",
         "servo",
         "servo_data_packet",
-        "camera",
         "shutdown_requested",
         "state",
     )

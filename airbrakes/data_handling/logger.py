@@ -285,7 +285,6 @@ class Logger:
         # the __init__ are not copied to the new process.
         modify_multiprocessing_queue_windows(self._log_queue)
 
-        print("IN LOGGGIN LOPP")
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
