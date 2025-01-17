@@ -145,5 +145,5 @@ class IdleIMU(IMU):
     """Mocks the IMU data fetch loop, but doesn't output any data packets."""
 
     def _fetch_data_loop(self, _: str) -> None:
-        while self._running.value:
+        while self.is_running:
             time.sleep(0.1)

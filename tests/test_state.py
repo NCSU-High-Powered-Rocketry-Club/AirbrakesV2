@@ -10,7 +10,8 @@ from airbrakes.constants import (
     MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,
@@ -103,25 +104,25 @@ class TestStandbyState:
         assert standby_state.name == "StandbyState"
 
     @pytest.mark.parametrize(
-        ("current_velocity", "current_altitude", "expected_state"),
+        ("current_velocity", "current_acceleration", "expected_state"),
         [
-            (0.0, 0.0, StandbyState),
+            (0.0, 9.8, StandbyState),
             (0.0, 100.0, MotorBurnState),
             (5.0, 0.3, StandbyState),
-            (11, 7, MotorBurnState),
-            (20, 15, MotorBurnState),
+            (3, 28, MotorBurnState),
+            (30, 15, MotorBurnState),
         ],
         ids=[
             "at_launchpad",
-            "only_alt_update",
-            "slow_alt_update",
+            "only_acc_update",
+            "slow_acc_update",
             "optimal_condition",
             "high_velocity",
         ],
     )
-    def test_update(self, standby_state, current_velocity, current_altitude, expected_state):
+    def test_update(self, standby_state, current_velocity, current_acceleration, expected_state):
         standby_state.context.data_processor._vertical_velocities = [current_velocity]
-        standby_state.context.data_processor._current_altitudes = [current_altitude]
+        standby_state.context.data_processor._rotated_accelerations = [current_acceleration]
         standby_state.update()
         assert isinstance(standby_state.context.state, expected_state)
 
@@ -226,7 +227,15 @@ class TestCoastState:
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
-        coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
+        coast_state.context.apogee_predictor_data_packets = [
+            ApogeePredictorDataPacket(
+                predicted_apogee=predicted_apogee,
+                a_coefficient=1.0,
+                b_coefficient=1.0,
+                uncertainty_threshold_1=1.0,
+                uncertainty_threshold_2=1.0,
+            )
+        ]
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
@@ -262,7 +271,14 @@ class TestCoastState:
     def test_update_with_controls(
         self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
     ):
-        coast_state.context.apogee_predictor._apogee_prediction_value.value = predicted_apogee
+        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+            predicted_apogee=predicted_apogee,
+            a_coefficient=1.0,
+            b_coefficient=1.0,
+            uncertainty_threshold_1=1.0,
+            uncertainty_threshold_2=1.0,
+        )
+
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
@@ -282,12 +298,24 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
-        coast_state.context.apogee_predictor._apogee_prediction_value.value = 1000.0
+        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+            predicted_apogee=1000.0,
+            a_coefficient=1.0,
+            b_coefficient=1.0,
+            uncertainty_threshold_1=1.0,
+            uncertainty_threshold_2=1.0,
+        )
 
         coast_state.update()
         assert calls == 1
         coast_state.update()
         assert calls == 1
+
+    def test_update_no_apogee_available_no_controls(self, coast_state):
+        """Check that if we don't have an apogee prediction, we don't extend the airbrakes."""
+        assert not coast_state.context.last_apogee_predictor_packet.predicted_apogee
+        coast_state.update()
+        assert coast_state.context.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestFreeFallState:

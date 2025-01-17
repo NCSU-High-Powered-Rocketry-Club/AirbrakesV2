@@ -147,11 +147,12 @@ ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
 like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
 we deadband the accel to prevent this."""
 
-TAKEOFF_HEIGHT_METERS = 10
-"""The height in meters that the rocket must reach before we consider it to have taken off."""
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
+TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED = 25
+"""The acceleration in meters per second squared that the rocket must reach before we consider it
+to have taken off."""
 
 # ---------------- MotorBurn to Coasting ----------------
 MAX_VELOCITY_THRESHOLD = 0.96
@@ -197,7 +198,7 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 """The initial guess for the coefficients for curve fit of the acceleration curve."""
 
 APOGEE_PREDICTION_MIN_PACKETS = 10
-"""The minimum number of data packets required to predict the apogee."""
+"""The minimum number of processor data packets required to predict the apogee."""
 
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
 """The uncertainty from the curve fit, below which we will say that our apogee has converged. This

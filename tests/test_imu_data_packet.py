@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 
 
 class TestEstimatedDataPacket:
