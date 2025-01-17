@@ -209,7 +209,7 @@ class FlightDisplay:
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{self._airbrakes.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Airbrakes extension:       {G}{self._airbrakes.current_extension.value}{RESET}",
+            f"Airbrakes extension:       {G}{self._airbrakes.servo.current_extension.value}{RESET}",
         ]
 
         # Adds additional info to the display if -v was specified
