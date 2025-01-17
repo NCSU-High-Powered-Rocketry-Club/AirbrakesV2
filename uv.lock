@@ -22,6 +22,8 @@ dependencies = [
 [package.dev-dependencies]
 camera = [
     { name = "picamera2" },
+    { name = "rpi-kms" },
+    { name = "rpi-libcamera" },
 ]
 dev = [
     { name = "pre-commit" },
@@ -46,7 +48,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-camera = [{ name = "picamera2", specifier = ">=0.3.24" }]
+camera = [
+    { name = "picamera2", specifier = ">=0.3.24" },
+    { name = "rpi-kms", specifier = ">=0.1a1" },
+    { name = "rpi-libcamera", specifier = ">=0.1a7" },
+]
 dev = [
     { name = "pre-commit" },
     { name = "pytest" },
@@ -645,6 +651,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/e0/830c02b2457c4bd20a8c5bb394d31d81f57fbefce2dbdd2e31feff4f7003/rpds_py-0.22.3-cp313-cp313t-win32.whl", hash = "sha256:69803198097467ee7282750acb507fba35ca22cc3b85f16cf45fb01cb9097730", size = 219100 },
     { url = "https://files.pythonhosted.org/packages/f8/30/7ac943f69855c2db77407ae363484b915d861702dbba1aa82d68d57f42be/rpds_py-0.22.3-cp313-cp313t-win_amd64.whl", hash = "sha256:f5cf2a0c2bdadf3791b5c205d55a37a54025c6e18a71c71f82bb536cf9a454bf", size = 233794 },
 ]
+
+[[package]]
+name = "rpi-kms"
+version = "0.1a1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/31/a306b6d82322b9d98053f2f1ee85ee4a8f8625f1c965d28367ec89af6c64/rpi_kms-0.1a1.tar.gz", hash = "sha256:f9328b8d3802ce7ac63bd285b015f47160fa1b64b1643b9f793533e4438d07f8", size = 3402 }
+
+[[package]]
+name = "rpi-libcamera"
+version = "0.1a7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/bd/18876345dffac79613440e6547c8d7fa62f6ae8359d27447f089ce131f7d/rpi_libcamera-0.1a7.tar.gz", hash = "sha256:aee02b80eaa8dd6e6e6c4a9244a3aedde132de3b568a9d682a8103eeb07ecd96", size = 5073 }
 
 [[package]]
 name = "ruff"
