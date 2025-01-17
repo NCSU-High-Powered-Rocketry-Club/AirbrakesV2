@@ -75,7 +75,7 @@ class Camera:
         output.fileoutput = Path("logs/video.h264")
         output.start()
 
-        # Keep recoding until we have landed:
+        # Keep recording until we have landed:
         while not self.stop_context_event.is_set():
             time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 

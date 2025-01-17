@@ -29,8 +29,8 @@ dev = [
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
 camera = [
     "picamera2>=0.3.24",
-    # "rpi-libcamera>=0.1a7",
-    # "rpi-kms>=0.1a1",
+    "rpi-libcamera>=0.1a7",
+    "rpi-kms>=0.1a1",
 ]
 
 [project.scripts]
