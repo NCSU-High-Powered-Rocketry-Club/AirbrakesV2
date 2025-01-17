@@ -9,6 +9,10 @@ from picamera2.outputs import CircularOutput
 
 
 class Camera:
+    """Camera which records stuff"""
+
+    __slots__ = ("camera_control_process", "motor_burn_started", "stop_cam_event")
+
     def __init__(self):
         self.stop_cam_event = Event()
         self.motor_burn_started = Event()
@@ -36,7 +40,7 @@ class Camera:
         output.stop()
 
     def start(self):
-        """Start the video recording, with a buffer. This starts recording in a different process."""
+        """Start the video recording, with a buffer. This starts recording in a different process"""
         self.camera_control_process.start()
 
     def stop(self):
