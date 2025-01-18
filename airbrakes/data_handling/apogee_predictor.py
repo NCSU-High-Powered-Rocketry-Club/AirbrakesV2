@@ -275,7 +275,6 @@ class ApogeePredictor:
                 data_packets: list[ProcessorDataPacket | Literal["STOP"]] = (
                     self._processor_data_packet_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
                 )
-                print(f"Fetched {len(data_packets)} data packets in Apogee Predictor")
             except Empty:
                 continue
 
@@ -285,18 +284,15 @@ class ApogeePredictor:
             self._extract_processor_data_packets(data_packets)
 
             if len(self._accelerations) - last_run_length >= APOGEE_PREDICTION_MIN_PACKETS:
-                print(f"Running a prediction with {len(self._accelerations)} data points")
                 self._cumulative_time_differences = np.cumsum(self._time_differences)
 
                 # We only want to keep curve fitting if the curve fit hasn't converged yet
                 if not self._has_apogee_converged:
-                    print(f"Curve fitting with {len(self._accelerations)} data points")
                     curve_coefficients = self._curve_fit()
                     self._update_prediction_lookup_table(curve_coefficients)
 
                 # Get the predicted apogee if the curve fit has converged:
                 if self._has_apogee_converged:
-                    print(f"Apogee has converged with {len(self._accelerations)} data points")
                     apogee = self._predict_apogee()
 
                 last_run_length = len(self._accelerations)

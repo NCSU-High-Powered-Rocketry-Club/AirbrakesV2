@@ -165,7 +165,10 @@ class TestApogeePredictor:
         packet: ApogeePredictorDataPacket = threaded_apogee_predictor.get_prediction_data_packets()[
             -1
         ]
-        assert packet.predicted_apogee == expected_value
+        # Test that our predicted apogee is approximately the same as the expected value, within
+        # 0.1 meters, using pytest.approx. There is a difference in the 7th decimal place between
+        # arm64 and x86_64, so we need to use approx.
+        assert packet.predicted_apogee == pytest.approx(expected_value, abs=0.1)
         assert packet.a_coefficient
         assert packet.b_coefficient
         assert packet.uncertainty_threshold_1 < UNCERTAINTY_THRESHOLD[0]
