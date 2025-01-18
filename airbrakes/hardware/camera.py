@@ -3,9 +3,8 @@
 import time
 from contextlib import suppress
 from multiprocessing import Event, Process
-from pathlib import Path
 
-from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS
+from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS, CAMERA_SAVE_PATH
 
 # These libraries are only available on the Raspberry Pi so we ignore them if they are not available
 with suppress(ImportError):
@@ -72,7 +71,7 @@ class Camera:
             # ugly while loop instead.
             time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
-        output.fileoutput = Path("logs/video.h264")
+        output.fileoutput = CAMERA_SAVE_PATH
         output.start()
 
         # Keep recording until we have landed:

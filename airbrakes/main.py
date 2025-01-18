@@ -11,6 +11,7 @@ from airbrakes.constants import IMU_PORT, LOGS_PATH, SERVO_PIN
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import IMUDataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -49,7 +50,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[Servo, IMU | MockIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
+) -> tuple[Servo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the airbrakes system. Depending on its arguments, it
     will return either mock or real components.

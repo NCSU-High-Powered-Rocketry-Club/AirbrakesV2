@@ -12,8 +12,8 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
-from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
 
@@ -54,7 +54,7 @@ class AirbrakesContext:
     def __init__(
         self,
         servo: Servo,
-        imu: IMU,
+        imu: BaseIMU,
         camera: Camera,
         logger: Logger,
         data_processor: IMUDataProcessor,
@@ -74,7 +74,7 @@ class AirbrakesContext:
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: Servo = servo
-        self.imu: IMU = imu
+        self.imu: BaseIMU = imu
         self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
