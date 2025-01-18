@@ -11,9 +11,11 @@
   jobs:
     pytest:
       name: pytest
-      runs-on: ubuntu-latest
+      runs-on: ${{ matrix.os }}
       timeout-minutes: 5
       strategy:
+        matrix:
+          os: [ubuntu-latest, ubuntu-24.04-arm]
         fail-fast: False
       steps:
         - uses: actions/checkout@v4
