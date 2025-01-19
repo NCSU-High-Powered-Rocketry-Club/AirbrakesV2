@@ -66,6 +66,13 @@ def airbrakes(imu, logger, servo, data_processor, apogee_predictor, mock_camera)
 
 
 @pytest.fixture
+def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
+    """Fixture that returns an AirbrakesContext object with a mock IMU. This will run for
+    all the launch data files (see the mock_imu fixture)"""
+    return AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+
+
+@pytest.fixture
 def random_data_mock_imu():
     # A mock IMU that outputs random data packets
     return RandomDataIMU(port=IMU_PORT)
@@ -80,8 +87,6 @@ def idle_mock_imu():
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):
     """Fixture that returns a MockIMU object with the specified log file."""
-    # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is
-    # False.
     return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
 
 
