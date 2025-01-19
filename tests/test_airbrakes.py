@@ -457,7 +457,7 @@ class TestAirbrakesContext:
         # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
         # predicted_apogee attribute:
         airbrakes.apogee_predictor_data_packets = []
-        assert airbrakes.last_apogee_predictor_packet.predicted_apogee
+        assert airbrakes.last_apogee_predictor_packet.predicted_apogee is not None
 
     def test_generate_data_packets(self, airbrakes):
         """Tests whether the airbrakes generates the correct data packets for logging."""
