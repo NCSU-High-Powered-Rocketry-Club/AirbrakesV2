@@ -41,10 +41,9 @@ class TestIntegration:
     # time and verifying that the state is as expected at each point in time.
     def test_update(
         self,
-        mock_imu,
         request,
         target_altitude,
-        airbrakes,
+        mock_imu_airbrakes,
         monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
@@ -69,8 +68,7 @@ class TestIntegration:
 
         states_dict: dict[str, StateInformation] = {}
 
-        ab = airbrakes
-        ab.imu = mock_imu
+        ab = mock_imu_airbrakes
 
         # Start testing!
         snap_start_timer = ab.data_processor.current_timestamp
