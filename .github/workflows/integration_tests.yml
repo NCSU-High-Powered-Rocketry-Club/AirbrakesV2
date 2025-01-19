@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 5
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm]
       fail-fast: False
 
     steps:
