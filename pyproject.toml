@@ -81,6 +81,11 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
+# Unfortunately the multiprocessing support is causing some tests to fail (it seems to make things
+# slow)
+# concurrency = ["multiprocessing", "thread"]
+# sigterm = true
+# parallel = true
 source = ["airbrakes"]
 omit = [
     "*/tests/*",
@@ -99,4 +104,4 @@ exclude_lines = [
     "if __name__ == \"__main__\":"
 ]
 show_missing = true
-fail_under = 80
+fail_under = 90

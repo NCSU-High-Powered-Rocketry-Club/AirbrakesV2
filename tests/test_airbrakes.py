@@ -18,7 +18,12 @@ from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
-from tests.auxil.utils import make_est_data_packet, make_processor_data_packet, make_raw_data_packet
+from tests.auxil.utils import (
+    make_apogee_predictor_data_packet,
+    make_est_data_packet,
+    make_processor_data_packet,
+    make_raw_data_packet,
+)
 
 
 class TestAirbrakesContext:
@@ -77,6 +82,7 @@ class TestAirbrakesContext:
         assert not airbrakes.camera.is_running
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert airbrakes.shutdown_requested
+        airbrakes.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, airbrakes):
         """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
@@ -168,6 +174,10 @@ class TestAirbrakesContext:
         def apogee_update(self, processor_data_packets):
             calls.append("apogee update called")
 
+        def get_prediction_data_packets(self):
+            calls.append("get_prediction_data_packets called")
+            return [make_apogee_predictor_data_packet()]
+
         mocked_airbrakes = airbrakes
         mocked_airbrakes.imu = random_data_mock_imu
         mocked_airbrakes.state = CoastState(
@@ -185,18 +195,25 @@ class TestAirbrakesContext:
         monkeypatch.setattr(airbrakes.apogee_predictor.__class__, "update", apogee_update)
         monkeypatch.setattr(mocked_airbrakes.state.__class__, "update", state)
         monkeypatch.setattr(airbrakes.logger.__class__, "log", log)
+        monkeypatch.setattr(
+            airbrakes.apogee_predictor.__class__,
+            "get_prediction_data_packets",
+            get_prediction_data_packets,
+        )
 
         # Let's call .update() and check if stuff was called and/or changed:
         mocked_airbrakes.update()
 
-        assert len(calls) == 4
+        assert len(calls) == 5
         assert calls == [
             "update called",
+            "get_prediction_data_packets called",
             "state update called",
             "apogee update called",
             "log called",
         ]
         assert all(asserts)
+        assert mocked_airbrakes.last_apogee_predictor_packet == make_apogee_predictor_data_packet()
 
         mocked_airbrakes.stop()
 

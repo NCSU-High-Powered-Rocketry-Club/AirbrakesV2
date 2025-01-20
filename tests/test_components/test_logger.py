@@ -117,6 +117,15 @@ class TestLogger:
         logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
         assert logger.is_log_buffer_full
 
+    def test_logger_stops_on_stop_signal(self, logger):
+        """Tests whether the logger stops when it receives a stop signal."""
+        logger.start()
+        logger._log_queue.put(STOP_SIGNAL)
+        time.sleep(0.01)
+        assert not logger.is_running
+        assert not logger._log_process.is_alive()
+        logger.stop()
+
     def test_logging_loop_start_stop(self, logger):
         logger.start()
         assert logger.is_running
@@ -167,17 +176,11 @@ class TestLogger:
         assert values.qsize() == 1
         assert values.get() == "clean exit"
 
-    def test_logger_loop_exception_raised(self):
+    def test_logger_loop_exception_raised(self, logger):
         """Tests whether the Logger loop properly propogates unknown exceptions."""
-        logger = Logger(LOG_PATH)
-        logger.start()
         logger._log_queue.put({"wrong_filed": "wrong_value"})
         with pytest.raises(ValueError, match="dict contains fields not in fieldnames"):
             logger._logging_loop()
-
-        logger.stop()
-        assert not logger.is_running
-        assert not logger._log_process.is_alive()
 
     def test_logging_loop_add_to_queue(self, logger):
         logger._log_queue.put(self.sample_data)
@@ -388,7 +391,7 @@ class TestLogger:
         logger = Logger(LOG_PATH)
         # Test if the buffer works correctly
         logger.start()
-        # Log more than LOG_BUFFER_SIZE packets to test if it stops logging after LOG_BUFFER_SIZE.
+        # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after LOG_BUFFER_SIZE.
         logger.log(
             context_packet,
             servo_packet,
@@ -397,7 +400,7 @@ class TestLogger:
             apogee_predictor_data_packets,
         )
 
-        time.sleep(0.1)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the process time to log to file
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
@@ -411,6 +414,76 @@ class TestLogger:
             # First row index is zero, hence the +1
             assert count + 1 == IDLE_LOG_CAPACITY
             assert logger._log_counter == IDLE_LOG_CAPACITY
+
+    @pytest.mark.parametrize(
+        (
+            "context_packet",
+            "servo_packet",
+            "imu_data_packets",
+            "processor_data_packets",
+            "apogee_predictor_data_packets",
+        ),
+        [
+            (
+                make_context_data_packet(state_letter="S"),
+                make_servo_data_packet(set_extension="0.0"),
+                deque([make_raw_data_packet()]),
+                [],
+                [],
+            ),
+            (
+                make_context_data_packet(state_letter="S"),
+                make_servo_data_packet(set_extension="0.0"),
+                deque([make_est_data_packet()]),
+                [make_processor_data_packet()],
+                [make_apogee_predictor_data_packet()],
+            ),
+        ],
+        ids=[
+            "RawDataPacket",
+            "EstimatedDataPacket",
+        ],
+    )
+    def test_log_buffer_keeps_increasing(
+        self,
+        context_packet: ContextDataPacket,
+        servo_packet: ServoDataPacket,
+        imu_data_packets: deque[IMUDataPacket],
+        processor_data_packets: list[ProcessorDataPacket],
+        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
+        logger,
+    ):
+        """Tests that the buffer keeps building up on subsequent calls to log()."""
+
+        # Test if the buffer works correctly
+        logger.start()
+        # Log more than IDLE_LOG_CAPACITY packets to test if packets go to the buffer.
+        logger.log(
+            context_packet,
+            servo_packet,
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
+            processor_data_packets * (IDLE_LOG_CAPACITY + 10),
+            apogee_predictor_data_packets,
+        )
+
+        # Log more than LOG_BUFFER_SIZE packets to test if the buffer keeps building.
+        logger.log(
+            context_packet,
+            servo_packet,
+            imu_data_packets * (LOG_BUFFER_SIZE + 10),
+            processor_data_packets * (LOG_BUFFER_SIZE + 10),
+            apogee_predictor_data_packets,
+        )
+
+        time.sleep(0.01)  # Give the process time to log to file
+
+        assert len(logger._log_buffer) == LOG_BUFFER_SIZE
+        logger.stop()  # We must stop because otherwise the values are not flushed to the file
+        assert len(logger._log_buffer) == 0
+
+        lines = logger.log_path.open().readlines()
+        # First row is the header:
+        assert len(lines) - 1 == IDLE_LOG_CAPACITY + LOG_BUFFER_SIZE
 
     @pytest.mark.parametrize(
         (
@@ -459,8 +532,7 @@ class TestLogger:
         """Tests if the buffer is logged when switching from standby to motor burn and that the
         counter is reset."""
         # Note: We are not monkeypatching the stop method here, because we want to test if the
-        # entire buffer is logged when we switch from Standby to MotorBurn. Monkeypatching stop()
-        # has no effect on this test.
+        # entire buffer is logged when we switch from Standby to MotorBurn.
         logger.start()
         # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after hitting that.
         logger.log(
