@@ -481,9 +481,10 @@ class TestLogger:
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
         assert len(logger._log_buffer) == 0
 
-        lines = logger.log_path.open().readlines()
-        # First row is the header:
-        assert len(lines) - 1 == IDLE_LOG_CAPACITY + LOG_BUFFER_SIZE
+        with logger.log_path.open() as file:
+            lines = file.readlines()
+            # First row is the header:
+            assert len(lines) - 1 == IDLE_LOG_CAPACITY + LOG_BUFFER_SIZE
 
     @pytest.mark.parametrize(
         (

@@ -244,7 +244,7 @@ class TestAirbrakesContext:
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping process. We don't want to hit the "just in case" timeout
         # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert not airbrakes.apogee_predictor.is_running
@@ -258,11 +258,12 @@ class TestAirbrakesContext:
         )
 
         # Open the file and check if we have a large number of lines:
-        lines = airbrakes.logger.log_path.open().readlines()
-        assert len(lines) > 100
+        with airbrakes.logger.log_path.open() as file:
+            lines = file.readlines()
+            assert len(lines) > 100
 
     def test_stop_with_display_and_update_loop(
-        self, airbrakes: AirbrakesContext, random_data_mock_imu, mocked_args_parser
+        self, airbrakes: AirbrakesContext, random_data_mock_imu, mocked_args_parser, capsys
     ):
         """Tests stopping of the airbrakes system while we are using the IMU, the flight display,
         and calling airbrakes.update().
@@ -292,7 +293,7 @@ class TestAirbrakesContext:
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping process. We don't want to hit the "just in case" timeout
         # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert not airbrakes.apogee_predictor.is_running
@@ -308,8 +309,13 @@ class TestAirbrakesContext:
         assert not fd._running
 
         # Open the file and check if we have a large number of lines:
-        lines = airbrakes.logger.log_path.open().readlines()
-        assert len(lines) > 100
+        with airbrakes.logger.log_path.open() as file:
+            lines = file.readlines()
+            assert len(lines) > 100
+
+        # Check display output:
+        captured = capsys.readouterr()
+        assert "REPLAY INFO" in captured.out
 
     def test_airbrakes_sends_packets_to_apogee_predictor(
         self,

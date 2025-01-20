@@ -109,7 +109,8 @@ def mocked_args_parser():
         real_servo = False
         keep_log_file = False
         fast_replay = False
-        debug = True
+        debug = False
+        verbose = False
 
     return MockArgs()
 
