@@ -164,8 +164,6 @@ class ApogeePredictor:
         with contextlib.suppress(Empty):
             while True:
                 new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
-                if not new_packets:
-                    break
                 total_packets.extend(new_packets)
         return total_packets
 
