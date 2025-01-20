@@ -76,7 +76,7 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 filterwarnings = [
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
-    "ignore:Could not import MSCL",  # ignore warning about MSCL being not installed
+    "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
 ]
 
 [tool.coverage.run]
