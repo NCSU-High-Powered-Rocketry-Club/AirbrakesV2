@@ -10,14 +10,14 @@ from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.camera import Camera
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet, make_processor_data_packet, make_raw_data_packet
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 
 
 @pytest.fixture

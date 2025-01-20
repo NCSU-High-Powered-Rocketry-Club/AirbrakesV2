@@ -10,8 +10,6 @@ from airbrakes.constants import (
     MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,
@@ -20,6 +18,8 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 
 
 @pytest.fixture
@@ -250,9 +250,9 @@ class TestCoastState:
         # controls logic in this test:
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
         coast_state.update()
-        assert isinstance(
-            coast_state.context.state, expected_state
-        ), f"Got {coast_state.context.state.name}, expected {expected_state!r}"
+        assert isinstance(coast_state.context.state, expected_state), (
+            f"Got {coast_state.context.state.name}, expected {expected_state!r}"
+        )
         assert coast_state.context.servo.current_extension == airbrakes_ext
 
     @pytest.mark.parametrize(

@@ -8,9 +8,6 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import IMU_PORT, LOGS_PATH, SERVO_PIN
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
@@ -19,6 +16,9 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
 

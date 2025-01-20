@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 
 @pytest.fixture

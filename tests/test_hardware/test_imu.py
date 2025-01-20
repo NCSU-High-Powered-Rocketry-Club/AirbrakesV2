@@ -8,12 +8,12 @@ import faster_fifo
 import pytest
 
 from airbrakes.constants import IMU_PORT, STOP_SIGNAL
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.hardware.imu import IMU
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.imu import IMU
 from tests.auxil.utils import make_est_data_packet
 
 

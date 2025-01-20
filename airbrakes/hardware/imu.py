@@ -23,12 +23,12 @@ from airbrakes.constants import (
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
 )
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.base_imu import BaseIMU
 
 
 class IMU(BaseIMU):

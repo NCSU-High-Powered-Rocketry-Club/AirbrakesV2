@@ -16,7 +16,7 @@ from airbrakes.constants import (
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
-from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 

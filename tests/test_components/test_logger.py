@@ -9,17 +9,17 @@ import pytest
 from msgspec import to_builtins
 
 from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
-from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.telemetry.logger import Logger
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_context_data_packet,
@@ -197,7 +197,7 @@ class TestLogger:
 
     def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
         """Tests whether the logger continues to log after a timeout."""
-        monkeypatch.setattr("airbrakes.data_handling.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
+        monkeypatch.setattr("airbrakes.telemetry.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
         logger.start()
         time.sleep(0.05)
         logger._log_queue.put(self.sample_data)

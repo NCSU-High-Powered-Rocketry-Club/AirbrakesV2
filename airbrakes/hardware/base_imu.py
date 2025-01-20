@@ -6,7 +6,7 @@ import contextlib
 import sys
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
 )
 
