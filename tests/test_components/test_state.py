@@ -18,8 +18,8 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from tests.auxil.utils import make_apogee_predictor_data_packet
 
 
 @pytest.fixture
@@ -238,12 +238,8 @@ class TestCoastState:
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
         coast_state.context.apogee_predictor_data_packets = [
-            ApogeePredictorDataPacket(
+            make_apogee_predictor_data_packet(
                 predicted_apogee=predicted_apogee,
-                a_coefficient=1.0,
-                b_coefficient=1.0,
-                uncertainty_threshold_1=1.0,
-                uncertainty_threshold_2=1.0,
             )
         ]
         # Just set the target altitude to the predicted apogee, since we are not testing the
@@ -281,12 +277,8 @@ class TestCoastState:
     def test_update_with_controls(
         self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
     ):
-        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=predicted_apogee,
-            a_coefficient=1.0,
-            b_coefficient=1.0,
-            uncertainty_threshold_1=1.0,
-            uncertainty_threshold_2=1.0,
         )
 
         # set a dummy value to prevent state changes:
@@ -308,12 +300,8 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
         monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
-        coast_state.context.last_apogee_predictor_packet = ApogeePredictorDataPacket(
+        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=1000.0,
-            a_coefficient=1.0,
-            b_coefficient=1.0,
-            uncertainty_threshold_1=1.0,
-            uncertainty_threshold_2=1.0,
         )
 
         coast_state.update()
@@ -325,6 +313,31 @@ class TestCoastState:
         """Check that if we don't have an apogee prediction, we don't extend the airbrakes."""
         assert not coast_state.context.last_apogee_predictor_packet.predicted_apogee
         coast_state.update()
+        assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
+
+    def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
+        """Check that if we are extended, and the predicted apogee is less than the target altitude,
+        we retract the airbrakes."""
+        # set a dummy value to prevent state changes:
+        monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
+        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 1000.0)
+
+        # set the airbrakes to be extended:
+        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+            predicted_apogee=1100.0,
+        )
+        coast_state.update()
+        assert coast_state.airbrakes_extended
+        assert coast_state.context.servo.current_extension == ServoExtension.MAX_EXTENSION
+
+        # set the predicted apogee to be less than the target altitude, to test that we retract the
+        # airbrakes:
+        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+            predicted_apogee=900.0,
+        )
+
+        coast_state.update()
+        assert not coast_state.airbrakes_extended
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
@@ -445,3 +458,7 @@ class TestLandedState:
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert not airbrakes.logger.is_log_buffer_full
         assert len(airbrakes.logger._log_buffer) == 0
+
+    def test_next_state_does_nothing(self, landed_state):
+        landed_state.next_state()
+        assert landed_state.context.state == landed_state
