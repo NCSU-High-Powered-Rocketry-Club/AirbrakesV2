@@ -9,7 +9,6 @@ import types
 import msgspec
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
@@ -42,14 +41,9 @@ class TestIntegration:
     # time and verifying that the state is as expected at each point in time.
     def test_update(
         self,
-        logger,
-        mock_imu,
-        data_processor,
-        servo,
-        apogee_predictor,
         request,
         target_altitude,
-        camera,
+        mock_imu_airbrakes,
         monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
@@ -74,7 +68,7 @@ class TestIntegration:
 
         states_dict: dict[str, StateInformation] = {}
 
-        ab = AirbrakesContext(servo, mock_imu, camera, logger, data_processor, apogee_predictor)
+        ab = mock_imu_airbrakes
 
         # Start testing!
         snap_start_timer = ab.data_processor.current_timestamp

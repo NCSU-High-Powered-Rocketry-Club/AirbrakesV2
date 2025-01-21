@@ -156,7 +156,7 @@ class ApogeePredictor:
 
     def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
         """
-        Gets the apogee prediction data packets from the queue.
+        Gets *all* the apogee prediction data packets from the queue. This operation is non-blocking
         """
         total_packets = []
         # get_many doesn't actually get all of the packets, so we need to keep checking until
