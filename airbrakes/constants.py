@@ -156,14 +156,9 @@ like wind or being small bumps can cause this to accumulate even while the rocke
 we deadband the accel to prevent this."""
 
 
-TAKEOFF_HEIGHT_METERS = 5.0
-"""The height in meters that the rocket must reach before we consider it to have taken off."""
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
-TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED = 35
-"""The acceleration in meters per second squared that the rocket must reach before we consider it
-to have taken off."""
 
 # ---------------- MotorBurn to Coasting ----------------
 MAX_VELOCITY_THRESHOLD = 0.96
