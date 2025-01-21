@@ -109,7 +109,7 @@ class TestStandbyState:
             (0.0, 9.8, StandbyState),
             (0.0, 100.0, MotorBurnState),
             (5.0, 0.3, StandbyState),
-            (3, 28, MotorBurnState),
+            (3, 35.3, MotorBurnState),
             (30, 15, MotorBurnState),
         ],
         ids=[
