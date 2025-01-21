@@ -68,6 +68,7 @@ class TestArgumentParsing:
             "debug": False,
             "path": None,
             "verbose": False,
+            "real_camera": False,
         }
 
     @pytest.mark.parametrize(
@@ -89,6 +90,7 @@ class TestArgumentParsing:
         assert args.debug is False
         assert args.path is None
         assert args.verbose is False
+        assert args.real_camera is False
 
     def test_path_argument(self, monkeypatch):
         """Tests the path argument of the script."""
@@ -120,8 +122,14 @@ class TestArgumentParsing:
 
     @pytest.mark.parametrize(
         "arg_type",
-        [["--real-servo"], ["--keep-log-file"], ["--fast-replay"], ["--path", "a/path"]],
-        ids=["real_servo", "keep_log_file", "fast_replay", "path"],
+        [
+            ["--real-servo"],
+            ["--keep-log-file"],
+            ["--fast-replay"],
+            ["--path", "a/path"],
+            ["--real-camera"],
+        ],
+        ids=["real_servo", "keep_log_file", "fast_replay", "path", "real_camera"],
     )
     def test_args_only_available_with_mock_invocation(self, monkeypatch, capsys, arg_type):
         """Tests that the arguments that are only available in mock replay mode are not available

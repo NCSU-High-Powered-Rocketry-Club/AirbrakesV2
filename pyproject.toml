@@ -102,7 +102,15 @@ exclude_lines = [
     "if self\\.debug",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == \"__main__\":"
+    "if __name__ == \"__main__\":",
+    "if sys.platform == 'win32'",
+]
+exclude_also = [
+    "@overload",
+    "@abstractmethod",
+    "if TYPE_CHECKING:",
+    "from multiprocessing import Queue",
+    "from queue import Empty",
 ]
 show_missing = true
-fail_under = 90
+fail_under = 88

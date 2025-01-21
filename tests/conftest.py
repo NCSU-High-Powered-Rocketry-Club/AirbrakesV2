@@ -110,6 +110,8 @@ def mocked_args_parser():
         keep_log_file = False
         fast_replay = False
         debug = False
+        path = None
+        real_camera = False
         verbose = False
 
     return MockArgs()
