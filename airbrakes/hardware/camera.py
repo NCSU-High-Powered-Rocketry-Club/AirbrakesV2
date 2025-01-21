@@ -1,5 +1,7 @@
 """Module to handle recording of the airbrakes with a camera."""
 
+import os
+import signal
 import time
 from contextlib import suppress
 from multiprocessing import Event, Process
@@ -50,6 +52,12 @@ class Camera:
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self):
         """Controls the camera recording process."""
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+
+        # set logging level-
+        os.environ["LIBCAMERA_LOG_LEVELS"] = "ERROR"
+
         camera = Picamera2()
         # We use the H264 encoder and a circular output to save the video to a file.
         encoder = H264Encoder()

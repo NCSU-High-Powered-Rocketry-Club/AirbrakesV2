@@ -217,6 +217,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501

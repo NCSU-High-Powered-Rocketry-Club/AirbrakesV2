@@ -70,7 +70,7 @@ def create_components(
             else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
-        camera = MockCamera()
+        camera = MockCamera() if not args.real_camera else Camera()
     else:
         # Use real hardware components
         servo = Servo(SERVO_PIN)

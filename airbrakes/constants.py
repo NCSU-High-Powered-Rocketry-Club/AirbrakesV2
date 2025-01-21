@@ -26,10 +26,10 @@ class ServoExtension(Enum):
     maximum rotation. We obtained these values through guess and check.
     """
 
-    MIN_EXTENSION = -0.55
-    MAX_EXTENSION = 0.45
-    MIN_NO_BUZZ = -0.5
-    MAX_NO_BUZZ = 0.37
+    MIN_EXTENSION = -0.75
+    MAX_EXTENSION = 0.055
+    MIN_NO_BUZZ = -0.72
+    MAX_NO_BUZZ = 0.05
 
 
 # -------------------------------------------------------
@@ -158,7 +158,7 @@ we deadband the accel to prevent this."""
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
-TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED = 25
+TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED = 35
 """The acceleration in meters per second squared that the rocket must reach before we consider it
 to have taken off."""
 

@@ -79,9 +79,9 @@ class AirbrakesContext:
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
-
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
+
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processor_data_packets: list[ProcessorDataPacket] = []
