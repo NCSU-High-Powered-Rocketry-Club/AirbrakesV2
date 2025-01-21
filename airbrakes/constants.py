@@ -26,10 +26,10 @@ class ServoExtension(Enum):
     maximum rotation. We obtained these values through guess and check.
     """
 
-    MIN_EXTENSION = -0.55
-    MAX_EXTENSION = 0.45
-    MIN_NO_BUZZ = -0.5
-    MAX_NO_BUZZ = 0.37
+    MIN_EXTENSION = -0.75
+    MAX_EXTENSION = 0.055
+    MIN_NO_BUZZ = -0.72
+    MAX_NO_BUZZ = 0.05
 
 
 # -------------------------------------------------------

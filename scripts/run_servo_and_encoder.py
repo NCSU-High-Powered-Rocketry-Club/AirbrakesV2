@@ -5,16 +5,14 @@ uv run scripts/run_servo_and_encoder.py
 
 from airbrakes.constants import ServoExtension, SERVO_PIN
 from airbrakes.hardware.servo import Servo
-from gpiozero import RotaryEncoder
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Button, Header, Footer, Static
+from textual.widgets import Button, Header, Footer, Static, Input
 from textual.reactive import reactive
 from threading import Event
 from airbrakes.constants import ENCODER_RESOLUTION, ENCODER_PIN_A, ENCODER_PIN_B
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 import time
-
 
 class EncoderPositionLabel(Static):
     """A widget to display the encoder position."""
@@ -57,6 +55,12 @@ class ServoControllerApp(App):
                     Button("Max", id="max_btn", variant="primary"),
                     Button("Max No Buzz", id="max_no_buzz_btn", variant="primary"),
                 ),
+                # Added Servo Value Input Section
+                Static("**Set Servo Value (-1 to 1)**"),
+                Horizontal(
+                    Input(placeholder="Enter value between -1 and 1", id="servo_input"),
+                ),
+                Button("Set Value", id="set_value_btn", variant="primary"),
                 classes="control_section"
             ),
             classes="main_container"
@@ -67,6 +71,11 @@ class ServoControllerApp(App):
         """Called when the app is mounted. Start the encoder updater thread."""
         self.encoder_label = self.query_one("#encoder_label", EncoderPositionLabel)
         self.encoder.when_rotated = self.update_label
+        # Reference to the input widget
+        self.servo_input = self.query_one("#servo_input", Input)
+        # Optionally, add a status message
+        self.status = Static("", id="status")
+        self.query_one(".control_section").mount(self.status)
 
     def update_label(self):
         """Calls the update_position function to update the encoder label"""
@@ -95,8 +104,23 @@ class ServoControllerApp(App):
             case "max_no_buzz_btn":
                 self.servo._set_extension(ServoExtension.MAX_NO_BUZZ)
                 # self.encoder.value = 0.9
+            case "set_value_btn":
+                self.handle_set_value()
             case _:
                 pass  # Handle unknown buttons if necessary
+
+    def handle_set_value(self):
+        """Handle setting the servo value from input."""
+        input_value = self.servo_input.value.strip()
+        try:
+            value = float(input_value)
+            if not -1.0 <= value <= 1.0:
+                raise ValueError("Value out of range")
+            # Assuming the servo's set_position method accepts values from -1 to 1
+            self.servo.servo.value = value
+            self.status.update(f"Servo set to {value}")
+        except ValueError:
+            self.status.update("Invalid input! Enter a number between -1 and 1.")
 
     async def on_unmount(self) -> None:
         """Handle app shutdown."""
