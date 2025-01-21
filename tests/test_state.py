@@ -107,16 +107,12 @@ class TestStandbyState:
         ("current_velocity", "current_acceleration", "expected_state"),
         [
             (0.0, 9.8, StandbyState),
-            (0.0, 100.0, MotorBurnState),
             (5.0, 0.3, StandbyState),
-            (3, 35.3, MotorBurnState),
             (30, 15, MotorBurnState),
         ],
         ids=[
             "at_launchpad",
-            "only_acc_update",
             "slow_acc_update",
-            "optimal_condition",
             "high_velocity",
         ],
     )

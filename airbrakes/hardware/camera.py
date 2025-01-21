@@ -76,7 +76,7 @@ class Camera:
             # the video. This way we get a few seconds of video before liftoff too. Otherwise, just
             # sleep and wait.
             while not self.motor_burn_started.is_set():
-                # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work... hence this
+                # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work, hence this
                 # ugly while loop instead.
                 time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
@@ -88,6 +88,6 @@ class Camera:
                 time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
             output.stop()
-        except:
+        except:  # noqa: E722, S110
             # We don't want the camera for any reason to mess things up
             pass
