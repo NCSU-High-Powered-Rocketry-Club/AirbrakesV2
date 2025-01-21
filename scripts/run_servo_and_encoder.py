@@ -35,8 +35,9 @@ class ServoControllerApp(App):
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
         self.servo = Servo(SERVO_PIN)
+        self.encoder = self.servo.encoder
         # Max steps set to zero indicates that the encoder can infinitely rotate
-        self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B,max_steps=0)
+        # self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B,max_steps=0)
 
     def compose(self) -> ComposeResult:
         """Compose the UI layout."""
