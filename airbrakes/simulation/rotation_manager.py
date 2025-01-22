@@ -54,7 +54,6 @@ class RotationManager:
 
         :param velocity_ratio: current vertical velocity of the rocket divided by max velocity
         """
-        # ignore these parameters, they are not intended to be permanent.
         a = 0.06
         b = -0.69
         c = 2.1

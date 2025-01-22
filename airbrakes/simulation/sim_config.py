@@ -110,8 +110,8 @@ LEGACY_CONFIG = SimulationConfig(
 def get_configuration(config_type: str) -> SimulationConfig:
     """
     Gets the configuration for the simulation
-    :param config_type: The type of simulation to run. This can be either "full-scale"
-      or "sub-scale".
+    :param config_type: The type of simulation to run. This can be either "full-scale",
+    "sub-scale" or "legacy".
     :return: The configuration for the simulation
     """
     match config_type:
