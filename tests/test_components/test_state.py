@@ -104,11 +104,11 @@ class TestStandbyState:
         assert standby_state.name == "StandbyState"
 
     @pytest.mark.parametrize(
-        ("current_velocity", "current_acceleration", "expected_state"),
+        ("current_velocity", "expected_state"),
         [
-            (0.0, 9.8, StandbyState),
-            (5.0, 0.3, StandbyState),
-            (30, 15, MotorBurnState),
+            (0.0, StandbyState),
+            (5.0, StandbyState),
+            (30, MotorBurnState),
         ],
         ids=[
             "at_launchpad",
@@ -116,9 +116,8 @@ class TestStandbyState:
             "high_velocity",
         ],
     )
-    def test_update(self, standby_state, current_velocity, current_acceleration, expected_state):
+    def test_update(self, standby_state, current_velocity, expected_state):
         standby_state.context.data_processor._vertical_velocities = [current_velocity]
-        standby_state.context.data_processor._rotated_accelerations = [current_acceleration]
         standby_state.update()
         assert isinstance(standby_state.context.state, expected_state)
 
