@@ -169,6 +169,9 @@ def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> a
 
     args = parser.parse_args()
 
+    if not hasattr(args, "sim"):
+        args.sim = False
+
     # Check if the user has passed any options that are only available in mock replay mode:
     if (
         any(
@@ -184,7 +187,7 @@ def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> a
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, `--sim`, and `--path` "
+            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, `sim`, and `--path` "
             "options are only available in mock replay mode. Please pass `-m` or `--mock` "
             "to run in mock replay mode."
         )
@@ -193,5 +196,5 @@ def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> a
         parser.error("The `--verbose` and `--debug` options cannot be used together.")
 
     if args.sim and args.path:
-        parser.error("The `--path` option is not able to be used with the `--sim` option")
+        parser.error("The `--path` option is not able to be used with the `sim` option")
     return args
