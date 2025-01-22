@@ -52,38 +52,42 @@ class Camera:
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self):
         """Controls the camera recording process."""
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
+        try:
+            # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+            signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
 
-        # set logging level-
-        os.environ["LIBCAMERA_LOG_LEVELS"] = "ERROR"
+            # set logging level-
+            os.environ["LIBCAMERA_LOG_LEVELS"] = "ERROR"
 
-        camera = Picamera2()
-        # We use the H264 encoder and a circular output to save the video to a file.
-        encoder = H264Encoder()
-        # The circular output is a buffer with a default size of 150 bytes? which according to
-        # the docs is enough for 5 seconds of video at 30 fps.
-        output = CircularOutput()
-        # Create a basic video configuration
-        camera.configure(camera.create_video_configuration())
+            camera = Picamera2()
+            # We use the H264 encoder and a circular output to save the video to a file.
+            encoder = H264Encoder()
+            # The circular output is a buffer with a default size of 150 bytes? which according to
+            # the docs is enough for 5 seconds of video at 30 fps.
+            output = CircularOutput()
+            # Create a basic video configuration
+            camera.configure(camera.create_video_configuration())
 
-        # Start recording with the buffer. This operation is non-blocking.
-        camera.start_recording(encoder, output)
+            # Start recording with the buffer. This operation is non-blocking.
+            camera.start_recording(encoder, output)
 
-        # TODO: this is ass
-        # Check if motor burn has started, if it has, we can stop buffering and start saving
-        # the video. This way we get a few seconds of video before liftoff too. Otherwise, just
-        # sleep and wait.
-        while not self.motor_burn_started.is_set():
-            # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work... hence this
-            # ugly while loop instead.
-            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+            # TODO: this is ass
+            # Check if motor burn has started, if it has, we can stop buffering and start saving
+            # the video. This way we get a few seconds of video before liftoff too. Otherwise, just
+            # sleep and wait.
+            while not self.motor_burn_started.is_set():
+                # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work, hence this
+                # ugly while loop instead.
+                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
-        output.fileoutput = CAMERA_SAVE_PATH
-        output.start()
+            output.fileoutput = CAMERA_SAVE_PATH
+            output.start()
 
-        # Keep recording until we have landed:
-        while not self.stop_context_event.is_set():
-            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+            # Keep recording until we have landed:
+            while not self.stop_context_event.is_set():
+                time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
 
-        output.stop()
+            output.stop()
+        except:  # noqa: E722, S110
+            # We don't want the camera for any reason to mess things up
+            pass

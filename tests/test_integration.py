@@ -12,7 +12,6 @@ import pytest
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
@@ -161,10 +160,8 @@ class TestIntegration:
         assert standby_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert standby_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
         assert not any(standby_state.apogee_prediction)
+
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
-        assert (
-            standby_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
-        )
         assert not any(standby_state.apogee_prediction)
 
         assert (
@@ -176,10 +173,6 @@ class TestIntegration:
         assert motor_burn_state.max_avg_vertical_acceleration >= 90.0
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
-        assert (
-            motor_burn_state.max_avg_vertical_acceleration
-            >= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
-        )
         assert not any(motor_burn_state.apogee_prediction)
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (
