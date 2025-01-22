@@ -140,8 +140,6 @@ We have put great effort into keeping the file structure of this project organiz
 ```
 AirbrakesV2/
 ├── airbrakes/
-|   ├── data_handling/
-│   │   ├── [files related to the processing of data ...]
 |   ├── hardware/
 │   │   ├── [files related to the connection of the pi with hardware ...]
 |   ├── mock/
@@ -238,7 +236,7 @@ uv run mock -r
 ```
 To run a mock launch with our custom simulation:
 ```bash
-python3 main.py -m -s 
+uv run sim
 ```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash

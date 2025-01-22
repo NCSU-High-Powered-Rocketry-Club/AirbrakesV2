@@ -200,6 +200,7 @@ class IMUDataProcessor:
         Calculates the rotated acceleration vector. Converts gyroscope data into a delta
         quaternion, and adds onto the last quaternion. Will most likely be replaced by IMU
         quaternion data in the future, this is a work-around due to bad datasets.
+
         :return: numpy list of rotated acceleration vector [x,y,z]
         """
         # We pre-allocate the space for our accelerations first
