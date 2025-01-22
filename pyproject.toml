@@ -74,13 +74,19 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.pytest.ini_options]
 filterwarnings = [
+    "error",  # treat warnings as errors
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
-    "ignore:Could not import MSCL",  # ignore warning about MSCL being not installed
+    "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
 ]
 
 [tool.coverage.run]
 branch = true
+# Unfortunately the multiprocessing support is causing some tests to fail (it seems to make things
+# slow)
+# concurrency = ["multiprocessing", "thread"]
+# sigterm = true
+# parallel = true
 source = ["airbrakes"]
 omit = [
     "*/tests/*",
@@ -96,7 +102,15 @@ exclude_lines = [
     "if self\\.debug",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == \"__main__\":"
+    "if __name__ == \"__main__\":",
+    "if sys.platform == 'win32'",
+]
+exclude_also = [
+    "@overload",
+    "@abstractmethod",
+    "if TYPE_CHECKING:",
+    "from multiprocessing import Queue",
+    "from queue import Empty",
 ]
 show_missing = true
-fail_under = 80
+fail_under = 88

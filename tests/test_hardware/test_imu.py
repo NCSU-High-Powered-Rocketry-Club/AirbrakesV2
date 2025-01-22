@@ -8,12 +8,13 @@ import faster_fifo
 import pytest
 
 from airbrakes.constants import IMU_PORT, STOP_SIGNAL
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.hardware.imu import IMU
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.imu import IMU
+from tests.auxil.utils import make_est_data_packet
 
 
 class TestIMU:
@@ -61,7 +62,7 @@ class TestIMU:
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
-            self._data_queue.put(EstimatedDataPacket(timestamp=0))
+            self._data_queue.put(make_est_data_packet())
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
         imu = IMU(port=IMU_PORT)
@@ -72,6 +73,28 @@ class TestIMU:
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
+        # Tests that all packets were fetched while stopping:
+        assert imu._data_queue.qsize() == 0
+
+    def test_imu_stop_when_queue_is_full(self, monkeypatch):
+        """Tests whether the IMU process stops correctly when the queue is full."""
+        monkeypatch.setattr("airbrakes.hardware.imu.MAX_QUEUE_SIZE", 10)
+
+        def _fetch_data_loop(self, port: str):
+            """Monkeypatched method for testing."""
+            while self._running.value:
+                self._data_queue.put(make_est_data_packet())
+
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        imu = IMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.01)  # Sleep a bit to let the process start and put the data
+        assert imu._data_queue.qsize() == 10
+        imu.stop()
+        assert not imu.is_running
+        assert not imu._data_fetch_process.is_alive()
+        # Tests that all packets were fetched while stopping:
+        # There is still one packet, since the process is stopped after the put()
         assert imu._data_queue.qsize() == 1
 
     def test_imu_stop_signal(self, monkeypatch):
@@ -92,7 +115,7 @@ class TestIMU:
         imu.stop()
         imu._data_queue.put(STOP_SIGNAL)
         packets = imu.get_imu_data_packets()
-        assert not packets, f"Expected empty deque, got {len(packets)}"
+        assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
     def test_imu_ctrl_c_handling(self, monkeypatch):
         """Tests whether the IMU's stop() handles Ctrl+C fine."""

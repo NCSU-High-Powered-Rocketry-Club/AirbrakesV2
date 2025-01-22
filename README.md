@@ -144,7 +144,7 @@ AirbrakesV2/
 │   │   ├── [files related to the connection of the pi with hardware ...]
 |   ├── mock/
 │   │   ├── [files related to the connection of mock (or simulated) hardware ...]
-|   ├── data_handling/
+|   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
 │   ├── [files which control the airbrakes at a high level ...]
 |   ├── main.py [main file used to run on the rocket]

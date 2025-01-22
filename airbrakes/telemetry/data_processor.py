@@ -8,8 +8,8 @@ from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
 )
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import deadband
 
 

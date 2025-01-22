@@ -10,15 +10,20 @@ from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.hardware.camera import Camera
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
-from tests.auxil.utils import make_est_data_packet, make_processor_data_packet, make_raw_data_packet
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from tests.auxil.utils import (
+    make_apogee_predictor_data_packet,
+    make_est_data_packet,
+    make_processor_data_packet,
+    make_raw_data_packet,
+)
 
 
 class TestAirbrakesContext:
@@ -77,6 +82,7 @@ class TestAirbrakesContext:
         assert not airbrakes.camera.is_running
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert airbrakes.shutdown_requested
+        airbrakes.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, airbrakes):
         """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
@@ -168,6 +174,10 @@ class TestAirbrakesContext:
         def apogee_update(self, processor_data_packets):
             calls.append("apogee update called")
 
+        def get_prediction_data_packets(self):
+            calls.append("get_prediction_data_packets called")
+            return [make_apogee_predictor_data_packet()]
+
         mocked_airbrakes = airbrakes
         mocked_airbrakes.imu = random_data_mock_imu
         mocked_airbrakes.state = CoastState(
@@ -185,18 +195,25 @@ class TestAirbrakesContext:
         monkeypatch.setattr(airbrakes.apogee_predictor.__class__, "update", apogee_update)
         monkeypatch.setattr(mocked_airbrakes.state.__class__, "update", state)
         monkeypatch.setattr(airbrakes.logger.__class__, "log", log)
+        monkeypatch.setattr(
+            airbrakes.apogee_predictor.__class__,
+            "get_prediction_data_packets",
+            get_prediction_data_packets,
+        )
 
         # Let's call .update() and check if stuff was called and/or changed:
         mocked_airbrakes.update()
 
-        assert len(calls) == 4
+        assert len(calls) == 5
         assert calls == [
             "update called",
+            "get_prediction_data_packets called",
             "state update called",
             "apogee update called",
             "log called",
         ]
         assert all(asserts)
+        assert mocked_airbrakes.last_apogee_predictor_packet == make_apogee_predictor_data_packet()
 
         mocked_airbrakes.stop()
 
@@ -227,7 +244,7 @@ class TestAirbrakesContext:
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping process. We don't want to hit the "just in case" timeout
         # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert not airbrakes.apogee_predictor.is_running
@@ -241,11 +258,12 @@ class TestAirbrakesContext:
         )
 
         # Open the file and check if we have a large number of lines:
-        lines = airbrakes.logger.log_path.open().readlines()
-        assert len(lines) > 100
+        with airbrakes.logger.log_path.open() as file:
+            lines = file.readlines()
+            assert len(lines) > 100
 
     def test_stop_with_display_and_update_loop(
-        self, airbrakes: AirbrakesContext, random_data_mock_imu, mocked_args_parser
+        self, airbrakes: AirbrakesContext, random_data_mock_imu, mocked_args_parser, capsys
     ):
         """Tests stopping of the airbrakes system while we are using the IMU, the flight display,
         and calling airbrakes.update().
@@ -275,7 +293,7 @@ class TestAirbrakesContext:
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping process. We don't want to hit the "just in case" timeout
         # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.2)
+        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
         assert not airbrakes.apogee_predictor.is_running
@@ -291,8 +309,13 @@ class TestAirbrakesContext:
         assert not fd._running
 
         # Open the file and check if we have a large number of lines:
-        lines = airbrakes.logger.log_path.open().readlines()
-        assert len(lines) > 100
+        with airbrakes.logger.log_path.open() as file:
+            lines = file.readlines()
+            assert len(lines) > 100
+
+        # Check display output:
+        captured = capsys.readouterr()
+        assert "REPLAY INFO" in captured.out
 
     def test_airbrakes_sends_packets_to_apogee_predictor(
         self,

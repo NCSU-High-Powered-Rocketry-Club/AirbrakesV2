@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 
 
 @pytest.fixture

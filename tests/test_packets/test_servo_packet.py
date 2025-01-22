@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ class TestServoDataPacket:
     def test_init(self, servo_packet):
         packet = servo_packet
         assert packet.set_extension == self.set_extension
-        # assert packet.encoder_position == self.encoder_position
+        assert packet.encoder_position == self.encoder_position
 
     def test_required_args(self):
         with pytest.raises(TypeError):
