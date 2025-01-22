@@ -69,6 +69,7 @@ class TestArgumentParsing:
             "path": None,
             "verbose": False,
             "real_camera": False,
+            "sim": False,
         }
 
     @pytest.mark.parametrize(
@@ -91,6 +92,7 @@ class TestArgumentParsing:
         assert args.path is None
         assert args.verbose is False
         assert args.real_camera is False
+        assert args.sim is False
 
     def test_path_argument(self, monkeypatch):
         """Tests the path argument of the script."""
@@ -107,6 +109,7 @@ class TestArgumentParsing:
         assert isinstance(args.path, Path)
         assert args.path == Path("path/to/log")
         assert args.verbose is False
+        assert args.sim is False
 
     def test_mutually_exclusive_verbose_and_debug(self, monkeypatch, capsys):
         """Tests that the verbose and debug flags are mutually exclusive."""

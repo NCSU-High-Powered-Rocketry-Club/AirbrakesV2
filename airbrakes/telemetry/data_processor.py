@@ -276,7 +276,7 @@ class IMUDataProcessor:
         This cannot be called on the first update as _last_data_packet is None. Units are in
         seconds.
         :return: A numpy array of the time difference between each data packet and the previous
-            data packet.
+        data packet.
         """
         # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2

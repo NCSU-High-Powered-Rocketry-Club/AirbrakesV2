@@ -144,6 +144,8 @@ AirbrakesV2/
 │   │   ├── [files related to the connection of the pi with hardware ...]
 |   ├── mock/
 │   │   ├── [files related to the connection of mock (or simulated) hardware ...]
+|   ├── simulation/
+│   │   ├── [files related to our custom air brakes sim ...]
 |   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
 │   ├── [files which control the airbrakes at a high level ...]
@@ -231,6 +233,10 @@ uv run mock
 If you want to run a mock launch, but with the real servo running, run:
 ```bash
 uv run mock -r
+```
+To run a mock launch with our custom simulation:
+```bash
+uv run sim
 ```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash

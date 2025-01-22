@@ -76,10 +76,12 @@ def deadband(input_value: float, threshold: float) -> float:
     return input_value
 
 
-def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
+def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> argparse.Namespace:
     """Handles the command line arguments for the main airbrakes script.
 
     :param mock_invocation: Whether the application is running in mock mode from `uv run mock`.
+    Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
+    :param sim_invocation: Whether the application is running in sim mode from `uv run sim`.
     Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
 
     :return: The parsed arguments as a class with attributes.
@@ -156,15 +158,36 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         default=False,
     )
 
+    if sim_invocation:
+        parser.add_argument(
+            "sim",
+            help="Runs the data simulation alongside the mock simulation, with an optional scale",
+            choices=["full-scale", "sub-scale", "legacy"],
+            nargs="?",  # Allows an optional argument
+            default="full-scale",  # Default when `-s` is provided without a value
+        )
+
     args = parser.parse_args()
+
+    if not hasattr(args, "sim"):
+        args.sim = False
 
     # Check if the user has passed any options that are only available in mock replay mode:
     if (
-        any([args.real_servo, args.keep_log_file, args.fast_replay, args.path, args.real_camera])
+        any(
+            [
+                args.real_servo,
+                args.keep_log_file,
+                args.fast_replay,
+                args.path,
+                args.real_camera,
+                args.sim,
+            ]
+        )
         and not args.mock
     ):
         parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, and `--path` "
+            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, `sim`, and `--path` "
             "options are only available in mock replay mode. Please pass `-m` or `--mock` "
             "to run in mock replay mode."
         )
@@ -172,4 +195,6 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     if args.verbose and args.debug:
         parser.error("The `--verbose` and `--debug` options cannot be used together.")
 
+    if args.sim and args.path:
+        parser.error("The `--path` option is not able to be used with the `sim` option")
     return args

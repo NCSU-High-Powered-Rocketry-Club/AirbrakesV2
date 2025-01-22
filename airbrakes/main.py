@@ -16,6 +16,7 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -36,6 +37,13 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
+def run_sim_flight() -> None:
+    """Entry point for the application to run the sim flight. Entered when run with
+    `uvx --from git+... sim` or `uv run sim`."""
+    args = arg_parser(mock_invocation=True, sim_invocation=True)
+    run_flight(args)
+
+
 def run_flight(args: argparse.Namespace) -> None:
     mock_time_start = time.time()
 
@@ -44,8 +52,11 @@ def run_flight(args: argparse.Namespace) -> None:
     airbrakes = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
+    if args.sim:
+        imu.set_airbrakes_status(airbrakes.servo.current_extension)
+
     # Run the main flight loop
-    run_flight_loop(airbrakes, flight_display, args.mock)
+    run_flight_loop(airbrakes, flight_display, args.mock, args.sim)
 
 
 def create_components(
@@ -58,11 +69,14 @@ def create_components(
     :return: A tuple containing the servo, IMU, Logger, data processor, and apogee predictor objects
     """
     if args.mock:
-        # Replace hardware with mock objects for mock replay
-        imu = MockIMU(
-            real_time_replay=not args.fast_replay,
-            log_file_path=args.path,
-        )
+        # Replace hardware with mock objects for simulation
+        if args.sim:
+            imu = SimIMU(sim_type=args.sim, real_time_replay=not args.fast_replay)
+        else:
+            imu = MockIMU(
+                real_time_replay=not args.fast_replay,
+                log_file_path=args.path,
+            )
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
             Servo(SERVO_PIN)
@@ -85,7 +99,10 @@ def create_components(
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext, flight_display: FlightDisplay, is_mock: bool
+    airbrakes: AirbrakesContext,
+    flight_display: FlightDisplay,
+    is_mock: bool,
+    is_sim: bool,
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
@@ -105,6 +122,9 @@ def run_flight_loop(
             # Stop the replay when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:
                 break
+            if is_sim:
+                # Janky way to extend airbrakes in the sim and change the drag
+                airbrakes.imu.set_airbrakes_status(airbrakes.servo.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:

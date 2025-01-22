@@ -113,6 +113,7 @@ def mocked_args_parser():
         path = None
         real_camera = False
         verbose = False
+        sim = False
 
     return MockArgs()
 
