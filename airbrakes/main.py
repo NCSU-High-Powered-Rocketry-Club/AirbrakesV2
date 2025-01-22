@@ -37,6 +37,13 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
+def run_sim_flight() -> None:
+    """Entry point for the application to run the sim flight. Entered when run with
+    `uvx --from git+... sim` or `uv run sim`."""
+    args = arg_parser(mock_invocation=True, sim_invocation=True)
+    run_flight(args)
+
+
 def run_flight(args: argparse.Namespace) -> None:
     mock_time_start = time.time()
 
@@ -46,7 +53,7 @@ def run_flight(args: argparse.Namespace) -> None:
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
     if args.sim:
-        imu.set_airbrakes_status(airbrakes.current_extension)
+        imu.set_airbrakes_status(airbrakes.servo.current_extension)
 
     # Run the main flight loop
     run_flight_loop(airbrakes, flight_display, args.mock, args.sim)
@@ -117,7 +124,7 @@ def run_flight_loop(
                 break
             if is_sim:
                 # Janky way to extend airbrakes in the sim and change the drag
-                airbrakes.imu.set_airbrakes_status(airbrakes.current_extension)
+                airbrakes.imu.set_airbrakes_status(airbrakes.servo.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:

@@ -36,6 +36,7 @@ camera = [
 [project.scripts]
 mock = "airbrakes.main:run_mock_flight"
 real = "airbrakes.main:run_real_flight"
+sim = "airbrakes.main:run_sim_flight"
 
 [build-system]
 requires = ["hatchling"]

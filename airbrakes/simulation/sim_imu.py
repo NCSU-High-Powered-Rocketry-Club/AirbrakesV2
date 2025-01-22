@@ -20,7 +20,7 @@ from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 from airbrakes.simulation.sim_utils import update_timestamp
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
+    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
 
 from airbrakes.constants import MAX_FETCHED_PACKETS, MAX_QUEUE_SIZE, ServoExtension
 from airbrakes.hardware.base_imu import BaseIMU

@@ -76,10 +76,12 @@ def deadband(input_value: float, threshold: float) -> float:
     return input_value
 
 
-def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
+def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> argparse.Namespace:
     """Handles the command line arguments for the main airbrakes script.
 
     :param mock_invocation: Whether the application is running in mock mode from `uv run mock`.
+    Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
+    :param sim_invocation: Whether the application is running in sim mode from `uv run sim`.
     Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
 
     :return: The parsed arguments as a class with attributes.
@@ -156,15 +158,14 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
         default=False,
     )
 
-    parser.add_argument(
-        "-s",
-        "--sim",
-        help="Runs the data simulation alongside the mock simulation, with an optional scale",
-        choices=["full-scale", "sub-scale", "legacy"],
-        nargs="?",  # Allows an optional argument
-        const="full-scale",  # Default when `-s` is provided without a value
-        default=False,  # Default when `-s` is not provided at all
-    )
+    if sim_invocation:
+        parser.add_argument(
+            "sim",
+            help="Runs the data simulation alongside the mock simulation, with an optional scale",
+            choices=["full-scale", "sub-scale", "legacy"],
+            nargs="?",  # Allows an optional argument
+            default="full-scale",  # Default when `-s` is provided without a value
+        )
 
     args = parser.parse_args()
 

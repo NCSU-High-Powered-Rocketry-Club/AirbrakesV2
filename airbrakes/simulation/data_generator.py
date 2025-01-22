@@ -11,13 +11,13 @@ from airbrakes.constants import (
     GRAVITY_METERS_PER_SECOND_SQUARED,
     MAX_VELOCITY_THRESHOLD,
 )
-from airbrakes.data_handling.packets.imu_data_packet import (
-    EstimatedDataPacket,
-    RawDataPacket,
-)
 from airbrakes.simulation.rotation_manager import RotationManager
 from airbrakes.simulation.sim_config import SimulationConfig
 from airbrakes.simulation.sim_utils import get_random_value
+from airbrakes.telemetry.packets.imu_data_packet import (
+    EstimatedDataPacket,
+    RawDataPacket,
+)
 from airbrakes.utils import deadband
 
 
