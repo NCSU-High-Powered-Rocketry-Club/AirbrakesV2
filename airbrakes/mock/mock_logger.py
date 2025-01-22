@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from airbrakes.data_handling.logger import Logger
+from airbrakes.telemetry.logger import Logger
 
 
 class MockLogger(Logger):

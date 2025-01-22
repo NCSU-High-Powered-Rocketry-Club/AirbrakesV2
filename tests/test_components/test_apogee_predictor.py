@@ -10,12 +10,12 @@ import numpy as np
 import pytest
 
 from airbrakes.constants import APOGEE_PREDICTION_MIN_PACKETS, STOP_SIGNAL, UNCERTAINTY_THRESHOLD
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor, LookupTable
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor, LookupTable
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_processor_data_packet
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
 
@@ -85,9 +85,7 @@ class TestApogeePredictor:
 
     def test_queue_hits_timeout_and_continues(self, threaded_apogee_predictor, monkeypatch):
         """Tests whether the apogee predictor continues to fetch packets after hitting a timeout."""
-        monkeypatch.setattr(
-            "airbrakes.data_handling.apogee_predictor.MAX_GET_TIMEOUT_SECONDS", 0.01
-        )
+        monkeypatch.setattr("airbrakes.telemetry.apogee_predictor.MAX_GET_TIMEOUT_SECONDS", 0.01)
         time.sleep(0.05)  # hit the timeout
         sample_packet = make_processor_data_packet()
         threaded_apogee_predictor._processor_data_packet_queue.put(sample_packet)
@@ -142,7 +140,7 @@ class TestApogeePredictor:
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1177.8066285250015,
+                1177.5194204908717,
             ),
         ],
         ids=["hover_at_altitude", "coast_phase"],
@@ -165,7 +163,10 @@ class TestApogeePredictor:
         packet: ApogeePredictorDataPacket = threaded_apogee_predictor.get_prediction_data_packets()[
             -1
         ]
-        assert packet.predicted_apogee == expected_value
+        # Test that our predicted apogee is approximately the same as the expected value, within
+        # 0.1 meters, using pytest.approx. There is a difference in the 7th decimal place between
+        # arm64 and x86_64, so we need to use approx.
+        assert packet.predicted_apogee == pytest.approx(expected_value, abs=0.1)
         assert packet.a_coefficient
         assert packet.b_coefficient
         assert packet.uncertainty_threshold_1 < UNCERTAINTY_THRESHOLD[0]

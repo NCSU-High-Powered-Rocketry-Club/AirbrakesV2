@@ -13,13 +13,14 @@ from airbrakes.constants import (
     RAW_DATA_PACKET_SAMPLING_RATE,
     SERVO_PIN,
 )
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.logger import Logger
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")
@@ -60,8 +61,15 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def airbrakes(imu, logger, servo, data_processor, apogee_predictor, camera):
-    return AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
+def airbrakes(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
+    return AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+
+
+@pytest.fixture
+def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
+    """Fixture that returns an AirbrakesContext object with a mock IMU. This will run for
+    all the launch data files (see the mock_imu fixture)"""
+    return AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
 
 
 @pytest.fixture
@@ -79,14 +87,17 @@ def idle_mock_imu():
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):
     """Fixture that returns a MockIMU object with the specified log file."""
-    # TODO: Figure out if we can get our rotated accels right even when start_after_log_buffer is
-    # False.
     return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
 
 
 @pytest.fixture
 def camera():
     return Camera()
+
+
+@pytest.fixture
+def mock_camera():
+    return MockCamera()
 
 
 @pytest.fixture
@@ -98,7 +109,10 @@ def mocked_args_parser():
         real_servo = False
         keep_log_file = False
         fast_replay = False
-        debug = True
+        debug = False
+        path = None
+        real_camera = False
+        verbose = False
 
     return MockArgs()
 

@@ -8,16 +8,18 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import IMU_PORT, LOGS_PATH, SERVO_PIN
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
+from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.simulation.sim_imu import SimIMU
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
 
@@ -52,7 +54,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[Servo, IMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
+) -> tuple[Servo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the airbrakes system. Depending on its arguments, it
     will return either mock or real components.
@@ -75,16 +77,17 @@ def create_components(
             else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
+        camera = MockCamera() if not args.real_camera else Camera()
     else:
         # Use real hardware components
         servo = Servo(SERVO_PIN)
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
+        camera = Camera()
 
     # Initialize data processing and prediction
     data_processor = IMUDataProcessor()
     apogee_predictor = ApogeePredictor()
-    camera = Camera()
     return servo, imu, camera, logger, data_processor, apogee_predictor
 
 

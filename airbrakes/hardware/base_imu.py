@@ -6,7 +6,7 @@ import contextlib
 import sys
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
-from airbrakes.data_handling.packets.imu_data_packet import (
+from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
 )
 
@@ -64,6 +64,7 @@ class BaseIMU:
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
         # be empty, and thus the process never .joins().
+        self.get_imu_data_packets(block=False)
         with contextlib.suppress(TimeoutError):
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
@@ -82,7 +83,7 @@ class BaseIMU:
         """
         return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self, block: bool = True) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
         :return: A deque containing the latest data packets from the IMU.
@@ -90,7 +91,7 @@ class BaseIMU:
         # We use a deque because it's faster than a list for popping from the left
         try:
             packets = self._data_queue.get_many(
-                block=True, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
+                block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
             return collections.deque()

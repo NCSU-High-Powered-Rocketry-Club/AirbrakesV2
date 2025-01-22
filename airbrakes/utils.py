@@ -132,6 +132,14 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "-c",
+        "--real-camera",
+        help="Run the mock replay with the real camera.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
         "-p",
         "--path",
         help="Define the pathname of flight data to use in mock replay. Interest Launch data"
@@ -162,7 +170,16 @@ def arg_parser(mock_invocation: bool = False) -> argparse.Namespace:
 
     # Check if the user has passed any options that are only available in mock replay mode:
     if (
-        any([args.real_servo, args.keep_log_file, args.fast_replay, args.path, args.sim])
+        any(
+            [
+                args.real_servo,
+                args.keep_log_file,
+                args.fast_replay,
+                args.path,
+                args.real_camera,
+                args.sim,
+            ]
+        )
         and not args.mock
     ):
         parser.error(

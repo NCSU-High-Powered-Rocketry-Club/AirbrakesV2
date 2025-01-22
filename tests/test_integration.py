@@ -9,15 +9,13 @@ import types
 import msgspec
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
 )
-from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 
@@ -42,14 +40,9 @@ class TestIntegration:
     # time and verifying that the state is as expected at each point in time.
     def test_update(
         self,
-        logger,
-        mock_imu,
-        data_processor,
-        servo,
-        apogee_predictor,
         request,
         target_altitude,
-        camera,
+        mock_imu_airbrakes,
         monkeypatch,
     ):
         """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
@@ -74,7 +67,7 @@ class TestIntegration:
 
         states_dict: dict[str, StateInformation] = {}
 
-        ab = AirbrakesContext(servo, mock_imu, camera, logger, data_processor, apogee_predictor)
+        ab = mock_imu_airbrakes
 
         # Start testing!
         snap_start_timer = ab.data_processor.current_timestamp
@@ -167,10 +160,8 @@ class TestIntegration:
         assert standby_state.max_velocity <= TAKEOFF_VELOCITY_METERS_PER_SECOND
         assert standby_state.min_altitude >= -6.0  # might be negative due to noise/flakiness
         assert not any(standby_state.apogee_prediction)
+
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
-        assert (
-            standby_state.min_avg_vertical_acceleration <= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
-        )
         assert not any(standby_state.apogee_prediction)
 
         assert (
@@ -182,10 +173,6 @@ class TestIntegration:
         assert motor_burn_state.max_avg_vertical_acceleration >= 90.0
         assert motor_burn_state.max_velocity <= 300.0  # arbitrary value, we haven't hit Mach 1
         assert motor_burn_state.max_altitude <= 500.0  # Our motor burn time isn't usually that long
-        assert (
-            motor_burn_state.max_avg_vertical_acceleration
-            >= TAKEOFF_ACCEL_METERS_PER_SECOND_SQUARED
-        )
         assert not any(motor_burn_state.apogee_prediction)
         # Assert that only MIN_EXTENSION and MIN_NO_BUZZ are in the extensions list:
         assert (

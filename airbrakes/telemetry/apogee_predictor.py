@@ -11,7 +11,7 @@ import msgspec
 import numpy as np
 import numpy.typing as npt
 
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
@@ -32,7 +32,7 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import modify_multiprocessing_queue_windows
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
@@ -156,7 +156,7 @@ class ApogeePredictor:
 
     def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
         """
-        Gets the apogee prediction data packets from the queue.
+        Gets *all* the apogee prediction data packets from the queue. This operation is non-blocking
         """
         total_packets = []
         # get_many doesn't actually get all of the packets, so we need to keep checking until
@@ -164,8 +164,6 @@ class ApogeePredictor:
         with contextlib.suppress(Empty):
             while True:
                 new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
-                if not new_packets:
-                    break
                 total_packets.extend(new_packets)
         return total_packets
 

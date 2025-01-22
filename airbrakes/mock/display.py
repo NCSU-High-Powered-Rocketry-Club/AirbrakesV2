@@ -197,7 +197,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {"REPLAY" if self._args.mock else "STANDBY"} INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {'REPLAY' if self._args.mock else 'STANDBY'} INFO {'=' * 15}{RESET}",
             f"Replay file:                  {C}{self._launch_file}{RESET}",
             f"Time since replay start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
@@ -209,7 +209,7 @@ class FlightDisplay:
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted Apogee:          {G}{self._airbrakes.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Airbrakes extension:       {G}{self._airbrakes.current_extension.value}{RESET}",
+            f"Airbrakes extension:       {G}{self._airbrakes.servo.current_extension.value}{RESET}",
         ]
 
         # Adds additional info to the display if -v was specified
@@ -217,6 +217,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501

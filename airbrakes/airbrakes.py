@@ -3,23 +3,23 @@
 from collections import deque
 from typing import TYPE_CHECKING
 
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
-    ApogeePredictorDataPacket,
-)
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
-from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.state import StandbyState, State
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.logger import Logger
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+    ApogeePredictorDataPacket,
+)
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.hardware.imu import IMUDataPacket
+    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
 class AirbrakesContext:
@@ -54,7 +54,7 @@ class AirbrakesContext:
     def __init__(
         self,
         servo: Servo,
-        imu: IMU,
+        imu: BaseIMU,
         camera: Camera,
         logger: Logger,
         data_processor: IMUDataProcessor,
@@ -74,14 +74,14 @@ class AirbrakesContext:
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: Servo = servo
-        self.imu: IMU = imu
+        self.imu: BaseIMU = imu
         self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: IMUDataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
-
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
+
         self.shutdown_requested = False
         self.imu_data_packets: deque[IMUDataPacket] = deque()
         self.processor_data_packets: list[ProcessorDataPacket] = []

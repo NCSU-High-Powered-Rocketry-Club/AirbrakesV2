@@ -1,11 +1,11 @@
 import pytest
 
-from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 
 @pytest.fixture
@@ -46,24 +46,24 @@ class TestLoggerDataPacket:
         # remove one field from proc_dp_fields:
         proc_dp_fields.remove("time_since_last_data_packet")
 
-        assert servo_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {servo_dp_fields - log_dp_fields}"
-        assert est_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {est_dp_fields - log_dp_fields}"
-        assert raw_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {raw_dp_fields - log_dp_fields}"
-        assert proc_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {proc_dp_fields - log_dp_fields}"
-        assert apogee_predictor_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {apogee_predictor_dp_fields - log_dp_fields}"
-        assert context_dp_fields.issubset(
-            log_dp_fields
-        ), f"Missing fields: {context_dp_fields - log_dp_fields}"
+        assert servo_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {servo_dp_fields - log_dp_fields}"
+        )
+        assert est_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {est_dp_fields - log_dp_fields}"
+        )
+        assert raw_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {raw_dp_fields - log_dp_fields}"
+        )
+        assert proc_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {proc_dp_fields - log_dp_fields}"
+        )
+        assert apogee_predictor_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {apogee_predictor_dp_fields - log_dp_fields}"
+        )
+        assert context_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {context_dp_fields - log_dp_fields}"
+        )
 
         available_fields = (
             est_dp_fields.union(raw_dp_fields)
@@ -72,9 +72,9 @@ class TestLoggerDataPacket:
             .union(servo_dp_fields)
             .union(apogee_predictor_dp_fields)
         )
-        assert (
-            log_dp_fields == available_fields
-        ), f"Extra fields: {log_dp_fields - available_fields}"
+        assert log_dp_fields == available_fields, (
+            f"Extra fields: {log_dp_fields - available_fields}"
+        )
 
     def test_logger_data_packet_field_order(self):
         """Tests whether the LoggerDataPacket class has the correct field order."""
