@@ -10,7 +10,12 @@ This folder contains the launch data of actual previous flights. These are used 
 3. `genesis_launch_1.csv`: This was our first attempt of a control launch with the Genesis subscale rocket. We tried to have it extend its airbrakes for most of coast and then retract them, but later analysis proved that airbrakes didn't deploy during coast. Additionally, the LandedState was incorrectly detected, so for convenience ~100 mb of useless data has been cropped out of this file.
 The timestamps of the LandedState packets were synced with the timestamps of the last packet in the file. See #91 for more details.
 4. `genesis_launch_2.csv`: This was our second attempt of a control launch with Genesis. For this one we told the airbrakes to deploy once at around the start of CoastState and did not tell them to retract at all. When we recovered the rocket, the fins were extended, by analysis of launch data shows that the airbrakes didn't deploy in CoastState, and most likely deployed sometime either in FreeFall or once the rocket hit the ground. LandedState was mostly correctly detected. See #91 for more details.
+5. `legacy_launch_1.csv`: This was the first time airbrakes physically deployed! The airbrakes were pre-programmed to stay deployed after apogee convergence. 
+6. `legacy_launch_2.csv`: This was the second time airbrakes physically deployed! This was a control launch where the we planned to hit a target apogee.
 
+## Videos
+
+There is a video of the launch from the rocket's perspective in the `videos` folder.
 
 ## Metadata
 
