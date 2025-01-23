@@ -59,9 +59,6 @@ def run_flight(args: argparse.Namespace) -> None:
     airbrakes = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
-    if args.sim:
-        imu.set_airbrakes_status(airbrakes.servo.current_extension)
-
     # Run the main flight loop
     run_flight_loop(airbrakes, flight_display, args.mode == "mock", args.mode == "sim")
 

@@ -60,7 +60,7 @@ class SimIMU(BaseIMU):
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             name="Sim IMU Process",
-            args=(config,),
+            args=(config, real_time_replay),
         )
 
         super().__init__(data_fetch_process, data_queue)
@@ -79,7 +79,7 @@ class SimIMU(BaseIMU):
             ServoExtension.MAX_NO_BUZZ,
         )
 
-    def _fetch_data_loop(self, config: SimulationConfig) -> None:
+    def _fetch_data_loop(self, config: SimulationConfig, real_time_replay: bool) -> None:
         """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
         data."""
 
@@ -110,4 +110,6 @@ class SimIMU(BaseIMU):
                 time_step = update_timestamp(timestamp, config) - timestamp
                 timestamp += time_step
                 end_time = time.time()
-                time.sleep(max(0.0, time_step - (end_time - start_time)))
+
+                if real_time_replay:
+                    time.sleep(max(0.0, time_step - (end_time - start_time)))
