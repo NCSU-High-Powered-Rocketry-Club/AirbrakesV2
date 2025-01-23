@@ -11,10 +11,17 @@ from airbrakes.constants import LOGS_PATH
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from airbrakes.main import create_components, run_flight, run_mock_flight, run_real_flight
+from airbrakes.main import (
+    create_components,
+    run_flight,
+    run_mock_flight,
+    run_real_flight,
+    run_sim_flight,
+)
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -43,22 +50,31 @@ def parsed_args(request, monkeypatch):
 @pytest.mark.parametrize(
     "parsed_args",
     [
-        (["main.py"]),
-        (["main.py", "--mock"]),
-        (["main.py", "-m", "-r"]),
-        (["main.py", "-m", "-r", "-c"]),
-        (["main.py", "-m", "-r", "-c", "-l"]),
-        (["main.py", "-m", "-r", "-c", "-l", "-f"]),
-        (["main.py", "-m", "-r", "-c", "-l", "-f", "-p", "launch_data/something"]),
+        (["main.py", "real"]),
+        (["main.py", "mock"]),
+        (["main.py", "mock", "-r"]),
+        (["main.py", "mock", "-r", "-c"]),
+        (["main.py", "mock", "-r", "-c", "-l"]),
+        (["main.py", "mock", "-r", "-c", "-l", "-f"]),
+        (["main.py", "mock", "-r", "-c", "-l", "-f", "-p", "launch_data/something"]),
+        (
+            [
+                "main.py",
+                "sim",
+                "sub-scale",
+                "-r",
+            ]
+        ),
     ],
     ids=[
-        "no-args",
+        "real flight",
         "mock",
         "mock with real servo",
         "mock with real servo and camera",
         "mock with real servo, camera and log file kept",
         "mock with real servo, camera, log file kept and fast replay",
         "mock with real servo, camera, log file kept, fast replay and specific launch file",
+        "sim with real servo",
     ],
     indirect=True,
 )
@@ -74,38 +90,54 @@ def test_create_components(parsed_args, monkeypatch):
     assert isinstance(created_components[-1], ApogeePredictor)
     assert isinstance(created_components[-2], IMUDataProcessor)
 
-    if parsed_args.mock:
-        assert isinstance(created_components[1], MockIMU)
+    if parsed_args.mode in ("mock", "sim"):
+        if parsed_args.mode == "mock":
+            assert type(created_components[1]) is MockIMU
+
+            if parsed_args.path:
+                assert created_components[1]._log_file_path == parsed_args.path
+            else:
+                # First file in the launch_data directory:
+                assert "launch_data" in str(created_components[1]._log_file_path)
+
+        else:  # sim
+            assert type(created_components[1]) is SimIMU
+
         if parsed_args.fast_replay:
             assert not created_components[1]._data_fetch_process._args[1]
         else:
             assert created_components[1]._data_fetch_process._args[1]
 
-        if parsed_args.path:
-            assert created_components[1]._log_file_path == parsed_args.path
-        else:
-            # First file in the launch_data directory:
-            assert "launch_data" in str(created_components[1]._log_file_path)
-
         # check if the real camera is created:
         if parsed_args.real_camera:
-            assert isinstance(created_components[2], Camera)
+            assert type(created_components[2]) is Camera
         else:
-            assert isinstance(created_components[2], MockCamera)
-    else:
-        assert isinstance(created_components[1], IMU)
+            assert type(created_components[2]) is MockCamera
 
-    if parsed_args.real_servo:
-        assert isinstance(created_components[0], Servo)
-    else:
-        assert isinstance(created_components[0], Servo)
-        assert isinstance(created_components[0].servo.pin_factory, gpiozero.pins.mock.MockFactory)
+        # This particular test case is bad, I'm not testing whether our pin factory is PiGPIO or not
+        # since I don't want to run the constructor of that class, which errors out.
+        # TODO: Use a magic mock?
+        if parsed_args.real_servo:
+            assert type(created_components[0]) is Servo
+        else:
+            assert type(created_components[0]) is Servo
+            assert isinstance(
+                created_components[0].servo.pin_factory, gpiozero.pins.mock.MockFactory
+            )
 
-    if parsed_args.keep_log_file:
-        assert isinstance(created_components[3], MockLogger)
-        assert created_components[3].delete_log_file is False
+        # A mock logger object is always created:
+        assert type(created_components[3]) is MockLogger
+        if parsed_args.keep_log_file:
+            assert created_components[3].delete_log_file is False
+        else:
+            assert created_components[3].delete_log_file is True
+
+    # Real hardware components:
     else:
-        assert isinstance(created_components[3], Logger)
+        assert type(created_components[1]) is IMU
+        assert type(created_components[0]) is Servo
+        assert type(created_components[2]) is Camera
+        assert type(created_components[3]) is Logger
 
 
 def test_run_real_flight(monkeypatch):
@@ -127,10 +159,12 @@ def test_run_real_flight(monkeypatch):
     run_real_flight()
 
     assert len(calls) == 2
-    # i.e. test that we didn't pass mock_invocation=True to arg_parser:
+    # i.e. test that we didn't pass any arguments to the arg_parser:
     assert not arg_parser_arguments
     # test that we called the arg parser and the run_flight functions
     assert calls == ["parsed arguments", "run_flight"]
+    # Test that we modified sys.argv to include "real":
+    assert sys.argv[1] == "real"
 
 
 def test_run_mock_flight(monkeypatch):
@@ -152,10 +186,39 @@ def test_run_mock_flight(monkeypatch):
     run_mock_flight()
 
     assert len(calls) == 2
-    # i.e. test that we passed mock_invocation=True to arg_parser:
-    assert arg_parser_kwargs == {"mock_invocation": True}
+    # i.e. test that we passed no arguments to the arg_parser:
+    assert not arg_parser_kwargs
     # test that we called the arg parser and the run_flight functions
     assert calls == ["parsed arguments", "run_flight"]
+    # Test that we modified sys.argv to include "mock":
+    assert sys.argv[1] == "mock"
+
+
+def test_run_sim_flight(monkeypatch):
+    """Tests the run_sim_flight function."""
+    arg_parser_kwargs = []
+    calls = []
+
+    def mock_arg_parser(*args, **kwargs):
+        nonlocal arg_parser_kwargs, calls
+        arg_parser_kwargs = kwargs
+        calls.append("parsed arguments")
+
+    def patched_run_flight(*args, **kwargs):
+        calls.append("run_flight")
+
+    monkeypatch.setattr("airbrakes.main.arg_parser", mock_arg_parser)
+    monkeypatch.setattr("airbrakes.main.run_flight", patched_run_flight)
+
+    run_sim_flight()
+
+    assert len(calls) == 2
+    # i.e. test that we passed no arguments to the arg_parser:
+    assert not arg_parser_kwargs
+    # test that we called the arg parser and the run_flight functions
+    assert calls == ["parsed arguments", "run_flight"]
+    # Test that we modified sys.argv to include "sim":
+    assert sys.argv[1] == "sim"
 
 
 def test_run_flight(monkeypatch, mocked_args_parser):
