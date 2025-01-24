@@ -31,6 +31,7 @@ class LaunchOptions(msgspec.Struct):
     real_servo: bool
     keep_log_file: bool
     fast_simulation: bool
+    real_camera: bool
 
 
 class SelectedLaunchConfiguration(msgspec.Struct):
@@ -103,6 +104,8 @@ class LaunchConfiguration(Widget):
             Switch(id="keep-log-file-switch"),
             Label("Fast Simulation", id="label-fast-sim"),
             Switch(id="fast-sim-switch"),
+            Label("Real Camera", id="label-real-camera"),
+            Switch(id="real-camera-switch"),
             id="launch-configuration-grid",
         )
 
@@ -114,7 +117,7 @@ class LaunchSelector(Screen):
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
     launch_options: LaunchOptions = LaunchOptions(
-        real_servo=False, keep_log_file=False, fast_simulation=False
+        real_servo=False, keep_log_file=False, fast_simulation=False, real_camera=False
     )
 
     def compose(self) -> ComposeResult:
@@ -144,6 +147,8 @@ class LaunchSelector(Screen):
                 self.launch_options.keep_log_file = event.value
             case "fast-sim-switch":
                 self.launch_options.fast_simulation = event.value
+            case "real-camera-switch":
+                self.launch_options.real_camera = event.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle the button press events."""

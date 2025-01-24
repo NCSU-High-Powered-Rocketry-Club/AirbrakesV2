@@ -83,7 +83,7 @@ class DebugTelemetry(Static):
     def update_debug_telemetry(self) -> None:
         self.imu_queue_size = self.airbrakes.imu._data_queue.qsize()
         self.log_buffer_size = len(self.airbrakes.logger._log_buffer)
-        self.apogee = self.airbrakes.apogee_predictor.apogee
+        self.apogee = self.airbrakes.last_apogee_predictor_packet.predicted_apogee
         self.fetched_packets = len(self.airbrakes.imu_data_packets)
         self.state = self.airbrakes.state.name
 
@@ -315,5 +315,5 @@ class FlightTelemetry(Static):
         self.max_vertical_velocity = self.airbrakes.data_processor.max_vertical_velocity
         self.current_height = self.airbrakes.data_processor.current_altitude
         self.max_height = self.airbrakes.data_processor.max_altitude
-        self.apogee_prediction = self.airbrakes.apogee_predictor.apogee
-        self.airbrakes_extension = self.airbrakes.current_extension.value
+        self.apogee_prediction = self.airbrakes.last_apogee_predictor_packet.predicted_apogee
+        self.airbrakes_extension = self.airbrakes.servo.current_extension.value

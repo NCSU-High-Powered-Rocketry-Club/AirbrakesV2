@@ -12,17 +12,19 @@ from textual.worker import Worker, WorkerState, get_current_worker
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import IMU_PORT, LOGS_PATH, MOCK_DISPLAY_UPDATE_FREQUENCY, SERVO_PIN
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.logger import Logger
 from airbrakes.graphics.flight.header import FlightHeader
 from airbrakes.graphics.flight.panel import FlightInformation
 from airbrakes.graphics.flight.telemetry import CPUUsage
 from airbrakes.graphics.launch_selector import LaunchSelector, SelectedLaunchConfiguration
+from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.logger import Logger
 
 
 class AirbrakesApplication(App):
@@ -86,18 +88,22 @@ class AirbrakesApplication(App):
                 if launch_config.launch_options.real_servo
                 else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
             )
+            camera = MockCamera() if not launch_config.launch_options.real_camera else Camera()
             self.is_mock = True
         else:
             # Use real hardware components
             servo = Servo(SERVO_PIN)
             imu = IMU(IMU_PORT)
             logger = Logger(LOGS_PATH)
+            camera = Camera()
 
         # Initialize data processing and prediction
         data_processor = IMUDataProcessor()
         apogee_predictor = ApogeePredictor()
 
-        self.airbrakes = AirbrakesContext(servo, imu, logger, data_processor, apogee_predictor)
+        self.airbrakes = AirbrakesContext(
+            servo, imu, camera, logger, data_processor, apogee_predictor
+        )
 
     def update_telemetry(self) -> None:
         """Updates all the reactive variables with the latest telemetry data."""
