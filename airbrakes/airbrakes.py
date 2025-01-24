@@ -95,7 +95,7 @@ class AirbrakesContext:
 
     def start(self) -> None:
         """
-        Starts the IMU and logger processes. This is called before the main while loop starts.
+        Starts the IMU, logger, apogee, and camera processes. This is called before the main while loop starts.
         """
         self.imu.start()
         self.logger.start()
