@@ -25,12 +25,12 @@ from airbrakes.constants import (
     RAW_DATA_PACKET_SAMPLING_RATE,
     STOP_SIGNAL,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.utils import convert_to_nanoseconds
 
 CHUNK_SIZE = LOG_BUFFER_SIZE + 1

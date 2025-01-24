@@ -95,15 +95,15 @@ flowchart TD
     IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
     IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
-    Velocity -->  ProcessedData[(Processed Data Packet)]:::outputSquare
-    Altitude -->  ProcessedData[(Processed Data Packet)]:::outputSquare
-    Rotated_Accel -->  ProcessedData[(Processed Data Packet)]:::outputSquare
+    Velocity -->  ProcessedData[(Processor Data Packet)]:::outputSquare
+    Altitude -->  ProcessedData[(Processor Data Packet)]:::outputSquare
+    Rotated_Accel -->  ProcessorData[(Processor Data Packet)]:::outputSquare
     
-    ProcessedData[(Processed Data Packet)]:::outputSquare --> Update
+    ProcessorData[(Processor Data Packet)]:::outputSquare --> Update
 
     %% Logging Mechanism
     Logger --> LogFunction[log]:::bubble
-    Update --> LogData[(Logged Data Packet)]:::outputSquare
+    Update --> LogData[(Logger Data Packet)]:::outputSquare
     LogData --> LogFunction
 
     %% Airbrake Control Methods with Parentheses Displayed
@@ -121,7 +121,7 @@ flowchart TD
 | Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
 | Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
 | Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processed Data Packet, Logged Data Packet                                                     |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                     |
 
 ### Launch Data
 
@@ -144,7 +144,9 @@ AirbrakesV2/
 │   │   ├── [files related to the connection of the pi with hardware ...]
 |   ├── mock/
 │   │   ├── [files related to the connection of mock (or simulated) hardware ...]
-|   ├── data_handling/
+|   ├── simulation/
+│   │   ├── [files related to our custom air brakes sim ...]
+|   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
 │   ├── [files which control the airbrakes at a high level ...]
 |   ├── main.py [main file used to run on the rocket]
@@ -232,6 +234,10 @@ If you want to run a mock launch, but with the real servo running, run:
 ```bash
 uv run mock -r
 ```
+To run a mock launch with our custom simulation:
+```bash
+uv run sim
+```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash
 uv run mock --help
@@ -271,7 +277,7 @@ ruff format .
 
 ## Pi Usage
 
-_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl, picamera2), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
 
 ### Connecting to the Pi (SSH)
@@ -288,6 +294,15 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 ```bash
 sudo pigpiod
 ```
+
+### Install the dependencies needed for the camera integration:
+
+```bash
+sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev
+
+uv sync --all-groups
+```
+
 
 ### Run a real flight with real hardware:
 ```bash

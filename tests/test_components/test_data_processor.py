@@ -8,8 +8,8 @@ import numpy.testing as npt
 import pytest
 import scipy.spatial
 
-from airbrakes.data_handling.data_processor import IMUDataProcessor
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
+from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
 
 
@@ -296,7 +296,7 @@ class TestIMUDataProcessor:
                 ],
                 25.0,
                 5.0,
-                np.array([0.343268, 0.542269, 0.542269, 0.542269]),
+                np.array([-0.434374, 0.520038, 0.520038, 0.520038]),
             ),
             (
                 [
@@ -315,7 +315,7 @@ class TestIMUDataProcessor:
                 ],
                 30.0,
                 10.0,
-                np.array([0.176263, 0.568311, 0.568311, 0.568311]),
+                np.array([-0.988993, 0.085428, 0.085428, 0.085428]),
             ),
         ],
         ids=["one_data_packet", "two_data_packets", "three_data_packets"],
@@ -323,7 +323,7 @@ class TestIMUDataProcessor:
     def test_first_update(self, data_processor, data_packets, init_alt, max_alt, rotation_quat):
         """
         Tests whether the update() method works correctly, for the first update() call,
-        along with get_processed_data_packets()
+        along with get_processor_data_packets()
         """
         d = data_processor
         d.update(data_packets.copy())
@@ -355,7 +355,7 @@ class TestIMUDataProcessor:
         )
         assert d._max_altitude == d.max_altitude == max_alt
 
-        processed_data = d.get_processed_data_packets()
+        processed_data = d.get_processor_data_packets()
         assert len(processed_data) == len(data_packets)
         for idx, data in enumerate(processed_data):
             assert data.current_altitude == d._current_altitudes[idx]

@@ -6,7 +6,7 @@ import contextlib
 import sys
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
 )
 
@@ -15,7 +15,7 @@ if sys.platform != "win32":
     from faster_fifo import Empty, Queue
 else:
     from multiprocessing import Queue
-    from multiprocessing.queues import Empty
+    from queue import Empty
 
 from multiprocessing import Process, TimeoutError, Value
 
@@ -40,6 +40,21 @@ class BaseIMU:
         # Makes a boolean value that is shared between processes
         self._running = Value("b", False)
 
+    @property
+    def queue_size(self) -> int:
+        """
+        :return: The number of data packets in the queue.
+        """
+        return self._data_queue.qsize()
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the process fetching data from the IMU is running.
+        :return: True if the process is running, False otherwise
+        """
+        return self._running.value
+
     def stop(self) -> None:
         """
         Stops the process separate from the main process for fetching data from the IMU.
@@ -49,6 +64,7 @@ class BaseIMU:
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
         # be empty, and thus the process never .joins().
+        self.get_imu_data_packets(block=False)
         with contextlib.suppress(TimeoutError):
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
@@ -67,7 +83,7 @@ class BaseIMU:
         """
         return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
 
-    def get_imu_data_packets(self) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self, block: bool = True) -> collections.deque[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
         :return: A deque containing the latest data packets from the IMU.
@@ -75,7 +91,7 @@ class BaseIMU:
         # We use a deque because it's faster than a list for popping from the left
         try:
             packets = self._data_queue.get_many(
-                block=True, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
+                block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
             return collections.deque()
@@ -83,11 +99,3 @@ class BaseIMU:
             if STOP_SIGNAL in packets:
                 return collections.deque()
             return collections.deque(packets)
-
-    @property
-    def is_running(self) -> bool:
-        """
-        Returns whether the process fetching data from the IMU is running.
-        :return: True if the process is running, False otherwise
-        """
-        return self._running.value

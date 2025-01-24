@@ -8,8 +8,8 @@ from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
 )
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import deadband
 
 
@@ -132,16 +132,16 @@ class IMUDataProcessor:
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
 
-    def get_processed_data_packets(self) -> list[ProcessedDataPacket]:
+    def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
-        Processes the data points and returns a deque of ProcessedDataPacket objects. The length
+        Processes the data points and returns a deque of ProcessorDataPacket objects. The length
         of the deque should be the same as the length of the list of estimated data packets most
         recently passed in by update()
 
-        :return: A deque of ProcessedDataPacket objects.
+        :return: A deque of ProcessorDataPacket objects.
         """
         return [
-            ProcessedDataPacket(
+            ProcessorDataPacket(
                 current_altitude=self._current_altitudes[i],
                 vertical_velocity=self._vertical_velocities[i],
                 vertical_acceleration=self._rotated_accelerations[i],
@@ -276,7 +276,7 @@ class IMUDataProcessor:
         This cannot be called on the first update as _last_data_packet is None. Units are in
         seconds.
         :return: A numpy array of the time difference between each data packet and the previous
-            data packet.
+        data packet.
         """
         # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2

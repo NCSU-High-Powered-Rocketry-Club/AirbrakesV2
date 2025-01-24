@@ -22,6 +22,7 @@ class TestServo:
         assert isinstance(servo.servo, gpiozero.Servo)
         assert isinstance(servo._go_to_max_no_buzz, threading.Timer)
         assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
+        assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
 
     def test_set_extension(self, servo):
         servo._set_extension(ServoExtension.MAX_EXTENSION)
@@ -88,3 +89,13 @@ class TestServo:
         time.sleep(time_taken)
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert servo.servo.value == ServoExtension.MIN_NO_BUZZ.value
+
+    def test_encoder_get_position(self, servo):
+        """Tests that the encoder reading is correct."""
+        assert servo.get_encoder_reading() == 0
+        servo.encoder.steps = 10
+        assert servo.get_encoder_reading() == 10
+        servo.encoder.steps = -10
+        assert servo.get_encoder_reading() == -10
+        servo.encoder.steps = 0
+        assert servo.get_encoder_reading() == 0

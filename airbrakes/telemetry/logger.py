@@ -8,10 +8,14 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from airbrakes.utils import modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
-    from faster_fifo import Queue
+    from faster_fifo import Empty, Queue
+else:
+    from queue import Empty
 
 from msgspec import to_builtins
 
@@ -22,9 +26,10 @@ from airbrakes.constants import (
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
 )
-from airbrakes.data_handling.imu_data_packet import EstimatedDataPacket, IMUDataPacket
-from airbrakes.data_handling.logged_data_packet import LoggedDataPacket
-from airbrakes.data_handling.processed_data_packet import ProcessedDataPacket
+from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
 class Logger:
@@ -38,7 +43,7 @@ class Logger:
     our logs in real time.
     """
 
-    LOG_BUFFER_STATES = ("StandbyState", "LandedState")
+    LOG_BUFFER_STATES = ("S", "L")
 
     __slots__ = (
         "_log_buffer",
@@ -73,7 +78,7 @@ class Logger:
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
         with self.log_path.open(mode="w", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))
+            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
             writer.writeheader()
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
@@ -83,12 +88,12 @@ class Logger:
         if sys.platform == "win32":
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
-            self._log_queue: multiprocessing.Queue[list[LoggedDataPacket] | Literal["STOP"]] = (
+            self._log_queue: multiprocessing.Queue[list[LoggerDataPacket] | Literal["STOP"]] = (
                 multiprocessing.Queue()
             )
             modify_multiprocessing_queue_windows(self._log_queue)
         else:
-            self._log_queue: Queue[list[LoggedDataPacket] | Literal["STOP"]] = Queue(
+            self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES
             )
 
@@ -123,55 +128,68 @@ class Logger:
 
     @staticmethod
     def _prepare_log_dict(
-        state: str,
-        extension: str,
+        context_data_packet: ContextDataPacket,
+        servo_data_packet: ServoDataPacket,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        predicted_apogee: float,
-    ) -> list[LoggedDataPacket]:
+        processor_data_packets: list[ProcessorDataPacket],
+        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
+    ) -> list[LoggerDataPacket]:
         """
         Creates a data packet dictionary representing a row of data to be logged.
-        :param state: The current state of the airbrakes.
-        :param extension: The current extension of the airbrakes.
+        :param context_data_packet: The context data packet to log.
+        :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :param: predicted_apogee: The predicted apogee of the rocket. Only logged with estimated
-        data packets.
-        :return: A deque of LoggedDataPacket objects.
+        :param processor_data_packets: The processor data packets to log.
+        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
+        :return: A deque of LoggerDataPacket objects.
         """
-        logged_data_packets: list[LoggedDataPacket] = []
+        logger_data_packets: list[LoggerDataPacket] = []
 
-        index = 0  # Index to loop over processed data packets:
+        index = 0  # Index to loop over processor data packets:
+
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:
             # Let's first add the state, extension field:
-            logged_fields: LoggedDataPacket = {
-                "state": state,
-                "extension": extension,
-            }
-            # Convert the imu data packet to a dictionary
+            logger_fields: LoggerDataPacket = {}
+            # Convert the packets to a dictionary
+            context_data_packet_dict: dict[str, int | str] = to_builtins(context_data_packet)
+            logger_fields.update(context_data_packet_dict)
+            servo_data_packet_dict: dict[str, int | float] = to_builtins(servo_data_packet)
+            logger_fields.update(servo_data_packet_dict)
             # Using to_builtins() is much faster than asdict() for some reason
             imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
-            logged_fields.update(imu_data_packet_dict)
+            logger_fields.update(imu_data_packet_dict)
 
-            # Get the processed data packet fields:
+            # Get the processor data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
-                # Convert the processed data packet to a dictionary. Unknown types such as numpy
+                # Convert the processor data packet to a dictionary. Unknown types such as numpy
                 # float64 are converted to strings with 8 decimal places (that's enc_hook)
-                processed_data_packet_dict: dict[str, float] = to_builtins(
-                    processed_data_packets[index], enc_hook=Logger._convert_unknown_type
+                processor_data_packet_dict: dict[str, float] = to_builtins(
+                    processor_data_packets[index], enc_hook=Logger._convert_unknown_type
                 )
                 # Let's drop the "time_since_last_data_packet" field:
-                processed_data_packet_dict.pop("time_since_last_data_packet", None)
-                logged_fields.update(processed_data_packet_dict)
+                processor_data_packet_dict.pop("time_since_last_data_packet", None)
+                logger_fields.update(processor_data_packet_dict)
 
-                # Add the predicted apogee field:
-                logged_fields["predicted_apogee"] = predicted_apogee
                 index += 1
 
-            logged_data_packets.append(logged_fields)
+            # Apogee Prediction happens asynchronously, so we need to check if we have a packet
+            # This means that rather than belonging to a specific IMU packet, it belongs to the
+            # context packet.
 
-        return logged_data_packets
+            # There is a small possibility that we won't log all the apogee predictor data packets
+            # if the length of the IMU data packets is less than the length of the apogee predictor
+            # data packets. However, this is unlikely to happen in practice. This particular case
+            # is NOT covered by tests.
+            if apogee_predictor_data_packets:
+                apogee_predictor_data_packet_dict: dict[str, float] = to_builtins(
+                    apogee_predictor_data_packets.pop(0), enc_hook=Logger._convert_unknown_type
+                )
+                logger_fields.update(apogee_predictor_data_packet_dict)
+
+            logger_data_packets.append(logger_fields)
+
+        return logger_data_packets
 
     def start(self) -> None:
         """
@@ -191,39 +209,35 @@ class Logger:
 
     def log(
         self,
-        state: str,
-        extension: float,
+        context_data_packet: ContextDataPacket,
+        servo_data_packet: ServoDataPacket,
         imu_data_packets: deque[IMUDataPacket],
-        processed_data_packets: list[ProcessedDataPacket],
-        predicted_apogee: float,
+        processor_data_packets: list[ProcessorDataPacket],
+        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-        :param state: The current state of the airbrakes.
-        :param extension: The current extension of the airbrakes.
+        :param context_data_packet: The context data packet to log.
+        :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.
-        :param processed_data_packets: The processed data packets to log.
-        :param predicted_apogee: The predicted apogee of the rocket. Note: Since this is fetched
-        from the apogee predictor, which runs in a separate process, it may not be the most recent
-        value, nor would it correspond to the respective data packet being logged.
+        :param processor_data_packets: The processor data packets to log.
+        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         """
-        # We only want the first letter of the state to save space
-        state_letter = state[0]
-        # We are populating a dictionary with the fields of the logged data packet
-        logged_data_packets: list[LoggedDataPacket] = Logger._prepare_log_dict(
-            state_letter,
-            str(extension),
+        # We are populating a dictionary with the fields of the logger data packet
+        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
+            context_data_packet,
+            servo_data_packet,
             imu_data_packets,
-            processed_data_packets,
-            predicted_apogee,
+            processor_data_packets,
+            apogee_predictor_data_packets,
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if state in self.LOG_BUFFER_STATES:
+        if context_data_packet.state_letter in self.LOG_BUFFER_STATES:
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
-            to_log = logged_data_packets[:log_capacity]
-            to_buffer = logged_data_packets[log_capacity:]
+            to_log = logger_data_packets[:log_capacity]
+            to_buffer = logger_data_packets[log_capacity:]
 
             # Update counter and handle logging/buffering
             self._log_counter += len(to_log)
@@ -238,18 +252,18 @@ class Logger:
 
             # Reset the counter for other states
             self._log_counter = 0
-            self._log_queue.put_many(logged_data_packets)
+            self._log_queue.put_many(logger_data_packets)
 
     def _log_the_buffer(self):
         """
-        Adds the log buffer to the queue, so it can be logged to file.
+        Adds the log buffer to the queue, so it can be logger to file.
         """
         self._log_queue.put_many(list(self._log_buffer))
         self._log_buffer.clear()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
-    def _truncate_floats(data: LoggedDataPacket) -> dict[str, str | object]:
+    def _truncate_floats(data: LoggerDataPacket) -> dict[str, str | object]:
         """
         Truncates the decimal place of the floats in the dictionary to 8 decimal places.
         :param data: The dictionary to truncate.
@@ -273,13 +287,16 @@ class Logger:
 
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggedDataPacket.__annotations__))
+            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
-                message_fields: list[LoggedDataPacket | Literal["STOP"]] = self._log_queue.get_many(
-                    timeout=MAX_GET_TIMEOUT_SECONDS
-                )
+                try:
+                    message_fields: list[LoggerDataPacket | Literal["STOP"]] = (
+                        self._log_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
+                    )
+                except Empty:
+                    continue
                 # If the message is the stop signal, break out of the loop
                 for message_field in message_fields:
                     if message_field == STOP_SIGNAL:

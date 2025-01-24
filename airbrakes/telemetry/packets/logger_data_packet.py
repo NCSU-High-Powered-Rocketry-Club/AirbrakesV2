@@ -1,16 +1,21 @@
 """Module for describing the data packet for the logger to log"""
 
-from typing import Required, TypedDict
+from typing import TypedDict
 
 
-class LoggedDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired
+class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields are NotRequired
     """
     Represents a collection of all data that the logger can log in a line. Not every field will be
-    filled in every packet.
+    filled in every packet. The order in which the fields are defined determines the order in which
+    they will be logged.
     """
 
-    state: Required[str]
-    extension: Required[str]
+    # Field in ContextDataPacket
+    state_letter: str | None
+
+    # Fields in ServoDataPacket
+    set_extension: str | None
+    encoder_position: str | None
 
     # IMU Data Packet Fields
     timestamp: int
@@ -54,10 +59,19 @@ class LoggedDataPacket(TypedDict, total=False):  # total=False means all fields 
     estGravityVectorY: float | None
     estGravityVectorZ: float | None
 
-    # Processed Data Packet Fields
+    # Processor Data Packet Fields
     current_altitude: float | None
     vertical_velocity: float | None
     vertical_acceleration: float | None
 
-    # fields not in the data packets
+    # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None
+    a_coefficient: float | None
+    b_coefficient: float | None
+    uncertainty_threshold_1: float | None
+    uncertainty_threshold_2: float | None
+
+    # Other fields in ContextDataPacket
+    batch_number: int | None
+    imu_queue_size: int | None
+    apogee_predictor_queue_size: int | None

@@ -23,12 +23,12 @@ from airbrakes.constants import (
     MAX_QUEUE_SIZE,
     RAW_DESCRIPTOR_SET,
 )
-from airbrakes.data_handling.imu_data_packet import (
+from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.hardware.base_imu import BaseIMU
 
 
 class IMU(BaseIMU):
@@ -155,7 +155,7 @@ class IMU(BaseIMU):
                 # Process the packet's data and populate the data packet object.
                 IMU._process_packet_data(packet, imu_data_packet)
 
-                # Add the processed data packet to the shared queue.
+                # Add the processor data packet to the shared queue.
                 self._data_queue.put(imu_data_packet)
 
     def _query_imu_for_data_packets(self, port: str) -> None:

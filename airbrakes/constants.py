@@ -26,10 +26,24 @@ class ServoExtension(Enum):
     maximum rotation. We obtained these values through guess and check.
     """
 
-    MIN_EXTENSION = -0.4
-    MAX_EXTENSION = 0.7
-    MIN_NO_BUZZ = -0.23
-    MAX_NO_BUZZ = 0.58
+    MIN_EXTENSION = -0.75
+    MAX_EXTENSION = 0.055
+    MIN_NO_BUZZ = -0.72
+    MAX_NO_BUZZ = 0.05
+
+
+# -------------------------------------------------------
+# Encoder Configuration
+# -------------------------------------------------------
+
+ENCODER_RESOLUTION = 20
+"""The points per revolution of the encoder"""
+
+ENCODER_PIN_A = 23
+"""The GPIO pin that the encoder's A pin is connected to."""
+
+ENCODER_PIN_B = 24
+"""The GPIO pin that the encoder's B pin is connected to."""
 
 
 # -------------------------------------------------------
@@ -104,6 +118,14 @@ it is considered to have timed out. This is used to prevent the program from dea
 stops sending data."""
 
 # -------------------------------------------------------
+# Camera Configuration
+# -------------------------------------------------------
+
+CAMERA_IDLE_TIMEOUT_SECONDS = 0.1
+
+CAMERA_SAVE_PATH = Path("logs/video.h264")
+
+# -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
 
@@ -141,8 +163,7 @@ ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
 like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
 we deadband the accel to prevent this."""
 
-TAKEOFF_HEIGHT_METERS = 10
-"""The height in meters that the rocket must reach before we consider it to have taken off."""
+
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """The velocity in meters per second that the rocket must reach before we consider it to have taken
 off."""
@@ -191,7 +212,7 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 """The initial guess for the coefficients for curve fit of the acceleration curve."""
 
 APOGEE_PREDICTION_MIN_PACKETS = 10
-"""The minimum number of data packets required to predict the apogee."""
+"""The minimum number of processor data packets required to predict the apogee."""
 
 UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
 """The uncertainty from the curve fit, below which we will say that our apogee has converged. This

@@ -11,16 +11,19 @@
   jobs:
     pytest:
       name: pytest
-      runs-on: ubuntu-latest
+      runs-on: ${{ matrix.os }}
       timeout-minutes: 5
       strategy:
+        matrix:
+          os: [ubuntu-latest, ubuntu-24.04-arm]
         fail-fast: False
       steps:
         - uses: actions/checkout@v4
 
         - name: Install uv
           uses: astral-sh/setup-uv@v5
-
+          with:
+            enable-cache: true
         - name: Set up Python
           uses: actions/setup-python@v5
           with:
@@ -33,10 +36,3 @@
           run: |
             # Run tests with coverage except for the integration tests
             uv run pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
-
-        # Add this new step to upload the coverage report as an artifact
-        - name: Upload coverage report
-          uses: actions/upload-artifact@v4
-          with:
-            name: coverage-report
-            path: htmlcov/
