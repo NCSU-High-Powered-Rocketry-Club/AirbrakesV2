@@ -172,14 +172,17 @@ class CPUUsage(Static):
         yield CPUBars(id="cpu_imu_bar")
         yield CPUBars(id="cpu_log_bar")
         yield CPUBars(id="cpu_apogee_bar")
+        yield CPUBars(id="cpu_cam_bar")
         yield Label("00.0%", id="cpu_main_pct", expand=True)
         yield Label("00.0%", id="cpu_imu_pct", expand=True)
         yield Label("00.0%", id="cpu_log_pct", expand=True)
         yield Label("00.0%", id="cpu_apogee_pct", expand=True)
+        yield Label("00.0%", id="cpu_cam_pct", expand=True)
         yield Label("Main", id="cpu_main_label", expand=True)
         yield Label("IMU", id="cpu_imu_label", expand=True)
         yield Label("Log", id="cpu_log_label", expand=True)
         yield Label("Apogee", id="cpu_apogee_label", expand=True)
+        yield Label("Cam", id="cpu_cam_label", expand=True)
 
     def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
         self._airbrakes = airbrakes
@@ -193,10 +196,12 @@ class CPUUsage(Static):
         imu_pct_label = self.query_one("#cpu_imu_pct", Label)
         log_pct_label = self.query_one("#cpu_log_pct", Label)
         apogee_pct_label = self.query_one("#cpu_apogee_pct", Label)
+        cam_pct_label = self.query_one("#cpu_cam_pct", Label)
         main_pct_label.update(f"{self.cpu_usages['Main']:.1f}%")
         imu_pct_label.update(f"{self.cpu_usages['IMU']:.1f}%")
         log_pct_label.update(f"{self.cpu_usages['Log']:.1f}%")
         apogee_pct_label.update(f"{self.cpu_usages['Ap']:.1f}%")
+        cam_pct_label.update(f"{self.cpu_usages['Cam']:.1f}%")
 
     def update_cpu_bars(self) -> None:
         main_bar = self.query_one("#cpu_main_bar", CPUBars)
@@ -231,12 +236,14 @@ class CPUUsage(Static):
         imu_process = self._airbrakes.imu._data_fetch_process
         log_process = self._airbrakes.logger._log_process
         apogee_process = self._airbrakes.apogee_predictor._prediction_process
+        camera_process = self._airbrakes.camera.camera_control_process
         current_process = multiprocessing.current_process()
         process_dict = {
             "IMU": imu_process,
             "Log": log_process,
             "Main": current_process,
             "Ap": apogee_process,
+            "Cam": camera_process,
         }
         for k, v in process_dict.items():
             # psutil allows us to monitor CPU usage of a process, along with low level information
