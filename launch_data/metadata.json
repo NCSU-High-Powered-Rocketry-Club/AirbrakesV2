@@ -111,5 +111,61 @@
             "apogee_meters": 463.62
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
+    },
+    "legacy_launch_1.csv": {
+        "date": "2025-01-25 12:11:35.000",
+        "launch_site": {
+            "air_temperature_celsius": 4.11,  
+            "air_pressure_mb": null,
+            "wind_speed_kmh": null,
+            "wind_speed_direction": null,
+            "launch_coordinates": {
+                "latitiude": 35.1758000,
+                "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            },
+            "launch_rod_angle": 5.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": null
+        },
+        "flight_description": ""
+    },
+    "legacy_launch_2.csv": {
+        "date": "2025-01-25 15:11:35.000",
+        "launch_site": {
+            "air_temperature_celsius": 3.11,  
+            "air_pressure_mb": null,
+            "wind_speed_kmh": null,
+            "wind_speed_direction": null,
+            "launch_coordinates": {
+                "latitiude": 35.1758000,
+                "longitude": -76.8283400
+            },
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            },
+            "launch_rod_angle": 5.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": null
+        },
+        "flight_description": ""
     }
 }

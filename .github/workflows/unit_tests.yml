@@ -30,7 +30,7 @@
             python-version-file: "pyproject.toml"
 
         - name: Install the project
-          run: uv sync
+          run: uv sync --verbose --group dev
 
         - name: Run tests with coverage
           run: |

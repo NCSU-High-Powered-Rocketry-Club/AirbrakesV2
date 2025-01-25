@@ -29,7 +29,7 @@ class ServoExtension(Enum):
     MIN_EXTENSION = -0.75
     MAX_EXTENSION = 0.055
     MIN_NO_BUZZ = -0.72
-    MAX_NO_BUZZ = 0.05
+    MAX_NO_BUZZ = 0.01
 
 
 # -------------------------------------------------------
@@ -166,7 +166,7 @@ MAX_VELOCITY_THRESHOLD = 0.96
 motor has stopped burning if the current velocity is less than a percentage of the max velocity."""
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_ALTITUDE_METERS = 1000
+TARGET_ALTITUDE_METERS = 1
 """The target altitude in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the airbrakes."""
 
