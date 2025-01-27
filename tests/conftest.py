@@ -134,8 +134,8 @@ def target_altitude(request):
         return 1800.0  # actual apogee was about 1854m
     if launch_name == "genesis_launch_2":
         return 413.0  # actual apogee was about 462m
-    # if launch_name == "legacy_launch_1":
-    #     return 600.0 # actual apogee was about 650m
+    if launch_name == "legacy_launch_1":
+        return 580.0  # actual apogee was about 631.14
     return 1000.0  # Default altitude
 
 
