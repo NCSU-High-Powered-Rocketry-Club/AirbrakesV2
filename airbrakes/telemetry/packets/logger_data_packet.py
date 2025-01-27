@@ -75,3 +75,4 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     batch_number: int | None
     imu_queue_size: int | None
     apogee_predictor_queue_size: int | None
+    update_timestamp_ns: int | None
