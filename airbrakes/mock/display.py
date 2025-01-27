@@ -70,6 +70,7 @@ class FlightDisplay:
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
         self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
+
         # Prepare the processes for monitoring in the replay:
         self._processes: dict[str, psutil.Process] | None = None
         self._cpu_usages: dict[str, float] | None = None
@@ -124,6 +125,28 @@ class FlightDisplay:
                     # The process has ended, so we set the CPU usage to 0.
                     self._cpu_usages[name] = 0.0
 
+    def sound_alarm_if_imu_is_having_issues(self) -> None:
+        """Sounds an audible alarm if the IMU has invalid fields or negative velocity. This is
+        most useful on real flights, where it is hard to see the display due to sunlight, or
+        """
+        # We only care about standby state:
+        if self._airbrakes.state.name != "StandbyState":
+            return
+
+        has_invalid_fields = False
+        has_negative_velocity = False
+
+        # If our velocity is negative in standby state, we have a problem:
+        if self._airbrakes.data_processor.vertical_velocity < -2:
+            has_negative_velocity = True
+
+        if self._airbrakes.data_processor._last_data_packet:
+            invalid_fields = self._airbrakes.data_processor._last_data_packet.invalid_fields
+            has_invalid_fields = bool(invalid_fields)
+
+        if has_invalid_fields or has_negative_velocity:
+            print("\a", end="")
+
     def update_display(self) -> None:
         """
         Updates the display with real-time data. Runs in another thread. Automatically stops when
@@ -136,6 +159,7 @@ class FlightDisplay:
         # Update the display as long as the program is running:
         while self._running:
             self._update_display()
+            self.sound_alarm_if_imu_is_having_issues()
 
             # If we are running a real flight, we will stop the display when the rocket takes off:
             if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
