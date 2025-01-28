@@ -141,12 +141,12 @@
         "flight_description": "First flight with encoder and camera. Very high uncertainity in quaternions from the IMU. The timestamp also jumped a bit, and a few seconds of data was missing and/or inconsistent. Encoder and video data did show airbrakes physically deploying though."
     },
     "legacy_launch_2.csv": {
-        "date": "2025-01-25 15:11:35.000",
+        "date": "2025-01-25 16:13:17.074",
         "launch_site": {
             "air_temperature_celsius": 3.11,  
             "air_pressure_mb": null,
-            "wind_speed_kmh": null,
-            "wind_speed_direction": null,
+            "wind_speed_kmh": 7.91,
+            "wind_speed_direction": "N",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -166,6 +166,6 @@
             "log_buffer_index": 5000,
             "apogee_meters": null
         },
-        "flight_description": ""
+        "flight_description": "Complete waste of a flight since the velocity was negative at standby state due to excessive gyro drift. No data past standby state."
     }
 }

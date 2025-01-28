@@ -28,8 +28,8 @@ LOG_PATH = Path("tests/logs")
 LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
 # Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
 LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
-# Remove the legacy_launch_2.csv file since it's almost the same as legacy_launch_1.csv:
-# LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
+# Remove the legacy_launch_2.csv file since it failed
+LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
@@ -135,7 +135,7 @@ def target_altitude(request):
     if launch_name == "genesis_launch_2":
         return 413.0  # actual apogee was about 462m
     if launch_name == "legacy_launch_1":
-        return 580.0  # actual apogee was about 631.14
+        return 580.0  # actual apogee was about 631.14m
     return 1000.0  # Default altitude
 
 
