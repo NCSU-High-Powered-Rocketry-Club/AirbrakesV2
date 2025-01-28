@@ -144,6 +144,7 @@ class IMU(BaseIMU):
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
             print(len(packets))
             packet: mscl.MipDataPacket
+            messages = []
             for packet in packets:
                 # Extract the timestamp from the packet.
                 timestamp = packet.collectedTimestamp().nanoseconds()
@@ -237,7 +238,10 @@ class IMU(BaseIMU):
                             imu_data_packet.invalid_fields = []
                         # TODO
                         imu_data_packet.invalid_fields.append(channel)
-                self._data_queue.put(imu_data_packet)
+                # self._data_queue.put(imu_data_packet)
+                messages.append(imu_data_packet)
+
+            self._data_queue.put_many(messages)
 
 
     def _query_imu_for_data_packets(self, port: str) -> None:
