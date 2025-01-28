@@ -139,11 +139,10 @@ class IMU(BaseIMU):
         # Connect to the IMU and initialize the node used for getting data packets
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
-
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
-
+            self._p_list.append(len(packets))
             packet: mscl.MipDataPacket
             for packet in packets:
                 # Initialize the appropriate data packet.
@@ -157,6 +156,7 @@ class IMU(BaseIMU):
 
                 # Add the processor data packet to the shared queue.
                 self._data_queue.put(imu_data_packet)
+
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """

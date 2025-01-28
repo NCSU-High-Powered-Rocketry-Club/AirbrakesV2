@@ -4,6 +4,7 @@ the IMU (Inertial measurement unit) on the rocket."""
 import collections
 import contextlib
 import sys
+import time
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -39,6 +40,7 @@ class BaseIMU:
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
         self._running = Value("b", False)
+        self._p_list = []
 
     @property
     def queue_size(self) -> int:
@@ -60,6 +62,7 @@ class BaseIMU:
         Stops the process separate from the main process for fetching data from the IMU.
         """
         self._running.value = False
+        print(self._p_list)
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
