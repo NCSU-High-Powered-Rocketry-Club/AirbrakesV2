@@ -151,115 +151,91 @@ class IMU(BaseIMU):
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
                 if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
                     imu_data_packet = EstimatedDataPacket(timestamp)
-                if packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+                elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
                     imu_data_packet = RawDataPacket(timestamp)
                 else:
                     continue
 
                 # Iterate through each data point in the packet.
                 data_point: mscl.MipDataPoint
-                are_we_cooked = set()
                 for data_point in packet.data():
-                    print(data_point.field())
+                    # print(data_point.field())
                     # Extract the channel name of the data point.
-                    channel = data_point.channelName()
-                    if (data_point.field() in are_we_cooked):
-                        print("cooked")
-                    
-                    are_we_cooked.add(data_point.field())
+                    # channel = data_point.channelName()
 
-                    # Check if the channel is relevant for the data packet, we check for quaternions
-                    # separately because the IMU sends them over as a matrix, but we store each of them
-                    # individually as fields.
-                    # if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
-                    match channel:
-                        case "timestamp":
-                            imu_data_packet.timestamp = data_point.as_float()
-                        case "scaledAccelX":
-                            imu_data_packet.scaledAccelX = data_point.as_float()
-                        case "scaledAccelY":
-                            imu_data_packet.scaledAccelY = data_point.as_float()
-                        case "scaledAccelZ":
-                            imu_data_packet.scaledAccelZ = data_point.as_float()
-                        case "scaledGyroX":
-                            imu_data_packet.scaledGyroX = data_point.as_float()
-                        case "scaledGyroY":
-                            imu_data_packet.scaledGyroY = data_point.as_float()
-                        case "scaledGyroZ":
-                            imu_data_packet.scaledGyroZ = data_point.as_float()
-                        case "deltaVelX":
-                            imu_data_packet.deltaVelX = data_point.as_float()
-                        case "deltaVelY":
-                            imu_data_packet.deltaVelY = data_point.as_float()
-                        case "deltaVelZ":
-                            imu_data_packet.deltaVelZ = data_point.as_float()
-                        case "deltaThetaX":
+
+                    # print("!", channel, data_point.field(), data_point.qualifier())
+                    match data_point.field(), data_point.qualifier():
+                        case 32775, 1:
                             imu_data_packet.deltaThetaX = data_point.as_float()
-                        case "deltaThetaY":
+                        case 32775, 2:
                             imu_data_packet.deltaThetaY = data_point.as_float()
-                        case "deltaThetaZ":
+                        case 32775, 3:
                             imu_data_packet.deltaThetaZ = data_point.as_float()
-                        case "scaledAmbientPressure":
-                            imu_data_packet.scaledAmbientPressure = data_point.as_float()
-                        case "estOrientQuaternionW":
-                            imu_data_packet.estOrientQuaternionW = data_point.as_float()
-                        case "estOrientQuaternionX":
-                            imu_data_packet.estOrientQuaternionX = data_point.as_float()
-                        case "estOrientQuaternionY":
-                            imu_data_packet.estOrientQuaternionY = data_point.as_float()
-                        case "estOrientQuaternionZ":
-                            imu_data_packet.estOrientQuaternionZ = data_point.as_float()
-                        case "estPressureAlt":
-                            imu_data_packet.estPressureAlt = data_point.as_float()
-                        case "estAttitudeUncertQuaternionW":
-                            imu_data_packet.estAttitudeUncertQuaternionW = data_point.as_float()
-                        case "estAttitudeUncertQuaternionX":
-                            imu_data_packet.estAttitudeUncertQuaternionX = data_point.as_float()
-                        case "estAttitudeUncertQuaternionY":
-                            imu_data_packet.estAttitudeUncertQuaternionY = data_point.as_float()
-                        case "estAttitudeUncertQuaternionZ":
-                            imu_data_packet.estAttitudeUncertQuaternionZ = data_point.as_float()
-                        case "estAngularRateX":
+                        case 32776, 1:
+                            imu_data_packet.deltaVelX = data_point.as_float()
+                        case 32776, 2:
+                            imu_data_packet.deltaVelY = data_point.as_float()
+                        case 32776, 3:
+                            imu_data_packet.deltaVelZ = data_point.as_float()
+                        case 33294, 1:
                             imu_data_packet.estAngularRateX = data_point.as_float()
-                        case "estAngularRateY":
+                        case 33294, 2:
                             imu_data_packet.estAngularRateY = data_point.as_float()
-                        case "estAngularRateZ":
+                        case 33294, 3:
                             imu_data_packet.estAngularRateZ = data_point.as_float()
-                        case "estCompensatedAccelX":
-                            imu_data_packet.estCompensatedAccelX = data_point.as_float()
-                        case "estCompensatedAccelY":
-                            imu_data_packet.estCompensatedAccelY = data_point.as_float()
-                        case "estCompensatedAccelZ":
-                            imu_data_packet.estCompensatedAccelZ = data_point.as_float()
-                        case "estLinearAccelX":
-                            imu_data_packet.estLinearAccelX = data_point.as_float()
-                        case "estLinearAccelY":
-                            imu_data_packet.estLinearAccelY = data_point.as_float()
-                        case "estLinearAccelZ":
-                            imu_data_packet.estLinearAccelZ = data_point.as_float()
-                        case "estGravityVectorX":
-                            imu_data_packet.estGravityVectorX = data_point.as_float()
-                        case "estGravityVectorY":
-                            imu_data_packet.estGravityVectorY = data_point.as_float()
-                        case "estGravityVectorZ":
-                            imu_data_packet.estGravityVectorZ = data_point.as_float()
-                        case "estAttitudeUncertQuaternion":
+                        case 33298, 5:
                             matrix = data_point.as_Matrix()
                             imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0,0)
                             imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0,1)
                             imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0,2)
                             imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0,3)
-                        case "estOrientQuaternion":
+                        case 33308, 1:
+                            imu_data_packet.estCompensatedAccelX = data_point.as_float()
+                        case 33308, 2:
+                            imu_data_packet.estCompensatedAccelY = data_point.as_float()
+                        case 33308, 3:
+                            imu_data_packet.estCompensatedAccelZ = data_point.as_float()
+                        case 33299, 1:
+                            imu_data_packet.estGravityVectorX = data_point.as_float()
+                        case 33299, 2:
+                            imu_data_packet.estGravityVectorY = data_point.as_float()
+                        case 33299, 3:
+                            imu_data_packet.estGravityVectorZ = data_point.as_float()
+                        case 33293, 1:
+                            imu_data_packet.estLinearAccelX = data_point.as_float()
+                        case 33293, 2:
+                            imu_data_packet.estLinearAccelY = data_point.as_float()
+                        case 33293, 3:
+                            imu_data_packet.estLinearAccelZ = data_point.as_float()
+                        case 33283, 5:
                             matrix = data_point.as_Matrix()
                             imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0,0)
                             imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0,1)
                             imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0,2)
                             imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0,3)
+                        case 33313, 67:
+                            imu_data_packet.estPressureAlt = data_point.as_float()
+                        case 32772, 1:
+                            imu_data_packet.scaledAccelX = data_point.as_float()
+                        case 32772, 2:
+                            imu_data_packet.scaledAccelY = data_point.as_float()
+                        case 32772, 3:
+                            imu_data_packet.scaledAccelZ = data_point.as_float()
+                        case 32791, 58:
+                            imu_data_packet.scaledAmbientPressure = data_point.as_float()
+                        case 32773, 1:
+                            imu_data_packet.scaledGyroX = data_point.as_float()
+                        case 32773, 2:
+                            imu_data_packet.scaledGyroY = data_point.as_float()
+                        case 32773, 3:
+                            imu_data_packet.scaledGyroZ = data_point.as_float()
                     
                     # Check if the data point is invalid and update the invalid fields list.
                     if not data_point.valid():
                         if imu_data_packet.invalid_fields is None:
                             imu_data_packet.invalid_fields = []
+                        # TODO
                         imu_data_packet.invalid_fields.append(channel)
                 self._data_queue.put(imu_data_packet)
 
