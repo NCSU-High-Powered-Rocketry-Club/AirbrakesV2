@@ -9,8 +9,6 @@ import sys
 with contextlib.suppress(ImportError):
     from python_mscl import mscl
 
-# We should print a warning, but that messes with how the replay display looks
-
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
     from faster_fifo import Queue
@@ -45,6 +43,8 @@ class IMU(BaseIMU):
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
+    __slots__ = ("_fetched_imu_packets",)
+
     def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
@@ -61,7 +61,16 @@ class IMU(BaseIMU):
         data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
+        self._fetched_imu_packets = multiprocessing.Value("i", 0)
         super().__init__(data_fetch_process, _data_queue)
+
+    @property
+    def fetched_imu_packets(self) -> int:
+        """
+        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
+        the performance of our loop.
+        """
+        return self._fetched_imu_packets.value
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
@@ -139,11 +148,14 @@ class IMU(BaseIMU):
         # Connect to the IMU and initialize the node used for getting data packets
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
+        packet: mscl.MipDataPacket
+        data_point: mscl.MipDataPoint
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
-            print(len(packets))
-            packet: mscl.MipDataPacket
+
+            self._fetched_imu_packets.value = len(packets)
+
             messages = []
             for packet in packets:
                 # Extract the timestamp from the packet.
@@ -158,14 +170,8 @@ class IMU(BaseIMU):
                     continue
 
                 # Iterate through each data point in the packet.
-                data_point: mscl.MipDataPoint
                 for data_point in packet.data():
-                    # print(data_point.field())
                     # Extract the channel name of the data point.
-                    # channel = data_point.channelName()
-
-
-                    # print("!", channel, data_point.field(), data_point.qualifier())
                     match data_point.field(), data_point.qualifier():
                         case 32775, 1:
                             imu_data_packet.deltaThetaX = data_point.as_float()
@@ -187,10 +193,10 @@ class IMU(BaseIMU):
                             imu_data_packet.estAngularRateZ = data_point.as_float()
                         case 33298, 5:
                             matrix = data_point.as_Matrix()
-                            imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0,0)
-                            imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0,1)
-                            imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0,2)
-                            imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0,3)
+                            imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
+                            imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
+                            imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
+                            imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
                         case 33308, 1:
                             imu_data_packet.estCompensatedAccelX = data_point.as_float()
                         case 33308, 2:
@@ -211,10 +217,10 @@ class IMU(BaseIMU):
                             imu_data_packet.estLinearAccelZ = data_point.as_float()
                         case 33283, 5:
                             matrix = data_point.as_Matrix()
-                            imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0,0)
-                            imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0,1)
-                            imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0,2)
-                            imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0,3)
+                            imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
+                            imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
+                            imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
+                            imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
                         case 33313, 67:
                             imu_data_packet.estPressureAlt = data_point.as_float()
                         case 32772, 1:
@@ -231,18 +237,17 @@ class IMU(BaseIMU):
                             imu_data_packet.scaledGyroY = data_point.as_float()
                         case 32773, 3:
                             imu_data_packet.scaledGyroZ = data_point.as_float()
-                    
+
                     # Check if the data point is invalid and update the invalid fields list.
                     if not data_point.valid():
                         if imu_data_packet.invalid_fields is None:
                             imu_data_packet.invalid_fields = []
                         # TODO
-                        imu_data_packet.invalid_fields.append(channel)
+                        imu_data_packet.invalid_fields.append(data_point.channelName())
                 # self._data_queue.put(imu_data_packet)
                 messages.append(imu_data_packet)
 
             self._data_queue.put_many(messages)
-
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """

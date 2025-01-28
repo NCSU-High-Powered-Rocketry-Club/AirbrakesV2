@@ -39,6 +39,10 @@ class TestIMU:
         assert isinstance(imu._data_fetch_process, multiprocessing.Process)
         assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
 
+        # Test IMU properties:
+        assert isinstance(imu.queue_size, int)
+        assert isinstance(imu._fetched_imu_packets, multiprocessing.sharedctypes.Synchronized)
+
     def test_imu_start(self, monkeypatch):
         """Tests whether the IMU process starts correctly with the passed arguments."""
         values = faster_fifo.Queue()
@@ -74,7 +78,7 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
-        assert imu._data_queue.qsize() == 0
+        assert imu.queue_size == 0
 
     def test_imu_stop_when_queue_is_full(self, monkeypatch):
         """Tests whether the IMU process stops correctly when the queue is full."""
@@ -95,7 +99,7 @@ class TestIMU:
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
         # There is still one packet, since the process is stopped after the put()
-        assert imu._data_queue.qsize() == 1
+        assert imu.queue_size == 1
 
     def test_imu_stop_signal(self, monkeypatch):
         """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""

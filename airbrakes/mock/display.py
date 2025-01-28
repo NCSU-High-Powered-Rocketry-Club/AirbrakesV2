@@ -159,7 +159,10 @@ class FlightDisplay:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
-        fetched_packets = len(self._airbrakes.imu_data_packets)
+        fetched_packets_in_main = len(self._airbrakes.imu_data_packets)
+        fetched_packets_from_imu = (
+            self._airbrakes.imu.fetched_imu_packets if not self._args.mock else "N/A"
+        )
 
         data_processor = self._airbrakes.data_processor
 
@@ -222,7 +225,8 @@ class FlightDisplay:
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
