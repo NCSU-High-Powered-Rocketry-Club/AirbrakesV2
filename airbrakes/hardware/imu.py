@@ -73,73 +73,6 @@ class IMU(BaseIMU):
         return self._fetched_imu_packets.value
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    @staticmethod
-    def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:
-        """
-        Initialize an IMU data packet based on its descriptor set.
-        :param packet: The data packet from the IMU.
-        :return: An IMUDataPacket, or None if the packet is unrecognized.
-        """
-        # Extract the timestamp from the packet.
-        timestamp = packet.collectedTimestamp().nanoseconds()
-
-        # Initialize packet with the timestamp, determines if the packet is raw or estimated
-        if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
-            return EstimatedDataPacket(timestamp)
-        if packet.descriptorSet() == RAW_DESCRIPTOR_SET:
-            return RawDataPacket(timestamp)
-        return None
-
-    @staticmethod
-    def _process_data_point(
-        data_point: "mscl.MipDataPoint", channel: str, imu_data_packet: IMUDataPacket
-    ) -> None:
-        """
-        Process an individual data point and set its value in the data packet object. Modifies
-        `imu_data_packet` in place.
-        :param data_point: The IMU data point containing the measurement.
-        :param channel: The channel name of the data point.
-        :param imu_data_packet: The data packet object to update.
-        """
-        # Handle special channels that represent quaternion data.
-        if channel in {"estAttitudeUncertQuaternion", "estOrientQuaternion"}:
-            # Convert quaternion data into a 4x1 matrix and set its components.
-            matrix = data_point.as_Matrix()
-            setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
-            setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
-            setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
-            setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
-        else:
-            # Set other data points directly as attributes in the data packet.
-            setattr(imu_data_packet, channel, data_point.as_float())
-
-        # Check if the data point is invalid and update the invalid fields list.
-        if not data_point.valid():
-            if imu_data_packet.invalid_fields is None:
-                imu_data_packet.invalid_fields = []
-            imu_data_packet.invalid_fields.append(channel)
-
-    @staticmethod
-    def _process_packet_data(packet: "mscl.MipDataPacket", imu_data_packet: IMUDataPacket) -> None:
-        """
-        Process the data points in the packet and update the data packet object. Modifies
-        `imu_data_packet` in place.
-        :param packet: The IMU data packet containing multiple data points.
-        :param imu_data_packet: The initialized data packet object to populate.
-        """
-        # Iterate through each data point in the packet.
-        data_point: mscl.MipDataPoint
-        for data_point in packet.data():
-            # Extract the channel name of the data point.
-            channel = data_point.channelName()
-
-            # Check if the channel is relevant for the data packet, we check for quaternions
-            # separately because the IMU sends them over as a matrix, but we store each of them
-            # individually as fields.
-            if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
-                # Process and set the data point value in the data packet.
-                IMU._process_data_point(data_point, channel, imu_data_packet)
-
     def _fetch_data_loop(self, port: str) -> None:
         """
         Continuously fetch data packets from the IMU and process them.
@@ -150,6 +83,7 @@ class IMU(BaseIMU):
         node = mscl.InertialNode(connection)
         packet: mscl.MipDataPacket
         data_point: mscl.MipDataPoint
+
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
