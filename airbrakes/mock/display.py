@@ -137,7 +137,7 @@ class FlightDisplay:
         has_negative_velocity = False
 
         # If our velocity is negative in standby state, we have a problem:
-        if self._airbrakes.data_processor.vertical_velocity < -2:
+        if abs(self._airbrakes.data_processor.vertical_velocity) > 2:
             has_negative_velocity = True
 
         if self._airbrakes.data_processor._last_data_packet:
