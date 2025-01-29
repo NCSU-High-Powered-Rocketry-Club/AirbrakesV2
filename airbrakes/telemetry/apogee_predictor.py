@@ -33,7 +33,7 @@ from airbrakes.constants import (
     UNCERTAINTY_THRESHOLD,
 )
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import modify_multiprocessing_queue_windows
+from airbrakes.utils import modify_multiprocessing_queue_windows, _convert_unknown_type_to_float
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
@@ -93,7 +93,7 @@ class ApogeePredictor:
             ] = multiprocessing.Queue()
             modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
         else:
-            msgpack_encoder = msgspec.msgpack.Encoder()
+            msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_float)
             msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
             self._processor_data_packet_queue: Queue[
                 list[ProcessorDataPacket] | Literal["STOP"]

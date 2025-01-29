@@ -4,7 +4,7 @@ import argparse
 import sys
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import multiprocessing
@@ -24,6 +24,25 @@ def get_always_list(self, *args, **kwargs) -> list:
     if isinstance(fetched, list):
         return fetched
     return [fetched]
+
+
+def _convert_unknown_type_to_str(obj_type: Any) -> str:
+    """
+    Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
+    convert numpy float64 to a string.
+    :param obj_type: The object to truncate.
+    :return: The truncated object.
+    """
+    return f"{obj_type:.8f}"
+
+
+def _convert_unknown_type_to_float(obj_type: Any) -> str:
+    """
+    Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
+    :param obj_type: The object to convert.
+    :return: The converted object.
+    """
+    return float(obj_type)
 
 
 def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
