@@ -107,7 +107,7 @@ def mocked_args_parser():
     """Fixture that returns a mocked argument parser."""
 
     class MockArgs:
-        mock = True
+        mode = "mock"
         real_servo = False
         keep_log_file = False
         fast_replay = False

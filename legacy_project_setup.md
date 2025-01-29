@@ -43,19 +43,31 @@ Then, follow from [step 3 on the main README](README.md#3-install-the-pre-commit
 The python equivalent command to `uv` is:
 
 ```bash
-python -m airbrakes.main -m
+python -m airbrakes.main mock
 ``` 
 
 for running a mock. So to run a mock sim with the real servo, you would run:
 
 ```bash
-python -m airbrakes.main -m -r
+python -m airbrakes.main mock -r
 ```
 
 To run a real flight, you would run:
 
 ```bash
-python -m airbrakes.main
+python -m airbrakes.main real
+```
+
+To run a simulation, you would run:
+
+```bash
+python -m airbrakes.main sim
+```
+
+As always, you can see all the options by running:
+
+```bash
+python -m airbrakes.main --help
 ```
 
 To run a script for testing, you would run:
@@ -64,4 +76,4 @@ To run a script for testing, you would run:
 python scripts/run_logger.py
 ```
 
-_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl, picamera2), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
