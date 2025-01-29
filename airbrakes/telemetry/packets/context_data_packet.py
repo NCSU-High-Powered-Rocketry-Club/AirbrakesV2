@@ -16,7 +16,8 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     batch_number: int
     """
     Our code often processes multiple packets at once, so this keeps track of the current
-    batch number. It is incremented every time a new batch of packets is processed.
+    batch number. It is incremented every time a new batch of packets is processed. This is the
+    number of times airbrakes.update() was called.
     """
 
     imu_queue_size: int
@@ -26,3 +27,7 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     apogee_predictor_queue_size: int
     """The number of apogee predictor data packets in the apogee predictor queue,
     waiting to be fetched by the main process."""
+
+    fetched_imu_packets: int
+    """The number of packets we directly fetch from the LORD IMU in the IMU process. This is
+    before we send the packets to the main process."""

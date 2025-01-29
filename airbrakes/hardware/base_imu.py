@@ -28,6 +28,7 @@ class BaseIMU:
     __slots__ = (
         "_data_fetch_process",
         "_data_queue",
+        "_fetched_imu_packets",
         "_running",
     )
 
@@ -39,6 +40,15 @@ class BaseIMU:
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
         self._running = Value("b", False)
+        self._fetched_imu_packets = Value("i", 0)
+
+    @property
+    def fetched_imu_packets(self) -> int:
+        """
+        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
+        the performance of our loop.
+        """
+        return self._fetched_imu_packets.value
 
     @property
     def queue_size(self) -> int:

@@ -207,6 +207,7 @@ class AirbrakesContext:
             state_letter=self.state.name[0],
             imu_queue_size=self.imu.queue_size,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
+            fetched_imu_packets=self.imu.fetched_imu_packets,
         )
 
         # Creates a servo data packet to log the current state of the servo

@@ -66,16 +66,7 @@ class IMU(BaseIMU):
         data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
-        self._fetched_imu_packets = multiprocessing.Value("i", 0)
         super().__init__(data_fetch_process, _data_queue)
-
-    @property
-    def fetched_imu_packets(self) -> int:
-        """
-        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
-        the performance of our loop.
-        """
-        return self._fetched_imu_packets.value
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _fetch_data_loop(self, port: str) -> None:

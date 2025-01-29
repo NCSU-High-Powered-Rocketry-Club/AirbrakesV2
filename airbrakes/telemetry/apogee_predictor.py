@@ -33,7 +33,7 @@ from airbrakes.constants import (
     UNCERTAINTY_THRESHOLD,
 )
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import modify_multiprocessing_queue_windows, _convert_unknown_type_to_float
+from airbrakes.utils import _convert_unknown_type_to_float, modify_multiprocessing_queue_windows
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 

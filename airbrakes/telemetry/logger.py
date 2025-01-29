@@ -10,7 +10,7 @@ from typing import Literal
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import modify_multiprocessing_queue_windows, _convert_unknown_type_to_str
+from airbrakes.utils import _convert_unknown_type_to_str, modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
     from faster_fifo import Empty, Queue
