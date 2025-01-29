@@ -5,7 +5,7 @@ from typing import Literal
 import msgspec
 
 
-class ContextDataPacket(msgspec.Struct):
+class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     This data packet keeps data owned by the AirbrakesContext as well as metadata about the context.
     """

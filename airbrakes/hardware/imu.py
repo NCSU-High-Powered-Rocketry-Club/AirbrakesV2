@@ -4,6 +4,8 @@ import contextlib
 import multiprocessing
 import sys
 
+import msgspec
+
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
     from faster_fifo import Queue
@@ -51,8 +53,14 @@ class IMU(BaseIMU):
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
+        msgpack_encoder = msgspec.msgpack.Encoder()
+        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket)
+
         _data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
+            maxsize=MAX_QUEUE_SIZE,
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
         )
         # Starts the process that fetches data from the IMU
         data_fetch_process = multiprocessing.Process(

@@ -65,7 +65,7 @@ class AirbrakesContext:
         processor. The state machine starts in the StandbyState, which is the initial state of the
         airbrakes system.
         :param servo: The servo object that controls the extension of the airbrakes. This can be a
-        real servo or a mock servo.
+        real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
         :param camera: The camera object that records video from the rocket.

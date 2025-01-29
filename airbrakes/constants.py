@@ -113,7 +113,7 @@ stops sending data."""
 # Camera Configuration
 # -------------------------------------------------------
 
-CAMERA_IDLE_TIMEOUT_SECONDS = 0.1
+CAMERA_IDLE_TIMEOUT_SECONDS = 0.5
 
 CAMERA_SAVE_PATH = Path("logs/video.h264")
 

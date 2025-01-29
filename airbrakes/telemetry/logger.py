@@ -17,7 +17,8 @@ if sys.platform != "win32":
 else:
     from queue import Empty
 
-from msgspec import to_builtins
+import msgspec
+from msgspec.structs import asdict
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
@@ -85,6 +86,9 @@ class Logger:
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=Logger._convert_unknown_type)
+        msgpack_decoder = msgspec.msgpack.Decoder()
+
         if sys.platform == "win32":
             # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
             # available on Windows
@@ -94,7 +98,9 @@ class Logger:
             modify_multiprocessing_queue_windows(self._log_queue)
         else:
             self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES
+                max_size_bytes=BUFFER_SIZE_IN_BYTES,
+                loads=msgpack_decoder.decode,
+                dumps=msgpack_encoder.encode,
             )
 
         # Start the logging process
@@ -152,20 +158,19 @@ class Logger:
             # Let's first add the state, extension field:
             logger_fields: LoggerDataPacket = {}
             # Convert the packets to a dictionary
-            context_data_packet_dict: dict[str, int | str] = to_builtins(context_data_packet)
+            context_data_packet_dict: dict[str, int | str] = asdict(context_data_packet)
             logger_fields.update(context_data_packet_dict)
-            servo_data_packet_dict: dict[str, int | float] = to_builtins(servo_data_packet)
+            servo_data_packet_dict: dict[str, int | float] = asdict(servo_data_packet)
             logger_fields.update(servo_data_packet_dict)
-            # Using to_builtins() is much faster than asdict() for some reason
-            imu_data_packet_dict: dict[str, int | float | list[str]] = to_builtins(imu_data_packet)
+            # Using to_builtins() is much faster than asdict() for some reason, but we can't use
+            # that since that's going to convert it to a list because of array_like=True
+            imu_data_packet_dict: dict[str, int | float | list[str]] = asdict(imu_data_packet)
             logger_fields.update(imu_data_packet_dict)
 
             # Get the processor data packet fields:
             if isinstance(imu_data_packet, EstimatedDataPacket):
-                # Convert the processor data packet to a dictionary. Unknown types such as numpy
-                # float64 are converted to strings with 8 decimal places (that's enc_hook)
-                processor_data_packet_dict: dict[str, float] = to_builtins(
-                    processor_data_packets[index], enc_hook=Logger._convert_unknown_type
+                processor_data_packet_dict: dict[str, float] = asdict(
+                    processor_data_packets[index],
                 )
                 # Let's drop the "time_since_last_data_packet" field:
                 processor_data_packet_dict.pop("time_since_last_data_packet", None)
@@ -182,8 +187,8 @@ class Logger:
             # data packets. However, this is unlikely to happen in practice. This particular case
             # is NOT covered by tests.
             if apogee_predictor_data_packets:
-                apogee_predictor_data_packet_dict: dict[str, float] = to_builtins(
-                    apogee_predictor_data_packets.pop(0), enc_hook=Logger._convert_unknown_type
+                apogee_predictor_data_packet_dict: dict[str, float] = asdict(
+                    apogee_predictor_data_packets.pop(0),
                 )
                 logger_fields.update(apogee_predictor_data_packet_dict)
 
