@@ -204,13 +204,23 @@ class TestIntegration:
         }.issuperset(set(coast_state.extensions))
 
         # ------- FREE FALL STATE -------
-        if launch_name == "purple_launch":
-            # High errors for this flight, because we don't have good rotation data.
-            assert free_fall_state.min_velocity <= -300.0
+        if launch_name in ["purple_launch", "legacy_launch_1"]:
+            # High errors for purple launch, because we don't have good rotation data.
+            if launch_name == "purple_launch":
+                assert free_fall_state.min_velocity <= -300.0
+            # High errors for legacy launch, because our IMU was having a bad day.
+            else:
+                assert free_fall_state.min_velocity <= -100.0
         else:
             # we have chute deployment, so we shouldn't go that fast
             assert free_fall_state.min_velocity >= -30.0
-        assert free_fall_state.max_velocity <= 0.0
+
+        if launch_name != "legacy_launch_1":
+            assert free_fall_state.max_velocity <= 0.0
+        else:
+            # High errors for legacy launch, because our IMU was having a bad day.
+            assert free_fall_state.max_velocity <= 10.0
+
         # max altitude of both states should be about the same
         assert coast_state.max_altitude == pytest.approx(free_fall_state.max_altitude, rel=5)
         # free fall should be close to ground:
