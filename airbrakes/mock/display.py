@@ -135,6 +135,7 @@ class FlightDisplay:
 
         has_invalid_fields = False
         has_negative_velocity = False
+        imu_queue_backlog = False
 
         # If our velocity is negative in standby state, we have a problem:
         if abs(self._airbrakes.data_processor.vertical_velocity) > 2:
@@ -144,7 +145,10 @@ class FlightDisplay:
             invalid_fields = self._airbrakes.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
 
-        if has_invalid_fields or has_negative_velocity:
+        if self._airbrakes.imu.queue_size > 200:
+            imu_queue_backlog = True
+
+        if has_invalid_fields or has_negative_velocity or imu_queue_backlog:
             print("\a", end="")
 
     def update_display(self) -> None:
