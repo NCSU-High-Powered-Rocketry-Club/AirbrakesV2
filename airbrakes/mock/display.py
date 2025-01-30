@@ -129,8 +129,8 @@ class FlightDisplay:
         """Sounds an audible alarm if the IMU has invalid fields or negative velocity. This is
         most useful on real flights, where it is hard to see the display due to sunlight, or
         """
-        # We only care about standby state:
-        if self._airbrakes.state.name != "StandbyState":
+        # We only care about standby state and if we are running a real:
+        if self._airbrakes.state.name != "StandbyState" and not self._args.mock:
             return
 
         has_invalid_fields = False
