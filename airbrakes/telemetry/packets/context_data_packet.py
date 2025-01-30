@@ -31,3 +31,8 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     fetched_imu_packets: int
     """The number of packets we directly fetch from the LORD IMU in the IMU process. This is
     before we send the packets to the main process."""
+
+    update_timestamp_ns: int
+    """The timestamp reported by the local computer at which we processed
+    and logged this data packet. This is used to compare the time difference between
+    what is reported by the IMU, and when we finished processing the data packet."""

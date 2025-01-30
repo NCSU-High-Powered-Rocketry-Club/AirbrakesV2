@@ -1,5 +1,6 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
+import time
 from collections import deque
 from typing import TYPE_CHECKING
 
@@ -208,6 +209,7 @@ class AirbrakesContext:
             imu_queue_size=self.imu.queue_size,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             fetched_imu_packets=self.imu.fetched_imu_packets,
+            update_timestamp_ns=time.time_ns(),
         )
 
         # Creates a servo data packet to log the current state of the servo

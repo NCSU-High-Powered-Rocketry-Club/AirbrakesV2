@@ -76,3 +76,4 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     imu_queue_size: int | None
     apogee_predictor_queue_size: int | None
     fetched_imu_packets: int | None
+    update_timestamp_ns: int | None
