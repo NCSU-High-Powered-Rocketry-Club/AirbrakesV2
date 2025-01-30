@@ -79,6 +79,7 @@ filterwarnings = [
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
     "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
+    "ignore:Could not set process priority"  # ignore warning about process priority
 ]
 
 [tool.coverage.run]
