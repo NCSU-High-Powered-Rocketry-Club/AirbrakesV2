@@ -26,6 +26,7 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
+from airbrakes.utils import set_process_priority
 
 
 class IMU(BaseIMU):
@@ -74,6 +75,10 @@ class IMU(BaseIMU):
         Continuously fetch data packets from the IMU and process them.
         :param port: The serial port to connect to the IMU.
         """
+        # Set the process priority really high, as we want to get the data from the IMU as fast as
+        # possible:
+        set_process_priority(-15)
+
         # Connect to the IMU and initialize the node used for getting data packets
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)

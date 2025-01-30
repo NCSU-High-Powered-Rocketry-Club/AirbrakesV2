@@ -2,9 +2,12 @@
 
 import argparse
 import sys
+import warnings
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import psutil
 
 if TYPE_CHECKING:
     import multiprocessing
@@ -54,6 +57,20 @@ def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
     if sys.platform == "win32":
         obj.get_many = partial(get_always_list, obj)
         obj.put_many = obj.put
+
+
+def set_process_priority(nice_value: int) -> None:
+    """Sets the priority of the calling process to the specified nice value. Only works on Linux."""
+    if sys.platform != "win32":
+        p = psutil.Process()
+        try:
+            p.nice(nice_value)
+        except psutil.AccessDenied:
+            warnings.warn(
+                f"Could not set process priority to {nice_value}. Please run the program as root "
+                "to set process priority.",
+                stacklevel=2,
+            )
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:

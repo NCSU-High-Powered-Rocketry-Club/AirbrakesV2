@@ -17,6 +17,7 @@ from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.utils import set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
@@ -98,6 +99,7 @@ class AirbrakesContext:
         """
         Starts the IMU and logger processes. This is called before the main while loop starts.
         """
+        set_process_priority(-5)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
