@@ -172,9 +172,7 @@ class IMU(BaseIMU):
                     if not data_point.valid():
                         if imu_data_packet.invalid_fields is None:
                             imu_data_packet.invalid_fields = []
-                        # TODO
                         imu_data_packet.invalid_fields.append(data_point.channelName())
-                # self._data_queue.put(imu_data_packet)
                 messages.append(imu_data_packet)
 
             self._data_queue.put_many(messages)
