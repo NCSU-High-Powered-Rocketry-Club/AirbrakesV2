@@ -144,26 +144,34 @@ class RandomDataIMU(IMU):
 
     def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
-        next_estimated_packet_time = time.time_ns()
-        next_raw_packet_time = time.time_ns()
+        # Convert sampling rates to nanoseconds (1/500Hz = 2ms = 2_000_000 ns, 1/1000Hz = 1_000_000 ns)
+        EST_INTERVAL_NS = 2_000_000  # 500Hz
+        RAW_INTERVAL_NS = 1_000_000  # 1000Hz
+
+        # Initialize next packet times with first interval
+        next_estimated = time.time_ns() + EST_INTERVAL_NS
+        next_raw = time.time_ns() + RAW_INTERVAL_NS
 
         while self._running.value:
-            current_time = time.time_ns()
-            # Generate dummy packets, 1 EstimatedDataPacket every 500Hz, and 1 RawDataPacket
-            # every 1000Hz
-            # sleep for the time it would take to get the next packet
-            if current_time >= next_estimated_packet_time:
-                estimated_packet = make_est_data_packet(timestamp=current_time * 1e9)
-                self._data_queue.put(estimated_packet)
-                next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE * 1e9
+            now = time.time_ns()
 
-            if current_time >= next_raw_packet_time:
-                raw_packet = make_raw_data_packet(timestamp=current_time * 1e9)
-                self._data_queue.put(raw_packet)
-                next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE * 1e9
-
-            # Sleep a little to prevent busy-waiting
-            time.sleep(0.0005)
+            # Generate all raw packets due since last iteration
+            while now >= next_raw:
+                self._data_queue.put(make_raw_data_packet(timestamp=next_raw))
+                next_raw += RAW_INTERVAL_NS
+            
+            # Generate all estimated packets due since last iteration
+            while now >= next_estimated:
+                self._data_queue.put(make_est_data_packet(timestamp=next_estimated))
+                next_estimated += EST_INTERVAL_NS
+            
+            # Calculate sleep time until next expected packet
+            next_event = min(next_raw, next_estimated)
+            sleep_time = (next_event - time.time_ns()) / 1e9  # Convert ns to seconds
+            
+            # Only sleep if we're ahead of schedule
+            if sleep_time > 0.0001:  # 100μs buffer for precision
+                time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing
 
 
 class IdleIMU(IMU):

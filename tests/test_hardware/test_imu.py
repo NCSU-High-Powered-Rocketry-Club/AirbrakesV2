@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 import multiprocessing.sharedctypes
 import signal
 import time
@@ -117,7 +118,6 @@ class TestIMU:
         packets = imu.get_imu_data_packets()
         assert packets
         imu.stop()
-        imu._data_queue.put(STOP_SIGNAL)
         packets = imu.get_imu_data_packets()
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 

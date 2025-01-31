@@ -12,6 +12,8 @@ def make_est_data_packet(**kwargs) -> EstimatedDataPacket:
     for arguments not specified."""
 
     dummy_values = {k: 1.123456789 for k in EstimatedDataPacket.__struct_fields__}
+    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
+    dummy_values["invalid_fields"] = None  # Needs to be a list or None
     return EstimatedDataPacket(**{**dummy_values, **kwargs})
 
 
@@ -20,6 +22,8 @@ def make_raw_data_packet(**kwargs) -> RawDataPacket:
     arguments not specified."""
 
     dummy_values = {k: 1.987654321 for k in RawDataPacket.__struct_fields__}
+    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
+    dummy_values["invalid_fields"] = None  # Needs to be a list or None
     return RawDataPacket(**{**dummy_values, **kwargs})
 
 
