@@ -4,7 +4,10 @@ CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 
 import csv
 import statistics
+import time
 import types
+import os
+import threading
 
 import msgspec
 import pytest
@@ -14,6 +17,7 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
+    IMU_TIMEOUT_SECONDS,
 )
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
@@ -321,3 +325,50 @@ class TestIntegration:
 
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]
+    
+    @pytest.mark.skipif(
+        os.environ.get("TEST_REAL_IMU_BENCHMARK", "False").lower() != "true",
+        reason="Real IMU benchmark requires TEST_REAL_IMU_BENCHMARK=True"
+    )
+    def test_fetched_imu_packets_integration(
+        self, airbrakes, monkeypatch
+    ):
+        """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
+        $ export TEST_REAL_IMU_BENCHMARK=true
+        $ sudo -E $(which pytest) tests/test_integration.py -k test_fetched_imu_packets
+        """
+        ab = airbrakes
+        TEST_TIME_SECONDS = 15  # Amount of time to keep testing
+
+        # List to store all the fetched_packets from the imu 
+        fetched_imu_packets = []
+
+        has_airbrakes_stopped = threading.Event()
+        def stop_thread():
+            """Stops airbrakes after a set amount of time."""
+            ab.stop()
+            has_airbrakes_stopped.set()
+        
+        t = threading.Timer(TEST_TIME_SECONDS, stop_thread)
+        start_time = time.time()
+        t.start()
+        ab.start()
+
+        while not airbrakes.shutdown_requested:
+            airbrakes.update()
+
+            if time.time() - start_time >= SNAPSHOT_INTERVAL:
+                fetched_imu_packets.append(ab.imu.fetched_imu_packets)
+                start_time = time.time()
+
+        # Wait for the airbrakes to stop.
+        has_airbrakes_stopped.wait(TEST_TIME_SECONDS - 0.4)
+        t.join()
+        assert not airbrakes.imu.is_running
+        assert not airbrakes.logger.is_running
+        assert not airbrakes.apogee_predictor.is_running
+        assert not airbrakes.imu._running.value
+        assert not airbrakes.imu._data_fetch_process.is_alive()
+        assert not airbrakes.logger._log_process.is_alive()
+        assert not airbrakes.apogee_predictor._prediction_process.is_alive()
+        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 40

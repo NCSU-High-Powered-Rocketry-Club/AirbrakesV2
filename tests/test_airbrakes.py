@@ -298,9 +298,11 @@ class TestAirbrakesContext:
         assert not airbrakes.logger.is_running
         assert not airbrakes.apogee_predictor.is_running
         assert not airbrakes.imu._running.value
+        assert not airbrakes.camera.is_running
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
         assert not airbrakes.apogee_predictor._prediction_process.is_alive()
+        assert not airbrakes.camera.camera_control_process.is_alive()
         assert airbrakes.servo.current_extension in (
             ServoExtension.MIN_EXTENSION,
             ServoExtension.MIN_NO_BUZZ,
