@@ -19,6 +19,7 @@ from airbrakes.constants import (
     ServoExtension,
     IMU_TIMEOUT_SECONDS,
 )
+from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
@@ -331,13 +332,15 @@ class TestIntegration:
         reason="Real IMU benchmark requires TEST_REAL_IMU_BENCHMARK=True"
     )
     def test_fetched_imu_packets_integration(
-        self, airbrakes, monkeypatch
+        self, airbrakes
     ):
         """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
         $ export TEST_REAL_IMU_BENCHMARK=true
         $ sudo -E $(which pytest) tests/test_integration.py -k test_fetched_imu_packets
         """
         ab = airbrakes
+
+        ab.state = MotorBurnState(ab)  # Simulate start of camera recording
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
         # List to store all the fetched_packets from the imu 
