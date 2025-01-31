@@ -72,7 +72,7 @@ class LoggerDataPacket(TypedDict, total=False):  # total=False means all fields 
     uncertainty_threshold_2: float | None
 
     # Other fields in ContextDataPacket
-    batch_number: int | None
+    fetched_packets_in_main: int | None
     imu_queue_size: int | None
     apogee_predictor_queue_size: int | None
     fetched_imu_packets: int | None

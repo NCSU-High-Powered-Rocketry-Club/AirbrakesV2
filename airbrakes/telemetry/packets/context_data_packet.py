@@ -13,11 +13,11 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     state_letter: Literal["S", "M", "C", "F", "L"]
     """Represents the stage of flight we are in. Will only be a single letter."""
 
-    batch_number: int
+    fetched_packets_in_main: int
     """
-    Our code often processes multiple packets at once, so this keeps track of the current
-    batch number. It is incremented every time a new batch of packets is processed. This is the
-    number of times airbrakes.update() was called.
+    This is the number of packets from the IMU process, in the main process. This number will always
+    be below constants.MAX_FETCHED_PACKETS. If this number is on the high end, it indicates some
+    performance issues with the main process.
     """
 
     imu_queue_size: int
