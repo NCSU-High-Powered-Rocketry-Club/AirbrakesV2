@@ -130,7 +130,7 @@ class FlightDisplay:
         most useful on real flights, where it is hard to see the display due to sunlight, or
         """
         # We only care about standby state and if we are running a real:
-        if self._airbrakes.state.name != "StandbyState" and not self._args.mock:
+        if self._airbrakes.state.name != "StandbyState" or self._args.mock:
             return
 
         has_invalid_fields = False
@@ -145,7 +145,7 @@ class FlightDisplay:
             invalid_fields = self._airbrakes.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
 
-        if self._airbrakes.imu.queue_size > 200:
+        if self._airbrakes.imu.fetched_imu_packets > 50:
             imu_queue_backlog = True
 
         if has_invalid_fields or has_negative_velocity or imu_queue_backlog:
