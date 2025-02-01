@@ -6,11 +6,11 @@ import signal
 import sys
 from collections import deque
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import _convert_unknown_type_to_str, modify_multiprocessing_queue_windows
+from airbrakes.utils import modify_multiprocessing_queue_windows
 
 if sys.platform != "win32":
     from faster_fifo import Empty, Queue
@@ -86,7 +86,7 @@ class Logger:
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_str)
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=Logger._convert_unknown_type_to_str)
         msgpack_decoder = msgspec.msgpack.Decoder()
 
         if sys.platform == "win32":
@@ -121,6 +121,16 @@ class Logger:
         Returns whether the log buffer is full.
         """
         return len(self._log_buffer) == LOG_BUFFER_SIZE
+
+    @staticmethod
+    def _convert_unknown_type_to_str(obj_type: Any) -> str:
+        """
+        Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
+        convert numpy float64 to a string.
+        :param obj_type: The object to truncate.
+        :return: The truncated object.
+        """
+        return f"{obj_type:.8f}"
 
     @staticmethod
     def _prepare_log_dict(

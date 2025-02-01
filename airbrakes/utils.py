@@ -29,17 +29,7 @@ def get_always_list(self, *args, **kwargs) -> list:
     return [fetched]
 
 
-def _convert_unknown_type_to_str(obj_type: Any) -> str:
-    """
-    Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
-    convert numpy float64 to a string.
-    :param obj_type: The object to truncate.
-    :return: The truncated object.
-    """
-    return f"{obj_type:.8f}"
-
-
-def _convert_unknown_type_to_float(obj_type: Any) -> str:
+def _convert_unknown_type_to_float(obj_type: Any) -> float:
     """
     Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
     :param obj_type: The object to convert.
