@@ -39,7 +39,10 @@ def logger():
     """Clear the tests/logs directory before making a new Logger."""
     for log in LOG_PATH.glob("log_*.csv"):
         log.unlink()
-    return Logger(LOG_PATH)
+    logger = Logger(LOG_PATH)
+    yield logger
+    if logger.is_running:
+        logger.stop()
 
 
 @pytest.fixture
@@ -49,7 +52,10 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=IMU_PORT)
+    imu = IMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture
@@ -64,26 +70,40 @@ def apogee_predictor():
 
 @pytest.fixture
 def airbrakes(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
-    return AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+    ab = AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+    yield ab
+    # Check if something is running:
+    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+        ab.stop()  # Helps cleanup failing tests that don't stop the airbrakes context
 
 
 @pytest.fixture
 def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
     """Fixture that returns an AirbrakesContext object with a mock IMU. This will run for
     all the launch data files (see the mock_imu fixture)"""
-    return AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+    ab = AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+    yield ab
+    # Check if something is running:
+    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+        ab.stop()
 
 
 @pytest.fixture
 def random_data_mock_imu():
     # A mock IMU that outputs random data packets
-    return RandomDataIMU(port=IMU_PORT)
+    imu = RandomDataIMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture
 def idle_mock_imu():
     # A sleeping IMU that doesn't output any data packets
-    return IdleIMU(port=IMU_PORT)
+    imu = IdleIMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
@@ -94,7 +114,10 @@ def mock_imu(request):
 
 @pytest.fixture
 def camera():
-    return Camera()
+    cam = Camera()
+    yield cam
+    if cam.is_running:
+        cam.stop()
 
 
 @pytest.fixture
