@@ -106,6 +106,6 @@ class BaseIMU:
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
             return collections.deque()
         else:
-            if STOP_SIGNAL in packets:
+            if STOP_SIGNAL in packets:  # only used by the MockIMU
                 return collections.deque()
             return collections.deque(packets)

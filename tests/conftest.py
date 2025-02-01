@@ -144,9 +144,9 @@ class RandomDataIMU(IMU):
 
     def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
-        # Convert sampling rates to nanoseconds (1/500Hz = 2ms = 2_000_000 ns, 1/1000Hz = 1_000_000 ns)
-        EST_INTERVAL_NS = 2_000_000  # 500Hz
-        RAW_INTERVAL_NS = 1_000_000  # 1000Hz
+        # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
+        EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
+        RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
 
         # Initialize next packet times with first interval
         next_estimated = time.time_ns() + EST_INTERVAL_NS
@@ -159,16 +159,16 @@ class RandomDataIMU(IMU):
             while now >= next_raw:
                 self._data_queue.put(make_raw_data_packet(timestamp=next_raw))
                 next_raw += RAW_INTERVAL_NS
-            
+
             # Generate all estimated packets due since last iteration
             while now >= next_estimated:
                 self._data_queue.put(make_est_data_packet(timestamp=next_estimated))
                 next_estimated += EST_INTERVAL_NS
-            
+
             # Calculate sleep time until next expected packet
             next_event = min(next_raw, next_estimated)
             sleep_time = (next_event - time.time_ns()) / 1e9  # Convert ns to seconds
-            
+
             # Only sleep if we're ahead of schedule
             if sleep_time > 0.0001:  # 100μs buffer for precision
                 time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing

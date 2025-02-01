@@ -156,16 +156,19 @@ class TestAirbrakesContext:
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(
-                ctx_dp.batch_number == 1
-                and ctx_dp.state_letter == "C"
+                ctx_dp.state_letter == "C"
+                and ctx_dp.fetched_packets_in_main >= 1
                 and ctx_dp.imu_queue_size > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
+                and ctx_dp.fetched_imu_packets >= 0  # mock imus will be 0
+                and ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9)
             )
             asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
             asserts.append(len(apg_dps) >= 0)
+            asserts.append(apg_dps[-1] == make_apogee_predictor_data_packet())
             # More testing of whether we got ApogeePredictorDataPackets is done in
             # `test_airbrakes_receives_apogee_predictor_packets`. The reason why it wasn't tested
             # here is because state.update() is called before apogee_predictor.update(), so the
@@ -357,7 +360,7 @@ class TestAirbrakesContext:
         monkeypatch.setattr(logger.__class__, "log", fake_log)
 
         # Insert 1 raw, then 2 estimated, then 1 raw data packet:
-        raw_1 = make_raw_data_packet(timestamp=time.time())
+        raw_1 = make_raw_data_packet(timestamp=time.time_ns())
         airbrakes.imu._data_queue.put(raw_1)
         time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
         airbrakes.update()
@@ -366,7 +369,6 @@ class TestAirbrakesContext:
         assert not airbrakes.est_data_packets
         assert len(airbrakes.processor_data_packets) == 0
         assert not airbrakes.apogee_predictor_data_packets
-        assert airbrakes._update_count == 2
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         airbrakes.predict_apogee()
         assert not calls
@@ -375,21 +377,20 @@ class TestAirbrakesContext:
         # Insert 2 estimated data packet:
         # first_update():
         est_1 = make_est_data_packet(
-            timestamp=1.0 + 1e9,
+            timestamp=int(1 + 1e9),
             estPressureAlt=20.0,
             estOrientQuaternionW=0.99,
             estOrientQuaternionX=0.1,
             estOrientQuaternionY=0.2,
             estOrientQuaternionZ=0.3,
         )
-        est_2 = make_est_data_packet(timestamp=3.0 + 1e9, estPressureAlt=24.0)
+        est_2 = make_est_data_packet(timestamp=int(3 + 1e9), estPressureAlt=24.0)
         airbrakes.imu._data_queue.put(est_1)
         airbrakes.imu._data_queue.put(est_2)
         time.sleep(0.001)
         airbrakes.update()
         time.sleep(0.01)
         # Check if we processed the estimated data packet:
-        assert airbrakes._update_count == 3
         assert list(airbrakes.imu_data_packets) == [est_1, est_2]
         assert airbrakes.est_data_packets == [est_1, est_2]
         assert len(airbrakes.processor_data_packets) == 2
@@ -405,12 +406,11 @@ class TestAirbrakesContext:
         assert packets[-1].current_altitude == 2.0
 
         # Insert 1 raw data packet:
-        raw_2 = make_raw_data_packet(timestamp=time.time())
+        raw_2 = make_raw_data_packet(timestamp=time.time_ns())
         airbrakes.imu._data_queue.put(raw_2)
         time.sleep(0.001)
         airbrakes.update()
         # Check if we processed the raw data packet:
-        assert airbrakes._update_count == 4
         assert list(airbrakes.imu_data_packets) == [raw_2]
         assert not airbrakes.est_data_packets
         assert airbrakes.processor_data_packets[-1].current_altitude == 2.0
@@ -487,8 +487,11 @@ class TestAirbrakesContext:
     def test_generate_data_packets(self, airbrakes):
         """Tests whether the airbrakes generates the correct data packets for logging."""
         airbrakes.generate_data_packets()
-        assert airbrakes.context_data_packet.batch_number == 1
         assert airbrakes.context_data_packet.state_letter == "S"
+        assert airbrakes.context_data_packet.fetched_packets_in_main == 0
         assert airbrakes.context_data_packet.imu_queue_size >= 0
         assert airbrakes.context_data_packet.apogee_predictor_queue_size >= 0
+        assert airbrakes.context_data_packet.update_timestamp_ns == pytest.approx(
+            time.time_ns(), rel=1e9
+        )
         assert airbrakes.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)

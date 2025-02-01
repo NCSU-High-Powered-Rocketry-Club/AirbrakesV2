@@ -3,11 +3,11 @@ launch and manually verifying the data output by the code. This test will run at
 CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 
 import csv
+import os
 import statistics
+import threading
 import time
 import types
-import os
-import threading
 
 import msgspec
 import pytest
@@ -17,7 +17,6 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     ServoExtension,
-    IMU_TIMEOUT_SECONDS,
 )
 from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
@@ -272,7 +271,6 @@ class TestIntegration:
             assert len(state) == 1
 
             line_number = 0
-            batch_number = 0
             state_list = []
             pred_apogees_in_coast = []
             uncertainities_in_coast = []
@@ -310,14 +308,9 @@ class TestIntegration:
                     ServoExtension.MAX_NO_BUZZ.value,
                 ]
 
-                batch_number = int(row["batch_number"])
-
             # Check if we have a lot of lines in the log file:
             # arbitrary value, depends on length of log buffer and flight data.
             assert line_number > 80_000
-
-            # More than 1000 iterations:
-            assert batch_number > 1000
 
             # Predicted apogees and uncertainties should be logged in CoastState:
             assert pred_apogees_in_coast
@@ -326,14 +319,12 @@ class TestIntegration:
 
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]
-    
+
     @pytest.mark.skipif(
         os.environ.get("TEST_REAL_IMU_BENCHMARK", "False").lower() != "true",
-        reason="Real IMU benchmark requires TEST_REAL_IMU_BENCHMARK=True"
+        reason="Real IMU benchmark requires TEST_REAL_IMU_BENCHMARK=True",
     )
-    def test_fetched_imu_packets_integration(
-        self, airbrakes
-    ):
+    def test_fetched_imu_packets_integration(self, airbrakes):
         """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
         $ export TEST_REAL_IMU_BENCHMARK=true
         $ sudo -E $(which pytest) tests/test_integration.py -k test_fetched_imu_packets
@@ -343,15 +334,16 @@ class TestIntegration:
         ab.state = MotorBurnState(ab)  # Simulate start of camera recording
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
-        # List to store all the fetched_packets from the imu 
+        # List to store all the fetched_packets from the imu
         fetched_imu_packets = []
 
         has_airbrakes_stopped = threading.Event()
+
         def stop_thread():
             """Stops airbrakes after a set amount of time."""
             ab.stop()
             has_airbrakes_stopped.set()
-        
+
         t = threading.Timer(TEST_TIME_SECONDS, stop_thread)
         start_time = time.time()
         t.start()
