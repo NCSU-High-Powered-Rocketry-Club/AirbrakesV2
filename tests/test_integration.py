@@ -3,7 +3,6 @@ launch and manually verifying the data output by the code. This test will run at
 CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 
 import csv
-import os
 import statistics
 import threading
 import time
@@ -320,14 +319,10 @@ class TestIntegration:
             # Check if all states were logged:
             assert state_list == ["S", "M", "C", "F", "L"]
 
-    @pytest.mark.skipif(
-        os.environ.get("TEST_REAL_IMU_BENCHMARK", "False").lower() != "true",
-        reason="Real IMU benchmark requires TEST_REAL_IMU_BENCHMARK=True",
-    )
+    @pytest.mark.imu_benchmark
     def test_fetched_imu_packets_integration(self, airbrakes):
         """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
-        $ export TEST_REAL_IMU_BENCHMARK=true
-        $ sudo -E $(which pytest) tests/test_integration.py -k test_fetched_imu_packets
+        $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
         ab = airbrakes
 
@@ -357,7 +352,7 @@ class TestIntegration:
                 start_time = time.time()
 
         # Wait for the airbrakes to stop.
-        has_airbrakes_stopped.wait(TEST_TIME_SECONDS - 0.4)
+        has_airbrakes_stopped.wait(TEST_TIME_SECONDS)
         t.join()
         assert not airbrakes.imu.is_running
         assert not airbrakes.logger.is_running
@@ -366,4 +361,4 @@ class TestIntegration:
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
         assert not airbrakes.apogee_predictor._prediction_process.is_alive()
-        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 40
+        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 20

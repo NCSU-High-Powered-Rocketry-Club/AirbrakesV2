@@ -81,6 +81,9 @@ filterwarnings = [
     "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
     "ignore:Could not set process priority"  # ignore warning about process priority
 ]
+markers = [
+    "imu_benchmark",
+]
 
 [tool.coverage.run]
 branch = true

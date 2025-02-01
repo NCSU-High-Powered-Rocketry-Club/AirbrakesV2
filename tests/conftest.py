@@ -34,6 +34,18 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+def pytest_collection_modifyitems(config, items):
+    marker = "imu_benchmark"
+    marker_expr = config.getoption("-m", None)
+
+    # Skip tests with the marker if not explicitly requested
+    if marker_expr != marker:
+        skip_marker = pytest.mark.skip(reason=f"Test requires '-m {marker}'")
+        for item in items:
+            if item.get_closest_marker(marker):
+                item.add_marker(skip_marker)
+
+
 @pytest.fixture
 def logger():
     """Clear the tests/logs directory before making a new Logger."""
