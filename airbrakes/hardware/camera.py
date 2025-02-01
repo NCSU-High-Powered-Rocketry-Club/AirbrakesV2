@@ -50,7 +50,7 @@ class Camera:
         self.motor_burn_started.set()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    def _camera_control_loop(self):
+    def _camera_control_loop(self):  # pragma: no cover
         """Controls the camera recording process."""
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal

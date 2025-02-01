@@ -70,7 +70,7 @@ class IMU(BaseIMU):
         super().__init__(data_fetch_process, _data_queue)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    def _fetch_data_loop(self, port: str) -> None:
+    def _fetch_data_loop(self, port: str) -> None:  # pragma: no cover
         """
         Continuously fetch data packets from the IMU and process them.
         :param port: The serial port to connect to the IMU.

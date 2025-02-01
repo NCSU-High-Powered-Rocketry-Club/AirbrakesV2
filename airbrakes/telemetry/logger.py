@@ -279,7 +279,7 @@ class Logger:
             for key, value in data.items()
         }
 
-    def _logging_loop(self) -> None:
+    def _logging_loop(self) -> None:  # pragma: no cover
         """
         The loop that saves data to the logs. It runs in parallel with the main loop.
         """
