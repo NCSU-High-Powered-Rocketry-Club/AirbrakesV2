@@ -828,3 +828,20 @@ class TestLogger:
             expected.pop("time_since_last_data_packet", None)
 
             assert converted == expected
+
+    def test_benchmark_prepare_log_dict(self, benchmark, logger):
+        """Tests the performance of the _prepare_log_dict method."""
+        context_packet = make_context_data_packet(state_letter="S")
+        servo_packet = make_servo_data_packet(set_extension="0.1")
+        imu_data_packets = deque([make_raw_data_packet()])
+        processor_data_packets = []
+        apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
+
+        benchmark(
+            logger._prepare_log_dict,
+            context_packet,
+            servo_packet,
+            imu_data_packets,
+            processor_data_packets,
+            apogee_predictor_data_packet,
+        )
