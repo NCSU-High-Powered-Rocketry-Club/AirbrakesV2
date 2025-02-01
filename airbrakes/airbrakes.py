@@ -35,7 +35,6 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
         "camera",
