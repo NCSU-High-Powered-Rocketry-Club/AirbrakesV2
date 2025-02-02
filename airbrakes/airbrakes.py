@@ -126,7 +126,6 @@ class AirbrakesContext:
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
         # behind on processing
-        time.sleep(0.1)  # test to see if workflow fails
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
         # This should not happen, since we wait for IMU packets.
