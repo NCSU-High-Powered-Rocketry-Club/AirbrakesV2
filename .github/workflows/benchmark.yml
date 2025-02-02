@@ -8,6 +8,12 @@
       branches:
         - 'main'  # Run tests on main branch
 
+  permissions:
+    # deployments permission to deploy GitHub pages website
+    deployments: write
+    # contents permission to update benchmark contents in gh-pages branch
+    contents: write
+
   jobs:
     pytest-benchmark:
       name: pytest-benchmark
@@ -46,3 +52,5 @@
             fail-on-alert: true
             alert-comment-cc-users: '@harshil21'
             summary-always: true  # Job summary in github PRs
+            gh-pages-branch: gh-pages
+            auto-push: true
