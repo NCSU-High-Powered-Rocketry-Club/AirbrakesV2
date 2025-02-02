@@ -13,6 +13,8 @@
     deployments: write
     # contents permission to update benchmark contents in gh-pages branch
     contents: write
+    # allow posting comments on PRs
+    pull-requests: write
 
   jobs:
     pytest-benchmark:
