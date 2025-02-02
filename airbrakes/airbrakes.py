@@ -1,5 +1,6 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
+import time
 from collections import deque
 from typing import TYPE_CHECKING
 
@@ -16,6 +17,7 @@ from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.utils import set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
@@ -33,7 +35,6 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
         "camera",
@@ -65,7 +66,7 @@ class AirbrakesContext:
         processor. The state machine starts in the StandbyState, which is the initial state of the
         airbrakes system.
         :param servo: The servo object that controls the extension of the airbrakes. This can be a
-        real servo or a mock servo.
+        real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
         :param camera: The camera object that records video from the rocket.
@@ -91,12 +92,11 @@ class AirbrakesContext:
         self.servo_data_packet: ServoDataPacket | None = None
         self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
 
-        self._update_count: int = 1
-
     def start(self) -> None:
         """
         Starts the IMU and logger processes. This is called before the main while loop starts.
         """
+        set_process_priority(-5)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
@@ -128,7 +128,7 @@ class AirbrakesContext:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This happens quite often, on our PC's since they are much faster than the Pi.
+        # This should not happen, since we wait for IMU packets.
         if not self.imu_data_packets:
             return
 
@@ -170,9 +170,6 @@ class AirbrakesContext:
             self.apogee_predictor_data_packets,
         )
 
-        # Increment the loop count
-        self._update_count += 1
-
     def extend_airbrakes(self) -> None:
         """
         Extends the airbrakes to the maximum extension.
@@ -203,10 +200,12 @@ class AirbrakesContext:
         """
         # Create a context data packet to log the current state of the airbrakes system
         self.context_data_packet = ContextDataPacket(
-            batch_number=self._update_count,
             state_letter=self.state.name[0],
+            fetched_packets_in_main=len(self.imu_data_packets),
             imu_queue_size=self.imu.queue_size,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
+            fetched_imu_packets=self.imu.fetched_imu_packets,
+            update_timestamp_ns=time.time_ns(),
         )
 
         # Creates a servo data packet to log the current state of the servo

@@ -129,12 +129,13 @@ class FlightDisplay:
         """Sounds an audible alarm if the IMU has invalid fields or negative velocity. This is
         most useful on real flights, where it is hard to see the display due to sunlight, or
         """
-        # We only care about standby state:
-        if self._airbrakes.state.name != "StandbyState":
+        # We only care about standby state and if we are running a real:
+        if self._airbrakes.state.name != "StandbyState" or self._args.mock:
             return
 
         has_invalid_fields = False
         has_negative_velocity = False
+        imu_queue_backlog = False
 
         # If our velocity is negative in standby state, we have a problem:
         if abs(self._airbrakes.data_processor.vertical_velocity) > 2:
@@ -144,7 +145,10 @@ class FlightDisplay:
             invalid_fields = self._airbrakes.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
 
-        if has_invalid_fields or has_negative_velocity:
+        if self._airbrakes.imu.fetched_imu_packets > 50:
+            imu_queue_backlog = True
+
+        if has_invalid_fields or has_negative_velocity or imu_queue_backlog:
             print("\a", end="")
 
     def update_display(self) -> None:
@@ -183,7 +187,10 @@ class FlightDisplay:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
-        fetched_packets = len(self._airbrakes.imu_data_packets)
+        fetched_packets_in_main = len(self._airbrakes.imu_data_packets)
+        fetched_packets_from_imu = (
+            self._airbrakes.imu.fetched_imu_packets if not self._args.mock else "N/A"
+        )
 
         data_processor = self._airbrakes.data_processor
 
@@ -246,7 +253,8 @@ class FlightDisplay:
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._airbrakes.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",

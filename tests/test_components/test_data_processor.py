@@ -467,3 +467,14 @@ class TestIMUDataProcessor:
         assert len(rotations) == n_packets
 
         assert rotations[-1] == pytest.approx(expected_value)
+
+    def test_benchmark_data_processor_update(self, data_processor, benchmark):
+        """Tests the performance of the update method"""
+        data_packets = [
+            make_est_data_packet(
+                timestamp=idx,
+                estPressureAlt=idx,
+            )
+            for idx in range(10)
+        ]
+        benchmark(data_processor.update, data_packets)

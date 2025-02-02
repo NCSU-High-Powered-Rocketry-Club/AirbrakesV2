@@ -3,7 +3,7 @@
 import msgspec
 
 
-class ApogeePredictorDataPacket(msgspec.Struct):
+class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     Represents a packet of data from the apogee predictor. This packet is used to communicate
     the apogee prediction and the uncertainty thresholds to the state machine.

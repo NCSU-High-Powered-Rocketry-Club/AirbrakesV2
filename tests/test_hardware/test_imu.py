@@ -7,7 +7,7 @@ from collections import deque
 import faster_fifo
 import pytest
 
-from airbrakes.constants import IMU_PORT, STOP_SIGNAL
+from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
@@ -38,6 +38,10 @@ class TestIMU:
         # Tests that the process is correctly initialized
         assert isinstance(imu._data_fetch_process, multiprocessing.Process)
         assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
+
+        # Test IMU properties:
+        assert isinstance(imu.queue_size, int)
+        assert isinstance(imu._fetched_imu_packets, multiprocessing.sharedctypes.Synchronized)
 
     def test_imu_start(self, monkeypatch):
         """Tests whether the IMU process starts correctly with the passed arguments."""
@@ -74,7 +78,7 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
-        assert imu._data_queue.qsize() == 0
+        assert imu.queue_size == 0
 
     def test_imu_stop_when_queue_is_full(self, monkeypatch):
         """Tests whether the IMU process stops correctly when the queue is full."""
@@ -95,9 +99,9 @@ class TestIMU:
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
         # There is still one packet, since the process is stopped after the put()
-        assert imu._data_queue.qsize() == 1
+        assert imu.queue_size == 1
 
-    def test_imu_stop_signal(self, monkeypatch):
+    def test_imu_stop_signal(self, monkeypatch, mock_imu):
         """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
 
         def _fetch_data_loop(self, port: str):
@@ -106,15 +110,13 @@ class TestIMU:
             while self._running.value:
                 self._data_queue.put(EstimatedDataPacket(timestamp=0))
 
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
-        imu.start()
+        monkeypatch.setattr(mock_imu.__class__, "_fetch_data_loop", _fetch_data_loop)
+        mock_imu.start()
         time.sleep(0.001)  # Give the process time to start and put the values
-        packets = imu.get_imu_data_packets()
+        packets = mock_imu.get_imu_data_packets()
         assert packets
-        imu.stop()
-        imu._data_queue.put(STOP_SIGNAL)
-        packets = imu.get_imu_data_packets()
+        mock_imu.stop()  # puts STOP_SIGNAL in the queue
+        packets = mock_imu.get_imu_data_packets()
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
     def test_imu_ctrl_c_handling(self, monkeypatch):

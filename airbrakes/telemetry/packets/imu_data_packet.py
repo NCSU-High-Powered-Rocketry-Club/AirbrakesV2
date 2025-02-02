@@ -3,7 +3,7 @@
 import msgspec
 
 
-class IMUDataPacket(msgspec.Struct):
+class IMUDataPacket(msgspec.Struct, array_like=True, tag=True):
     """
     Base class representing a collection of data packets from the IMU.
     The attributes should be named the same as they are when sent from the IMU -- this just means
