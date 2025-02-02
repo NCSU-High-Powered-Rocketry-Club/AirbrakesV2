@@ -54,3 +54,4 @@
             summary-always: true  # Job summary in github PRs
             gh-pages-branch: gh-pages
             auto-push: true
+            benchmark-data-dir-path: 'bench/${{ github.head_ref }}'

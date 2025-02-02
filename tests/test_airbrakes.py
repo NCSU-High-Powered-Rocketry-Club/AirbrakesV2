@@ -495,3 +495,12 @@ class TestAirbrakesContext:
             time.time_ns(), rel=1e9
         )
         assert airbrakes.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)
+
+    def test_benchmark_airbrakes_update(self, airbrakes, benchmark, random_data_mock_imu):
+        """Benchmark the update method of the airbrakes system."""
+        ab = airbrakes
+        ab.imu = random_data_mock_imu
+        ab.start()
+        time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
+        benchmark(airbrakes.update)
+        ab.stop()
