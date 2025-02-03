@@ -138,7 +138,7 @@ class Logger:
     def _prepare_log_dict(
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> list[LoggerDataPacket]:
@@ -271,7 +271,7 @@ class Logger:
         self,
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> None:

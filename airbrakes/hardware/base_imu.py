@@ -1,7 +1,6 @@
 """Module defining the base class (BaseIMU) for interacting with
 the IMU (Inertial measurement unit) on the rocket."""
 
-import collections
 import contextlib
 import sys
 
@@ -93,19 +92,18 @@ class BaseIMU:
         """
         return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
 
-    def get_imu_data_packets(self, block: bool = True) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self, block: bool = True) -> list[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
-        :return: A deque containing the latest data packets from the IMU.
+        :return: A list containing the latest data packets from the IMU.
         """
-        # We use a deque because it's faster than a list for popping from the left
         try:
             packets = self._data_queue.get_many(
                 block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
-            return collections.deque()
+            return []
         else:
             if STOP_SIGNAL in packets:  # only used by the MockIMU
-                return collections.deque()
-            return collections.deque(packets)
+                return []
+            return packets
