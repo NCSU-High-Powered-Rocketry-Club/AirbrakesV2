@@ -4,7 +4,6 @@ hardware."""
 import signal
 from time import sleep
 
-from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS
 from airbrakes.hardware.camera import Camera
 
 BYTES_PER_30_SECONDS = 9 * 1024 * 1024  # 9 MB in bytes
@@ -44,4 +43,4 @@ class MockCamera(Camera):
             # Write CAMERA_IDLE_TIMEOUT_SECONDS seconds of video data to the buffer.
 
             self.buffer.extend(b"0" * int(BYTES_PER_0_1_SECONDS))
-            sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+            sleep(0.1)
