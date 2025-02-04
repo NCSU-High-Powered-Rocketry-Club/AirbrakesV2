@@ -135,7 +135,7 @@ class Logger:
         return f"{obj_type:.8f}"
 
     @staticmethod
-    def _prepare_log_dict(
+    def _prepare_logger_packets(
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
@@ -284,7 +284,7 @@ class Logger:
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         """
         # We are populating a dictionary with the fields of the logger data packet
-        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
+        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
             context_data_packet,
             servo_data_packet,
             imu_data_packets,

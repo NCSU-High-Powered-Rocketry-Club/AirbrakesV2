@@ -791,7 +791,7 @@ class TestLogger:
         apogee_predictor_data_packet,
         expected_outputs,
     ):
-        """Tests whether the _prepare_log_dict method creates the correct LoggerDataPackets."""
+        """Tests whether the _prepare_logger_packets method creates correct LoggerDataPackets."""
 
         # set some invalid fields to test if they stay as a list
         invalid_field = ["something", "hey"]
@@ -802,7 +802,7 @@ class TestLogger:
             expected.invalid_fields = invalid_field
 
         # Now let's test the method
-        logger_data_packets = logger._prepare_log_dict(
+        logger_data_packets = logger._prepare_logger_packets(
             context_packet,
             servo_packet,
             imu_data_packets,
@@ -817,7 +817,7 @@ class TestLogger:
             assert logger_data_packet == expected
 
     def test_benchmark_log_method(self, benchmark, logger):
-        """Tests the performance of the _prepare_log_dict method."""
+        """Tests the performance of the _prepare_logger_packets method."""
         context_packet = make_context_data_packet(state_letter="S")
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
@@ -833,8 +833,8 @@ class TestLogger:
             apogee_predictor_data_packet,
         )
 
-    def test_benchmark_prepare_log_dict(self, benchmark, logger):
-        """Tests the performance of the _prepare_log_dict method."""
+    def test_benchmark_prepare_logger_packets(self, benchmark, logger):
+        """Tests the performance of the _prepare_logger_packets method."""
         context_packet = make_context_data_packet(state_letter="S")
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
@@ -842,7 +842,7 @@ class TestLogger:
         apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
 
         benchmark(
-            logger._prepare_log_dict,
+            logger._prepare_logger_packets,
             context_packet,
             servo_packet,
             imu_data_packets,
