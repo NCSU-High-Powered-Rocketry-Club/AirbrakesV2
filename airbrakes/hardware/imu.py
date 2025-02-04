@@ -95,83 +95,111 @@ class IMU(BaseIMU):
             for packet in packets:
                 # Extract the timestamp from the packet.
                 timestamp = packet.collectedTimestamp().nanoseconds()
+                descriptor_set = packet.descriptorSet()
 
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
-                if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
-                    imu_data_packet = EstimatedDataPacket(timestamp)
-                elif packet.descriptorSet() == RAW_DESCRIPTOR_SET:
+                if descriptor_set == RAW_DESCRIPTOR_SET:
                     imu_data_packet = RawDataPacket(timestamp)
+                elif descriptor_set == ESTIMATED_DESCRIPTOR_SET:
+                    imu_data_packet = EstimatedDataPacket(timestamp)
                 else:
-                    continue
+                    continue  # We never actually reach here, but keeping it just in case
 
                 # Iterate through each data point in the packet.
                 for data_point in packet.data():
                     # Extract the channel name of the data point.
-                    match data_point.field(), data_point.qualifier():
-                        case 32775, 1:
+                    qualifier = data_point.qualifier()
+                    field_name = data_point.field()
+
+                    if field_name == 32775:
+                        if qualifier == 1:
                             imu_data_packet.deltaThetaX = data_point.as_float()
-                        case 32775, 2:
+                        elif qualifier == 2:
                             imu_data_packet.deltaThetaY = data_point.as_float()
-                        case 32775, 3:
+                        elif qualifier == 3:
                             imu_data_packet.deltaThetaZ = data_point.as_float()
-                        case 32776, 1:
+
+                    elif field_name == 32776:
+                        if qualifier == 1:
                             imu_data_packet.deltaVelX = data_point.as_float()
-                        case 32776, 2:
+                        elif qualifier == 2:
                             imu_data_packet.deltaVelY = data_point.as_float()
-                        case 32776, 3:
+                        elif qualifier == 3:
                             imu_data_packet.deltaVelZ = data_point.as_float()
-                        case 33294, 1:
+
+                    elif field_name == 33294:
+                        if qualifier == 1:
                             imu_data_packet.estAngularRateX = data_point.as_float()
-                        case 33294, 2:
+                        elif qualifier == 2:
                             imu_data_packet.estAngularRateY = data_point.as_float()
-                        case 33294, 3:
+                        elif qualifier == 3:
                             imu_data_packet.estAngularRateZ = data_point.as_float()
-                        case 33298, 5:
-                            matrix = data_point.as_Matrix()
-                            imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
-                            imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
-                            imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
-                            imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
-                        case 33308, 1:
+
+                    elif field_name == 33298 and qualifier == 5:
+                        matrix = data_point.as_Matrix()
+                        imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
+                        imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
+                        imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
+                        imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
+
+                    elif field_name == 33308:
+                        if qualifier == 1:
                             imu_data_packet.estCompensatedAccelX = data_point.as_float()
-                        case 33308, 2:
+                        elif qualifier == 2:
                             imu_data_packet.estCompensatedAccelY = data_point.as_float()
-                        case 33308, 3:
+                        elif qualifier == 3:
                             imu_data_packet.estCompensatedAccelZ = data_point.as_float()
-                        case 33299, 1:
+
+                    elif field_name == 33299:
+                        if qualifier == 1:
                             imu_data_packet.estGravityVectorX = data_point.as_float()
-                        case 33299, 2:
+                        elif qualifier == 2:
                             imu_data_packet.estGravityVectorY = data_point.as_float()
-                        case 33299, 3:
+                        elif qualifier == 3:
                             imu_data_packet.estGravityVectorZ = data_point.as_float()
-                        case 33293, 1:
+
+                    elif field_name == 33293:
+                        if qualifier == 1:
                             imu_data_packet.estLinearAccelX = data_point.as_float()
-                        case 33293, 2:
+                        elif qualifier == 2:
                             imu_data_packet.estLinearAccelY = data_point.as_float()
-                        case 33293, 3:
+                        elif qualifier == 3:
                             imu_data_packet.estLinearAccelZ = data_point.as_float()
-                        case 33283, 5:
-                            matrix = data_point.as_Matrix()
-                            imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
-                            imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
-                            imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
-                            imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
-                        case 33313, 67:
-                            imu_data_packet.estPressureAlt = data_point.as_float()
-                        case 32772, 1:
+
+                    elif field_name == 33283 and qualifier == 5:
+                        matrix = data_point.as_Matrix()
+                        imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
+                        imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
+                        imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
+                        imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
+
+                    elif field_name == 33313 and qualifier == 67:
+                        imu_data_packet.estPressureAlt = data_point.as_float()
+
+                    elif field_name == 32772:
+                        if qualifier == 1:
                             imu_data_packet.scaledAccelX = data_point.as_float()
-                        case 32772, 2:
+                        elif qualifier == 2:
                             imu_data_packet.scaledAccelY = data_point.as_float()
-                        case 32772, 3:
+                        elif qualifier == 3:
                             imu_data_packet.scaledAccelZ = data_point.as_float()
-                        case 32791, 58:
-                            imu_data_packet.scaledAmbientPressure = data_point.as_float()
-                        case 32773, 1:
+
+                    elif field_name == 32791 and qualifier == 58:
+                        imu_data_packet.scaledAmbientPressure = data_point.as_float()
+
+                    elif field_name == 32773:
+                        if qualifier == 1:
                             imu_data_packet.scaledGyroX = data_point.as_float()
-                        case 32773, 2:
+                        elif qualifier == 2:
                             imu_data_packet.scaledGyroY = data_point.as_float()
-                        case 32773, 3:
+                        elif qualifier == 3:
                             imu_data_packet.scaledGyroZ = data_point.as_float()
+
+                    # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`, 
+                    # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we 
+                    # can't exclude it from the IMU settings cause it says it's not recommended
+                    # else:
+                    #     print(field_name, data_point.channelName())
 
                     # Check if the data point is invalid and update the invalid fields list.
                     if not data_point.valid():

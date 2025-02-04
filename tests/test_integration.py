@@ -361,4 +361,4 @@ class TestIntegration:
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
         assert not airbrakes.apogee_predictor._prediction_process.is_alive()
-        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 20
+        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 10
