@@ -73,12 +73,18 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
 class TestLogger:
     """Tests the Logger() class in logger.py"""
 
-    sample_data = {
-        "state_letter": "S",
-        "set_extension": "0.0",
-        "timestamp": "4",
-        "invalid_fields": "[]",
-    }
+    sample_ldp = LoggerDataPacket(
+        state_letter="S",
+        set_extension="0.0",
+        timestamp=4,
+        invalid_fields=[],
+        encoder_position=None,
+        fetched_imu_packets=None,
+        fetched_packets_in_main=None,
+        imu_queue_size=None,
+        apogee_predictor_queue_size=None,
+        update_timestamp_ns=None,
+    )
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def _clear_directory(self):
@@ -125,7 +131,7 @@ class TestLogger:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             keys = reader.fieldnames
-            assert list(keys) == list(LoggerDataPacket.__annotations__)
+            assert list(keys) == list(LoggerDataPacket.__struct_fields__)
 
     def test_log_buffer_is_full_property(self, logger):
         """Tests whether the property is_log_buffer_full works correctly."""
@@ -156,7 +162,7 @@ class TestLogger:
 
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
-        logger._log_buffer.appendleft(self.sample_data)
+        logger._log_buffer.appendleft(self.sample_ldp)
         logger.stop()
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
@@ -166,7 +172,7 @@ class TestLogger:
                 assert len(row) > 5  # Should have other fields with empty values
                 # Only fetch non-empty values:
                 row_dict = {k: v for k, v in row.items() if v}
-                assert row_dict == self.sample_data
+                assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), False)
             assert count == 1
         assert len(logger._log_buffer) == 0
 
@@ -196,14 +202,8 @@ class TestLogger:
         assert values.qsize() == 1
         assert values.get() == "clean exit"
 
-    def test_logger_loop_exception_raised(self, logger):
-        """Tests whether the Logger loop properly propogates unknown exceptions."""
-        logger._log_queue.put({"wrong_filed": "wrong_value"})
-        with pytest.raises(ValueError, match="dict contains fields not in fieldnames"):
-            logger._logging_loop()
-
     def test_logging_loop_add_to_queue(self, logger):
-        logger._log_queue.put(self.sample_data)
+        logger._log_queue.put(self.sample_ldp)
         assert logger._log_queue.qsize() == 1
         logger.start()
         time.sleep(0.01)  # Give the process time to log to file
@@ -216,14 +216,14 @@ class TestLogger:
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row.items() if v}
 
-            assert row_dict == self.sample_data
+            assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), truncation=False)
 
     def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
         """Tests whether the logger continues to log after a timeout."""
         monkeypatch.setattr("airbrakes.telemetry.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
         logger.start()
         time.sleep(0.05)
-        logger._log_queue.put(self.sample_data)
+        logger._log_queue.put(self.sample_ldp)
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
@@ -234,7 +234,7 @@ class TestLogger:
             # Only fetch non-empty values:
             row_dict = {k: v for k, v in row.items() if v}
 
-            assert row_dict == self.sample_data
+            assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), truncation=False)
 
     # This decorator is used to run the same test with different data
     # read more about it here: https://docs.pytest.org/en/stable/parametrize.html
@@ -427,11 +427,11 @@ class TestLogger:
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
         monkeypatch,
+        logger,
     ):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
 
-        monkeypatch.setattr(Logger, "stop", patched_stop)
-        logger = Logger(LOG_PATH)
+        monkeypatch.setattr(logger.__class__, "stop", patched_stop)
         # Test if the buffer works correctly
         logger.start()
         # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after LOG_BUFFER_SIZE.
@@ -710,12 +710,11 @@ class TestLogger:
                 [],
                 [],
                 [
-                    {
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="S")),
                         **asdict(make_servo_data_packet(set_extension="0.1")),
                         **asdict(make_raw_data_packet()),
-                        **remove_state_letter(asdict(make_context_data_packet())),
-                    }
+                    )
                 ],
             ),
             (
@@ -725,13 +724,12 @@ class TestLogger:
                 [make_processor_data_packet()],
                 [],
                 [
-                    {
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="S")),
                         **asdict(make_servo_data_packet(set_extension="0.1")),
                         **asdict(make_est_data_packet()),
-                        **asdict(make_processor_data_packet()),
-                        **remove_state_letter(asdict(make_context_data_packet())),
-                    }
+                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
+                    ),
                 ],
             ),
             (
@@ -741,18 +739,17 @@ class TestLogger:
                 [make_processor_data_packet()],
                 [],
                 [
-                    {
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="M")),
                         **asdict(make_servo_data_packet(set_extension="0.1")),
                         **asdict(make_raw_data_packet()),
-                        **remove_state_letter(asdict(make_context_data_packet())),
-                    },
-                    {
+                    ),
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="M")),
                         **asdict(make_servo_data_packet(set_extension="0.1")),
                         **asdict(make_est_data_packet()),
-                        **asdict(make_processor_data_packet()),
-                    },
+                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
+                    ),
                 ],
             ),
             (
@@ -762,19 +759,18 @@ class TestLogger:
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
                 [
-                    {
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="C")),
                         **asdict(make_servo_data_packet(set_extension="0.5")),
                         **asdict(make_raw_data_packet()),
-                        **remove_state_letter(asdict(make_context_data_packet())),
                         **asdict(make_apogee_predictor_data_packet()),
-                    },
-                    {
+                    ),
+                    LoggerDataPacket(
                         **asdict(make_context_data_packet(state_letter="C")),
                         **asdict(make_servo_data_packet(set_extension="0.5")),
                         **asdict(make_est_data_packet()),
-                        **asdict(make_processor_data_packet()),
-                    },
+                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
+                    ),
                 ],
             ),
         ],
@@ -785,7 +781,7 @@ class TestLogger:
             "both in coast",
         ],
     )
-    def test_prepare_log_dict(
+    def test_prepare_logger_packets(
         self,
         logger,
         context_packet,
@@ -798,12 +794,12 @@ class TestLogger:
         """Tests whether the _prepare_log_dict method creates the correct LoggerDataPackets."""
 
         # set some invalid fields to test if they stay as a list
-        invalid_field = ["something"]
+        invalid_field = ["something", "hey"]
         for imu_packet in imu_data_packets:
             imu_packet.invalid_fields = invalid_field
         # we need to change the output also
         for expected in expected_outputs:
-            expected["invalid_fields"] = invalid_field
+            expected.invalid_fields = invalid_field
 
         # Now let's test the method
         logger_data_packets = logger._prepare_log_dict(
@@ -817,17 +813,8 @@ class TestLogger:
         assert len(logger_data_packets) == len(expected_outputs)
 
         for logger_data_packet, expected in zip(logger_data_packets, expected_outputs, strict=True):
-            assert isinstance(logger_data_packet, dict)
-            converted = logger_data_packet
-
-            # certain fields are not converted to strings (intentionally. See logger.py)
-            assert isinstance(converted["invalid_fields"], list)
-            assert isinstance(converted["timestamp"], int)
-
-            # Remove "time_since_last_data_packet" from the expected output, since we don't log that
-            expected.pop("time_since_last_data_packet", None)
-
-            assert converted == expected
+            assert isinstance(logger_data_packet, LoggerDataPacket)
+            assert logger_data_packet == expected
 
     def test_benchmark_log_method(self, benchmark, logger):
         """Tests the performance of the _prepare_log_dict method."""

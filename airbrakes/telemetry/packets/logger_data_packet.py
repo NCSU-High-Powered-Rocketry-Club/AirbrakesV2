@@ -66,7 +66,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Apogee Predictor Data Packet Fields
     # These fields are "str" because they were numpy.float64, which is converted to a string
-    # when encoded in the logger.
+    # when encoded in the logger. Encoding directly to string with 8 decimal places truncation.
     predicted_apogee: str | None = None
     a_coefficient: str | None = None
     b_coefficient: str | None = None
