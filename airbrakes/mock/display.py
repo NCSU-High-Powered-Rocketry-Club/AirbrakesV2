@@ -44,6 +44,7 @@ class FlightDisplay:
         "_launch_file",
         "_launch_time",
         "_mock",
+        "_pitch_at_startup",
         "_processes",
         "_running",
         "_start_time",
@@ -69,6 +70,7 @@ class FlightDisplay:
         self._coast_time: int = 0  # Coast time from CoastState
         self._convergence_time: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
+        self._pitch_at_startup: float = 0.0  # The calculated pitch in degrees in StandbyState
         self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
 
         # Prepare the processes for monitoring in the replay:
@@ -136,6 +138,7 @@ class FlightDisplay:
         has_invalid_fields = False
         has_negative_velocity = False
         imu_queue_backlog = False
+        pitch_drift = False
 
         # If our velocity is negative in standby state, we have a problem:
         if abs(self._airbrakes.data_processor.vertical_velocity) > 2:
@@ -148,7 +151,13 @@ class FlightDisplay:
         if self._airbrakes.imu.fetched_imu_packets > 50:
             imu_queue_backlog = True
 
-        if has_invalid_fields or has_negative_velocity or imu_queue_backlog:
+        if (
+            self._pitch_at_startup
+            and abs(self._airbrakes.data_processor.average_pitch - self._pitch_at_startup) > 1
+        ):
+            pitch_drift = True
+
+        if has_invalid_fields or has_negative_velocity or imu_queue_backlog or pitch_drift:
             print("\a", end="")
 
     def update_display(self) -> None:
@@ -226,6 +235,10 @@ class FlightDisplay:
                 self._airbrakes.last_apogee_predictor_packet.predicted_apogee
             )
 
+        # Assign the startup pitch value when it is available:
+        if not self._pitch_at_startup and data_processor._current_orientation_quaternions:
+            self._pitch_at_startup = data_processor.average_pitch
+
         # Prepare output
         output = [
             f"{Y}{'=' * 15} {'REPLAY' if self._args.mock else 'STANDBY'} INFO {'=' * 15}{RESET}",
@@ -248,6 +261,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501

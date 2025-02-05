@@ -211,8 +211,8 @@ class IMU(BaseIMU):
 
                 else:
                     continue  # We never actually reach here, but keeping it just in case
-                    # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`, 
-                    # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we 
+                    # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`,
+                    # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we
                     # can't exclude it from the IMU settings cause it says it's not recommended
                     # else:
                     #     print(field_name, data_point.channelName())
