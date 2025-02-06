@@ -85,6 +85,16 @@ class IMU(BaseIMU):
         packet: mscl.MipDataPacket
         data_point: mscl.MipDataPoint
 
+        # This is a tight loop that fetches data from the IMU constantly. It looks ugly and written
+        # the way as it is for performance reasons. Some of the optimizations implemented include
+        # - using no functions inside the loop (this is typically 2x faster per packet)
+        # - if-elif statements instead of a `match` / `setattr` / `hasattr` (2x-5x faster / packet)
+        # - using 2 inner loops depending on the type of packet, this reduces the number of `if`
+        # checks the interpreter has to do
+        # - Using integers for comparison instead of strings (O(1) vs O(n) complexity)
+        # - Checking for raw data packets first, since that is 2x the frequency of estimated packets
+        # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
+        # - High priority for the process
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
@@ -203,18 +213,17 @@ class IMU(BaseIMU):
                         elif field_name == 33313 and qualifier == 67:
                             imu_data_packet.estPressureAlt = data_point.as_float()
 
-                    # Check if the data point is invalid and update the invalid fields list.
-                    if not data_point.valid():
-                        if imu_data_packet.invalid_fields is None:
-                            imu_data_packet.invalid_fields = []
-                        imu_data_packet.invalid_fields.append(data_point.channelName())
+                        # Check if the data point is invalid and update the invalid fields list.
+                        if not data_point.valid():
+                            if imu_data_packet.invalid_fields is None:
+                                imu_data_packet.invalid_fields = []
+                            imu_data_packet.invalid_fields.append(data_point.channelName())
 
                 else:
                     continue  # We never actually reach here, but keeping it just in case
                     # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`,
                     # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we
                     # can't exclude it from the IMU settings cause it says it's not recommended
-                    # else:
                     #     print(field_name, data_point.channelName())
 
                 messages.append(imu_data_packet)
