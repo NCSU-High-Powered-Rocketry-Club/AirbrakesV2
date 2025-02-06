@@ -43,7 +43,6 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_launch_time",
-        "_mock",
         "_pitch_at_startup",
         "_processes",
         "_running",
@@ -175,7 +174,7 @@ class FlightDisplay:
             self.sound_alarm_if_imu_is_having_issues()
 
             # If we are running a real flight, we will stop the display when the rocket takes off:
-            if not self._args.mock and self._airbrakes.state.name == "MotorBurnState":
+            if self._args.mode == "real" and self._airbrakes.state.name == "MotorBurnState":
                 self._update_display(DisplayEndingType.TAKEOFF)
                 break
 
@@ -241,7 +240,7 @@ class FlightDisplay:
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {'REPLAY' if self._args.mock else 'STANDBY'} INFO {'=' * 15}{RESET}",
+            f"{Y}{'=' * 15} {'REPLAY' if self._args.mode == 'mock' else 'STANDBY'} INFO {'=' * 15}{RESET}",  # noqa: E501
             f"Replay file:                  {C}{self._launch_file}{RESET}",
             f"Time since replay start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
@@ -261,7 +260,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",
+                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501

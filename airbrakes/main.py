@@ -2,6 +2,7 @@
 and run the main loop."""
 
 import argparse
+import sys
 import time
 
 from gpiozero.pins.mock import MockFactory, MockPWMPin
@@ -26,6 +27,8 @@ from airbrakes.utils import arg_parser
 def run_real_flight() -> None:
     """Entry point for the application to run the real flight. Entered when run with
     `uv run real` or `uvx --from git+... real`."""
+    # Modify sys.argv to include `real` as the first argument:
+    sys.argv.insert(1, "real")
     args = arg_parser()
     run_flight(args)
 
@@ -33,14 +36,18 @@ def run_real_flight() -> None:
 def run_mock_flight() -> None:
     """Entry point for the application to run the mock flight. Entered when run with
     `uvx --from git+... mock` or `uv run mock`."""
-    args = arg_parser(mock_invocation=True)
+    # Modify sys.argv to include `mock` as the first argument:
+    sys.argv.insert(1, "mock")
+    args = arg_parser()
     run_flight(args)
 
 
 def run_sim_flight() -> None:
     """Entry point for the application to run the sim flight. Entered when run with
     `uvx --from git+... sim` or `uv run sim`."""
-    args = arg_parser(mock_invocation=True, sim_invocation=True)
+    # Modify sys.argv to include `sim` as the first argument:
+    sys.argv.insert(1, "sim")
+    args = arg_parser()
     run_flight(args)
 
 
@@ -52,11 +59,8 @@ def run_flight(args: argparse.Namespace) -> None:
     airbrakes = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(airbrakes, mock_time_start, args)
 
-    if args.sim:
-        imu.set_airbrakes_status(airbrakes.servo.current_extension)
-
     # Run the main flight loop
-    run_flight_loop(airbrakes, flight_display, args.mock, args.sim)
+    run_flight_loop(airbrakes, flight_display, args.mode == "mock", args.mode == "sim")
 
 
 def create_components(
@@ -68,15 +72,17 @@ def create_components(
     :param args: Command line arguments determining the configuration.
     :return: A tuple containing the servo, IMU, Logger, data processor, and apogee predictor objects
     """
-    if args.mock:
-        # Replace hardware with mock objects for simulation
-        if args.sim:
-            imu = SimIMU(sim_type=args.sim, real_time_replay=not args.fast_replay)
-        else:
+    if args.mode in ("mock", "sim"):
+        if args.mode == "mock":
+            # Replace hardware with mock objects for simulation
             imu = MockIMU(
                 real_time_replay=not args.fast_replay,
                 log_file_path=args.path,
             )
+        else:
+            # Use simulation IMU
+            imu = SimIMU(sim_type=args.scale, real_time_replay=not args.fast_replay)
+
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
             Servo(SERVO_PIN)
@@ -85,6 +91,7 @@ def create_components(
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
         camera = MockCamera() if not args.real_camera else Camera()
+
     else:
         # Use real hardware components
         servo = Servo(SERVO_PIN)
@@ -145,13 +152,13 @@ if __name__ == "__main__":
     # python -m airbrakes.main [ARGS]
 
     # Command line args (after these are run, you can press Ctrl+C to exit the program):
-    # python -m airbrakes.main -v: Shows the display with much more data
-    # python -m airbrakes.main -m: Runs a mock replay on your computer
-    # python -m airbrakes.main -m -r: Runs a mock replay on your computer with the real servo
-    # python -m airbrakes.main -m -l: Runs a mock replay on your computer and keeps the log file
+    # python -m airbrakes.main real -v: Run a real flight with the display showing much more data
+    # python -m airbrakes.main mock: Runs a mock replay on your computer
+    # python -m airbrakes.main mock -r: Runs a mock replay on your computer with the real servo
+    # python -m airbrakes.main mock -l: Runs a mock replay on your computer and keeps the log file
     # after the mock replay stops
-    # python -m airbrakes.main -m -f: Runs a mock replay on your computer at full speed
-    # python -m airbrakes.main -m -d: Runs a mock replay on your computer in debug
+    # python -m airbrakes.main mock -f: Runs a mock replay on your computer at full speed
+    # python -m airbrakes.main mock -d: Runs a mock replay on your computer in debug
     # mode (w/o display)
     args = arg_parser()
     run_flight(args)
