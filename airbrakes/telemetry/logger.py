@@ -18,7 +18,6 @@ else:
     from queue import Empty
 
 import msgspec
-from msgspec.structs import asdict
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
@@ -31,6 +30,10 @@ from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+
+DecodedLoggerDataPacket = list[int | float | str]
+"""The type of LoggerDataPacket after an instance of it was decoded from the queue. It is
+the same type as msgspec.to_builtins(LoggerDataPacket)."""
 
 
 class Logger:
@@ -79,14 +82,17 @@ class Logger:
         # Create a new log file with the next number in sequence
         self.log_path = log_dir / f"log_{max_suffix + 1}.csv"
         with self.log_path.open(mode="w", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
-            writer.writeheader()
+            headers = list(LoggerDataPacket.__struct_fields__)
+            writer = csv.writer(file_writer)
+            writer.writerow(headers)
 
         # Makes a queue to store log messages, basically it's a process-safe list that you add to
         # the back and pop from front, meaning that things will be logged in the order they were
         # added.
         # Signals (like stop) are sent as strings, but data is sent as dictionaries
         msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=Logger._convert_unknown_type_to_str)
+        # No need to specify the type to decode to, since we want to log it immediately, so a list
+        # is wanted (and faster!):
         msgpack_decoder = msgspec.msgpack.Decoder()
 
         if sys.platform == "win32":
@@ -133,19 +139,20 @@ class Logger:
         return f"{obj_type:.8f}"
 
     @staticmethod
-    def _prepare_log_dict(
+    def _prepare_logger_packets(
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> list[LoggerDataPacket]:
         """
-        Creates a data packet dictionary representing a row of data to be logged.
+        Creates a data packet representing a row of data to be logged.
         :param context_data_packet: The context data packet to log.
         :param servo_data_packet: The servo data packet to log.
         :param imu_data_packets: The IMU data packets to log.
-        :param processor_data_packets: The processor data packets to log.
+        :param processor_data_packets: The processor data packets to log. This is always the same
+        length as the number of EstimatedDataPackets present in the `imu_data_packets`.
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         :return: A deque of LoggerDataPacket objects.
         """
@@ -153,46 +160,98 @@ class Logger:
 
         index = 0  # Index to loop over processor data packets:
 
-        # Convert the imu data packets to a dictionary:
+        # Convert the imu data packets to a LoggerDataPacket:
         for imu_data_packet in imu_data_packets:
-            # Let's first add the state, extension field:
-            logger_fields: LoggerDataPacket = {}
-            # Convert the packets to a dictionary
-            context_data_packet_dict: dict[str, int | str] = asdict(context_data_packet)
-            logger_fields.update(context_data_packet_dict)
-            servo_data_packet_dict: dict[str, int | float] = asdict(servo_data_packet)
-            logger_fields.update(servo_data_packet_dict)
-            # Using to_builtins() is much faster than asdict() for some reason, but we can't use
-            # that since that's going to convert it to a list because of array_like=True
-            imu_data_packet_dict: dict[str, int | float | list[str]] = asdict(imu_data_packet)
-            logger_fields.update(imu_data_packet_dict)
+            logger_packet = LoggerDataPacket(
+                state_letter=context_data_packet.state_letter,
+                set_extension=servo_data_packet.set_extension,
+                encoder_position=servo_data_packet.encoder_position,
+                timestamp=imu_data_packet.timestamp,
+                invalid_fields=imu_data_packet.invalid_fields,
+                fetched_packets_in_main=context_data_packet.fetched_packets_in_main,
+                imu_queue_size=context_data_packet.imu_queue_size,
+                apogee_predictor_queue_size=context_data_packet.apogee_predictor_queue_size,
+                fetched_imu_packets=context_data_packet.fetched_imu_packets,
+                update_timestamp_ns=context_data_packet.update_timestamp_ns,
+            )
 
-            # Get the processor data packet fields:
-            if isinstance(imu_data_packet, EstimatedDataPacket):
-                processor_data_packet_dict: dict[str, float] = asdict(
-                    processor_data_packets[index],
+            # Get the IMU data packet fields:
+            # Performance comparison (python 3.13.1 on x86_64 linux):
+            # - isinstance is 45.2% faster than match statement
+            # - hasattr is 20.57% faster than isinstance
+            # - type() is 34.85% faster than hasattr
+            if type(imu_data_packet) is EstimatedDataPacket:
+                # Extract all the fields from the EstimatedDataPacket
+                logger_packet.estOrientQuaternionW = imu_data_packet.estOrientQuaternionW
+                logger_packet.estOrientQuaternionX = imu_data_packet.estOrientQuaternionX
+                logger_packet.estOrientQuaternionY = imu_data_packet.estOrientQuaternionY
+                logger_packet.estOrientQuaternionZ = imu_data_packet.estOrientQuaternionZ
+                logger_packet.estPressureAlt = imu_data_packet.estPressureAlt
+                logger_packet.estAttitudeUncertQuaternionW = (
+                    imu_data_packet.estAttitudeUncertQuaternionW
                 )
-                # Let's drop the "time_since_last_data_packet" field:
-                processor_data_packet_dict.pop("time_since_last_data_packet", None)
-                logger_fields.update(processor_data_packet_dict)
+                logger_packet.estAttitudeUncertQuaternionX = (
+                    imu_data_packet.estAttitudeUncertQuaternionX
+                )
+                logger_packet.estAttitudeUncertQuaternionY = (
+                    imu_data_packet.estAttitudeUncertQuaternionY
+                )
+                logger_packet.estAttitudeUncertQuaternionZ = (
+                    imu_data_packet.estAttitudeUncertQuaternionZ
+                )
+                logger_packet.estAngularRateX = imu_data_packet.estAngularRateX
+                logger_packet.estAngularRateY = imu_data_packet.estAngularRateY
+                logger_packet.estAngularRateZ = imu_data_packet.estAngularRateZ
+                logger_packet.estCompensatedAccelX = imu_data_packet.estCompensatedAccelX
+                logger_packet.estCompensatedAccelY = imu_data_packet.estCompensatedAccelY
+                logger_packet.estCompensatedAccelZ = imu_data_packet.estCompensatedAccelZ
+                logger_packet.estLinearAccelX = imu_data_packet.estLinearAccelX
+                logger_packet.estLinearAccelY = imu_data_packet.estLinearAccelY
+                logger_packet.estLinearAccelZ = imu_data_packet.estLinearAccelZ
+                logger_packet.estGravityVectorX = imu_data_packet.estGravityVectorX
+                logger_packet.estGravityVectorY = imu_data_packet.estGravityVectorY
+                logger_packet.estGravityVectorZ = imu_data_packet.estGravityVectorZ
 
+                # Now also extract the fields from the ProcessorDataPacket
+                logger_packet.current_altitude = processor_data_packets[index].current_altitude
+                logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
+                logger_packet.vertical_acceleration = processor_data_packets[
+                    index
+                ].vertical_acceleration
+
+                # Add index:
                 index += 1
+            else:  # It is a raw packet:
+                # Extract all the fields from the RawDataPacket
+                logger_packet.scaledAccelX = imu_data_packet.scaledAccelX
+                logger_packet.scaledAccelY = imu_data_packet.scaledAccelY
+                logger_packet.scaledAccelZ = imu_data_packet.scaledAccelZ
+                logger_packet.scaledGyroX = imu_data_packet.scaledGyroX
+                logger_packet.scaledGyroY = imu_data_packet.scaledGyroY
+                logger_packet.scaledGyroZ = imu_data_packet.scaledGyroZ
+                logger_packet.deltaVelX = imu_data_packet.deltaVelX
+                logger_packet.deltaVelY = imu_data_packet.deltaVelY
+                logger_packet.deltaVelZ = imu_data_packet.deltaVelZ
+                logger_packet.deltaThetaX = imu_data_packet.deltaThetaX
+                logger_packet.deltaThetaY = imu_data_packet.deltaThetaY
+                logger_packet.deltaThetaZ = imu_data_packet.deltaThetaZ
+                logger_packet.scaledAmbientPressure = imu_data_packet.scaledAmbientPressure
 
-            # Apogee Prediction happens asynchronously, so we need to check if we have a packet
-            # This means that rather than belonging to a specific IMU packet, it belongs to the
-            # context packet.
+            # Apogee Prediction happens asynchronously, so we need to check if we have a packet:
 
             # There is a small possibility that we won't log all the apogee predictor data packets
             # if the length of the IMU data packets is less than the length of the apogee predictor
             # data packets. However, this is unlikely to happen in practice. This particular case
             # is NOT covered by tests.
             if apogee_predictor_data_packets:
-                apogee_predictor_data_packet_dict: dict[str, float] = asdict(
-                    apogee_predictor_data_packets.pop(0),
-                )
-                logger_fields.update(apogee_predictor_data_packet_dict)
+                apogee_packet = apogee_predictor_data_packets.pop(0)
+                logger_packet.predicted_apogee = apogee_packet.predicted_apogee
+                logger_packet.a_coefficient = apogee_packet.a_coefficient
+                logger_packet.b_coefficient = apogee_packet.b_coefficient
+                logger_packet.uncertainty_threshold_1 = apogee_packet.uncertainty_threshold_1
+                logger_packet.uncertainty_threshold_2 = apogee_packet.uncertainty_threshold_2
 
-            logger_data_packets.append(logger_fields)
+            logger_data_packets.append(logger_packet)
 
         return logger_data_packets
 
@@ -216,7 +275,7 @@ class Logger:
         self,
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
+        imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
     ) -> None:
@@ -228,8 +287,8 @@ class Logger:
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         """
-        # We are populating a dictionary with the fields of the logger data packet
-        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_log_dict(
+        # We are populating a list with the fields of the logger data packet
+        logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
             context_data_packet,
             servo_data_packet,
             imu_data_packets,
@@ -268,16 +327,13 @@ class Logger:
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
-    def _truncate_floats(data: LoggerDataPacket) -> dict[str, str | object]:
+    def _truncate_floats(data: DecodedLoggerDataPacket) -> list[str | int]:
         """
-        Truncates the decimal place of the floats in the dictionary to 8 decimal places.
-        :param data: The dictionary to truncate.
-        :return: The truncated dictionary.
+        Truncates the decimal place of the floats in the list to 8 decimal places.
+        :param data: The list of values whose floats we should truncate.
+        :return: The truncated list.
         """
-        return {
-            key: f"{value:.8f}" if isinstance(value, float) else value
-            for key, value in data.items()
-        }
+        return [f"{value:.8f}" if isinstance(value, float) else value for value in data]
 
     def _logging_loop(self) -> None:  # pragma: no cover
         """
@@ -292,12 +348,12 @@ class Logger:
 
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
-            writer = csv.DictWriter(file_writer, fieldnames=list(LoggerDataPacket.__annotations__))
+            writer = csv.writer(file_writer)
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 try:
-                    message_fields: list[LoggerDataPacket | Literal["STOP"]] = (
+                    message_fields: list[DecodedLoggerDataPacket | Literal["STOP"]] = (
                         self._log_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
                     )
                 except Empty:

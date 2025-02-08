@@ -7,7 +7,10 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import msgspec
 import psutil
+
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
 if TYPE_CHECKING:
     import multiprocessing
@@ -25,7 +28,14 @@ def get_always_list(self, *args, **kwargs) -> list:
     as the multiprocessing.Queue doesn't have a `get_many` method"""
     fetched = self.get(*args, **kwargs)
     if isinstance(fetched, list):
+        if isinstance(fetched[0], LoggerDataPacket):
+            # Return the encoded packet as a list:
+            return [
+                msgspec.to_builtins(packet, enc_hook=_convert_unknown_type_to_float)
+                for packet in fetched
+            ]
         return fetched
+
     return [fetched]
 
 
