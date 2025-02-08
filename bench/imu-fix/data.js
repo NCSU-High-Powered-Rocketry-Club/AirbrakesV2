@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1739005251233,
+  "lastUpdate": 1739006315237,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -384,6 +384,54 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 1.878242023559835e-7",
             "extra": "mean: 2.0255154147278778 usec\nrounds: 123153"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "committer": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "id": "38e28d9e59489f60704b7f3217a9aa43b7a525a3",
+          "message": "Optimize Reading IMU Data",
+          "timestamp": "2025-02-04T20:23:44Z",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/pull/146/commits/38e28d9e59489f60704b7f3217a9aa43b7a525a3"
+        },
+        "date": 1739006300601,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_airbrakes.py::TestAirbrakesContext::test_benchmark_airbrakes_update",
+            "value": 1189.3135046829186,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00032237364912245076",
+            "extra": "mean: 840.8211931189738 usec\nrounds: 554"
+          },
+          {
+            "name": "tests/test_components/test_data_processor.py::TestIMUDataProcessor::test_benchmark_data_processor_update",
+            "value": 6468.874094512378,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005095472584767788",
+            "extra": "mean: 154.58640644255416 usec\nrounds: 2689"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 314040.1033227159,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002120339223236941",
+            "extra": "mean: 3.184306683826217 usec\nrounds: 12971"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 800588.78010015,
+            "unit": "iter/sec",
+            "range": "stddev: 1.2538907751838197e-7",
+            "extra": "mean: 1.2490807076698034 usec\nrounds: 134972"
           }
         ]
       }
