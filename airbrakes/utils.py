@@ -28,10 +28,10 @@ def get_always_list(self, *args, **kwargs) -> list:
     as the multiprocessing.Queue doesn't have a `get_many` method"""
     fetched = self.get(*args, **kwargs)
     if isinstance(fetched, list):
+        if isinstance(fetched[0], LoggerDataPacket):
+            # Return the encoded packet as a list:
+            return [msgspec.to_builtins(packet) for packet in fetched]
         return fetched
-    if isinstance(fetched, LoggerDataPacket):
-        # Return the encoded packet as a list:
-        return msgspec.to_builtins(fetched)
 
     return [fetched]
 
