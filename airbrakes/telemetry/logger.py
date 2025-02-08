@@ -31,6 +31,10 @@ from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMU
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
+DecodedLoggerDataPacket = list[int | float | str]
+"""The type of LoggerDataPacket after an instance of it was decoded from the queue. It is
+the same type as msgspec.to_builtins(LoggerDataPacket)."""
+
 
 class Logger:
     """
@@ -283,7 +287,7 @@ class Logger:
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.
         """
-        # We are populating a dictionary with the fields of the logger data packet
+        # We are populating a list with the fields of the logger data packet
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
             context_data_packet,
             servo_data_packet,
@@ -323,7 +327,7 @@ class Logger:
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
-    def _truncate_floats(data: list[int | float | str]) -> list[str | int]:
+    def _truncate_floats(data: DecodedLoggerDataPacket) -> list[str | int]:
         """
         Truncates the decimal place of the floats in the list to 8 decimal places.
         :param data: The list of values whose floats we should truncate.
@@ -349,7 +353,7 @@ class Logger:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
                 try:
-                    message_fields: list[list[int | float | str] | Literal["STOP"]] = (
+                    message_fields: list[DecodedLoggerDataPacket | Literal["STOP"]] = (
                         self._log_queue.get_many(timeout=MAX_GET_TIMEOUT_SECONDS)
                     )
                 except Empty:
