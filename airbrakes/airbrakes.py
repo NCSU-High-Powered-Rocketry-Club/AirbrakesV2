@@ -1,7 +1,6 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
 import time
-from collections import deque
 from typing import TYPE_CHECKING
 
 from airbrakes.hardware.base_imu import BaseIMU
@@ -84,7 +83,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
 
         self.shutdown_requested = False
-        self.imu_data_packets: deque[IMUDataPacket] = deque()
+        self.imu_data_packets: list[IMUDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
         self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
@@ -137,7 +136,7 @@ class AirbrakesContext:
         self.est_data_packets = [
             data_packet
             for data_packet in self.imu_data_packets
-            if isinstance(data_packet, EstimatedDataPacket)
+            if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
         ]
 
         # Update the processed data with the new data packets. We only care about EstDataPackets

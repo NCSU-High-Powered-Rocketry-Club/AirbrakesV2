@@ -197,7 +197,7 @@ class FlightDisplay:
 
         fetched_packets_in_main = len(self._airbrakes.imu_data_packets)
         fetched_packets_from_imu = (
-            self._airbrakes.imu.fetched_imu_packets if self._args.mode != "mock" else "N/A"
+            self._airbrakes.imu.fetched_imu_packets if self._args.mode == "real" else "N/A"
         )
 
         data_processor = self._airbrakes.data_processor
