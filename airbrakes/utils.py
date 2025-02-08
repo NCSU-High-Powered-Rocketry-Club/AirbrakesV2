@@ -30,7 +30,10 @@ def get_always_list(self, *args, **kwargs) -> list:
     if isinstance(fetched, list):
         if isinstance(fetched[0], LoggerDataPacket):
             # Return the encoded packet as a list:
-            return [msgspec.to_builtins(packet) for packet in fetched]
+            return [
+                msgspec.to_builtins(packet, enc_hook=_convert_unknown_type_to_float)
+                for packet in fetched
+            ]
         return fetched
 
     return [fetched]
