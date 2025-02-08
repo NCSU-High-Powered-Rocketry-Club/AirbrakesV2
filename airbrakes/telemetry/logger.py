@@ -1,3 +1,4 @@
+# cython: language_level=3
 """Module for logging data to a CSV file in real time."""
 
 import csv
@@ -6,7 +7,7 @@ import signal
 import sys
 from collections import deque
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -31,6 +32,9 @@ from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+
+if TYPE_CHECKING:
+    import cython
 
 
 class Logger:
@@ -151,7 +155,7 @@ class Logger:
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
-        index = 0  # Index to loop over processor data packets:
+        index: cython.uint = 0  # Index to loop over processor data packets:
 
         # Convert the imu data packets to a dictionary:
         for imu_data_packet in imu_data_packets:

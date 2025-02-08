@@ -1,5 +1,5 @@
 [project]
-name = "AirbrakesV2"
+name = "airbrakes"
 description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
 requires-python = ">=3.13"
 version = "1.1.0"
@@ -16,6 +16,7 @@ dependencies = [
     "faster-fifo; sys_platform != 'win32'",
     "textual",
     "python-mscl>=67.0.0",
+    "cython>=3.0.11",
 ]
 
 [dependency-groups]
@@ -25,6 +26,7 @@ dev = [
     "ruff",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
+    "scikit-build-core>=0.10.7",  # Needed for installs with --no-build-isolation, for cython builds
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
@@ -39,21 +41,31 @@ mock = "airbrakes.main:run_mock_flight"
 real = "airbrakes.main:run_real_flight"
 sim = "airbrakes.main:run_sim_flight"
 
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+editable.rebuild = true
+wheel.packages = ["airbrakes"]
+wheel.install-dir = "."
+
+[tool.scikit-build.cmake]
+args = ["-DSKBUILD=ON"]
+verbose = true
+
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["scikit-build-core", "cython"]
+build-backend = "scikit_build_core.build"
 
 # UV:
 [tool.uv]
 python-preference = "only-managed"
 
-# HATCH:
-[tool.hatch.build.targets.wheel]
-packages = ["airbrakes"]
+# # HATCH:
+# [tool.hatch.build.targets.wheel]
+# packages = ["airbrakes"]
 
-[tool.hatch.build.targets.wheel.force-include]
-# specify one launch file so that the mock flight can be run as a demo with uvx.
-"launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
+# [tool.hatch.build.targets.wheel.force-include]
+# # specify one launch file so that the mock flight can be run as a demo with uvx.
+# "launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
 
 # RUFF:
 [tool.ruff]
