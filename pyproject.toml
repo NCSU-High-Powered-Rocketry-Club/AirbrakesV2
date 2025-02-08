@@ -26,7 +26,6 @@ dev = [
     "ruff",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
-    "scikit-build-core>=0.10.7",  # Needed for installs with --no-build-isolation, for cython builds
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
