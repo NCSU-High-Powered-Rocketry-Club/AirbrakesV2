@@ -109,81 +109,31 @@ def deadband(input_value: float, threshold: float) -> float:
     return input_value
 
 
-def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> argparse.Namespace:
+def arg_parser() -> argparse.Namespace:
     """Handles the command line arguments for the main airbrakes script.
-
-    :param mock_invocation: Whether the application is running in mock mode from `uv run mock`.
-    Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
-    :param sim_invocation: Whether the application is running in sim mode from `uv run sim`.
-    Defaults to False, to keep compatibility with the `python -m airbrakes.main` invocation method.
 
     :return: The parsed arguments as a class with attributes.
     """
+    # We require ONE and only one of the 3 positional arguments to be passed:
+    # - real: Run the real flight with all the real hardware.
+    # - mock: Run in replay mode with mock data and mock servo.
+    # - sim: Runs the data simulation alongside the mock simulation, with an optional scale.
+    global_parser = argparse.ArgumentParser(add_help=False)
 
-    parser = argparse.ArgumentParser(
-        description="Configuration for the main airbrakes script. "
-        "No arguments should be supplied when you are actually launching the rocket."
-    )
+    # Global mutually exclusive group, for the `--debug` and `--verbose` options:
+    global_group = global_parser.add_mutually_exclusive_group()
 
-    parser.add_argument(
-        "-m",
-        "--mock",
-        help="Run in replay mode with mock data and mock servo",
-        action="store_true",
-        default=mock_invocation,
-    )
-
-    parser.add_argument(
-        "-r",
-        "--real-servo",
-        help="Run the mock replay with the real servo",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "-l",
-        "--keep-log-file",
-        help="Keep the log file after the mock replay stops",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "-f",
-        "--fast-replay",
-        help="Run the mock replay at full speed instead of in real time.",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
+    # These are global options, available to `mock`, `real`, and `sim` modes:
+    global_group.add_argument(
         "-d",
         "--debug",
-        help="Run the mock replay in debug mode. This will not "
+        help="Run the flight without a display. This will not "
         "print the flight data and allow you to inspect the values of your print() statements.",
         action="store_true",
         default=False,
     )
 
-    parser.add_argument(
-        "-c",
-        "--real-camera",
-        help="Run the mock replay with the real camera.",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "-p",
-        "--path",
-        help="Define the pathname of flight data to use in mock replay. Interest Launch data"
-        " is used by default",
-        type=Path,
-        default=None,
-    )
-
-    parser.add_argument(
+    global_group.add_argument(
         "-v",
         "--verbose",
         help="Shows the display with much more data.",
@@ -191,43 +141,102 @@ def arg_parser(mock_invocation: bool = False, sim_invocation: bool = False) -> a
         default=False,
     )
 
-    if sim_invocation:
+    # Top-level parser for the main script:
+    main_parser = argparse.ArgumentParser(
+        description="Main parser for the airbrakes script.",
+        parents=[global_parser],
+    )
+
+    # Subparsers for `real`, `mock`, and `sim`
+    subparsers = main_parser.add_subparsers(
+        title="modes", description="Valid modes of operation", dest="mode", required=True
+    )
+
+    # Real flight parser:
+    subparsers.add_parser(
+        "real",
+        help="Run the real flight with all the real hardware.",
+        description="Configuration for the real flight.",
+        parents=[global_parser],  # Include the global options
+        prog="real",  # Program name in help messages
+    )
+    # No extra arguments needed for the real flight mode.
+
+    # Mock replay parser:
+    mock_replay_parser = subparsers.add_parser(
+        "mock",
+        help="Run in replay mode with mock data (i.e. previous flight data)",
+        description="Configuration for the mock replay airbrakes script.",
+        parents=[global_parser],  # Include the global options
+        prog="mock",  # Program name in help messages
+    )
+    add_common_arguments(mock_replay_parser, is_mock=True)
+
+    # Sim parser
+    sim_parser = subparsers.add_parser(
+        "sim",
+        help="Runs the data simulation alongside the mock simulation.",
+        description="Configuration for the data simulation alongside the mock simulation.",
+        parents=[global_parser],  # Include the global options
+        prog="sim",  # Program name in help messages
+    )
+
+    sim_parser.add_argument(
+        "scale",
+        help="Simulation scale.",
+        choices=["full-scale", "sub-scale", "legacy"],
+        nargs="?",  # Optional
+        default="full-scale",
+    )
+
+    add_common_arguments(sim_parser, is_mock=False)
+
+    return main_parser.parse_args()
+
+
+def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
+    """Adds the arguments common to the mock replay and the sim to the parser."""
+
+    _type = "mock replay" if is_mock else "sim"
+
+    parser.add_argument(
+        "-r",
+        "--real-servo",
+        help=f"Run the {_type} with the real servo",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-l",
+        "--keep-log-file",
+        help=f"Keep the log file after the {_type} stops",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-f",
+        "--fast-replay",
+        help=f"Run the {_type} at full speed instead of in real time.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-c",
+        "--real-camera",
+        help=f"Run the {_type} with the real camera.",
+        action="store_true",
+        default=False,
+    )
+
+    if is_mock:
         parser.add_argument(
-            "sim",
-            help="Runs the data simulation alongside the mock simulation, with an optional scale",
-            choices=["full-scale", "sub-scale", "legacy"],
-            nargs="?",  # Allows an optional argument
-            default="full-scale",  # Default when `-s` is provided without a value
+            "-p",
+            "--path",
+            help="Define the pathname of flight data to use in mock replay. By default, the"
+            " first file found in the launch_data directory will be used if not specified.",
+            type=Path,
+            default=None,
         )
-
-    args = parser.parse_args()
-
-    if not hasattr(args, "sim"):
-        args.sim = False
-
-    # Check if the user has passed any options that are only available in mock replay mode:
-    if (
-        any(
-            [
-                args.real_servo,
-                args.keep_log_file,
-                args.fast_replay,
-                args.path,
-                args.real_camera,
-                args.sim,
-            ]
-        )
-        and not args.mock
-    ):
-        parser.error(
-            "The `--real-servo`, `--keep-log-file`, `--fast-replay`, `sim`, and `--path` "
-            "options are only available in mock replay mode. Please pass `-m` or `--mock` "
-            "to run in mock replay mode."
-        )
-
-    if args.verbose and args.debug:
-        parser.error("The `--verbose` and `--debug` options cannot be used together.")
-
-    if args.sim and args.path:
-        parser.error("The `--path` option is not able to be used with the `sim` option")
-    return args

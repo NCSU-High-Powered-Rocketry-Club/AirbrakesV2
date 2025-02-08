@@ -2,11 +2,10 @@
 
 import os
 import signal
-import time
 from contextlib import suppress
 from multiprocessing import Event, Process
 
-from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS, CAMERA_SAVE_PATH
+from airbrakes.constants import CAMERA_SAVE_PATH
 
 # These libraries are only available on the Raspberry Pi so we ignore them if they are not available
 with suppress(ImportError):
@@ -72,20 +71,15 @@ class Camera:
         # Start recording with the buffer. This operation is non-blocking.
         camera.start_recording(encoder, output)
 
-        # TODO: this is ass
         # Check if motor burn has started, if it has, we can stop buffering and start saving
         # the video. This way we get a few seconds of video before liftoff too. Otherwise, just
         # sleep and wait.
-        while not self.motor_burn_started.is_set():
-            # Unfortunately, an `multiprocessing.Event.wait()` doesn't seem to work, hence this
-            # ugly while loop instead.
-            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+        self.motor_burn_started.wait()
 
         output.fileoutput = CAMERA_SAVE_PATH
         output.start()
 
         # Keep recording until we have landed:
-        while not self.stop_context_event.is_set():
-            time.sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+        self.stop_context_event.wait()
 
         output.stop()

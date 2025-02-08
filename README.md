@@ -260,6 +260,21 @@ To generate a coverage report from the tests:
 pytest --cov=airbrakes --cov-report=term
 ```
 
+To performance test the code:
+```bash
+pytest --benchmark-only
+```
+
+See the [pytest-benchmark documentation](https://pytest-benchmark.readthedocs.io/en/stable/) for more information.
+
+To run a performance benchmark with the real IMU on the raspberry pi:
+```bash
+sudo $(which uv) run pytest -m imu_benchmark
+```
+
+Note that the use of `sudo` is required to set process priorities for the IMU and main process,
+which is critical for accurate benchmarking.
+
 If you make a change to the code, please make sure to update or add the necessary tests.
 
 ### Running the Linter
@@ -306,7 +321,7 @@ uv sync --all-groups
 
 ### Run a real flight with real hardware:
 ```bash
-uv run real
+sudo $(which uv) run real -v
 ```
 
 ### Running Test Scripts
