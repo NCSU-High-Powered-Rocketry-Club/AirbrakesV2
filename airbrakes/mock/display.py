@@ -292,13 +292,12 @@ class FlightDisplay:
             print(self.MOVE_CURSOR_UP * len(output), end="", flush=True)
 
         # Print the end of replay message if the replay has ended
-        match end_type:
-            case DisplayEndingType.NATURAL:
-                print(f"{R}{'=' * 14} END OF REPLAY {'=' * 14}{RESET}")
-            case DisplayEndingType.INTERRUPTED:
-                print(f"{R}{'=' * 12} INTERRUPTED REPLAY {'=' * 13}{RESET}")
-            case DisplayEndingType.TAKEOFF:
-                print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
+        if end_type == DisplayEndingType.NATURAL:
+            print(f"{R}{'=' * 14} END OF REPLAY {'=' * 14}{RESET}")
+        elif end_type == DisplayEndingType.INTERRUPTED:
+            print(f"{R}{'=' * 12} INTERRUPTED REPLAY {'=' * 13}{RESET}")
+        elif end_type == DisplayEndingType.TAKEOFF:
+            print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """

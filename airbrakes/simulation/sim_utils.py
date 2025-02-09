@@ -68,14 +68,13 @@ def get_random_value(
             rms = coeffs[0] * reference_value + coeffs[1]
             return random.gauss(0, value_configs.std_dev) * rms * np.sqrt(2)
 
-    match value_configs.type:
-        case "constant":
-            return value_configs.value
-        case "uniform":
-            return random.uniform(rand_range[0], rand_range[1])
-        case "normal":
-            if value_configs.mean is not None:
-                return random.gauss(value_configs.mean, value_configs.std_dev)
-            if value_configs.std_dev is not None:
-                return random.gauss(0, value_configs.std_dev)
-            raise Exception(f"invalid random config format for {value_configs}")
+    if value_configs.type == "constant":
+        return value_configs.value
+    if value_configs.type == "uniform":
+        return random.uniform(rand_range[0], rand_range[1])
+    if value_configs.type == "normal":
+        if value_configs.mean is not None:
+            return random.gauss(value_configs.mean, value_configs.std_dev)
+        if value_configs.std_dev is not None:
+            return random.gauss(0, value_configs.std_dev)
+    raise Exception(f"invalid random config format for {value_configs}")

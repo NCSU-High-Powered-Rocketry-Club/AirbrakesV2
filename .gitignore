@@ -31,7 +31,7 @@ out/
 logs/
 
 build/
-AirbrakesV2.egg-info/
+airbrakes.egg-info/
 .venv/
 
 test_logs/

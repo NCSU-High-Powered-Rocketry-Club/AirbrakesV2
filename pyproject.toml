@@ -43,12 +43,13 @@ sim = "airbrakes.main:run_sim_flight"
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 editable.rebuild = true
+editable.verbose = false
 wheel.packages = ["airbrakes"]
 wheel.install-dir = "."
+build.verbose = true
 
 [tool.scikit-build.cmake]
 args = ["-DSKBUILD=ON"]
-verbose = true
 
 [build-system]
 requires = ["scikit-build-core", "cython"]

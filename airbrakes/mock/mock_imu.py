@@ -63,8 +63,13 @@ class MockIMU(BaseIMU):
         if log_file_path is None:
             # Just use the first file in the `launch_data` directory:
             # Note: We do this convoluted way because we want to make it work with the one liner
-            # `uvx --from git+... mock` on any machine from any state.
-            root_dir = Path(__file__).parent.parent.parent
+            # `uvx --from git+... mock` on any machine from any state. Otherwise a Path().cwd()
+            # would be enough.
+            path = Path(__file__)
+            airbrakes_v2_index = path.parts.index("AirbrakesV2")  # Find the AirbrakesV2 directory
+            root_dir = Path(*path.parts[: airbrakes_v2_index + 1])  # Make a new path to that dir
+
+            # Get the first file in the launch_data directory:
             self._log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
         # If it's not a real time replay, we limit how big the queue gets when doing an integration
@@ -121,10 +126,10 @@ class MockIMU(BaseIMU):
             chunksize=chunk_size,
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
         ):
-            chunk["time_diff"] = chunk["timestamp"].diff()
-            buffer_end_index = chunk[chunk["time_diff"] > 1e9].index
+            new_chunk = chunk.assign(time_diff=chunk["timestamp"].diff())
+            buffer_end_index = new_chunk[new_chunk["time_diff"] > 1e9].index
             if not buffer_end_index.empty:
-                return buffer_end_index[0]
+                return int(buffer_end_index[0])
         return 0
 
     def _read_file(

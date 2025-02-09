@@ -7,7 +7,7 @@ import signal
 import sys
 from collections import deque
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -18,6 +18,7 @@ if sys.platform != "win32":
 else:
     from queue import Empty
 
+import cython
 import msgspec
 
 from airbrakes.constants import (
@@ -31,9 +32,6 @@ from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-
-if TYPE_CHECKING:
-    import cython
 
 DecodedLoggerDataPacket = list[int | float | str]
 """The type of LoggerDataPacket after an instance of it was decoded from the queue. It is
@@ -51,8 +49,6 @@ class Logger:
     our logs in real time.
     """
 
-    LOG_BUFFER_STATES = ("S", "L")
-
     __slots__ = (
         "_log_buffer",
         "_log_counter",
@@ -60,6 +56,8 @@ class Logger:
         "_log_queue",
         "log_path",
     )
+
+    LOG_BUFFER_STATES = cython.declare(tuple[str, str], ("S", "L"))
 
     def __init__(self, log_dir: Path) -> None:
         """
@@ -80,7 +78,7 @@ class Logger:
         )
 
         # Buffer for StandbyState and LandedState
-        self._log_counter = 0
+        self._log_counter: cython.uint = 0
         self._log_buffer = deque(maxlen=LOG_BUFFER_SIZE)
 
         # Create a new log file with the next number in sequence
@@ -143,6 +141,7 @@ class Logger:
         return f"{obj_type:.8f}"
 
     @staticmethod
+    @cython.wraparound(False)  # Assume that the index is always positive (no negative indices)
     def _prepare_logger_packets(
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
@@ -162,10 +161,13 @@ class Logger:
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
-        index: cython.uint = 0  # Index to loop over processor data packets:
+        est_packet_index: cython.Py_ssize_t = 0  # Index to loop over processor data packets:
+        imu_data_packet_index: cython.Py_ssize_t  # Index to loop over IMU data packets
+        data_packets_length: cython.Py_ssize_t = len(imu_data_packets)
 
         # Convert the imu data packets to a LoggerDataPacket:
-        for imu_data_packet in imu_data_packets:
+        for imu_data_packet_index in range(data_packets_length):
+            imu_data_packet = imu_data_packets[imu_data_packet_index]
             logger_packet = LoggerDataPacket(
                 state_letter=context_data_packet.state_letter,
                 set_extension=servo_data_packet.set_extension,
@@ -217,14 +219,18 @@ class Logger:
                 logger_packet.estGravityVectorZ = imu_data_packet.estGravityVectorZ
 
                 # Now also extract the fields from the ProcessorDataPacket
-                logger_packet.current_altitude = processor_data_packets[index].current_altitude
-                logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
+                logger_packet.current_altitude = processor_data_packets[
+                    est_packet_index
+                ].current_altitude
+                logger_packet.vertical_velocity = processor_data_packets[
+                    est_packet_index
+                ].vertical_velocity
                 logger_packet.vertical_acceleration = processor_data_packets[
-                    index
+                    est_packet_index
                 ].vertical_acceleration
 
                 # Add index:
-                index += 1
+                est_packet_index += 1
             else:  # It is a raw packet:
                 # Extract all the fields from the RawDataPacket
                 logger_packet.scaledAccelX = imu_data_packet.scaledAccelX

@@ -5,6 +5,7 @@ import argparse
 import sys
 import time
 
+import cython
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
@@ -52,6 +53,9 @@ def run_sim_flight() -> None:
 
 
 def run_flight(args: argparse.Namespace) -> None:
+    if cython.compiled:
+        print("Running in compiled mode")
+
     mock_time_start = time.time()
 
     servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)

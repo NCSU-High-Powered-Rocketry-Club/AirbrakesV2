@@ -114,12 +114,11 @@ def get_configuration(config_type: str) -> SimulationConfig:
     "sub-scale" or "legacy".
     :return: The configuration for the simulation
     """
-    match config_type:
-        case "full-scale":
-            return FULL_SCALE_CONFIG
-        case "sub-scale":
-            return SUB_SCALE_CONFIG
-        case "legacy":
-            return LEGACY_CONFIG
-        case _:
-            raise ValueError(f"Invalid config type: {config_type}")
+    if config_type == "full-scale":
+        return FULL_SCALE_CONFIG
+    if config_type == "sub-scale":
+        return SUB_SCALE_CONFIG
+    if config_type == "legacy":
+        return LEGACY_CONFIG
+
+    raise ValueError(f"Invalid config type: {config_type}")
