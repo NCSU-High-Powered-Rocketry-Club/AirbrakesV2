@@ -337,7 +337,7 @@ class TestLogger:
                 dropped = {k: "" for k, v in expected_output.items() if v == "0.00000000"}
                 expected_output.update(dropped)
 
-                # Add the apogee predictor packet fields, only for the first row:
+                # Add the Apogee Predictor Data Packet fields, only for the first row:
                 if idx == 0 and apogee_predictor_data_packets:
                     apogee_pred_packet_dict = to_builtins(apogee_predictor_data_packets[0])
                     apogee_pred_packet_dict = Logger._truncate_floats(apogee_pred_packet_dict)

@@ -79,7 +79,7 @@ class TestLoggerDataPacket:
     def test_logger_data_packet_field_order(self):
         """Tests whether the LoggerDataPacket class has the correct field order."""
 
-        # Only context data packet has a different order - one field - "state_letter" is in the
+        # Only Context Data Packet has a different order - one field - "state_letter" is in the
         # beginning, the rest at the end.
 
         log_dp_fields = list(LoggerDataPacket.__annotations__)

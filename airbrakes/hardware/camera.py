@@ -1,4 +1,4 @@
-"""Module to handle recording of the airbrakes with a camera."""
+"""Module to handle recording the air brakes with a camera."""
 
 import os
 import signal
@@ -23,7 +23,7 @@ class Camera:
 
     __slots__ = ("camera_control_process", "motor_burn_started", "stop_context_event")
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.stop_context_event = Event()
         self.motor_burn_started = Event()
         self.camera_control_process = Process(
@@ -31,27 +31,36 @@ class Camera:
         )
 
     @property
-    def is_running(self):
-        """Returns whether the camera is currently recording."""
+    def is_running(self) -> bool:
+        """
+        Returns whether the camera is currently recording.
+        :return: True if the process is running, False otherwise.
+        """
         return self.camera_control_process.is_alive()
 
-    def start(self):
-        """Start the video recording, with a buffer. This starts recording in a different process"""
+    def start(self) -> None:
+        """
+        Start the video recording, with a buffer. This starts recording in a different process.
+        """
         self.camera_control_process.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the video recording."""
         self.motor_burn_started.set()  # in case we stop before motor burn
         self.stop_context_event.set()
         self.camera_control_process.join()
 
-    def start_recording(self):
+    def start_recording(self) -> None:
         """Start recording when motor burn has started."""
         self.motor_burn_started.set()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    def _camera_control_loop(self):
-        """Controls the camera recording process."""
+    def _camera_control_loop(self) -> None:
+        """
+        Controls the camera recording process. This loop is in a try-except block because the
+        camera is not fundamental to Airbrakes, so if something goes wrong we want Airbrakes to
+        still operate smoothly without it.
+        """
         try:
             # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
             signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal

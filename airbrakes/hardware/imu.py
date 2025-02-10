@@ -33,14 +33,9 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 
 class IMU(BaseIMU):
     """
-    Represents the IMU on the rocket. It's used to get the current acceleration of the rocket.
-    This is used to interact with the data collected by the Parker-LORD 3DMCX5-AR.
-    (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
-
-    It uses multiprocessing rather than threading to truly run in parallel with the main loop.
-    We're doing this is because the IMU constantly polls data and can be slow, so it's better to
-    run it in parallel.
-
+    Represents the IMU on the rocket. It's used to get the current motion of the rocket, including
+    the acceleration, rotation, and position. This is used to interact with the data collected by
+    the Parker-LORD 3DMCX5-AR. (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
@@ -54,21 +49,21 @@ class IMU(BaseIMU):
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
-        _data_queue: Queue[IMUDataPacket] = Queue(
+        _packet_queue: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
         )
         # Starts the process that fetches data from the IMU
         data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
-        super().__init__(data_fetch_process, _data_queue)
+        super().__init__(data_fetch_process, _packet_queue)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
     def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:
         """
         Initialize an IMU data packet based on its descriptor set.
-        :param packet: The data packet from the IMU.
+        :param packet: The data packet object from the IMU.
         :return: An IMUDataPacket, or None if the packet is unrecognized.
         """
         # Extract the timestamp from the packet.
@@ -86,11 +81,11 @@ class IMU(BaseIMU):
         data_point: "mscl.MipDataPoint", channel: str, imu_data_packet: IMUDataPacket
     ) -> None:
         """
-        Process an individual data point and set its value in the data packet object. Modifies
+        Process an individual data point and set its value in the IMUDataPacket object. Modifies
         `imu_data_packet` in place.
         :param data_point: The IMU data point containing the measurement.
         :param channel: The channel name of the data point.
-        :param imu_data_packet: The data packet object to update.
+        :param imu_data_packet: The IMUDataPacket object to update.
         """
         # Handle special channels that represent quaternion data.
         if channel in {"estAttitudeUncertQuaternion", "estOrientQuaternion"}:
@@ -156,7 +151,7 @@ class IMU(BaseIMU):
                 IMU._process_packet_data(packet, imu_data_packet)
 
                 # Add the processor data packet to the shared queue.
-                self._data_queue.put(imu_data_packet)
+                self._packet_queue.put(imu_data_packet)
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """

@@ -146,9 +146,9 @@ class TestAirbrakesContext:
         def state(self):
             # monkeypatched method of State
             calls.append("state update called")
-            if isinstance(self.airbrakes.state, CoastState):
-                self.airbrakes.predict_apogee()
-                self.airbrakes.servo.current_extension = ServoExtension.MAX_EXTENSION
+            if isinstance(self.context.state, CoastState):
+                self.context.predict_apogee()
+                self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
         def log(self, ctx_dp, servo_dp, imu_data_packets, processor_data_packets, apg_dps):
             # monkeypatched method of Logger
@@ -437,7 +437,7 @@ class TestAirbrakesContext:
         airbrakes.start()
         time.sleep(0.01)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
-        assert airbrakes.imu.queue_size > APOGEE_PREDICTION_MIN_PACKETS
+        assert airbrakes.imu.packet_queue_size > APOGEE_PREDICTION_MIN_PACKETS
 
         # We have to do this convoluted manual way of updating instead of airbrakes.update() because
         # 1) faster-fifo does not guarantee that all packets will be fetched in a single get_many()

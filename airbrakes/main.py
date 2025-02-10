@@ -8,7 +8,7 @@ import time
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.constants import IMU_PORT, LOGS_PATH, SERVO_PIN
+from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B, IMU_PORT, LOGS_PATH, SERVO_PIN
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
@@ -60,11 +60,11 @@ def run_flight(args: argparse.Namespace) -> None:
 
     servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)
     # Initialize the Airbrakes Context and display
-    airbrakes = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
-    flight_display = FlightDisplay(airbrakes, mock_time_start, args)
+    context = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
+    flight_display = FlightDisplay(context, mock_time_start, args)
 
     # Run the main flight loop
-    run_flight_loop(airbrakes, flight_display, args.mode == "mock", args.mode == "sim")
+    run_flight_loop(context, flight_display, args.mode == "mock", args.mode == "sim")
 
 
 def create_components(
@@ -90,16 +90,21 @@ def create_components(
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
-            Servo(SERVO_PIN)
+            Servo(SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B)
             if args.real_servo
-            else Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
+            else Servo(
+                SERVO_PIN,
+                ENCODER_PIN_A,
+                ENCODER_PIN_B,
+                pin_factory=MockFactory(pin_class=MockPWMPin),
+            )
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
         camera = Camera() if args.real_camera else MockCamera()
 
     else:
         # Use real hardware components
-        servo = Servo(SERVO_PIN)
+        servo = Servo(SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B)
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
         camera = Camera()
@@ -113,34 +118,34 @@ def create_components(
 
 
 def run_flight_loop(
-    airbrakes: AirbrakesContext,
+    context: AirbrakesContext,
     flight_display: FlightDisplay,
     is_mock: bool,
     is_sim: bool,
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
-    :param airbrakes: The Airbrakes Context managing the state machine.
+    :param context: The AirbrakesContext managing the state machine.
     :param flight_display: Display interface for flight data.
     :param is_mock: Whether running in mock replay mode.
     :param is_sim: Whether running in simulation mode.
     """
     try:
         # Starts the air brakes system and display
-        airbrakes.start()
+        context.start()
         flight_display.start()
 
-        while not airbrakes.shutdown_requested:
+        while not context.shutdown_requested:
             # Update the state machine
-            airbrakes.update()
+            context.update()
 
             # Stop the replay when the data is exhausted
-            if is_mock and not airbrakes.imu.is_running:
+            if is_mock and not context.imu.is_running:
                 break
             # This allows the simulation to know whether air brakes are deployed or not, and
             # change the drag coefficient and reference area used
             if is_sim:
-                airbrakes.imu.set_airbrakes_status(airbrakes.servo.current_extension)
+                context.imu.set_airbrakes_status(context.servo.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
@@ -154,7 +159,7 @@ def run_flight_loop(
     finally:
         # Stops the display and the Airbrakes program
         flight_display.stop()
-        airbrakes.stop()
+        context.stop()
 
 
 if __name__ == "__main__":
