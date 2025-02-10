@@ -146,9 +146,9 @@ class TestAirbrakesContext:
         def state(self):
             # monkeypatched method of State
             calls.append("state update called")
-            if isinstance(self.context.state, CoastState):
-                self.context.predict_apogee()
-                self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
+            if isinstance(self.airbrakes.state, CoastState):
+                self.airbrakes.predict_apogee()
+                self.airbrakes.servo.current_extension = ServoExtension.MAX_EXTENSION
 
         def log(self, ctx_dp, servo_dp, imu_data_packets, processor_data_packets, apg_dps):
             # monkeypatched method of Logger

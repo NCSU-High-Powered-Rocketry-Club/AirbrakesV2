@@ -1,4 +1,4 @@
-"""Contains the constants used in the airbrakes module"""
+"""Contains the constants used in the Airbrakes module"""
 
 from enum import Enum, StrEnum
 from pathlib import Path

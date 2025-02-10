@@ -1,4 +1,5 @@
-"""File which contains a few basic utility functions which can be reused in the project."""
+"""File which contains utility functions which can be reused in the project, along with handling
+command line arguments"""
 
 import argparse
 import sys
@@ -27,9 +28,9 @@ def get_always_list(self, *args, **kwargs) -> list:
 
 
 def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
-    """Initializes the multiprocessing queue on Windows by adding the missing methods from the
+    """
+    Initializes the multiprocessing queue on Windows by adding the missing methods from the
     faster_fifo library. Modifies `obj` in place.
-
     :param obj: The multiprocessing.Queue object to add the methods to.
     """
     if sys.platform == "win32":
@@ -37,39 +38,13 @@ def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
         obj.put_many = obj.put
 
 
-def convert_to_nanoseconds(timestamp_str: str) -> int | None:
-    """Converts seconds to nanoseconds, if it isn't already in nanoseconds."""
-    try:
-        # check if value is already in nanoseconds:
-        return int(timestamp_str)
-    except ValueError:
-        try:
-            timestamp_float = float(timestamp_str)
-            return int(timestamp_float * 1e9)  # return the value in nanoseconds
-        except ValueError:
-            return None
-
-
-def convert_to_seconds(timestamp: float) -> float | None:
-    """Converts nanoseconds to seconds"""
-    return timestamp / 1e9
-
-
-def convert_str_to_float(value: str) -> float | None:
-    """Converts a value to a float, returning None if the conversion fails."""
-    try:
-        return float(value)  # Attempt to convert to float
-    except (ValueError, TypeError):
-        return None  # Return None if the conversion fails
-
-
 def deadband(input_value: float, threshold: float) -> float:
     """
-    Returns 0 if the input_value is within the deadband threshold.
-    Otherwise, returns the input_value adjusted by the threshold.
+    Returns 0.0 if input_value is within the deadband threshold. Otherwise, returns input_value
+        adjusted by the threshold.
     :param input_value: The value to apply the deadband to.
     :param threshold: The deadband threshold.
-    :return: Adjusted input_value or 0 if within the deadband.
+    :return: Adjusted input_value or 0.0 if within the deadband.
     """
     if abs(input_value) < threshold:
         return 0.0
@@ -77,14 +52,15 @@ def deadband(input_value: float, threshold: float) -> float:
 
 
 def arg_parser() -> argparse.Namespace:
-    """Handles the command line arguments for the main airbrakes script.
-
+    """
+    Handles the command line arguments for the main Airbrakes program.
     :return: The parsed arguments as a class with attributes.
     """
     # We require ONE and only one of the 3 positional arguments to be passed:
     # - real: Run the real flight with all the real hardware.
-    # - mock: Run in replay mode with mock data and mock servo.
-    # - sim: Runs the data simulation alongside the mock simulation, with an optional scale.
+    # - mock: Run in mock replay mode with mock data.
+    # - sim: Runs the flight simulation alongside the mock replay, with an optional preset
+    #   selection.
     global_parser = argparse.ArgumentParser(add_help=False)
 
     # Global mutually exclusive group, for the `--debug` and `--verbose` options:
@@ -94,8 +70,8 @@ def arg_parser() -> argparse.Namespace:
     global_group.add_argument(
         "-d",
         "--debug",
-        help="Run the flight without a display. This will not "
-        "print the flight data and allow you to inspect the values of your print() statements.",
+        help="Run the flight without a display. This will not print the flight data and allow "
+        "you to inspect the values of your print() statements.",
         action="store_true",
         default=False,
     )
@@ -110,7 +86,7 @@ def arg_parser() -> argparse.Namespace:
 
     # Top-level parser for the main script:
     main_parser = argparse.ArgumentParser(
-        description="Main parser for the airbrakes script.",
+        description="Main parser for the Airbrakes program.",
         parents=[global_parser],
     )
 
@@ -127,13 +103,12 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],  # Include the global options
         prog="real",  # Program name in help messages
     )
-    # No extra arguments needed for the real flight mode.
 
     # Mock replay parser:
     mock_replay_parser = subparsers.add_parser(
         "mock",
         help="Run in replay mode with mock data (i.e. previous flight data)",
-        description="Configuration for the mock replay airbrakes script.",
+        description="Configuration for the mock replay Airbrakes program.",
         parents=[global_parser],  # Include the global options
         prog="mock",  # Program name in help messages
     )
@@ -142,27 +117,30 @@ def arg_parser() -> argparse.Namespace:
     # Sim parser
     sim_parser = subparsers.add_parser(
         "sim",
-        help="Runs the data simulation alongside the mock simulation.",
-        description="Configuration for the data simulation alongside the mock simulation.",
+        help="Runs the flight simulation alongside the mock replay.",
+        description="Configuration for the flight simulation alongside the mock replay.",
         parents=[global_parser],  # Include the global options
         prog="sim",  # Program name in help messages
     )
 
     sim_parser.add_argument(
-        "scale",
-        help="Simulation scale.",
+        "preset",
+        help="Selects the preset to use for the simulation.",
         choices=["full-scale", "sub-scale", "legacy"],
         nargs="?",  # Optional
         default="full-scale",
     )
-
     add_common_arguments(sim_parser, is_mock=False)
 
     return main_parser.parse_args()
 
 
 def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
-    """Adds the arguments common to the mock replay and the sim to the parser."""
+    """
+    Adds the arguments common to the mock replay and the sim to the parser.
+    :param parser: the mock replay or sim subparser.
+    :param is_mock: Whether running in mock replay mode.
+    """
 
     _type = "mock replay" if is_mock else "sim"
 
@@ -202,8 +180,8 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         parser.add_argument(
             "-p",
             "--path",
-            help="Define the pathname of flight data to use in mock replay. By default, the"
-            " first file found in the launch_data directory will be used if not specified.",
+            help="Define the pathname of flight data to use in the mock replay. The first file"
+            " found in the launch_data directory will be used if not specified.",
             type=Path,
             default=None,
         )

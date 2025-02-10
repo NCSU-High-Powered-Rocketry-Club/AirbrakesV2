@@ -3,43 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from airbrakes.utils import arg_parser, convert_str_to_float, convert_to_nanoseconds, deadband
-
-
-@pytest.mark.parametrize(
-    ("input_value", "expected"),
-    [
-        ("1", 1),
-        ("0.5", 500_000_000),
-        ("invalid", None),
-    ],
-    ids=["string_int_input", "string_float_input", "invalid"],
-)
-def test_convert_to_nanoseconds_correct_inputs(input_value, expected):
-    assert convert_to_nanoseconds(input_value) == expected
-
-
-@pytest.mark.parametrize(
-    ("input_value", "expected"),
-    [
-        (1, 1),
-        (0.5, 0),
-    ],
-    ids=[
-        "int_input",
-        "float_input",
-    ],
-)
-def test_convert_to_nanoseconds_wrong_inputs(input_value, expected):
-    assert convert_to_nanoseconds(input_value) == expected
-
-
-def test_convert_to_float():
-    assert convert_str_to_float(1) == 1.0
-    assert convert_str_to_float(0.5) == 0.5
-    assert convert_str_to_float("2.5") == 2.5
-    assert convert_str_to_float("invalid") is None
-    assert convert_str_to_float(None) is None
+from airbrakes.utils import arg_parser, deadband
 
 
 def test_deadband():
@@ -112,7 +76,7 @@ class TestArgumentParsing:
         assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
-            "scale",
+            "preset",
             "real_servo",
             "keep_log_file",
             "fast_replay",
@@ -122,7 +86,7 @@ class TestArgumentParsing:
         }
 
         assert args.mode == "sim"
-        assert args.scale == "sub-scale"
+        assert args.preset == "sub-scale"
         assert args.real_servo is True
         assert args.keep_log_file is True
         assert args.fast_replay is True
@@ -173,7 +137,7 @@ class TestArgumentParsing:
             ["sim", "-r", "-l", "-f", "-c"],
             ["sim", "legacy", "-r"],
         ],
-        ids=["mock_with_path", "sim_with_common_args", "sim_with_scale_and_common_args"],
+        ids=["mock_with_path", "sim_with_common_args", "sim_with_preset_and_common_args"],
     )
     def test_shared_arguments(self, monkeypatch, args):
         """Tests that shared arguments are correctly parsed across 'mock' and 'sim'."""
@@ -183,9 +147,9 @@ class TestArgumentParsing:
         if "mock" in args.mode:
             assert args.path == Path("mock/data/path")
         elif "sim" in args.mode:
-            assert args.scale
+            assert args.preset
             assert not hasattr(args, "path")
-            if args.scale == "legacy":
+            if args.preset == "legacy":
                 assert args.real_servo is True
                 assert args.keep_log_file is False
                 assert args.fast_replay is False
@@ -196,13 +160,13 @@ class TestArgumentParsing:
                 assert args.fast_replay is True
                 assert args.real_camera is True
 
-    def test_sim_default_scale(self, monkeypatch):
-        """Tests that the 'sim' mode defaults to 'full-scale' if no scale is provided."""
+    def test_sim_default_preset(self, monkeypatch):
+        """Tests that the 'sim' mode defaults to 'full-scale' if no preset is provided."""
         monkeypatch.setattr(sys, "argv", ["main.py", "sim"])
 
         args = arg_parser()
         assert args.mode == "sim"
-        assert args.scale == "full-scale"
+        assert args.preset == "full-scale"
 
     def test_help_output(self, monkeypatch, capsys):
         """Tests that help output includes global and subparser-specific arguments."""

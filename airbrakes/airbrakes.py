@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class AirbrakesContext:
     """
-    Manages the state machine for the rocket's airbrakes system, keeping track of the current state
+    Manages the state machine for the rocket's air brakes system, keeping track of the current state
     and communicating with hardware like the servo and IMU. This class is what connects the state
     machine to the hardware.
 
@@ -61,10 +61,10 @@ class AirbrakesContext:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes the airbrakes context with the specified hardware objects, logger, and data
+        Initializes the Airbrakes Context with the specified hardware objects, logger, and data
         processor. The state machine starts in the StandbyState, which is the initial state of the
-        airbrakes system.
-        :param servo: The servo object that controls the extension of the airbrakes. This can be a
+        air brakes system.
+        :param servo: The servo object that controls the extension of the air brakes. This can be a
         real servo or a mock servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU or
         a mock IMU.
@@ -104,8 +104,8 @@ class AirbrakesContext:
 
     def stop(self) -> None:
         """
-        Handles shutting down the airbrakes. This will cause the main loop to break. It retracts
-        the airbrakes, stops the IMU, and stops the logger.
+        Handles shutting down the air brakes. This will cause the main loop to break. It retracts
+        the air brakes, stops the IMU, and stops the logger.
         """
         if self.shutdown_requested:
             return
@@ -119,7 +119,7 @@ class AirbrakesContext:
     def update(self) -> None:
         """
         Called every loop iteration from the main process. Depending on the current state, it will
-        do different things. It is what controls the airbrakes and chooses when to move to the next
+        do different things. It is what controls the air brakes and chooses when to move to the next
         state.
         """
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
@@ -158,7 +158,7 @@ class AirbrakesContext:
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        # Create packets representing the current state of the airbrakes system:
+        # Create packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
         # Logs the current state, extension, IMU data, and processed data
@@ -175,20 +175,20 @@ class AirbrakesContext:
 
     def extend_airbrakes(self) -> None:
         """
-        Extends the airbrakes to the maximum extension.
+        Extends the air brakes to the maximum extension.
         """
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
         """
-        Retracts the airbrakes to the minimum extension.
+        Retracts the air brakes to the minimum extension.
         """
         self.servo.set_retracted()
 
     def predict_apogee(self) -> None:
         """
         Predicts the apogee of the rocket based on the current processed data. This
-        should only be called in the coast state, before we start controlling the airbrakes.
+        should only be called in the coast state, before we start controlling the air brakes.
         """
         # We have to only run this for estimated data packets, otherwise we send duplicate
         # data to the predictor (because for a raw data packet, we still have the 'old'
@@ -201,7 +201,7 @@ class AirbrakesContext:
         """
         Generates the context data packet and servo data packet to be logged.
         """
-        # Create a context data packet to log the current state of the airbrakes system
+        # Create a context data packet to log the current state of the air brakes system
         self.context_data_packet = ContextDataPacket(
             batch_number=self._update_count,
             state_letter=self.state.name[0],

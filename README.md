@@ -148,7 +148,7 @@ AirbrakesV2/
 │   │   ├── [files related to our custom air brakes sim ...]
 |   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
-│   ├── [files which control the airbrakes at a high level ...]
+│   ├── [files which control the air brakes at a high level ...]
 |   ├── main.py [main file used to run on the rocket]
 |   ├── constants.py [file for constants used in the project]
 ├── tests/  [used for testing all the code]
