@@ -150,11 +150,11 @@ class FlightDisplay:
         if self._airbrakes.imu.fetched_imu_packets > 50:
             imu_queue_backlog = True
 
-        # if (
-        #     self._pitch_at_startup
-        #     and abs(self._airbrakes.data_processor.average_pitch - self._pitch_at_startup) > 1
-        # ):
-        #     pitch_drift = True
+        if (
+            self._pitch_at_startup
+            and abs(self._airbrakes.data_processor.average_pitch - self._pitch_at_startup) > 1
+        ):
+            pitch_drift = True
 
         if has_invalid_fields or has_negative_velocity or imu_queue_backlog or pitch_drift:
             print("\a", end="")
@@ -235,8 +235,8 @@ class FlightDisplay:
             )
 
         # Assign the startup pitch value when it is available:
-        # if not self._pitch_at_startup and data_processor._current_orientation_quaternions:
-        #     self._pitch_at_startup = data_processor.average_pitch
+        if not self._pitch_at_startup and data_processor._current_orientation_quaternions:
+            self._pitch_at_startup = data_processor.average_pitch
 
         # Prepare output
         output = [
@@ -260,7 +260,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    # f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
+                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
