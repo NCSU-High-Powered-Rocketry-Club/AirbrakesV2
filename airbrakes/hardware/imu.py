@@ -165,6 +165,8 @@ class IMU(BaseIMU):
                                 raw_data_packet.invalid_fields = []
                             raw_data_packet.invalid_fields.append(data_point.channelName())
 
+                    messages.append(raw_data_packet)
+
                 elif descriptor_set == ESTIMATED_DESCRIPTOR_SET:
                     imu_data_packet: EstimatedDataPacket = EstimatedDataPacket(timestamp)
                     # Iterate through each data point in the packet.
