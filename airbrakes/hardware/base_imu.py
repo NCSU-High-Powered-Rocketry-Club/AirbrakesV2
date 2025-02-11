@@ -4,6 +4,8 @@ the IMU (Inertial measurement unit) on the rocket."""
 import contextlib
 import sys
 
+import cython
+
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
@@ -17,6 +19,10 @@ else:
     from queue import Empty
 
 from multiprocessing import Process, TimeoutError, Value
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from multiprocessing.sharedctypes import Synchronized
 
 
 class BaseIMU:
@@ -35,14 +41,14 @@ class BaseIMU:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
         """
-        self._data_fetch_process = data_fetch_process
-        self._data_queue = data_queue
+        self._data_fetch_process: Process = data_fetch_process
+        self._data_queue: Queue = data_queue
         # Makes a boolean value that is shared between processes
-        self._running = Value("b", False)
+        self._running: Synchronized = Value("b", False)
         self._fetched_imu_packets = Value("i", 0)
 
     @property
-    def fetched_imu_packets(self) -> int:
+    def fetched_imu_packets(self) -> cython.uint:
         """
         :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
         the performance of our loop.
@@ -50,7 +56,7 @@ class BaseIMU:
         return self._fetched_imu_packets.value
 
     @property
-    def queue_size(self) -> int:
+    def queue_size(self) -> cython.uint:
         """
         :return: The number of data packets in the queue.
         """

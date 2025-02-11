@@ -14,11 +14,13 @@ if sys.platform != "win32":
     # Python 3.13.
     from python_mscl import mscl
 
+from typing import TYPE_CHECKING
+
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
-    ESTIMATED_DESCRIPTOR_SET,
+    # ESTIMATED_DESCRIPTOR_SET,
     MAX_QUEUE_SIZE,
-    RAW_DESCRIPTOR_SET,
+    # RAW_DESCRIPTOR_SET,
 )
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -27,6 +29,9 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.utils import set_process_priority
+
+if TYPE_CHECKING:
+    import cython
 
 
 class IMU(BaseIMU):
@@ -42,8 +47,6 @@ class IMU(BaseIMU):
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
-
-    __slots__ = ("_fetched_imu_packets",)
 
     def __init__(self, port: str) -> None:
         """
@@ -95,75 +98,82 @@ class IMU(BaseIMU):
         # - Checking for raw data packets first, since that is 2x the frequency of estimated packets
         # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
         # - High priority for the process
+        RAW_DESCRIPTOR_SET: cython.uint = 128
+        ESTIMATED_DESCRIPTOR_SET: cython.uint = 130
+        put_many = self._data_queue.put_many
+
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
             self._fetched_imu_packets.value = len(packets)
 
-            messages = []
+            messages: list[IMUDataPacket] = []
             for packet in packets:
                 # Extract the timestamp from the packet.
-                timestamp = packet.collectedTimestamp().nanoseconds()
-                descriptor_set = packet.descriptorSet()
+                timestamp: cython.uint = packet.collectedTimestamp().nanoseconds()
+                descriptor_set: cython.uint = packet.descriptorSet()
 
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
                 if descriptor_set == RAW_DESCRIPTOR_SET:
-                    imu_data_packet = RawDataPacket(timestamp)
+                    raw_data_packet: RawDataPacket = RawDataPacket(timestamp)
                     # Iterate through each data point in the packet.
                     for data_point in packet.data():
                         # Extract the channel name of the data point.
-                        qualifier = data_point.qualifier()
-                        field_name = data_point.field()
+                        qualifier: cython.uint = data_point.qualifier()
+                        field_name: cython.uint = data_point.field()
+                        is_valid: bool = data_point.valid()
 
                         if field_name == 32775:
                             if qualifier == 1:
-                                imu_data_packet.deltaThetaX = data_point.as_float()
+                                raw_data_packet.deltaThetaX = data_point.as_float()
                             elif qualifier == 2:
-                                imu_data_packet.deltaThetaY = data_point.as_float()
+                                raw_data_packet.deltaThetaY = data_point.as_float()
                             elif qualifier == 3:
-                                imu_data_packet.deltaThetaZ = data_point.as_float()
+                                raw_data_packet.deltaThetaZ = data_point.as_float()
 
                         elif field_name == 32776:
                             if qualifier == 1:
-                                imu_data_packet.deltaVelX = data_point.as_float()
+                                raw_data_packet.deltaVelX = data_point.as_float()
                             elif qualifier == 2:
-                                imu_data_packet.deltaVelY = data_point.as_float()
+                                raw_data_packet.deltaVelY = data_point.as_float()
                             elif qualifier == 3:
-                                imu_data_packet.deltaVelZ = data_point.as_float()
+                                raw_data_packet.deltaVelZ = data_point.as_float()
 
                         elif field_name == 32772:
                             if qualifier == 1:
-                                imu_data_packet.scaledAccelX = data_point.as_float()
+                                raw_data_packet.scaledAccelX = data_point.as_float()
                             elif qualifier == 2:
-                                imu_data_packet.scaledAccelY = data_point.as_float()
+                                raw_data_packet.scaledAccelY = data_point.as_float()
                             elif qualifier == 3:
-                                imu_data_packet.scaledAccelZ = data_point.as_float()
+                                raw_data_packet.scaledAccelZ = data_point.as_float()
 
                         elif field_name == 32791 and qualifier == 58:
-                            imu_data_packet.scaledAmbientPressure = data_point.as_float()
+                            raw_data_packet.scaledAmbientPressure = data_point.as_float()
 
                         elif field_name == 32773:
                             if qualifier == 1:
-                                imu_data_packet.scaledGyroX = data_point.as_float()
+                                raw_data_packet.scaledGyroX = data_point.as_float()
                             elif qualifier == 2:
-                                imu_data_packet.scaledGyroY = data_point.as_float()
+                                raw_data_packet.scaledGyroY = data_point.as_float()
                             elif qualifier == 3:
-                                imu_data_packet.scaledGyroZ = data_point.as_float()
+                                raw_data_packet.scaledGyroZ = data_point.as_float()
 
                         # Check if the data point is invalid and update the invalid fields list.
-                        if not data_point.valid():
-                            if imu_data_packet.invalid_fields is None:
-                                imu_data_packet.invalid_fields = []
-                            imu_data_packet.invalid_fields.append(data_point.channelName())
+                        if not is_valid:
+                            if raw_data_packet.invalid_fields is None:
+                                raw_data_packet.invalid_fields = []
+                            raw_data_packet.invalid_fields.append(data_point.channelName())
 
                 elif descriptor_set == ESTIMATED_DESCRIPTOR_SET:
-                    imu_data_packet = EstimatedDataPacket(timestamp)
+                    imu_data_packet: EstimatedDataPacket = EstimatedDataPacket(timestamp)
                     # Iterate through each data point in the packet.
                     for data_point in packet.data():
                         # Extract the channel name of the data point.
-                        qualifier = data_point.qualifier()
-                        field_name = data_point.field()
+                        qualifier: cython.uint = data_point.qualifier()
+                        field_name: cython.uint = data_point.field()
+                        is_valid: bool = data_point.valid()
+
                         if field_name == 33294:
                             if qualifier == 1:
                                 imu_data_packet.estAngularRateX = data_point.as_float()
@@ -214,10 +224,12 @@ class IMU(BaseIMU):
                             imu_data_packet.estPressureAlt = data_point.as_float()
 
                         # Check if the data point is invalid and update the invalid fields list.
-                        if not data_point.valid():
+                        if not is_valid:
                             if imu_data_packet.invalid_fields is None:
                                 imu_data_packet.invalid_fields = []
                             imu_data_packet.invalid_fields.append(data_point.channelName())
+
+                    messages.append(imu_data_packet)
 
                 else:
                     continue  # We never actually reach here, but keeping it just in case
@@ -226,9 +238,7 @@ class IMU(BaseIMU):
                     # can't exclude it from the IMU settings cause it says it's not recommended
                     #     print(field_name, data_point.channelName())
 
-                messages.append(imu_data_packet)
-
-            self._data_queue.put_many(messages)
+            put_many(messages)
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """
