@@ -3,6 +3,7 @@
 import time
 from typing import TYPE_CHECKING
 
+from airbrakes.constants import MAIN_PROCESS_PRIORITY
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.servo import Servo
@@ -95,7 +96,7 @@ class AirbrakesContext:
         """
         Starts the IMU and logger processes. This is called before the main while loop starts.
         """
-        set_process_priority(-5)  # Higher than normal priority
+        set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()

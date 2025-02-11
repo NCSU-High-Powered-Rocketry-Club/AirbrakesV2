@@ -4,6 +4,16 @@ from enum import Enum, StrEnum
 from pathlib import Path
 
 # -------------------------------------------------------
+# Main Configuration
+# -------------------------------------------------------
+
+MAIN_PROCESS_PRIORITY = -11
+"""The priority of the Main process. This is a really high priority so the OS knows to give it
+priority over other processes. This is because we want to make sure we don't want to stay behind
+on processing the packets from the IMU."""
+
+
+# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 
@@ -72,6 +82,12 @@ IMU_PORT = "/dev/ttyACM0"
 """The port that the IMU is connected to. This is typically the default port where the IMU connects
 to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the
 system."""
+
+
+IMU_PROCESS_PRIORITY = -15
+"""The priority of the IMU process. This is a really high priority so the OS knows to give it
+priority over other processes. This is because we want to make sure we don't miss any data packets
+from the IMU."""
 
 # The frequency at which the IMU sends data packets, in seconds
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000
