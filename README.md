@@ -165,7 +165,7 @@ AirbrakesV2/
 
 ## Quick Start
 
-This project strongly recommends using [`uv`](https://docs.astral.sh/uv/) to manage and install
+This project only supports Linux. We also strongly recommend using [`uv`](https://docs.astral.sh/uv/) to manage and install
 the project. To quickly run the mock replay, simply run:
 
 ```bash

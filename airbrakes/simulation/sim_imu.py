@@ -2,19 +2,11 @@
 
 import contextlib
 import multiprocessing
-import sys
 import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-
-if sys.platform != "win32":
-    from faster_fifo import Queue
-else:
-    from functools import partial
-
-    from airbrakes.utils import get_all_from_queue
-
+from faster_fifo import Queue
 
 from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 from airbrakes.simulation.sim_utils import update_timestamp
@@ -43,18 +35,9 @@ class SimIMU(BaseIMU):
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-            data_queue = multiprocessing.Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
-            )
-
-            data_queue.get_many = partial(get_all_from_queue, data_queue)
-        else:
-            data_queue: Queue[IMUDataPacket] = Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
-            )
+        data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
+        )
 
         # Starts the process that fetches the generated data
         data_fetch_process = multiprocessing.Process(

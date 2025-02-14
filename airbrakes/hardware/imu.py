@@ -2,17 +2,10 @@
 
 import contextlib
 import multiprocessing
-import sys
 
 import msgspec
-
-# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
-if sys.platform != "win32":
-    from faster_fifo import Queue
-
-    # Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
-    # Python 3.13.
-    from python_mscl import mscl
+from faster_fifo import Queue
+from python_mscl import mscl
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,

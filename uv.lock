@@ -7,7 +7,7 @@ version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "colorama" },
-    { name = "faster-fifo", marker = "sys_platform != 'win32'" },
+    { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "msgspec" },
     { name = "numpy" },
@@ -36,7 +36,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "colorama" },
-    { name = "faster-fifo", marker = "sys_platform != 'win32'" },
+    { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "msgspec" },
     { name = "numpy" },
