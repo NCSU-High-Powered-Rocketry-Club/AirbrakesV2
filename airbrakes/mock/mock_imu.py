@@ -181,7 +181,7 @@ class MockIMU(BaseIMU):
             # sleep only if we are running a real-time replay
             # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
             # pretend to be real-time
-            if real_time_replay and isinstance(imu_data_packet, RawDataPacket):
+            if real_time_replay and type(imu_data_packet) is RawDataPacket:
                 # Mimmick polling interval
                 end_time = time.time()
                 time.sleep(max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - (end_time - start_time)))

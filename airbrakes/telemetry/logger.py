@@ -320,7 +320,7 @@ class Logger:
 
     def _log_the_buffer(self):
         """
-        Adds the log buffer to the queue, so it can be logger to file.
+        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
         """
         self._log_queue.put_many(list(self._log_buffer))
         self._log_buffer.clear()
