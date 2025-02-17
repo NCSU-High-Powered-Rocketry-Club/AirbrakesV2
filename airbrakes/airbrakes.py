@@ -100,7 +100,7 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
-        self.camera.start()
+        # self.camera.start()
 
     def stop(self) -> None:
         """
@@ -113,7 +113,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.camera.stop()
+        # self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:

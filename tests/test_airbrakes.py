@@ -67,7 +67,7 @@ class TestAirbrakesContext:
         assert airbrakes.imu.is_running
         assert airbrakes.logger.is_running
         assert airbrakes.apogee_predictor.is_running
-        assert airbrakes.camera.is_running
+        # assert airbrakes.camera.is_running
         airbrakes.stop()
 
     def test_stop_simple(self, airbrakes):
