@@ -187,7 +187,7 @@ class TestAirbrakesContext:
 
         time.sleep(0.01)  # Sleep a bit so that the IMU queue is being filled
 
-        assert mocked_airbrakes.imu._data_queue.qsize() > 0
+        assert mocked_airbrakes.imu._packet_queue.qsize() > 0
         assert mocked_airbrakes.state.name == "CoastState"
         assert mocked_airbrakes.data_processor._last_data_packet is None
 
@@ -269,7 +269,7 @@ class TestAirbrakesContext:
         and calling airbrakes.update().
         """
         airbrakes.imu = random_data_mock_imu
-        fd = FlightDisplay(airbrakes=airbrakes, start_time=time.time(), args=mocked_args_parser)
+        fd = FlightDisplay(context=airbrakes, start_time=time.time(), args=mocked_args_parser)
         has_airbrakes_stopped = threading.Event()
         started_thread = False
 
@@ -346,7 +346,7 @@ class TestAirbrakesContext:
 
         time.sleep(0.01)
 
-        assert not airbrakes.imu._data_queue.qsize()
+        assert not airbrakes.imu._packet_queue.qsize()
         assert airbrakes.state.name == "StandbyState"
         assert airbrakes.data_processor._last_data_packet is None
         assert not airbrakes.apogee_predictor_data_packets
@@ -356,7 +356,7 @@ class TestAirbrakesContext:
 
         # Insert 1 raw, then 2 estimated, then 1 raw data packet:
         raw_1 = make_raw_data_packet(timestamp=time.time())
-        airbrakes.imu._data_queue.put(raw_1)
+        airbrakes.imu._packet_queue.put(raw_1)
         time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
         airbrakes.update()
         # Check if we processed the raw data packet:
@@ -381,8 +381,8 @@ class TestAirbrakesContext:
             estOrientQuaternionZ=0.3,
         )
         est_2 = make_est_data_packet(timestamp=3.0 + 1e9, estPressureAlt=24.0)
-        airbrakes.imu._data_queue.put(est_1)
-        airbrakes.imu._data_queue.put(est_2)
+        airbrakes.imu._packet_queue.put(est_1)
+        airbrakes.imu._packet_queue.put(est_2)
         time.sleep(0.001)
         airbrakes.update()
         time.sleep(0.01)
@@ -404,7 +404,7 @@ class TestAirbrakesContext:
 
         # Insert 1 raw data packet:
         raw_2 = make_raw_data_packet(timestamp=time.time())
-        airbrakes.imu._data_queue.put(raw_2)
+        airbrakes.imu._packet_queue.put(raw_2)
         time.sleep(0.001)
         airbrakes.update()
         # Check if we processed the raw data packet:

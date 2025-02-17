@@ -128,9 +128,9 @@ def test_create_components(parsed_args, monkeypatch):
         # A mock logger object is always created:
         assert type(created_components[3]) is MockLogger
         if parsed_args.keep_log_file:
-            assert created_components[3].delete_log_file is False
+            assert created_components[3]._delete_log_file is False
         else:
-            assert created_components[3].delete_log_file is True
+            assert created_components[3]._delete_log_file is True
 
     # Real hardware components:
     else:

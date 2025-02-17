@@ -209,7 +209,7 @@ class AirbrakesContext:
             batch_number=self._update_count,
             state_letter=self.state.name[0],
             imu_queue_size=self.imu.packet_queue_size,
-            apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.apogee_predictor_data_packet_queue_size,
         )
 
         # Creates a Servo Data Packet to log the current extension of the servo and the position
