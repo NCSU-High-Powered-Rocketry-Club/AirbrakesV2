@@ -211,5 +211,5 @@ class AirbrakesContext:
         # Creates a servo data packet to log the current state of the servo
         self.servo_data_packet = ServoDataPacket(
             set_extension=str(self.servo.current_extension.value),
-            encoder_position=str(self.servo.get_encoder_reading()),
+            encoder_position=self.servo.get_encoder_reading(),
         )

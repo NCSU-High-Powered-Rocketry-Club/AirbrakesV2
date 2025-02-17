@@ -15,7 +15,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Fields in ServoDataPacket
     set_extension: str | None
-    encoder_position: str | None
+    encoder_position: int | None
 
     # IMU Data Packet Fields
     timestamp: int
