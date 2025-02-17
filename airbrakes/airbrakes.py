@@ -201,10 +201,10 @@ class AirbrakesContext:
         # Create a context data packet to log the current state of the airbrakes system
         self.context_data_packet = ContextDataPacket(
             state_letter=self.state.name[0],
-            fetched_packets_in_main=len(self.imu_data_packets),
-            imu_queue_size=self.imu.queue_size,
+            retrieved_imu_packets=len(self.imu_data_packets),
+            queued_imu_packets=self.imu.queued_imu_packets,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
-            fetched_imu_packets=self.imu.fetched_imu_packets,
+            imu_packets_per_cycle=self.imu.imu_packets_per_cycle,
             update_timestamp_ns=time.time_ns(),
         )
 

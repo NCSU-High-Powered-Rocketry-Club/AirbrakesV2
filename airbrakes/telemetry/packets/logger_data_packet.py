@@ -74,8 +74,8 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     uncertainty_threshold_2: str | None = None
 
     # Other fields in ContextDataPacket
-    fetched_packets_in_main: int | None
-    imu_queue_size: int | None
+    retrieved_imu_packets: int | None
+    queued_imu_packets: int | None
     apogee_predictor_queue_size: int | None
-    fetched_imu_packets: int | None
+    imu_packets_per_cycle: int | None
     update_timestamp_ns: int | None

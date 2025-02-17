@@ -44,7 +44,7 @@ class IMU(BaseIMU):
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
-    __slots__ = ("_fetched_imu_packets",)
+    __slots__ = ()
 
     def __init__(self, port: str) -> None:
         """
@@ -100,7 +100,7 @@ class IMU(BaseIMU):
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
-            self._fetched_imu_packets.value = len(packets)
+            self._imu_packets_per_cycle.value = len(packets)
 
             messages = []
             for packet in packets:

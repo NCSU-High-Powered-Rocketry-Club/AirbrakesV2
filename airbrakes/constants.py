@@ -10,7 +10,8 @@ from pathlib import Path
 MAIN_PROCESS_PRIORITY = -11
 """The priority of the Main process. This is a really high priority so the OS knows to give it
 priority over other processes. This is because we want to make sure we don't want to stay behind
-on processing the packets from the IMU."""
+on processing the packets from the IMU. It's a bit lower than the IMU process because we want to
+make sure the IMU process is always running and getting data."""
 
 
 # -------------------------------------------------------

@@ -330,7 +330,7 @@ class TestIntegration:
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
         # List to store all the fetched_packets from the imu
-        fetched_imu_packets = []
+        imu_packets_per_cycle_list = []
 
         has_airbrakes_stopped = threading.Event()
 
@@ -348,7 +348,7 @@ class TestIntegration:
             airbrakes.update()
 
             if time.time() - start_time >= SNAPSHOT_INTERVAL:
-                fetched_imu_packets.append(ab.imu.fetched_imu_packets)
+                imu_packets_per_cycle_list.append(ab.imu.imu_packets_per_cycle)
                 start_time = time.time()
 
         # Wait for the airbrakes to stop.
@@ -361,4 +361,4 @@ class TestIntegration:
         assert not airbrakes.imu._data_fetch_process.is_alive()
         assert not airbrakes.logger._log_process.is_alive()
         assert not airbrakes.apogee_predictor._prediction_process.is_alive()
-        assert sum(fetched_imu_packets) / len(fetched_imu_packets) <= 10
+        assert sum(imu_packets_per_cycle_list) / len(imu_packets_per_cycle_list) <= 10
