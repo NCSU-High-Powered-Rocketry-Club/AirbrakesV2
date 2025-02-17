@@ -33,7 +33,7 @@ class BaseIMU:
     __slots__ = (
         "_data_fetch_process",
         "_data_queue",
-        "_fetched_imu_packets",
+        "_imu_packets_per_cycle",
         "_running",
     )
 
@@ -45,20 +45,20 @@ class BaseIMU:
         self._data_queue: Queue = data_queue
         # Makes a boolean value that is shared between processes
         self._running: Synchronized = Value("b", False)
-        self._fetched_imu_packets = Value("i", 0)
+        self._imu_packets_per_cycle = Value("i", 0)
 
     @property
-    def fetched_imu_packets(self) -> cython.uint:
+    def imu_packets_per_cycle(self) -> cython.uint:
         """
         :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
         the performance of our loop.
         """
-        return self._fetched_imu_packets.value
+        return self._imu_packets_per_cycle.value
 
     @property
-    def queue_size(self) -> cython.uint:
+    def queued_imu_packets(self) -> cython.uint:
         """
-        :return: The number of data packets in the queue.
+        :return: The number of data packets in the multiprocessing queue.
         """
         return self._data_queue.qsize()
 

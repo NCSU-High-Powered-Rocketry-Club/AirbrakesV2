@@ -174,10 +174,10 @@ class Logger:
                 encoder_position=servo_data_packet.encoder_position,
                 timestamp=imu_data_packet.timestamp,
                 invalid_fields=imu_data_packet.invalid_fields,
-                fetched_packets_in_main=context_data_packet.fetched_packets_in_main,
-                imu_queue_size=context_data_packet.imu_queue_size,
+                retrieved_imu_packets=context_data_packet.retrieved_imu_packets,
+                queued_imu_packets=context_data_packet.queued_imu_packets,
                 apogee_predictor_queue_size=context_data_packet.apogee_predictor_queue_size,
-                fetched_imu_packets=context_data_packet.fetched_imu_packets,
+                imu_packets_per_cycle=context_data_packet.imu_packets_per_cycle,
                 update_timestamp_ns=context_data_packet.update_timestamp_ns,
             )
 

@@ -3,6 +3,7 @@
 import time
 from typing import TYPE_CHECKING
 
+from airbrakes.constants import MAIN_PROCESS_PRIORITY
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.servo import Servo
@@ -95,11 +96,11 @@ class AirbrakesContext:
         """
         Starts the IMU and logger processes. This is called before the main while loop starts.
         """
-        set_process_priority(-5)  # Higher than normal priority
+        set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
-        self.camera.start()
+        # self.camera.start()
 
     def stop(self) -> None:
         """
@@ -112,7 +113,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.camera.stop()
+        # self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:
@@ -200,15 +201,15 @@ class AirbrakesContext:
         # Create a context data packet to log the current state of the airbrakes system
         self.context_data_packet = ContextDataPacket(
             state_letter=self.state.name[0],
-            fetched_packets_in_main=len(self.imu_data_packets),
-            imu_queue_size=self.imu.queue_size,
+            retrieved_imu_packets=len(self.imu_data_packets),
+            queued_imu_packets=self.imu.queued_imu_packets,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
-            fetched_imu_packets=self.imu.fetched_imu_packets,
+            imu_packets_per_cycle=self.imu.imu_packets_per_cycle,
             update_timestamp_ns=time.time_ns(),
         )
 
         # Creates a servo data packet to log the current state of the servo
         self.servo_data_packet = ServoDataPacket(
             set_extension=str(self.servo.current_extension.value),
-            encoder_position=str(self.servo.get_encoder_reading()),
+            encoder_position=self.servo.get_encoder_reading(),
         )

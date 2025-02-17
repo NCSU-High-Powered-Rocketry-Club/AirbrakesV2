@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
     # ESTIMATED_DESCRIPTOR_SET,
+    IMU_PROCESS_PRIORITY,
     MAX_QUEUE_SIZE,
     # RAW_DESCRIPTOR_SET,
 )
@@ -47,6 +48,8 @@ class IMU(BaseIMU):
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
+
+    __slots__ = ()
 
     def __init__(self, port: str) -> None:
         """
@@ -80,7 +83,7 @@ class IMU(BaseIMU):
         """
         # Set the process priority really high, as we want to get the data from the IMU as fast as
         # possible:
-        set_process_priority(-15)
+        set_process_priority(IMU_PROCESS_PRIORITY)
 
         # Connect to the IMU and initialize the node used for getting data packets
         connection = mscl.Connection.Serial(port)
@@ -106,7 +109,7 @@ class IMU(BaseIMU):
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
-            self._fetched_imu_packets.value = len(packets)
+            self._imu_packets_per_cycle.value = len(packets)
 
             messages: list[IMUDataPacket] = []
             for packet in packets:
