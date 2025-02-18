@@ -126,6 +126,27 @@ IMU_TIMEOUT_SECONDS = 3.0
 it is considered to have timed out. This is used to prevent the program from deadlocking if the IMU
 stops sending data."""
 
+# Constants for IMU field names and quantifiers
+DELTA_THETA_FIELD = 32775
+DELTA_VEL_FIELD = 32776
+SCALED_ACCEL_FIELD = 32772
+SCALED_GYRO_FIELD = 32773
+SCALED_AMBIENT_PRESSURE_FIELD = 32791
+EST_ANGULAR_RATE_FIELD = 33294
+EST_ATTITUDE_UNCERT_FIELD = 33298
+EST_COMPENSATED_ACCEL_FIELD = 33308
+EST_GRAVITY_VECTOR_FIELD = 33299
+EST_LINEAR_ACCEL_FIELD = 33293
+EST_ORIENT_QUATERNION_FIELD = 33283
+EST_PRESSURE_ALT_FIELD = 33313
+
+X_QUALIFIER = 1
+Y_QUALIFIER = 2
+Z_QUALIFIER = 3
+ATTITUDE_UNCERT_QUALIFIER = 5
+PRESSURE_ALT_QUALIFIER = 67
+AMBIENT_PRESSURE_QUALIFIER = 58
+
 # -------------------------------------------------------
 # Camera Configuration
 # -------------------------------------------------------
