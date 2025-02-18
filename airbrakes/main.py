@@ -122,9 +122,12 @@ def run_flight_loop(
         airbrakes.start()
         flight_display.start()
 
-        while not airbrakes.shutdown_requested:
+        while True:
             # Update the state machine
             airbrakes.update()
+
+            if airbrakes.shutdown_requested:
+                break
 
             # Stop the replay when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:
