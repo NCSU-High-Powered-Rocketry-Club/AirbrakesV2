@@ -2,21 +2,14 @@
 the IMU (Inertial measurement unit) on the rocket."""
 
 import contextlib
-import sys
+from multiprocessing import Process, TimeoutError, Value
+
+from faster_fifo import Empty, Queue
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
 )
-
-# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
-if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
-else:
-    from multiprocessing import Queue
-    from queue import Empty
-
-from multiprocessing import Process, TimeoutError, Value
 
 
 class BaseIMU:

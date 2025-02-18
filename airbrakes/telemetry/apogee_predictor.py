@@ -3,22 +3,13 @@
 import contextlib
 import multiprocessing
 import signal
-import sys
 from collections import deque
 from typing import Literal
 
 import msgspec
 import numpy as np
 import numpy.typing as npt
-
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-
-# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
-if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
-else:
-    from queue import Empty
-
+from faster_fifo import Empty, Queue
 from scipy.optimize import curve_fit
 
 from airbrakes.constants import (
@@ -32,8 +23,9 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import _convert_unknown_type_to_float, modify_multiprocessing_queue_windows
+from airbrakes.utils import _convert_unknown_type_to_float
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
@@ -78,31 +70,16 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-
-            # This queue is for the data in
-            self._processor_data_packet_queue: multiprocessing.Queue[
-                list[ProcessorDataPacket] | Literal["STOP"]
-            ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
-            # This queue is for the data out
-            self._apogee_predictor_packet_queue: multiprocessing.Queue[
-                ApogeePredictorDataPacket
-            ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
-        else:
-            msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_float)
-            msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
-            self._processor_data_packet_queue: Queue[
-                list[ProcessorDataPacket] | Literal["STOP"]
-            ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
-            self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES,
-                dumps=msgpack_encoder.encode,
-                loads=msgpack_decoder.decode,
-            )
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_float)
+        msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
+            Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
+        )
+        self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
+        )
 
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
@@ -255,11 +232,6 @@ class ApogeePredictor:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-
-        # Unfortunately, we need to modify the queue here again because the modifications made in
-        # the __init__ are not copied to the new process.
-        modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
-        modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
 
         last_run_length = 0
 

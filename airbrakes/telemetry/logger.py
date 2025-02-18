@@ -3,21 +3,12 @@
 import csv
 import multiprocessing
 import signal
-import sys
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import modify_multiprocessing_queue_windows
-
-if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
-else:
-    from queue import Empty
-
 import msgspec
+from faster_fifo import Empty, Queue
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
@@ -26,10 +17,12 @@ from airbrakes.constants import (
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
 )
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 DecodedLoggerDataPacket = list[int | float | str]
 """The type of LoggerDataPacket after an instance of it was decoded from the queue. It is
@@ -95,19 +88,11 @@ class Logger:
         # is wanted (and faster!):
         msgpack_decoder = msgspec.msgpack.Decoder()
 
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-            self._log_queue: multiprocessing.Queue[list[LoggerDataPacket] | Literal["STOP"]] = (
-                multiprocessing.Queue()
-            )
-            modify_multiprocessing_queue_windows(self._log_queue)
-        else:
-            self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES,
-                loads=msgpack_decoder.decode,
-                dumps=msgpack_encoder.encode,
-            )
+        self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+            loads=msgpack_decoder.decode,
+            dumps=msgpack_encoder.encode,
+        )
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
@@ -341,10 +326,6 @@ class Logger:
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-
-        # Unfortunately, we need to modify the queue here again because the modifications made in
-        # the __init__ are not copied to the new process.
-        modify_multiprocessing_queue_windows(self._log_queue)
 
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:

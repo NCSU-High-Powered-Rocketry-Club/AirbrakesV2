@@ -3,19 +3,12 @@
 import ast
 import contextlib
 import multiprocessing
-import sys
 import time
 from pathlib import Path
 
 import msgspec
 import pandas as pd
-
-if sys.platform != "win32":
-    from faster_fifo import Queue
-else:
-    from functools import partial
-
-    from airbrakes.utils import get_all_from_queue
+from faster_fifo import Queue
 
 from airbrakes.constants import (
     LOG_BUFFER_SIZE,
@@ -71,24 +64,13 @@ class MockIMU(BaseIMU):
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-            data_queue = multiprocessing.Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
-            )
-
-            data_queue.get_many = partial(get_all_from_queue, data_queue)
-        else:
-            msgpack_encoder = msgspec.msgpack.Encoder()
-            msgpack_decoder = msgspec.msgpack.Decoder(
-                type=EstimatedDataPacket | RawDataPacket | str
-            )
-            data_queue: Queue[IMUDataPacket] = Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
-                dumps=msgpack_encoder.encode,
-                loads=msgpack_decoder.decode,
-            )
+        msgpack_encoder = msgspec.msgpack.Encoder()
+        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
+        data_queue: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
+        )
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
