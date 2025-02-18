@@ -94,7 +94,7 @@ def create_components(
 
     else:
         # Use real hardware components
-        servo = Servo(SERVO_PIN)
+        servo = Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
         camera = Camera()

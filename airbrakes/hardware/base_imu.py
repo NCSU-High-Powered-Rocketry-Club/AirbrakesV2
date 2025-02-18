@@ -38,8 +38,8 @@ class BaseIMU:
         self._data_fetch_process = data_fetch_process
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
-        self._running = Value("b", False)
-        self._imu_packets_per_cycle = Value("i", 0)
+        self._running = Value("b", False, lock=False)
+        self._imu_packets_per_cycle = Value("i", 0, lock=False)
 
     @property
     def imu_packets_per_cycle(self) -> int:
