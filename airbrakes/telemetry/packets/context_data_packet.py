@@ -13,24 +13,24 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     state_letter: Literal["S", "M", "C", "F", "L"]
     """Represents the stage of flight we are in. Will only be a single letter."""
 
-    fetched_packets_in_main: int
+    retrieved_imu_packets: int
     """
-    This is the number of packets from the IMU process, in the main process. This number will always
-    be below constants.MAX_FETCHED_PACKETS. If this number is on the high end, it indicates some
-    performance issues with the main process.
+    This is the number of packets we got from the IMU process, in the main process. This number
+    will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high end,
+    it indicates some performance issues with the main process.
     """
 
-    imu_queue_size: int
-    """The number of IMU data packets in the IMU queue, waiting to be fetched, by the main
-    process"""
+    queued_imu_packets: int
+    """The number of IMU data packets in the IMU multiprocessing queue, waiting to be fetched,
+    by the main process."""
 
     apogee_predictor_queue_size: int
     """The number of apogee predictor data packets in the apogee predictor queue,
     waiting to be fetched by the main process."""
 
-    fetched_imu_packets: int
+    imu_packets_per_cycle: int
     """The number of packets we directly fetch from the LORD IMU in the IMU process. This is
-    before we send the packets to the main process."""
+    before we put the packets in the multiprocessing queue to the main process."""
 
     update_timestamp_ns: int
     """The timestamp reported by the local computer at which we processed

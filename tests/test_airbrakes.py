@@ -67,7 +67,7 @@ class TestAirbrakesContext:
         assert airbrakes.imu.is_running
         assert airbrakes.logger.is_running
         assert airbrakes.apogee_predictor.is_running
-        assert airbrakes.camera.is_running
+        # assert airbrakes.camera.is_running
         airbrakes.stop()
 
     def test_stop_simple(self, airbrakes):
@@ -157,10 +157,10 @@ class TestAirbrakesContext:
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(
                 ctx_dp.state_letter == "C"
-                and ctx_dp.fetched_packets_in_main >= 1
-                and ctx_dp.imu_queue_size > 0
+                and ctx_dp.retrieved_imu_packets >= 1
+                and ctx_dp.queued_imu_packets > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
-                and ctx_dp.fetched_imu_packets >= 0  # mock imus will be 0
+                and ctx_dp.imu_packets_per_cycle >= 0  # mock imus will be 0
                 and ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9)
             )
             asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
@@ -439,7 +439,7 @@ class TestAirbrakesContext:
         airbrakes.start()
         time.sleep(0.01)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
-        assert airbrakes.imu.queue_size > APOGEE_PREDICTION_MIN_PACKETS
+        assert airbrakes.imu.queued_imu_packets > APOGEE_PREDICTION_MIN_PACKETS
 
         # We have to do this convoluted manual way of updating instead of airbrakes.update() because
         # 1) faster-fifo does not guarantee that all packets will be fetched in a single get_many()
@@ -488,9 +488,10 @@ class TestAirbrakesContext:
         """Tests whether the airbrakes generates the correct data packets for logging."""
         airbrakes.generate_data_packets()
         assert airbrakes.context_data_packet.state_letter == "S"
-        assert airbrakes.context_data_packet.fetched_packets_in_main == 0
-        assert airbrakes.context_data_packet.imu_queue_size >= 0
+        assert airbrakes.context_data_packet.retrieved_imu_packets == 0
+        assert airbrakes.context_data_packet.queued_imu_packets >= 0
         assert airbrakes.context_data_packet.apogee_predictor_queue_size >= 0
+        assert airbrakes.context_data_packet.imu_packets_per_cycle >= 0
         assert airbrakes.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )

@@ -3,6 +3,7 @@ import multiprocessing.sharedctypes
 import signal
 import time
 from collections import deque
+from ctypes import c_byte, c_int
 
 import faster_fifo
 import pytest
@@ -31,7 +32,7 @@ class TestIMU:
         assert isinstance(imu._data_queue, faster_fifo.Queue)
         assert type(imu._data_queue) is type(mock_imu._data_queue)
         # Tests that _running is correctly initialized
-        assert isinstance(imu._running, multiprocessing.sharedctypes.Synchronized)
+        assert isinstance(imu._running, c_byte)
         assert type(imu._running) is type(mock_imu._running)
         assert not imu._running.value
         assert not mock_imu._running.value
@@ -40,8 +41,9 @@ class TestIMU:
         assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
 
         # Test IMU properties:
-        assert isinstance(imu.queue_size, int)
-        assert isinstance(imu._fetched_imu_packets, multiprocessing.sharedctypes.Synchronized)
+        assert isinstance(imu.queued_imu_packets, int)
+        assert isinstance(imu._imu_packets_per_cycle, c_int)
+        assert isinstance(imu.imu_packets_per_cycle, int)
 
     def test_imu_start(self, monkeypatch):
         """Tests whether the IMU process starts correctly with the passed arguments."""
@@ -78,7 +80,7 @@ class TestIMU:
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
-        assert imu.queue_size == 0
+        assert imu.queued_imu_packets == 0
 
     def test_imu_stop_when_queue_is_full(self, monkeypatch):
         """Tests whether the IMU process stops correctly when the queue is full."""
@@ -99,7 +101,7 @@ class TestIMU:
         assert not imu._data_fetch_process.is_alive()
         # Tests that all packets were fetched while stopping:
         # There is still one packet, since the process is stopped after the put()
-        assert imu.queue_size == 1
+        assert imu.queued_imu_packets == 1
 
     def test_imu_stop_signal(self, monkeypatch, mock_imu):
         """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""

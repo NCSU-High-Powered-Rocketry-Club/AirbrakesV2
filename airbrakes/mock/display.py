@@ -147,7 +147,7 @@ class FlightDisplay:
             invalid_fields = self._airbrakes.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
 
-        if self._airbrakes.imu.fetched_imu_packets > 50:
+        if self._airbrakes.imu.imu_packets_per_cycle > 50:
             imu_queue_backlog = True
 
         if (
@@ -197,7 +197,7 @@ class FlightDisplay:
 
         fetched_packets_in_main = len(self._airbrakes.imu_data_packets)
         fetched_packets_from_imu = (
-            self._airbrakes.imu.fetched_imu_packets if self._args.mode == "real" else "N/A"
+            self._airbrakes.imu.imu_packets_per_cycle if self._args.mode == "real" else "N/A"
         )
 
         data_processor = self._airbrakes.data_processor
@@ -309,9 +309,9 @@ class FlightDisplay:
         imu_process = self._airbrakes.imu._data_fetch_process
         log_process = self._airbrakes.logger._log_process
         apogee_process = self._airbrakes.apogee_predictor._prediction_process
-        camera_process = self._airbrakes.camera.camera_control_process
+        # camera_process = self._airbrakes.camera.camera_control_process
         current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process, camera_process]:
+        for p in [imu_process, log_process, current_process, apogee_process]:
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)

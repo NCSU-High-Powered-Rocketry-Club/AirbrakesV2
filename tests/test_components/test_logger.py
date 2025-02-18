@@ -79,9 +79,9 @@ class TestLogger:
         timestamp=4,
         invalid_fields=[],
         encoder_position=None,
-        fetched_imu_packets=None,
-        fetched_packets_in_main=None,
-        imu_queue_size=None,
+        imu_packets_per_cycle=None,
+        retrieved_imu_packets=None,
+        queued_imu_packets=None,
         apogee_predictor_queue_size=None,
         update_timestamp_ns=None,
     )
