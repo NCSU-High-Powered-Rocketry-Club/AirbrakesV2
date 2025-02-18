@@ -24,6 +24,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "pre-commit",
+    "pytest-benchmark>=5.1.0",
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
@@ -79,6 +80,11 @@ filterwarnings = [
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
     "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
+    "ignore:Could not set process priority"  # ignore warning about process priority
+]
+addopts = "--benchmark-skip"  # skip benchmarks by default:
+markers = [
+    "imu_benchmark",
 ]
 
 [tool.coverage.run]
@@ -100,15 +106,13 @@ omit = [
 [tool.coverage.report]
 skip_covered = false
 skip_empty = true
-exclude_lines = [
+exclude_also = [
     "def __repr__",
     "if self\\.debug",
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == \"__main__\":",
     "if sys.platform == 'win32'",
-]
-exclude_also = [
     "@overload",
     "@abstractmethod",
     "if TYPE_CHECKING:",

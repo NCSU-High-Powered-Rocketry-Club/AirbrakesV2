@@ -94,7 +94,7 @@ def create_components(
 
     else:
         # Use real hardware components
-        servo = Servo(SERVO_PIN)
+        servo = Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
         camera = Camera()
@@ -122,9 +122,12 @@ def run_flight_loop(
         airbrakes.start()
         flight_display.start()
 
-        while not airbrakes.shutdown_requested:
+        while True:
             # Update the state machine
             airbrakes.update()
+
+            if airbrakes.shutdown_requested:
+                break
 
             # Stop the replay when the data is exhausted
             if is_mock and not airbrakes.imu.is_running:

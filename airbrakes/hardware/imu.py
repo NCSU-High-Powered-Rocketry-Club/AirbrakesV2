@@ -4,24 +4,40 @@ import contextlib
 import multiprocessing
 import sys
 
-# Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
-# Python 3.13.
-with contextlib.suppress(ImportError):
-    from python_mscl import mscl
-
-# We should print a warning, but that messes with how the replay display looks
+import msgspec
 
 # If we are not on windows, we can use the faster_fifo library to speed up the queue operations
 if sys.platform != "win32":
     from faster_fifo import Queue
-else:
-    pass
+
+    # Try to import the MSCL library, if it fails, warn the user. mscl does not work on Windows with
+    # Python 3.13.
+    from python_mscl import mscl
 
 from airbrakes.constants import (
+    AMBIENT_PRESSURE_QUALIFIER,
+    ATTITUDE_UNCERT_QUALIFIER,
     BUFFER_SIZE_IN_BYTES,
+    DELTA_THETA_FIELD,
+    DELTA_VEL_FIELD,
+    EST_ANGULAR_RATE_FIELD,
+    EST_ATTITUDE_UNCERT_FIELD,
+    EST_COMPENSATED_ACCEL_FIELD,
+    EST_GRAVITY_VECTOR_FIELD,
+    EST_LINEAR_ACCEL_FIELD,
+    EST_ORIENT_QUATERNION_FIELD,
+    EST_PRESSURE_ALT_FIELD,
     ESTIMATED_DESCRIPTOR_SET,
+    IMU_PROCESS_PRIORITY,
     MAX_QUEUE_SIZE,
+    PRESSURE_ALT_QUALIFIER,
     RAW_DESCRIPTOR_SET,
+    SCALED_ACCEL_FIELD,
+    SCALED_AMBIENT_PRESSURE_FIELD,
+    SCALED_GYRO_FIELD,
+    X_QUALIFIER,
+    Y_QUALIFIER,
+    Z_QUALIFIER,
 )
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -29,6 +45,7 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
+from airbrakes.utils import set_process_priority
 
 
 class IMU(BaseIMU):
@@ -45,6 +62,8 @@ class IMU(BaseIMU):
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
 
+    __slots__ = ()
+
     def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
@@ -54,8 +73,14 @@ class IMU(BaseIMU):
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
         # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
+        msgpack_encoder = msgspec.msgpack.Encoder()
+        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket)
+
         _data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE, max_size_bytes=BUFFER_SIZE_IN_BYTES
+            maxsize=MAX_QUEUE_SIZE,
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
         )
         # Starts the process that fetches data from the IMU
         data_fetch_process = multiprocessing.Process(
@@ -64,99 +89,178 @@ class IMU(BaseIMU):
         super().__init__(data_fetch_process, _data_queue)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    @staticmethod
-    def _initialize_packet(packet: "mscl.MipDataPacket") -> IMUDataPacket | None:
-        """
-        Initialize an IMU data packet based on its descriptor set.
-        :param packet: The data packet from the IMU.
-        :return: An IMUDataPacket, or None if the packet is unrecognized.
-        """
-        # Extract the timestamp from the packet.
-        timestamp = packet.collectedTimestamp().nanoseconds()
-
-        # Initialize packet with the timestamp, determines if the packet is raw or estimated
-        if packet.descriptorSet() == ESTIMATED_DESCRIPTOR_SET:
-            return EstimatedDataPacket(timestamp)
-        if packet.descriptorSet() == RAW_DESCRIPTOR_SET:
-            return RawDataPacket(timestamp)
-        return None
-
-    @staticmethod
-    def _process_data_point(
-        data_point: "mscl.MipDataPoint", channel: str, imu_data_packet: IMUDataPacket
-    ) -> None:
-        """
-        Process an individual data point and set its value in the data packet object. Modifies
-        `imu_data_packet` in place.
-        :param data_point: The IMU data point containing the measurement.
-        :param channel: The channel name of the data point.
-        :param imu_data_packet: The data packet object to update.
-        """
-        # Handle special channels that represent quaternion data.
-        if channel in {"estAttitudeUncertQuaternion", "estOrientQuaternion"}:
-            # Convert quaternion data into a 4x1 matrix and set its components.
-            matrix = data_point.as_Matrix()
-            setattr(imu_data_packet, f"{channel}W", matrix.as_floatAt(0, 0))
-            setattr(imu_data_packet, f"{channel}X", matrix.as_floatAt(0, 1))
-            setattr(imu_data_packet, f"{channel}Y", matrix.as_floatAt(0, 2))
-            setattr(imu_data_packet, f"{channel}Z", matrix.as_floatAt(0, 3))
-        else:
-            # Set other data points directly as attributes in the data packet.
-            setattr(imu_data_packet, channel, data_point.as_float())
-
-        # Check if the data point is invalid and update the invalid fields list.
-        if not data_point.valid():
-            if imu_data_packet.invalid_fields is None:
-                imu_data_packet.invalid_fields = []
-            imu_data_packet.invalid_fields.append(channel)
-
-    @staticmethod
-    def _process_packet_data(packet: "mscl.MipDataPacket", imu_data_packet: IMUDataPacket) -> None:
-        """
-        Process the data points in the packet and update the data packet object. Modifies
-        `imu_data_packet` in place.
-        :param packet: The IMU data packet containing multiple data points.
-        :param imu_data_packet: The initialized data packet object to populate.
-        """
-        # Iterate through each data point in the packet.
-        data_point: mscl.MipDataPoint
-        for data_point in packet.data():
-            # Extract the channel name of the data point.
-            channel = data_point.channelName()
-
-            # Check if the channel is relevant for the data packet, we check for quaternions
-            # separately because the IMU sends them over as a matrix, but we store each of them
-            # individually as fields.
-            if hasattr(imu_data_packet, channel) or "Quaternion" in channel:
-                # Process and set the data point value in the data packet.
-                IMU._process_data_point(data_point, channel, imu_data_packet)
-
-    def _fetch_data_loop(self, port: str) -> None:
+    def _fetch_data_loop(self, port: str) -> None:  # pragma: no cover
         """
         Continuously fetch data packets from the IMU and process them.
         :param port: The serial port to connect to the IMU.
         """
+        # Set the process priority really high, as we want to get the data from the IMU as fast as
+        # possible:
+        set_process_priority(IMU_PROCESS_PRIORITY)
+
         # Connect to the IMU and initialize the node used for getting data packets
         connection = mscl.Connection.Serial(port)
         node = mscl.InertialNode(connection)
+        packet: mscl.MipDataPacket
+        data_point: mscl.MipDataPoint
 
+        # This is a tight loop that fetches data from the IMU constantly. It looks ugly and written
+        # the way as it is for performance reasons. Some of the optimizations implemented include
+        # - using no functions inside the loop (this is typically 2x faster per packet)
+        # - if-elif statements instead of a `match` / `setattr` / `hasattr` (2x-5x faster / packet)
+        # - using 2 inner loops depending on the type of packet, this reduces the number of `if`
+        # checks the interpreter has to do
+        # - Using integers for comparison instead of strings (O(1) vs O(n) complexity)
+        # - Checking for raw data packets first, since that is 2x the frequency of estimated packets
+        # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
+        # - High priority for the process
         while self.is_running:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
-            packet: mscl.MipDataPacket
+            self._imu_packets_per_cycle.value = len(packets)
+
+            messages = []
             for packet in packets:
-                # Initialize the appropriate data packet.
-                imu_data_packet = IMU._initialize_packet(packet)
-                if imu_data_packet is None:
-                    # Skip unrecognized packets.
-                    continue
+                # Extract the timestamp from the packet.
+                timestamp = packet.collectedTimestamp().nanoseconds()
+                descriptor_set = packet.descriptorSet()
 
-                # Process the packet's data and populate the data packet object.
-                IMU._process_packet_data(packet, imu_data_packet)
+                # Initialize packet with the timestamp, determines if the packet is raw or estimated
+                if descriptor_set == RAW_DESCRIPTOR_SET:
+                    imu_data_packet = RawDataPacket(timestamp)
+                elif descriptor_set == ESTIMATED_DESCRIPTOR_SET:
+                    imu_data_packet = EstimatedDataPacket(timestamp)
+                else:
+                    continue  # We never actually reach here, but keeping it just in case
 
-                # Add the processor data packet to the shared queue.
-                self._data_queue.put(imu_data_packet)
+                # Iterate through each data point in the packet.
+                for data_point in packet.data():
+                    # Extract the channel name of the data point.
+                    qualifier = data_point.qualifier()
+                    field_name = data_point.field()
+
+                    if field_name == DELTA_THETA_FIELD:
+                        # Delta theta (change in orientation)
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.deltaThetaX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.deltaThetaY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.deltaThetaZ = data_point.as_float()
+
+                    elif field_name == DELTA_VEL_FIELD:
+                        # Delta velocity (change in velocity)
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.deltaVelX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.deltaVelY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.deltaVelZ = data_point.as_float()
+
+                    elif field_name == SCALED_ACCEL_FIELD:
+                        # Scaled acceleration data
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.scaledAccelX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.scaledAccelY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.scaledAccelZ = data_point.as_float()
+
+                    elif (
+                        field_name == SCALED_AMBIENT_PRESSURE_FIELD
+                        and qualifier == AMBIENT_PRESSURE_QUALIFIER
+                    ):
+                        # Scaled ambient pressure data
+                        imu_data_packet.scaledAmbientPressure = data_point.as_float()
+
+                    elif field_name == SCALED_GYRO_FIELD:
+                        # Scaled gyroscope data
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.scaledGyroX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.scaledGyroY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.scaledGyroZ = data_point.as_float()
+
+                    elif field_name == EST_ANGULAR_RATE_FIELD:
+                        # Estimated angular rate
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.estAngularRateX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.estAngularRateY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.estAngularRateZ = data_point.as_float()
+
+                    elif (
+                        field_name == EST_ATTITUDE_UNCERT_FIELD
+                        and qualifier == ATTITUDE_UNCERT_QUALIFIER
+                    ):
+                        # Estimated attitude uncertainty quaternion
+                        matrix = data_point.as_Matrix()
+                        imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
+                        imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
+                        imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
+                        imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
+
+                    elif field_name == EST_COMPENSATED_ACCEL_FIELD:
+                        # Estimated compensated acceleration
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.estCompensatedAccelX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.estCompensatedAccelY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.estCompensatedAccelZ = data_point.as_float()
+
+                    elif field_name == EST_GRAVITY_VECTOR_FIELD:
+                        # Estimated gravity vector
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.estGravityVectorX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.estGravityVectorY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.estGravityVectorZ = data_point.as_float()
+
+                    elif field_name == EST_LINEAR_ACCEL_FIELD:
+                        # Estimated linear acceleration
+                        if qualifier == X_QUALIFIER:
+                            imu_data_packet.estLinearAccelX = data_point.as_float()
+                        elif qualifier == Y_QUALIFIER:
+                            imu_data_packet.estLinearAccelY = data_point.as_float()
+                        elif qualifier == Z_QUALIFIER:
+                            imu_data_packet.estLinearAccelZ = data_point.as_float()
+
+                    elif (
+                        field_name == EST_ORIENT_QUATERNION_FIELD
+                        and qualifier == ATTITUDE_UNCERT_QUALIFIER
+                    ):
+                        # Estimated orientation quaternion
+                        matrix = data_point.as_Matrix()
+                        imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
+                        imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
+                        imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
+                        imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
+
+                    elif (
+                        field_name == EST_PRESSURE_ALT_FIELD and qualifier == PRESSURE_ALT_QUALIFIER
+                    ):
+                        # Estimated pressure altitude
+                        imu_data_packet.estPressureAlt = data_point.as_float()
+
+                    # Check if the data point is invalid and update the invalid fields list.
+                    if not data_point.valid():
+                        if imu_data_packet.invalid_fields is None:
+                            imu_data_packet.invalid_fields = []
+                        imu_data_packet.invalid_fields.append(data_point.channelName())
+
+                    # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`,
+                    # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we
+                    # can't exclude it from the IMU settings cause it says it's not recommended
+                    #     print(field_name, data_point.channelName())
+
+                messages.append(imu_data_packet)
+
+            self._data_queue.put_many(messages)
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """

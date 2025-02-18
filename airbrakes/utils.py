@@ -2,9 +2,15 @@
 
 import argparse
 import sys
+import warnings
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+import msgspec
+import psutil
+
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 
 if TYPE_CHECKING:
     import multiprocessing
@@ -22,8 +28,24 @@ def get_always_list(self, *args, **kwargs) -> list:
     as the multiprocessing.Queue doesn't have a `get_many` method"""
     fetched = self.get(*args, **kwargs)
     if isinstance(fetched, list):
+        if isinstance(fetched[0], LoggerDataPacket):
+            # Return the encoded packet as a list:
+            return [
+                msgspec.to_builtins(packet, enc_hook=_convert_unknown_type_to_float)
+                for packet in fetched
+            ]
         return fetched
+
     return [fetched]
+
+
+def _convert_unknown_type_to_float(obj_type: Any) -> float:
+    """
+    Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
+    :param obj_type: The object to convert.
+    :return: The converted object.
+    """
+    return float(obj_type)
 
 
 def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
@@ -35,6 +57,20 @@ def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
     if sys.platform == "win32":
         obj.get_many = partial(get_always_list, obj)
         obj.put_many = obj.put
+
+
+def set_process_priority(nice_value: int) -> None:
+    """Sets the priority of the calling process to the specified nice value. Only works on Linux."""
+    if sys.platform != "win32":
+        p = psutil.Process()
+        try:
+            p.nice(nice_value)
+        except psutil.AccessDenied:
+            warnings.warn(
+                f"Could not set process priority to {nice_value}. Please run the program as root "
+                "to set process priority.",
+                stacklevel=2,
+            )
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:

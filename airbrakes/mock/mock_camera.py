@@ -4,7 +4,6 @@ hardware."""
 import signal
 from time import sleep
 
-from airbrakes.constants import CAMERA_IDLE_TIMEOUT_SECONDS
 from airbrakes.hardware.camera import Camera
 
 BYTES_PER_30_SECONDS = 9 * 1024 * 1024  # 9 MB in bytes
@@ -35,14 +34,13 @@ class MockCamera(Camera):
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
+        # Wait for the motor burn to start before starting to write to the buffer.
+        self.motor_burn_started.wait()
+
         # our video is 1280x720, roughly 24 fps, 2 bytes per pixel (?). We get about 9 MB video
         # every ~30 seconds.
-
-        while not self.motor_burn_started.is_set():
-            sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
-
         while not self.stop_context_event.is_set():
             # Write CAMERA_IDLE_TIMEOUT_SECONDS seconds of video data to the buffer.
 
             self.buffer.extend(b"0" * int(BYTES_PER_0_1_SECONDS))
-            sleep(CAMERA_IDLE_TIMEOUT_SECONDS)
+            sleep(0.1)

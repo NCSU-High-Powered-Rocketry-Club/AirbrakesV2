@@ -7,6 +7,7 @@ import sys
 import time
 from pathlib import Path
 
+import msgspec
 import pandas as pd
 
 if sys.platform != "win32":
@@ -79,8 +80,14 @@ class MockIMU(BaseIMU):
 
             data_queue.get_many = partial(get_all_from_queue, data_queue)
         else:
+            msgpack_encoder = msgspec.msgpack.Encoder()
+            msgpack_decoder = msgspec.msgpack.Decoder(
+                type=EstimatedDataPacket | RawDataPacket | str
+            )
             data_queue: Queue[IMUDataPacket] = Queue(
-                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
+                maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
+                dumps=msgpack_encoder.encode,
+                loads=msgpack_decoder.decode,
             )
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
@@ -92,7 +99,7 @@ class MockIMU(BaseIMU):
         super().__init__(data_fetch_process, data_queue)
 
     @staticmethod
-    def _convert_invalid_fields(value) -> list:
+    def _convert_invalid_fields(value) -> list | None:
         """
         Convert invalid fields to Python objects or None.
         :param value: The value to convert.
@@ -174,7 +181,7 @@ class MockIMU(BaseIMU):
             # sleep only if we are running a real-time replay
             # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
             # pretend to be real-time
-            if real_time_replay and isinstance(imu_data_packet, RawDataPacket):
+            if real_time_replay and type(imu_data_packet) is RawDataPacket:
                 # Mimmick polling interval
                 end_time = time.time()
                 time.sleep(max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - (end_time - start_time)))

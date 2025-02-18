@@ -1,7 +1,6 @@
 """Module defining the base class (BaseIMU) for interacting with
 the IMU (Inertial measurement unit) on the rocket."""
 
-import collections
 import contextlib
 import sys
 
@@ -28,6 +27,7 @@ class BaseIMU:
     __slots__ = (
         "_data_fetch_process",
         "_data_queue",
+        "_imu_packets_per_cycle",
         "_running",
     )
 
@@ -38,12 +38,21 @@ class BaseIMU:
         self._data_fetch_process = data_fetch_process
         self._data_queue = data_queue
         # Makes a boolean value that is shared between processes
-        self._running = Value("b", False)
+        self._running = Value("b", False, lock=False)
+        self._imu_packets_per_cycle = Value("i", 0, lock=False)
 
     @property
-    def queue_size(self) -> int:
+    def imu_packets_per_cycle(self) -> int:
         """
-        :return: The number of data packets in the queue.
+        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
+        the performance of our loop.
+        """
+        return self._imu_packets_per_cycle.value
+
+    @property
+    def queued_imu_packets(self) -> int:
+        """
+        :return: The number of data packets in the multiprocessing queue.
         """
         return self._data_queue.qsize()
 
@@ -83,19 +92,18 @@ class BaseIMU:
         """
         return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
 
-    def get_imu_data_packets(self, block: bool = True) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self, block: bool = True) -> list[IMUDataPacket]:
         """
         Returns all available data packets from the IMU.
-        :return: A deque containing the latest data packets from the IMU.
+        :return: A list containing the latest data packets from the IMU.
         """
-        # We use a deque because it's faster than a list for popping from the left
         try:
             packets = self._data_queue.get_many(
                 block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
-            return collections.deque()
+            return []
         else:
-            if STOP_SIGNAL in packets:
-                return collections.deque()
-            return collections.deque(packets)
+            if STOP_SIGNAL in packets:  # only used by the MockIMU
+                return []
+            return packets

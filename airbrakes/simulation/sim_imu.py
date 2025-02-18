@@ -65,8 +65,8 @@ class SimIMU(BaseIMU):
 
         super().__init__(data_fetch_process, data_queue)
         # Makes boolean values that are shared between processes
-        self._running = multiprocessing.Value("b", False)
-        self._airbrakes_extended = multiprocessing.Value("b", False)
+        self._running = multiprocessing.Value("b", False, lock=False)
+        self._airbrakes_extended = multiprocessing.Value("b", False, lock=False)
 
     def set_airbrakes_status(self, servo_extension: ServoExtension) -> None:
         """
