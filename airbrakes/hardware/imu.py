@@ -133,7 +133,7 @@ class IMU(BaseIMU):
                     imu_data_packet = EstimatedDataPacket(timestamp)
                 else:
                     continue  # We never actually reach here, but keeping it just in case
-                
+
                 # Iterate through each data point in the packet.
                 for data_point in packet.data():
                     # Extract the channel name of the data point.
@@ -242,8 +242,7 @@ class IMU(BaseIMU):
                         imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
 
                     elif (
-                        field_name == EST_PRESSURE_ALT_FIELD
-                        and qualifier == PRESSURE_ALT_QUALIFIER
+                        field_name == EST_PRESSURE_ALT_FIELD and qualifier == PRESSURE_ALT_QUALIFIER
                     ):
                         # Estimated pressure altitude
                         imu_data_packet.estPressureAlt = data_point.as_float()

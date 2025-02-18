@@ -3,6 +3,7 @@ import multiprocessing.sharedctypes
 import signal
 import time
 from collections import deque
+from ctypes import c_byte, c_int
 
 import faster_fifo
 import pytest
@@ -31,7 +32,7 @@ class TestIMU:
         assert isinstance(imu._data_queue, faster_fifo.Queue)
         assert type(imu._data_queue) is type(mock_imu._data_queue)
         # Tests that _running is correctly initialized
-        assert isinstance(imu._running, multiprocessing.sharedctypes.Synchronized)
+        assert isinstance(imu._running, c_byte)
         assert type(imu._running) is type(mock_imu._running)
         assert not imu._running.value
         assert not mock_imu._running.value
@@ -41,7 +42,7 @@ class TestIMU:
 
         # Test IMU properties:
         assert isinstance(imu.queued_imu_packets, int)
-        assert isinstance(imu._imu_packets_per_cycle, multiprocessing.sharedctypes.Synchronized)
+        assert isinstance(imu._imu_packets_per_cycle, c_int)
         assert isinstance(imu.imu_packets_per_cycle, int)
 
     def test_imu_start(self, monkeypatch):
