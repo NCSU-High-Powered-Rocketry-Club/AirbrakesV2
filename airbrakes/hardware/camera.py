@@ -56,9 +56,7 @@ class Camera:
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self) -> None:  # pragma: no cover
         """
-        Controls the camera recording process. This loop is in a try-except block because the
-        camera is not fundamental to Airbrakes, so if something goes wrong we want Airbrakes to
-        still operate smoothly without it.
+        Controls the camera recording process.
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal

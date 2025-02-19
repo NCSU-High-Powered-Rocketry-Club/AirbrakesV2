@@ -28,7 +28,7 @@ class BaseIMU:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
         :param data_fetch_process: the multiprocessing process for the IMU.
-        :param packet_queue: the queue that the IMUDataPackets will be put into and taken
+        :param queued_imu_packets: the queue that the IMUDataPackets will be put into and taken
             from.
         """
         self._data_fetch_process = data_fetch_process
