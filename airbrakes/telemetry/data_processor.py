@@ -105,6 +105,15 @@ class IMUDataProcessor:
         return float(np.mean(self._rotated_accelerations))
 
     @property
+    def average_pitch(self) -> float:
+        """The average pitch of the rocket in degrees"""
+        if self._current_orientation_quaternions is not None:
+            current_orientation = self._current_orientation_quaternions.apply([0, 0, 1])
+            dot_product = np.clip(np.dot(current_orientation, [0, 0, 1]), -1.0, 1.0)
+            return np.degrees(np.arccos(dot_product))
+        return 0.0
+
+    @property
     def current_timestamp(self) -> int:
         """
         The timestamp of the last data packet in nanoseconds.

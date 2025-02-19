@@ -1,23 +1,15 @@
 """Module defining the base class (BaseIMU) for interacting with
 the IMU (Inertial measurement unit) on the rocket."""
 
-import collections
 import contextlib
-import sys
+from multiprocessing import Process, TimeoutError, Value
+
+from faster_fifo import Empty, Queue
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
 )
-
-# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
-if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
-else:
-    from multiprocessing import Queue
-    from queue import Empty
-
-from multiprocessing import Process, TimeoutError, Value
 
 
 class BaseIMU:
@@ -27,11 +19,12 @@ class BaseIMU:
 
     __slots__ = (
         "_data_fetch_process",
-        "_packet_queue",
+        "_imu_packets_per_cycle",
+        "_queued_imu_packets",
         "_running",
     )
 
-    def __init__(self, data_fetch_process: Process, packet_queue: Queue) -> None:
+    def __init__(self, data_fetch_process: Process, queued_imu_packets: Queue) -> None:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
         :param data_fetch_process: the multiprocessing process for the IMU.
@@ -39,17 +32,26 @@ class BaseIMU:
             from.
         """
         self._data_fetch_process = data_fetch_process
-        self._packet_queue = packet_queue
+        self._queued_imu_packets = queued_imu_packets
         # Makes a boolean value that is shared between processes
-        self._running = Value("b", False)
+        self._running = Value("b", False, lock=False)
+        self._imu_packets_per_cycle = Value("i", 0, lock=False)
 
     @property
-    def packet_queue_size(self) -> int:
+    def imu_packets_per_cycle(self) -> int:
         """
-        Gets the amount of IMU data packets in the packet queue
+        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
+        the performance of our loop.
+        """
+        return self._imu_packets_per_cycle.value
+
+    @property
+    def queued_imu_packets(self) -> int:
+        """
+        Gets the amount of IMU data packets in the multiprocessing queue
         :return: The number of IMUDataPackets in the queue.
         """
-        return self._packet_queue.qsize()
+        return self._queued_imu_packets.qsize()
 
     @property
     def is_running(self) -> bool:
@@ -81,26 +83,25 @@ class BaseIMU:
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
-        Gets the last available IMU data packet from the packet queue.
-        :return: an IMUDataPacket object containing the latest data from the packet queue. If a
+        Gets the last available IMU data packet from the imu packet queue.
+        :return: an IMUDataPacket object containing the latest data from the imu packet queue. If a
         value is not available, it will be None.
         """
-        return self._packet_queue.get(timeout=IMU_TIMEOUT_SECONDS)
+        return self._queued_imu_packets.get(timeout=IMU_TIMEOUT_SECONDS)
 
-    def get_imu_data_packets(self, block: bool = True) -> collections.deque[IMUDataPacket]:
+    def get_imu_data_packets(self, block: bool = True) -> list[IMUDataPacket]:
         """
-        Returns all available IMU data packets from the packet queue.
+        Returns all available IMU data packets from the queued imu packets.
         :param block: Whether to wait until a IMU data packet is available or not.
-        :return: A deque containing the latest IMU data packets from the packet queue.
+        :return: A deque containing the latest IMU data packets from the imu packet queue.
         """
-        # We use a deque because it's faster than a list for popping from the left
         try:
-            packets = self._packet_queue.get_many(
+            packets = self._queued_imu_packets.get_many(
                 block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
-            return collections.deque()
+            return []
         else:
-            if STOP_SIGNAL in packets:
-                return collections.deque()
-            return collections.deque(packets)
+            if STOP_SIGNAL in packets:  # only used by the MockIMU
+                return []
+            return packets

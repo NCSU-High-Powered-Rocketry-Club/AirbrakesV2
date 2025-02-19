@@ -36,12 +36,27 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+def pytest_collection_modifyitems(config, items):
+    marker = "imu_benchmark"
+    marker_expr = config.getoption("-m", None)
+
+    # Skip tests with the marker if not explicitly requested
+    if marker_expr != marker:
+        skip_marker = pytest.mark.skip(reason=f"Test requires '-m {marker}'")
+        for item in items:
+            if item.get_closest_marker(marker):
+                item.add_marker(skip_marker)
+
+
 @pytest.fixture
 def logger():
     """Clear the tests/logs directory before making a new Logger."""
     for log in LOG_PATH.glob("log_*.csv"):
         log.unlink()
-    return Logger(LOG_PATH)
+    logger = Logger(LOG_PATH)
+    yield logger
+    if logger.is_running:
+        logger.stop()
 
 
 @pytest.fixture
@@ -51,7 +66,10 @@ def data_processor():
 
 @pytest.fixture
 def imu():
-    return IMU(port=IMU_PORT)
+    imu = IMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture
@@ -68,26 +86,40 @@ def apogee_predictor():
 
 @pytest.fixture
 def airbrakes(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
-    return AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+    ab = AirbrakesContext(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+    yield ab
+    # Check if something is running:
+    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+        ab.stop()  # Helps cleanup failing tests that don't stop the airbrakes context
 
 
 @pytest.fixture
 def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
     """Fixture that returns an AirbrakesContext object with a mock IMU. This will run for
     all the launch data files (see the mock_imu fixture)"""
-    return AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+    ab = AirbrakesContext(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+    yield ab
+    # Check if something is running:
+    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+        ab.stop()
 
 
 @pytest.fixture
 def random_data_mock_imu():
     # A mock IMU that outputs random data packets
-    return RandomDataIMU(port=IMU_PORT)
+    imu = RandomDataIMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture
 def idle_mock_imu():
     # A sleeping IMU that doesn't output any data packets
-    return IdleIMU(port=IMU_PORT)
+    imu = IdleIMU(port=IMU_PORT)
+    yield imu
+    if imu.is_running:
+        imu.stop()
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
@@ -98,7 +130,10 @@ def mock_imu(request):
 
 @pytest.fixture
 def camera():
-    return Camera()
+    cam = Camera()
+    yield cam
+    if cam.is_running:
+        cam.stop()
 
 
 @pytest.fixture
@@ -148,26 +183,34 @@ class RandomDataIMU(IMU):
 
     def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
-        next_estimated_packet_time = time.time_ns()
-        next_raw_packet_time = time.time_ns()
+        # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
+        EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
+        RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
+
+        # Initialize next packet times with first interval
+        next_estimated = time.time_ns() + EST_INTERVAL_NS
+        next_raw = time.time_ns() + RAW_INTERVAL_NS
 
         while self._running.value:
-            current_time = time.time_ns()
-            # Generate dummy packets, 1 EstimatedDataPacket every 500Hz, and 1 RawDataPacket
-            # every 1000Hz
-            # sleep for the time it would take to get the next packet
-            if current_time >= next_estimated_packet_time:
-                estimated_packet = make_est_data_packet(timestamp=current_time * 1e9)
-                self._packet_queue.put(estimated_packet)
-                next_estimated_packet_time += EST_DATA_PACKET_SAMPLING_RATE * 1e9
+            now = time.time_ns()
 
-            if current_time >= next_raw_packet_time:
-                raw_packet = make_raw_data_packet(timestamp=current_time * 1e9)
-                self._packet_queue.put(raw_packet)
-                next_raw_packet_time += RAW_DATA_PACKET_SAMPLING_RATE * 1e9
+            # Generate all raw packets due since last iteration
+            while now >= next_raw:
+                self._queued_imu_packets.put(make_raw_data_packet(timestamp=next_raw))
+                next_raw += RAW_INTERVAL_NS
 
-            # Sleep a little to prevent busy-waiting
-            time.sleep(0.0005)
+            # Generate all estimated packets due since last iteration
+            while now >= next_estimated:
+                self._queued_imu_packets.put(make_est_data_packet(timestamp=next_estimated))
+                next_estimated += EST_INTERVAL_NS
+
+            # Calculate sleep time until next expected packet
+            next_event = min(next_raw, next_estimated)
+            sleep_time = (next_event - time.time_ns()) / 1e9  # Convert ns to seconds
+
+            # Only sleep if we're ahead of schedule
+            if sleep_time > 0.0001:  # 100μs buffer for precision
+                time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing
 
 
 class IdleIMU(IMU):

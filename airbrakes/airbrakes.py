@@ -1,8 +1,9 @@
 """Module which provides a high level interface to the air brakes system on the rocket."""
 
-from collections import deque
+import time
 from typing import TYPE_CHECKING
 
+from airbrakes.constants import MAIN_PROCESS_PRIORITY
 from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.servo import Servo
@@ -16,6 +17,7 @@ from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.utils import set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
@@ -33,7 +35,6 @@ class AirbrakesContext:
     """
 
     __slots__ = (
-        "_update_count",
         "apogee_predictor",
         "apogee_predictor_data_packets",
         "camera",
@@ -65,7 +66,7 @@ class AirbrakesContext:
             and ApogeePredictor. The state machine starts in StandbyState, which is the initial
             state of the air brakes system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
-            real servo or a mock servo.
+            real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU,
             mock IMU, or simulation IMU.
         :param camera: The camera object that records video from the rocket. This can be a real
@@ -86,7 +87,7 @@ class AirbrakesContext:
         self.state: State = StandbyState(self)
 
         self.shutdown_requested = False
-        self.imu_data_packets: deque[IMUDataPacket] = deque()
+        self.imu_data_packets: list[IMUDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
         self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
@@ -94,17 +95,16 @@ class AirbrakesContext:
         self.servo_data_packet: ServoDataPacket | None = None
         self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
 
-        self._update_count: int = 1
-
     def start(self) -> None:
         """
         Starts the processes for the IMU, Logger, ApogeePredictor, and Camera. This is called
         before the main loop starts.
         """
+        set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
-        self.camera.start()
+        # self.camera.start()
 
     def stop(self) -> None:
         """
@@ -117,7 +117,7 @@ class AirbrakesContext:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.camera.stop()
+        # self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:
@@ -132,7 +132,7 @@ class AirbrakesContext:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This happens quite often on our PC's since they are much faster than the Pi.
+        # This should not happen, since we wait for IMU packets.
         if not self.imu_data_packets:
             return
 
@@ -141,7 +141,7 @@ class AirbrakesContext:
         self.est_data_packets = [
             data_packet
             for data_packet in self.imu_data_packets
-            if isinstance(data_packet, EstimatedDataPacket)
+            if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
         ]
 
         # Update the data processor with the new data packets.
@@ -174,9 +174,6 @@ class AirbrakesContext:
             self.apogee_predictor_data_packets,
         )
 
-        # Increment the loop count
-        self._update_count += 1
-
     def extend_airbrakes(self) -> None:
         """
         Extends the air brakes to the maximum extension.
@@ -206,15 +203,17 @@ class AirbrakesContext:
         # Create a Context Data Packet to log the current state and queue information of the
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(
-            batch_number=self._update_count,
             state_letter=self.state.name[0],
-            imu_queue_size=self.imu.packet_queue_size,
-            apogee_predictor_queue_size=self.apogee_predictor.apogee_predictor_data_packet_queue_size,
+            retrieved_imu_packets=len(self.imu_data_packets),
+            queued_imu_packets=self.imu.queued_imu_packets,
+            apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
+            imu_packets_per_cycle=self.imu.imu_packets_per_cycle,
+            update_timestamp_ns=time.time_ns(),
         )
 
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
         self.servo_data_packet = ServoDataPacket(
             set_extension=str(self.servo.current_extension.value),
-            encoder_position=str(self.servo.get_encoder_reading()),
+            encoder_position=self.servo.get_encoder_reading(),
         )

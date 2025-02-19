@@ -3,39 +3,34 @@ command line arguments"""
 
 import argparse
 import sys
-from functools import partial
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    import multiprocessing
-
-
-def get_all_from_queue(self, *args, **kwargs) -> list:
-    """Used to get all the items from a queue at once. Only relevant if you are running the mock
-    replay on Windows, as the multiprocessing.Queue doesn't have a `get_many` method"""
-    kwargs.pop("max_messages_to_get", None)  # Argument only used in the Linux version
-    return [self.get(*args, **kwargs) for _ in range(self.qsize())]
+import psutil
 
 
-def get_always_list(self, *args, **kwargs) -> list:
-    """Used to get items from the queue, and always returns a list. Only relevant on Windows,
-    as the multiprocessing.Queue doesn't have a `get_many` method"""
-    fetched = self.get(*args, **kwargs)
-    if isinstance(fetched, list):
-        return fetched
-    return [fetched]
-
-
-def modify_multiprocessing_queue_windows(obj: "multiprocessing.Queue") -> None:
+def _convert_unknown_type_to_float(obj_type: Any) -> float:
     """
-    Initializes the multiprocessing queue on Windows by adding the missing methods from the
-    faster_fifo library. Modifies `obj` in place.
-    :param obj: The multiprocessing.Queue object to add the methods to.
+    Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
+    :param obj_type: The object to convert.
+    :return: The converted object.
     """
-    if sys.platform == "win32":
-        obj.get_many = partial(get_always_list, obj)
-        obj.put_many = obj.put
+    return float(obj_type)
+
+
+def set_process_priority(nice_value: int) -> None:
+    """Sets the priority of the calling process to the specified nice value. Only works on Linux."""
+    if sys.platform != "win32":
+        p = psutil.Process()
+        try:
+            p.nice(nice_value)
+        except psutil.AccessDenied:
+            warnings.warn(
+                f"Could not set process priority to {nice_value}. Please run the program as root "
+                "to set process priority.",
+                stacklevel=2,
+            )
 
 
 def deadband(input_value: float, threshold: float) -> float:

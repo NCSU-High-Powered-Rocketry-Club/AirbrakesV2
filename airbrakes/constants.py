@@ -4,6 +4,17 @@ from enum import Enum, StrEnum
 from pathlib import Path
 
 # -------------------------------------------------------
+# Main Configuration
+# -------------------------------------------------------
+
+MAIN_PROCESS_PRIORITY = -11
+"""The priority of the Main process. This is a really high priority so the OS knows to give it
+priority over other processes. This is because we want to make sure we don't want to stay behind
+on processing the packets from the IMU. It's a bit lower than the IMU process because we want to
+make sure the IMU process is always running and getting data."""
+
+
+# -------------------------------------------------------
 # Servo Configuration
 # -------------------------------------------------------
 
@@ -77,6 +88,12 @@ to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device r
 system in Linux.
 """
 
+
+IMU_PROCESS_PRIORITY = -15
+"""The priority of the IMU process. This is a really high priority so the OS knows to give it
+priority over other processes. This is because we want to make sure we don't miss any data packets
+from the IMU."""
+
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000
 """The period at which the IMU sends raw data packets. This is the reciprocal of the frequency."""
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
@@ -116,12 +133,30 @@ packet) before it is considered to have timed out. This is used to prevent the p
 deadlocking if the IMU stops sending data.
 """
 
+# Constants for IMU field names and quantifiers
+DELTA_THETA_FIELD = 32775
+DELTA_VEL_FIELD = 32776
+SCALED_ACCEL_FIELD = 32772
+SCALED_GYRO_FIELD = 32773
+SCALED_AMBIENT_PRESSURE_FIELD = 32791
+EST_ANGULAR_RATE_FIELD = 33294
+EST_ATTITUDE_UNCERT_FIELD = 33298
+EST_COMPENSATED_ACCEL_FIELD = 33308
+EST_GRAVITY_VECTOR_FIELD = 33299
+EST_LINEAR_ACCEL_FIELD = 33293
+EST_ORIENT_QUATERNION_FIELD = 33283
+EST_PRESSURE_ALT_FIELD = 33313
+
+X_QUALIFIER = 1
+Y_QUALIFIER = 2
+Z_QUALIFIER = 3
+ATTITUDE_UNCERT_QUALIFIER = 5
+PRESSURE_ALT_QUALIFIER = 67
+AMBIENT_PRESSURE_QUALIFIER = 58
+
 # -------------------------------------------------------
 # Camera Configuration
 # -------------------------------------------------------
-
-CAMERA_IDLE_TIMEOUT_SECONDS = 0.1
-"""The time in seconds that the camera sleeps for between updates."""
 
 CAMERA_SAVE_PATH = Path("logs/video.h264")
 """The path that the output of the camera will save to."""

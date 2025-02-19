@@ -135,9 +135,12 @@ def run_flight_loop(
         context.start()
         flight_display.start()
 
-        while not context.shutdown_requested:
+        while True:
             # Update the state machine
             context.update()
+
+            if context.shutdown_requested:
+                break
 
             # Stop the replay when the data is exhausted
             if is_mock and not context.imu.is_running:

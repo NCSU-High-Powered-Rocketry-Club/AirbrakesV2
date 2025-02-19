@@ -6,35 +6,25 @@ from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, Raw
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from tests.auxil.utils import make_logger_data_packet
 
 
 @pytest.fixture
 def logger_data_packet():
-    return LoggerDataPacket(
-        state_letter=TestLoggerDataPacket.state_letter,
-        set_extension=TestLoggerDataPacket.set_extension,
-        timestamp=TestLoggerDataPacket.timestamp,
-    )
+    return make_logger_data_packet()
 
 
 class TestLoggerDataPacket:
     """Tests for the LoggerDataPacket class."""
 
-    state_letter = "test"
-    set_extension = "0.0"
-    timestamp = 10
-
     def test_init(self, logger_data_packet):
         packet = logger_data_packet
-        assert isinstance(packet, dict)
-        assert packet["state_letter"] == self.state_letter
-        assert packet["set_extension"] == self.set_extension
-        assert packet["timestamp"] == self.timestamp
+        assert isinstance(packet, LoggerDataPacket)
 
     def test_logger_data_packet_has_all_fields_of_data_packets(self):
         """Tests whether the LoggerDataPacket class has all the fields of the data packet
         classes."""
-        log_dp_fields = set(LoggerDataPacket.__annotations__)
+        log_dp_fields = set(LoggerDataPacket.__struct_fields__)
 
         context_dp_fields = set(ContextDataPacket.__struct_fields__)
         servo_dp_fields = set(ServoDataPacket.__struct_fields__)
@@ -82,7 +72,7 @@ class TestLoggerDataPacket:
         # Only Context Data Packet has a different order - one field - "state_letter" is in the
         # beginning, the rest at the end.
 
-        log_dp_fields = list(LoggerDataPacket.__annotations__)
+        log_dp_fields = list(LoggerDataPacket.__struct_fields__)
         context_dp_fields = list(ContextDataPacket.__struct_fields__)
         servo_dp_fields = list(ServoDataPacket.__struct_fields__)
         raw_dp_fields = list(RawDataPacket.__struct_fields__)

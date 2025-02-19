@@ -41,6 +41,7 @@ class FlightDisplay:
         "_cpu_usages",
         "_launch_file",
         "_launch_time_ns",
+        "_pitch_at_startup",
         "_processes",
         "_running",
         "_start_time",
@@ -68,6 +69,7 @@ class FlightDisplay:
         self._coast_time_ns: int = 0  # Coast time from CoastState
         self._convergence_time_seconds: float = 0.0  # Time to convergence of apogee from CoastState
         self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
+        self._pitch_at_startup: float = 0.0  # The calculated pitch in degrees in StandbyState
         self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
 
         # Prepare the processes for monitoring in the replay:
@@ -134,12 +136,14 @@ class FlightDisplay:
         Sounds an audible alarm if the IMU has invalid fields or large change in velocity. This is
         most useful on real flights, where it is hard to see the display due to sunlight.
         """
-        # We only care about standby state:
-        if self._context.state.name != "StandbyState":
+        # We only care about standby state and if we are running a real:
+        if self._context.state.name != "StandbyState" or self._args.mode != "real":
             return
 
         has_invalid_fields = False
         has_large_velocity = False
+        imu_queue_backlog = False
+        pitch_drift = False
 
         # If the absolute value of our velocity is large in standby state, we have a problem:
         if abs(self._context.data_processor.vertical_velocity) > 2:
@@ -149,7 +153,16 @@ class FlightDisplay:
             invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
 
-        if has_invalid_fields or has_large_velocity:
+        if self._context.imu.imu_packets_per_cycle > 30:
+            imu_queue_backlog = True
+
+        if (
+            self._pitch_at_startup
+            and abs(self._context.data_processor.average_pitch - self._pitch_at_startup) > 1
+        ):
+            pitch_drift = True
+
+        if has_invalid_fields or has_large_velocity or imu_queue_backlog or pitch_drift:
             print("\a", end="")
 
     def update_display(self) -> None:
@@ -183,12 +196,15 @@ class FlightDisplay:
         :param end_type: Whether the replay ended or was interrupted.
         """
         try:
-            current_queue_size = self._context.imu._packet_queue.qsize()
+            current_queue_size = self._context.imu._queued_imu_packets.qsize()
         except NotImplementedError:
             # Returns NotImplementedError on arm architecture (Raspberry Pi)
             current_queue_size = "N/A"
 
-        fetched_packets = len(self._context.imu_data_packets)
+        fetched_packets_in_main = len(self._context.imu_data_packets)
+        fetched_packets_from_imu = (
+            self._context.imu.imu_packets_per_cycle if self._args.mode == "real" else "N/A"
+        )
 
         data_processor = self._context.data_processor
 
@@ -226,6 +242,10 @@ class FlightDisplay:
                 self._context.last_apogee_predictor_packet.predicted_apogee
             )
 
+        # Assign the startup pitch value when it is available:
+        if not self._pitch_at_startup and data_processor._current_orientation_quaternions:
+            self._pitch_at_startup = data_processor.average_pitch
+
         # Prepare output
         output = [
             f"{Y}{'=' * 15} {'REPLAY' if self._args.mode == 'mock' else 'STANDBY'} INFO {'=' * 15}{RESET}",  # noqa: E501
@@ -248,12 +268,14 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Convergence Time:                {G}{self._convergence_time_seconds:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
                     f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets:                 {G}{fetched_packets:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
+                    f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._context.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
                     f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
@@ -295,9 +317,9 @@ class FlightDisplay:
         imu_process = self._context.imu._data_fetch_process
         log_process = self._context.logger._log_process
         apogee_process = self._context.apogee_predictor._prediction_process
-        camera_process = self._context.camera.camera_control_process
+        # camera_process = self._context.camera.camera_control_process
         current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process, camera_process]:
+        for p in [imu_process, log_process, current_process, apogee_process]:
             # psutil allows us to monitor CPU usage of a process, along with low level information
             # which we are not using.
             all_processes[p.name] = psutil.Process(p.pid)
