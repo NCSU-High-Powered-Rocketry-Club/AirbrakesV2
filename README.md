@@ -27,7 +27,7 @@
 
 
 ## Overview
-This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
+This project is for controlling our air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 5 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
 https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
@@ -37,10 +37,11 @@ _A video of our air brakes extending and retracting_
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
 
 1. **Gets data from the IMU**
-2. **Processes the data** in the Data Processor (calculates velocity, averages, maximums, etc.)
+2. **Processes the data** in the IMU Data Processor (calculates velocity, averages, maximums, etc.)
 3. **Updates the current state** with the processed data
-4. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
-5. **Logs all data** from the IMU, Data Processor, Servo, and States
+4. **Predicts the apogee** If the program is in Coast State
+5. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
+6. **Logs all data** from the IMU, IMU Data Processor, Servo, Apogee Predictor and States
 
 ### System Architecture Flowchart
 ```mermaid
@@ -67,21 +68,22 @@ flowchart TD
     
     %% States as individual nodes
     State((State)):::circular
-    CoastState((Coast)):::circular
     Standbystate((Standby)):::circular
+    MotorBurnState((Motor Burn)):::circular
+    CoastState((Coast)):::circular
     FreefallState((Freefall)):::circular
     LandedState((Landed)):::circular
-    MotorBurnState((Motor Burn)):::circular
+    
 
     %% Connections between States and Airbrakes
     State((State)):::circular --> Airbrakes:::circular
     State --> Update
     
-    CoastState((Coast)):::circular --> State
     Standbystate((Standby)):::circular --> State
+    MotorBurnState((Motor Burn)):::circular --> State
+    CoastState((Coast)):::circular --> State
     FreefallState((Freefall)):::circular --> State
     LandedState((Landed)):::circular --> State
-    MotorBurnState((Motor Burn)):::circular --> State
     
     %% Connections with Labels
     Airbrakes ---|Child Process| Logger((Logger)):::circular
@@ -126,12 +128,14 @@ flowchart TD
 ### Launch Data
 
 This is our interest launch flight data, altitude over time. The different colors of the line are different states the rocket goes through:
-1. Stand By - when the rocket is on the rail on the ground
-2. Motor Burn - when the motor is burning and the rocket is accelerating
-3. Coast - when the motor has burned out and the rocket is coasting, this is when air brakes will be deployed
-4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air brakes will be
-retracted
-5. Landed - when the rocket has landed on the ground
+1. Standby - when the rocket is on the rail on the ground.
+2. Motor Burn - when the motor is burning and the rocket is accelerating.
+3. Coast - after the motor has burned out and the rocket is coasting, this is when air brakes
+deployment will be controlled by the bang-bang controller.
+4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air
+brakes will be retracted.
+5. Landed - when the rocket lands on the ground. After a few seconds in landed state, the
+Airbrakes program will end.
 <img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
 ### File Structure
@@ -148,7 +152,7 @@ AirbrakesV2/
 │   │   ├── [files related to our custom air brakes sim ...]
 |   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
-│   ├── [files which control the airbrakes at a high level ...]
+│   ├── [files which control the air brakes at a high level ...]
 |   ├── main.py [main file used to run on the rocket]
 |   ├── constants.py [file for constants used in the project]
 ├── tests/  [used for testing all the code]

@@ -29,8 +29,8 @@ class TestIMU:
     def test_init(self, imu, mock_imu):
         """Tests whether the IMU and MockIMU objects initialize correctly."""
         # Tests that the data queue is correctly initialized
-        assert isinstance(imu._data_queue, faster_fifo.Queue)
-        assert type(imu._data_queue) is type(mock_imu._data_queue)
+        assert isinstance(imu._queued_imu_packets, faster_fifo.Queue)
+        assert type(imu._queued_imu_packets) is type(mock_imu._queued_imu_packets)
         # Tests that _running is correctly initialized
         assert isinstance(imu._running, c_byte)
         assert type(imu._running) is type(mock_imu._running)
@@ -68,13 +68,13 @@ class TestIMU:
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
-            self._data_queue.put(make_est_data_packet())
+            self._queued_imu_packets.put(make_est_data_packet())
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
         imu = IMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.01)  # Sleep a bit to let the process start and put the data
-        assert imu._data_queue.qsize() == 1
+        assert imu._queued_imu_packets.qsize() == 1
         imu.stop()
         assert not imu._running.value
         assert not imu.is_running
@@ -89,13 +89,13 @@ class TestIMU:
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
             while self._running.value:
-                self._data_queue.put(make_est_data_packet())
+                self._queued_imu_packets.put(make_est_data_packet())
 
         monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
         imu = IMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.01)  # Sleep a bit to let the process start and put the data
-        assert imu._data_queue.qsize() == 10
+        assert imu._queued_imu_packets.qsize() == 10
         imu.stop()
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
@@ -110,7 +110,7 @@ class TestIMU:
             """Monkeypatched method for testing."""
             # The stop_signal is typically put at the end of the mock sim.
             while self._running.value:
-                self._data_queue.put(EstimatedDataPacket(timestamp=0))
+                self._queued_imu_packets.put(EstimatedDataPacket(timestamp=0))
 
         monkeypatch.setattr(mock_imu.__class__, "_fetch_data_loop", _fetch_data_loop)
         mock_imu.start()
@@ -184,18 +184,20 @@ class TestIMU:
         time.sleep(0.31)  # The raspberry pi is a little slower, so we add 0.01
         # Theoretical number of packets in 0.3s:
         # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 450
-        assert imu._data_queue.qsize() > 400, "Queue should have more than 400 packets in 0.3s"
+        assert imu._queued_imu_packets.qsize() > 400, (
+            "Queue should have more than 400 packets in 0.3s"
+        )
         assert isinstance(imu.get_imu_data_packet(), IMUDataPacket)
 
         # Get all the packets from the queue
         packets = deque()
         imu.stop()
-        while not imu._data_queue.empty():
+        while not imu._queued_imu_packets.empty():
             packets.extend(imu.get_imu_data_packets())
 
         assert isinstance(packets, deque)
         assert isinstance(packets[0], IMUDataPacket)
-        assert imu._data_queue.empty()
+        assert imu._queued_imu_packets.empty()
 
         # Assert ratio of EstimatedDataPackets to RawDataPackets is roughly 2:1:
         est_count = 0

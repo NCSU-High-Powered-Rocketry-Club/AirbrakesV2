@@ -25,8 +25,10 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     by the main process."""
 
     apogee_predictor_queue_size: int
-    """The number of apogee predictor data packets in the apogee predictor queue,
-    waiting to be fetched by the main process."""
+    """
+    The number of apogee predictor data packets in the apogee predictor queue,
+    waiting to be fetched by the main process.
+    """
 
     imu_packets_per_cycle: int
     """The number of packets we directly fetch from the LORD IMU in the IMU process. This is

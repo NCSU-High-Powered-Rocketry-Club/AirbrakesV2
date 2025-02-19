@@ -41,15 +41,13 @@ class MockIMU(BaseIMU):
     ):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a
-        log file.
-
-        We don't call the parent constructor as the IMU class has different parameters, so we
-        manually start the process that fetches data from the log file
+            log file. We don't call the parent constructor as the IMU class has different
+            parameters, so we manually start the process that fetches data from the log file.
+        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
+            run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
-        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set
-        period, or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         self._log_file_path = log_file_path
         # Check if the launch data file exists:
@@ -66,7 +64,7 @@ class MockIMU(BaseIMU):
         # We limit it to 15 packets, which is more realistic for a real flight.
         msgpack_encoder = msgspec.msgpack.Encoder()
         msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
-        data_queue: Queue[IMUDataPacket] = Queue(
+        queued_imu_packets: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
             dumps=msgpack_encoder.encode,
             loads=msgpack_decoder.decode,
@@ -78,14 +76,14 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
-        super().__init__(data_fetch_process, data_queue)
+        super().__init__(data_fetch_process, queued_imu_packets)
 
     @staticmethod
     def _convert_invalid_fields(value) -> list | None:
         """
         Convert invalid fields to Python objects or None.
         :param value: The value to convert.
-        :return: The converted value
+        :return: The converted value.
         """
         return None if not value else ast.literal_eval(value)  # Convert string to list
 
@@ -114,11 +112,12 @@ class MockIMU(BaseIMU):
     ) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_path: the name of the log file to read data from located in scripts/imu_data
+        :param log_file_path: the name of the log file to read data from located in launch_data
+            folder.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
-        or run at full speed, e.g. for using it in the CI.
+            or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         start_index = self._calculate_start_index(log_file_path) if start_after_log_buffer else 0
 
@@ -158,7 +157,7 @@ class MockIMU(BaseIMU):
                 imu_data_packet = EstimatedDataPacket(**row_dict)
 
             # Put the packet in the queue
-            self._data_queue.put(imu_data_packet)
+            self._queued_imu_packets.put(imu_data_packet)
 
             # sleep only if we are running a real-time replay
             # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
@@ -173,11 +172,12 @@ class MockIMU(BaseIMU):
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
-        :param log_file_path: the name of the log file to read data from located in scripts/imu_data
+        :param log_file_path: the name of the log file to read data from located in the launch_data
+            folder.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
-        or run at full speed.
+            or run at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
@@ -186,4 +186,4 @@ class MockIMU(BaseIMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
-        self._data_queue.put(STOP_SIGNAL)
+        self._queued_imu_packets.put(STOP_SIGNAL)

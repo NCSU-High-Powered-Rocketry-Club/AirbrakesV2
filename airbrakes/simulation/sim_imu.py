@@ -83,11 +83,11 @@ class SimIMU(BaseIMU):
 
                 # if the timestamp is a multiple of the raw time step, generate a raw data packet.
                 if any(np.isclose(timestamp % raw_dt, [0, raw_dt])):
-                    self._data_queue.put(data_generator.generate_raw_data_packet())
+                    self._queued_imu_packets.put(data_generator.generate_raw_data_packet())
 
                 # if the timestamp is a multiple of the est time step, generate an est data packet.
                 if any(np.isclose(timestamp % est_dt, [0, est_dt])):
-                    self._data_queue.put(data_generator.generate_estimated_data_packet())
+                    self._queued_imu_packets.put(data_generator.generate_estimated_data_packet())
 
                 # updates the timestamp and sleeps until next packet is ready in real-time
                 time_step = update_timestamp(timestamp, config) - timestamp

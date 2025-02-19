@@ -43,14 +43,9 @@ from airbrakes.utils import set_process_priority
 
 class IMU(BaseIMU):
     """
-    Represents the IMU on the rocket. It's used to get the current acceleration of the rocket.
-    This is used to interact with the data collected by the Parker-LORD 3DMCX5-AR.
-    (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
-
-    It uses multiprocessing rather than threading to truly run in parallel with the main loop.
-    We're doing this is because the IMU constantly polls data and can be slow, so it's better to
-    run it in parallel.
-
+    Represents the IMU on the rocket. It's used to get the current motion of the rocket, including
+    the acceleration, rotation, and position. This is used to interact with the data collected by
+    the Parker-LORD 3DMCX5-AR. (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
@@ -69,7 +64,7 @@ class IMU(BaseIMU):
         msgpack_encoder = msgspec.msgpack.Encoder()
         msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket)
 
-        _data_queue: Queue[IMUDataPacket] = Queue(
+        _queued_imu_packets: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_QUEUE_SIZE,
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
             dumps=msgpack_encoder.encode,
@@ -79,7 +74,7 @@ class IMU(BaseIMU):
         data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
-        super().__init__(data_fetch_process, _data_queue)
+        super().__init__(data_fetch_process, _queued_imu_packets)
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _fetch_data_loop(self, port: str) -> None:  # pragma: no cover
@@ -253,7 +248,7 @@ class IMU(BaseIMU):
 
                 messages.append(imu_data_packet)
 
-            self._data_queue.put_many(messages)
+            self._queued_imu_packets.put_many(messages)
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """

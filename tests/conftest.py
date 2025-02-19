@@ -8,6 +8,8 @@ from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
+    ENCODER_PIN_A,
+    ENCODER_PIN_B,
     EST_DATA_PACKET_SAMPLING_RATE,
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
@@ -72,7 +74,9 @@ def imu():
 
 @pytest.fixture
 def servo():
-    return Servo(SERVO_PIN, pin_factory=MockFactory(pin_class=MockPWMPin))
+    return Servo(
+        SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B, pin_factory=MockFactory(pin_class=MockPWMPin)
+    )
 
 
 @pytest.fixture
@@ -192,12 +196,12 @@ class RandomDataIMU(IMU):
 
             # Generate all raw packets due since last iteration
             while now >= next_raw:
-                self._data_queue.put(make_raw_data_packet(timestamp=next_raw))
+                self._queued_imu_packets.put(make_raw_data_packet(timestamp=next_raw))
                 next_raw += RAW_INTERVAL_NS
 
             # Generate all estimated packets due since last iteration
             while now >= next_estimated:
-                self._data_queue.put(make_est_data_packet(timestamp=next_estimated))
+                self._queued_imu_packets.put(make_est_data_packet(timestamp=next_estimated))
                 next_estimated += EST_INTERVAL_NS
 
             # Calculate sleep time until next expected packet

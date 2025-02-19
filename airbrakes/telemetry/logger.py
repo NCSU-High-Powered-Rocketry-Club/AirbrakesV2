@@ -34,10 +34,8 @@ class Logger:
     A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process.
     This is because the logging process is I/O-bound, meaning that it spends most of its time
     waiting for the file to be written to. By running it in a separate process, we can continue to
-    log data while the main loop is running.
-
-    It uses Python's csv module to append the airbrakes' current state, extension, and IMU data to
-    our logs in real time.
+    log data while the main loop is running. It uses Python's csv module to append the airbrakes'
+    current state, extension, and IMU data to our logs in real time.
     """
 
     LOG_BUFFER_STATES = ("S", "L")
@@ -133,8 +131,8 @@ class Logger:
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
-        :param context_data_packet: The context data packet to log.
-        :param servo_data_packet: The servo data packet to log.
+        :param context_data_packet: The Context Data Packet to log.
+        :param servo_data_packet: The Servo Data Packet to log.
         :param imu_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log. This is always the same
         length as the number of EstimatedDataPackets present in the `imu_data_packets`.
@@ -266,8 +264,8 @@ class Logger:
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
-        :param context_data_packet: The context data packet to log.
-        :param servo_data_packet: The servo data packet to log.
+        :param context_data_packet: The Context Data Packet to log.
+        :param servo_data_packet: The Servo Data Packet to log.
         :param imu_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packets: The apogee predictor data packets to log.

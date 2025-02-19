@@ -14,22 +14,25 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 
 class BaseIMU:
     """
-    Base class for the IMU and MockIMU classes.
+    Base class for the IMU, MockIMU, and SimIMU classes.
     """
 
     __slots__ = (
         "_data_fetch_process",
-        "_data_queue",
         "_imu_packets_per_cycle",
+        "_queued_imu_packets",
         "_running",
     )
 
-    def __init__(self, data_fetch_process: Process, data_queue: Queue) -> None:
+    def __init__(self, data_fetch_process: Process, queued_imu_packets: Queue) -> None:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
+        :param data_fetch_process: the multiprocessing process for the IMU.
+        :param queued_imu_packets: the queue that the IMUDataPackets will be put into and taken
+            from.
         """
         self._data_fetch_process = data_fetch_process
-        self._data_queue = data_queue
+        self._queued_imu_packets = queued_imu_packets
         # Makes a boolean value that is shared between processes
         self._running = Value("b", False, lock=False)
         self._imu_packets_per_cycle = Value("i", 0, lock=False)
@@ -45,15 +48,16 @@ class BaseIMU:
     @property
     def queued_imu_packets(self) -> int:
         """
-        :return: The number of data packets in the multiprocessing queue.
+        Gets the amount of IMU data packets in the multiprocessing queue
+        :return: The number of IMUDataPackets in the queue.
         """
-        return self._data_queue.qsize()
+        return self._queued_imu_packets.qsize()
 
     @property
     def is_running(self) -> bool:
         """
         Returns whether the process fetching data from the IMU is running.
-        :return: True if the process is running, False otherwise
+        :return: True if the process is running, False otherwise.
         """
         return self._running.value
 
@@ -79,19 +83,20 @@ class BaseIMU:
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
-        Gets the last available data packet from the IMU.
-        :return: an IMUDataPacket object containing the latest data from the IMU. If a value is not
-        available, it will be None.
+        Gets the last available IMU data packet from the imu packet queue.
+        :return: an IMUDataPacket object containing the latest data from the imu packet queue. If a
+        value is not available, it will be None.
         """
-        return self._data_queue.get(timeout=IMU_TIMEOUT_SECONDS)
+        return self._queued_imu_packets.get(timeout=IMU_TIMEOUT_SECONDS)
 
     def get_imu_data_packets(self, block: bool = True) -> list[IMUDataPacket]:
         """
-        Returns all available data packets from the IMU.
-        :return: A list containing the latest data packets from the IMU.
+        Returns all available IMU data packets from the queued imu packets.
+        :param block: Whether to wait until a IMU data packet is available or not.
+        :return: A deque containing the latest IMU data packets from the imu packet queue.
         """
         try:
-            packets = self._data_queue.get_many(
+            packets = self._queued_imu_packets.get_many(
                 block=block, max_messages_to_get=MAX_FETCHED_PACKETS, timeout=IMU_TIMEOUT_SECONDS
             )
         except Empty:  # If the queue is empty (i.e. timeout hit), don't bother waiting.
