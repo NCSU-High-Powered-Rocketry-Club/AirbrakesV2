@@ -35,11 +35,11 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
-def pytest_ignore_collect(path, _):
+def pytest_ignore_collect(collection_path, config):
     # Check if the architecture is ARM64 (e.g., 'aarch64')
     if platform.machine() in ("aarch64", "arm64"):
         # Ignore test_main.py on ARM64
-        return path.basename == "test_main.py"
+        return collection_path.basename == "test_main.py"
     return False
 
 
