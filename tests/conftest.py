@@ -35,16 +35,17 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+def pytest_ignore_collect(path, _):
+    # Check if the architecture is ARM64 (e.g., 'aarch64')
+    if platform.machine() in ("aarch64", "arm64"):
+        # Ignore test_main.py on ARM64
+        return path.basename == "test_main.py"
+    return False
+
+
 def pytest_collection_modifyitems(config, items):
     marker = "imu_benchmark"
     marker_expr = config.getoption("-m", None)
-
-    for item in items:
-        # Check if the test is from test_main.py
-        print(platform.machine())
-        if item.fspath.basename == "test_main.py" and platform.machine() == "arm64":
-            # Skip the test with a reason
-            item.add_marker(pytest.mark.skip(reason="Skipping all tests in test_main.py"))
 
     # Skip tests with the marker if not explicitly requested
     if marker_expr != marker:
