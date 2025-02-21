@@ -4,8 +4,6 @@ import platform
 import time
 from pathlib import Path
 
-print(platform.machine())
-
 import pytest
 
 from airbrakes.airbrakes import AirbrakesContext
@@ -43,6 +41,7 @@ def pytest_collection_modifyitems(config, items):
 
     for item in items:
         # Check if the test is from test_main.py
+        print(platform.machine())
         if item.fspath.basename == "test_main.py" and platform.machine() == "arm64":
             # Skip the test with a reason
             item.add_marker(pytest.mark.skip(reason="Skipping all tests in test_main.py"))
