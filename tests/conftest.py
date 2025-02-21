@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 
 import pytest
-from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
@@ -13,13 +12,12 @@ from airbrakes.constants import (
     EST_DATA_PACKET_SAMPLING_RATE,
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_PIN,
 )
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
-from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -74,9 +72,7 @@ def imu():
 
 @pytest.fixture
 def servo():
-    return Servo(
-        SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B, pin_factory=MockFactory(pin_class=MockPWMPin)
-    )
+    return MockServo(ENCODER_PIN_A, ENCODER_PIN_B)
 
 
 @pytest.fixture

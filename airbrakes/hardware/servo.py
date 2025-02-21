@@ -2,6 +2,13 @@
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
 import gpiozero
+
+try:
+    # This library can only be imported on the raspberry pi.
+    from gpiozero.pins.rpigpio import RPiGPIOFactory as Factory
+except RuntimeError:
+    from gpiozero.pins.mock import MockFactory as Factory
+
 from adafruit_servokit import ServoKit
 
 from airbrakes.constants import (
@@ -54,7 +61,9 @@ class Servo(BaseServo):
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
-        encoder = gpiozero.RotaryEncoder(encoder_pin_number_a, encoder_pin_number_b, max_steps=0)
+        encoder = gpiozero.RotaryEncoder(
+            encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
+        )
 
         super().__init__(servo_1, servo_2, encoder)
 

@@ -214,7 +214,7 @@ class TestIMU:
     def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
         """Tests whether the IMU's get_imu_data_packets() times out correctly."""
         imu = idle_mock_imu
-        monkeypatch.setattr("airbrakes.hardware.base_imu.IMU_TIMEOUT_SECONDS", 0.1)
+        monkeypatch.setattr("airbrakes.interfaces.base_imu.IMU_TIMEOUT_SECONDS", 0.1)
         imu.start()
         packets = imu.get_imu_data_packets()
         assert not packets, "Expected empty deque"

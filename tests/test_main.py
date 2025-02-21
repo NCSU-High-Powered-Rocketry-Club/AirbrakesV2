@@ -21,11 +21,30 @@ from airbrakes.main import (
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
+
+
+class MockedServoKit:
+    """Mocked class for the real servo."""
+
+    def __init__(self, channels: int, *_, **__):
+        self.servo = [MockedServo()] * channels
+
+
+class MockedServo:
+    """Mocked class for the adafruit.motor servo."""
+
+    def __init__(self, *_, **__):
+        self.actuation_range = 180
+        self.angle = 0
+
+    def set_pulse_width_range(self, *args, **kwargs):
+        pass
 
 
 @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
@@ -83,7 +102,8 @@ def test_create_components(parsed_args, monkeypatch):
 
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
-    monkeypatch.setattr("gpiozero.pins.pigpio.PiGPIOFactory", mock_factory)
+    monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
+    monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
     created_components = create_components(parsed_args)
 
     assert len(created_components) == 6
@@ -120,9 +140,9 @@ def test_create_components(parsed_args, monkeypatch):
         if parsed_args.real_servo:
             assert type(created_components[0]) is Servo
         else:
-            assert type(created_components[0]) is Servo
+            assert type(created_components[0]) is MockServo
             assert isinstance(
-                created_components[0].servo.pin_factory, gpiozero.pins.mock.MockFactory
+                created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
             )
 
         # A mock logger object is always created:

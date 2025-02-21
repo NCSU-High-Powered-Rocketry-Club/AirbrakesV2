@@ -159,7 +159,6 @@ dependencies = [
     { name = "msgspec" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pigpio" },
     { name = "psutil" },
     { name = "python-mscl" },
     { name = "scipy" },
@@ -187,7 +186,6 @@ requires-dist = [
     { name = "msgspec" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pigpio" },
     { name = "psutil" },
     { name = "python-mscl", specifier = ">=67.0.0" },
     { name = "scipy" },
@@ -479,15 +477,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/25/b0/98d6ae2e1abac4f35230aa756005e8654649d305df9a28b16b9ae4353bff/pandas-2.2.3-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1db71525a1538b30142094edb9adc10be3f3e176748cd7acc2240c2f2e5aa3a4", size = 11871013 },
     { url = "https://files.pythonhosted.org/packages/cc/57/0f72a10f9db6a4628744c8e8f0df4e6e21de01212c7c981d31e50ffc8328/pandas-2.2.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:15c0e1e02e93116177d29ff83e8b1619c93ddc9c49083f237d4312337a61165d", size = 15711620 },
     { url = "https://files.pythonhosted.org/packages/ab/5f/b38085618b950b79d2d9164a711c52b10aefc0ae6833b96f626b7021b2ed/pandas-2.2.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:ad5b65698ab28ed8d7f18790a0dc58005c7629f227be9ecc1072aa74c0c1d43a", size = 13098436 },
-]
-
-[[package]]
-name = "pigpio"
-version = "1.78"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a9/4a/3ebdfd90906553fb5420e80a475eb52f0809f2a29b547ba3b260db0cbc8f/pigpio-1.78.tar.gz", hash = "sha256:91efa50e4990649da97408a384782d6ccf58342fc59cdfe21ed7a42911569975", size = 40738 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/a0/991ac7f96f83936c15f4b26b51d1fdba63e7bc9866411bfda022b649c2a7/pigpio-1.78-py2.py3-none-any.whl", hash = "sha256:81e46f640c4e6342881fa9bbe290dbcd4fc179619dc6591e57a9d4a084dc49fa", size = 39622 },
 ]
 
 [[package]]

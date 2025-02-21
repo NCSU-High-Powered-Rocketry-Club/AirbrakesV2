@@ -433,7 +433,7 @@ class TestAirbrakesContext:
         """Tests whether the airbrakes receives packets from the apogee predictor and that the
         attribute `predicted_apogee` is updated correctly."""
 
-        monkeypatch.setattr("airbrakes.hardware.base_imu.MAX_FETCHED_PACKETS", 100)
+        monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(airbrakes, "imu", random_data_mock_imu)
 
         airbrakes.start()
