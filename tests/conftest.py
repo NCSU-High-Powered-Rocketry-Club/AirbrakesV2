@@ -1,5 +1,6 @@
 """Module where fixtures are shared between all test files."""
 
+import platform
 import time
 from pathlib import Path
 
@@ -37,6 +38,12 @@ LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 def pytest_collection_modifyitems(config, items):
     marker = "imu_benchmark"
     marker_expr = config.getoption("-m", None)
+
+    for item in items:
+        # Check if the test is from test_main.py
+        if item.fspath.basename == "test_main.py" and platform.machine() == "aarch64":
+            # Skip the test with a reason
+            item.add_marker(pytest.mark.skip(reason="Skipping all tests in test_main.py"))
 
     # Skip tests with the marker if not explicitly requested
     if marker_expr != marker:

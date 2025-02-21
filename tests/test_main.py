@@ -1,6 +1,5 @@
 """Module to test the main script."""
 
-import contextlib
 import sys
 import time
 from functools import partial
@@ -11,11 +10,7 @@ import pytest
 from airbrakes.constants import LOGS_PATH
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
-
-# Unable to import the ServoKit on arm64 architecture unforntunately
-with contextlib.suppress(AttributeError):
-    from airbrakes.hardware.servo import Servo
-
+from airbrakes.hardware.servo import Servo
 from airbrakes.main import (
     create_components,
     run_flight,
