@@ -1,5 +1,6 @@
 """Module to test the main script."""
 
+import contextlib
 import sys
 import time
 from functools import partial
@@ -10,7 +11,11 @@ import pytest
 from airbrakes.constants import LOGS_PATH
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
-from airbrakes.hardware.servo import Servo
+
+# Unable to import the ServoKit on arm64 architecture unforntunately
+with contextlib.suppress(AttributeError):
+    from airbrakes.hardware.servo import Servo
+
 from airbrakes.main import (
     create_components,
     run_flight,
@@ -66,6 +71,7 @@ def parsed_args(request, monkeypatch):
     return arg_parser()
 
 
+@pytest.mark.skipif(sys.platform == "arm64", reason="This test is not supported on arm64.")
 @pytest.mark.parametrize(
     "parsed_args",
     [
