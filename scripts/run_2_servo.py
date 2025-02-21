@@ -1,6 +1,8 @@
 import time
 from adafruit_servokit import ServoKit
 
+from airbrakes.constants import SERVO_1_CHANNEL, SERVO_2_CHANNEL
+
 # 42 44
 # 125 118
 
@@ -9,8 +11,8 @@ from adafruit_servokit import ServoKit
 nbPCAServo = 16
 MIN_IMP = [500] * 16
 MAX_IMP = [2500] * 16
-SERVO_1 = 3
-SERVO_2 = 7
+SERVO_1 = SERVO_1_CHANNEL
+SERVO_2 = SERVO_2_CHANNEL
 SERVO_3 = 10
 
 # Objects
