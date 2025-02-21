@@ -153,6 +153,7 @@ name = "airbrakesv2"
 version = "1.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "adafruit-circuitpython-servokit" },
     { name = "colorama" },
     { name = "faster-fifo" },
     { name = "gpiozero" },
@@ -161,6 +162,7 @@ dependencies = [
     { name = "pandas" },
     { name = "psutil" },
     { name = "python-mscl" },
+    { name = "rpi-gpio" },
     { name = "scipy" },
     { name = "textual" },
 ]
@@ -173,13 +175,10 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
-servo = [
-    { name = "adafruit-circuitpython-servokit" },
-    { name = "rpi-gpio" },
-]
 
 [package.metadata]
 requires-dist = [
+    { name = "adafruit-circuitpython-servokit", specifier = ">=1.3.19" },
     { name = "colorama" },
     { name = "faster-fifo" },
     { name = "gpiozero" },
@@ -188,6 +187,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "psutil" },
     { name = "python-mscl", specifier = ">=67.0.0" },
+    { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "scipy" },
     { name = "textual" },
 ]
@@ -199,10 +199,6 @@ dev = [
     { name = "pytest-benchmark", specifier = ">=5.1.0" },
     { name = "pytest-cov" },
     { name = "ruff" },
-]
-servo = [
-    { name = "adafruit-circuitpython-servokit", specifier = ">=1.3.19" },
-    { name = "rpi-gpio", specifier = ">=0.7.1" },
 ]
 
 [[package]]
