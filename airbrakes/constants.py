@@ -18,11 +18,37 @@ make sure the IMU process is always running and getting data."""
 # Servo Configuration
 # -------------------------------------------------------
 
-SERVO_PIN = 25
+SERVO_1_CHANNEL = 3
 """
-The pin on the pi that the servo's signal wire is plugged into. You can read more about the pins
-here: https://www.youngwonks.com/blog/Raspberry-Pi-4-Pinout
+The channel on the PCA9685 that the first servo is connected to. The PCA9685 is a PWM driver that
+allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
+are numbered from 0 to 15.
 """
+
+SERVO_2_CHANNEL = 7
+"""
+The channel on the PCA9685 that the second servo is connected to. The PCA9685 is a PWM driver that
+allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
+are numbered from 0 to 15.
+"""
+
+SERVO_MIN_PULSE_WIDTH = 500
+"""
+The minimum pulse width in microseconds that the servo will accept. This is the pulse width that
+corresponds to the minimum rotation of the servo.
+"""
+
+SERVO_MAX_PULSE_WIDTH = 2500
+"""
+The maximum pulse width in microseconds that the servo will accept. This is the pulse width that
+corresponds to the maximum rotation of the servo.
+"""
+
+SERVO_MAX_ANGLE = 180
+"""
+The maximum angle that the servo can rotate to.
+"""
+
 SERVO_DELAY_SECONDS = 0.3
 """
 This is how long the servo approximately takes to move from one extreme to the other. This is
@@ -37,14 +63,16 @@ class ServoExtension(Enum):
     the actual position. This is to ensure that the servo will move fast enough and with enough
     power to actually make it to the position, but then once it's there, we don't want it to keep
     straining past the physical bounds of the air brakes.
-    The range of the input for the servo is -1 to 1, where -1 is the minimum rotation and 1 is the
-    maximum rotation. We obtained these values through guess and check.
+    The range of the servo is from 0 to 180 degrees, but we only use a portion of that range to
+    prevent the servo from straining too much. We obtained the below values through guess and
+    check, and they differ depending on the design.
     """
 
-    MIN_EXTENSION = -0.75
-    MAX_EXTENSION = 0.055
-    MIN_NO_BUZZ = -0.72
-    MAX_NO_BUZZ = 0.01
+    # in degrees:
+    MIN_EXTENSION = 30
+    MAX_EXTENSION = 120
+    MIN_NO_BUZZ = 35
+    MAX_NO_BUZZ = 115
 
 
 # -------------------------------------------------------

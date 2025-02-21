@@ -32,7 +32,7 @@ from airbrakes.constants import (
     Y_QUALIFIER,
     Z_QUALIFIER,
 )
-from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,

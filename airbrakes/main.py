@@ -5,18 +5,25 @@ import argparse
 import sys
 import time
 
-from gpiozero.pins.mock import MockFactory, MockPWMPin
-
 from airbrakes.airbrakes import AirbrakesContext
-from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B, IMU_PORT, LOGS_PATH, SERVO_PIN
-from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.constants import (
+    ENCODER_PIN_A,
+    ENCODER_PIN_B,
+    IMU_PORT,
+    LOGS_PATH,
+    SERVO_1_CHANNEL,
+    SERVO_2_CHANNEL,
+)
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.interfaces.base_imu import BaseIMU
+from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
+from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
@@ -69,7 +76,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[Servo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
+) -> tuple[BaseServo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the air brakes system. Depending on its arguments, it
         will return either mock, sim, or real components.
@@ -90,13 +97,11 @@ def create_components(
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
-            Servo(SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B)
+            Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
             if args.real_servo
-            else Servo(
-                SERVO_PIN,
+            else MockServo(
                 ENCODER_PIN_A,
                 ENCODER_PIN_B,
-                pin_factory=MockFactory(pin_class=MockPWMPin),
             )
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
@@ -104,7 +109,7 @@ def create_components(
 
     else:
         # Use real hardware components
-        servo = Servo(SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B)
+        servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
         camera = Camera()
@@ -139,6 +144,8 @@ def run_flight_loop(
             # Update the state machine
             context.update()
 
+            # See https://github.com/python/cpython/issues/130279 for why this is here and not
+            # in the loop condition.
             if context.shutdown_requested:
                 break
 
