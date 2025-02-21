@@ -1,6 +1,10 @@
 import time
 from adafruit_servokit import ServoKit
 
+# 42 44
+# 125 118
+
+
 # Constants
 nbPCAServo = 16
 MIN_IMP = [500] * 16
@@ -54,7 +58,7 @@ def oscillate():
                     pca.servo[SERVO_2].angle = angle
                     #pca.servo[SERVO_3].angle = angle
                     time.sleep(delay)
-                time.sleep(0.2)
+                time.sleep(0.3)
         except KeyboardInterrupt:
             print("\nOscillation stopped")
     else:
@@ -75,9 +79,9 @@ def main():
         elif choice == '2':
             oscillate()
         elif choice == '3':
-            while True:
-                pca.servo[SERVO_1].angle = None
-                pca.servo[SERVO_2].angle = None
+
+            pca.servo[SERVO_1].angle = None
+            pca.servo[SERVO_2].angle = None
         else:
             print("Invalid choice")
 
