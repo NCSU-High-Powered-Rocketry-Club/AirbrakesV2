@@ -183,7 +183,7 @@ class TestIMU:
         imu.start()
         time.sleep(0.31)  # The raspberry pi is a little slower, so we add 0.01
         # Theoretical number of packets in 0.3s:
-        # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 300
+        # T = N / 1000 => N = 0.3 * 1000 = 300
         assert imu._queued_imu_packets.qsize() > 300, (
             "Queue should have more than 400 packets in 0.3s"
         )
@@ -208,8 +208,8 @@ class TestIMU:
             elif isinstance(packet, RawDataPacket):
                 raw_count += 1
 
-        # Practically the ratio may not be exactly 1:2, specially on the raspberry pi
-        assert 2.30 >= raw_count / est_count >= 1.70, f"Actual ratio was: {raw_count / est_count}"
+        # Practically the ratio may not be exactly 1:1, specially on the raspberry pi
+        assert 1.1 >= raw_count / est_count >= 0.95, f"Actual ratio was: {raw_count / est_count}"
 
     def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
         """Tests whether the IMU's get_imu_data_packets() times out correctly."""
