@@ -25,7 +25,7 @@ allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channel
 are numbered from 0 to 15.
 """
 
-SERVO_2_CHANNEL = 7
+SERVO_2_CHANNEL = 3
 """
 The channel on the PCA9685 that the second servo is connected to. The PCA9685 is a PWM driver that
 allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
@@ -69,10 +69,10 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 115
-    MAX_EXTENSION = 37
-    MIN_NO_BUZZ = 110
-    MAX_NO_BUZZ = 40
+    MIN_EXTENSION = 120
+    MAX_EXTENSION = 10
+    MIN_NO_BUZZ = 115
+    MAX_NO_BUZZ = 20
 
 
 # -------------------------------------------------------
@@ -82,10 +82,10 @@ class ServoExtension(Enum):
 ENCODER_RESOLUTION = 20
 """The points per revolution of the encoder."""
 
-ENCODER_PIN_A = 21
+ENCODER_PIN_A = 23
 """The GPIO pin that the encoder's A pin is connected to."""
 
-ENCODER_PIN_B = 19
+ENCODER_PIN_B = 24
 """The GPIO pin that the encoder's B pin is connected to."""
 
 

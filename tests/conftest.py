@@ -1,6 +1,5 @@
 """Module where fixtures are shared between all test files."""
 
-import platform
 import time
 from pathlib import Path
 
@@ -38,10 +37,9 @@ LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 # TODO: Fix this so --collect
 def pytest_ignore_collect(collection_path, config):
     # Check if the architecture is ARM64 (e.g., 'aarch64')
-    if platform.machine() in ("aarch64", "arm64"):
-        # Ignore test_main.py on ARM64
-        return collection_path.name == "test_main.py"
-    return False
+    # if platform.machine() in ("aarch64", "arm64"):
+    # Ignore test_main.py on ARM64
+    return collection_path.name == "test_main.py"
 
 
 def pytest_collection_modifyitems(config, items):

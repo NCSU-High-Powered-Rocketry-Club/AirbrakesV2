@@ -40,3 +40,6 @@ test_logs/
 
 # Exclude benchmarks folder, which is used for local performance testing:
 .benchmarks/
+
+# pytest cache
+.pytest_cache/
