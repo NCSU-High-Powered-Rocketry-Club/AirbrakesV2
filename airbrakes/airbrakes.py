@@ -217,3 +217,9 @@ class AirbrakesContext:
             set_extension=str(self.servo.current_extension.value),
             encoder_position=self.servo.get_encoder_reading(),
         )
+
+    def end_video_recording(self) -> None:
+        """
+        Ends the video recording.
+        """
+        self.camera.stop()
