@@ -23,6 +23,31 @@ SERVO_PIN = 25
 The pin on the pi that the servo's signal wire is plugged into. You can read more about the pins
 here: https://www.youngwonks.com/blog/Raspberry-Pi-4-Pinout
 """
+
+SERVO_2_CHANNEL = 3
+"""
+The channel on the PCA9685 that the second servo is connected to. The PCA9685 is a PWM driver that
+allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
+are numbered from 0 to 15.
+"""
+
+SERVO_MIN_PULSE_WIDTH = 500
+"""
+The minimum pulse width in microseconds that the servo will accept. This is the pulse width that
+corresponds to the minimum rotation of the servo.
+"""
+
+SERVO_MAX_PULSE_WIDTH = 2500
+"""
+The maximum pulse width in microseconds that the servo will accept. This is the pulse width that
+corresponds to the maximum rotation of the servo.
+"""
+
+SERVO_MAX_ANGLE = 180
+"""
+The maximum angle that the servo can rotate to.
+"""
+
 SERVO_DELAY_SECONDS = 0.3
 """
 This is how long the servo approximately takes to move from one extreme to the other. This is
@@ -41,10 +66,11 @@ class ServoExtension(Enum):
     maximum rotation. We obtained these values through guess and check.
     """
 
-    MIN_EXTENSION = -0.75
-    MAX_EXTENSION = 0.055
-    MIN_NO_BUZZ = -0.72
-    MAX_NO_BUZZ = 0.01
+    # in degrees:
+    MIN_EXTENSION = 120
+    MAX_EXTENSION = 10
+    MIN_NO_BUZZ = 115
+    MAX_NO_BUZZ = 20
 
 
 # -------------------------------------------------------
