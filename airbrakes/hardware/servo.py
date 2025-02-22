@@ -2,12 +2,10 @@
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
 import gpiozero
+from adafruit_servokit import ServoKit
 
 # This library can only be imported on the raspberry pi.
-# from gpiozero.pins.rpigpio import RPiGPIOFactory as Factory
 from gpiozero.pins.lgpio import LGPIOFactory as Factory
-
-from adafruit_servokit import ServoKit
 
 from airbrakes.constants import (
     SERVO_MAX_ANGLE,
