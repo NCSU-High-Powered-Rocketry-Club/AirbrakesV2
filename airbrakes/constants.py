@@ -207,8 +207,8 @@ to stop the processes.
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 1000 = 1500 Hz
-# T = N/f => T = N/1500
+# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
+# T = N/f => T = N/1000
 
 IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
 """

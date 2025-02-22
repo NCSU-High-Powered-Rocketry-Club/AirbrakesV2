@@ -183,8 +183,8 @@ class TestIMU:
         imu.start()
         time.sleep(0.31)  # The raspberry pi is a little slower, so we add 0.01
         # Theoretical number of packets in 0.3s:
-        # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 450
-        assert imu._queued_imu_packets.qsize() > 400, (
+        # 300ms / 2ms + 300ms / 1ms = 150 + 300 = 300
+        assert imu._queued_imu_packets.qsize() > 300, (
             "Queue should have more than 400 packets in 0.3s"
         )
         assert isinstance(imu.get_imu_data_packet(), IMUDataPacket)
