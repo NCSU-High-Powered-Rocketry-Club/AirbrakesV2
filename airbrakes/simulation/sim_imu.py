@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
 
 from airbrakes.constants import MAX_FETCHED_PACKETS, MAX_QUEUE_SIZE, ServoExtension
-from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.simulation.data_generator import DataGenerator
 
 

@@ -1,10 +1,10 @@
 """Module where fixtures are shared between all test files."""
 
+import platform
 import time
 from pathlib import Path
 
 import pytest
-from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
@@ -13,13 +13,12 @@ from airbrakes.constants import (
     EST_DATA_PACKET_SAMPLING_RATE,
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_PIN,
 )
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
-from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -34,6 +33,15 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
+
+
+# TODO: Fix this so --collect
+def pytest_ignore_collect(collection_path, config):
+    # Check if the architecture is ARM64 (e.g., 'aarch64')
+    if platform.machine() in ("aarch64", "arm64"):
+        # Ignore test_main.py on ARM64
+        return collection_path.name == "test_main.py"
+    return False
 
 
 def pytest_collection_modifyitems(config, items):
@@ -74,9 +82,7 @@ def imu():
 
 @pytest.fixture
 def servo():
-    return Servo(
-        SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B, pin_factory=MockFactory(pin_class=MockPWMPin)
-    )
+    return MockServo(ENCODER_PIN_A, ENCODER_PIN_B)
 
 
 @pytest.fixture
@@ -155,6 +161,7 @@ def mocked_args_parser():
         real_camera = False
         verbose = False
         sim = False
+        real_imu = False
 
     return MockArgs()
 

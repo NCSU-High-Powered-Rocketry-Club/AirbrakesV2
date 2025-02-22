@@ -3,14 +3,14 @@ Ensure you are in the root directory of the project and run the following comman
 uv run scripts/run_servo_and_encoder.py
 """
 
-from airbrakes.constants import ServoExtension, SERVO_PIN
+from airbrakes.constants import SERVO_1_CHANNEL, SERVO_2_CHANNEL, SERVO_MAX_ANGLE, ServoExtension, SERVO_PIN
 from airbrakes.hardware.servo import Servo
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Header, Footer, Static, Input
 from textual.reactive import reactive
 from threading import Event
-from airbrakes.constants import ENCODER_RESOLUTION, ENCODER_PIN_A, ENCODER_PIN_B
+from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 import time
 
@@ -32,10 +32,8 @@ class ServoControllerApp(App):
         super().__init__(**kwargs)
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
-        self.servo = Servo(SERVO_PIN)
+        self.servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
         self.encoder = self.servo.encoder
-        # Max steps set to zero indicates that the encoder can infinitely rotate
-        # self.encoder = RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B,max_steps=0)
 
     def compose(self) -> ComposeResult:
         """Compose the UI layout."""
@@ -114,10 +112,11 @@ class ServoControllerApp(App):
         input_value = self.servo_input.value.strip()
         try:
             value = float(input_value)
-            if not -1.0 <= value <= 1.0:
+            if not 0 <= value <= SERVO_MAX_ANGLE:
                 raise ValueError("Value out of range")
             # Assuming the servo's set_position method accepts values from -1 to 1
-            self.servo.servo.value = value
+            self.servo.first_servo.angle = value
+            self.servo.second_servo.angle = value
             self.status.update(f"Servo set to {value}")
         except ValueError:
             self.status.update("Invalid input! Enter a number between -1 and 1.")

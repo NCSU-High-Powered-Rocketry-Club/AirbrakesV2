@@ -9,7 +9,7 @@ from airbrakes.constants import (
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
-    TARGET_ALTITUDE_METERS,
+    TARGET_APOGEE_METERS,
 )
 
 if TYPE_CHECKING:
@@ -144,10 +144,10 @@ class CoastState(State):
         # Gets the latest apogee prediction
         apogee = self.context.last_apogee_predictor_packet.predicted_apogee
 
-        if apogee > TARGET_ALTITUDE_METERS and not self.airbrakes_extended:
+        if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
-        elif apogee <= TARGET_ALTITUDE_METERS and self.airbrakes_extended:
+        elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
             self.airbrakes_extended = False
 

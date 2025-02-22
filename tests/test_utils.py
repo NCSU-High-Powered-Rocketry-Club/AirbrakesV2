@@ -46,7 +46,7 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
+        assert len(args.__dict__) == 9
         assert args.__dict__.keys() == {
             "mode",
             "real_servo",
@@ -56,6 +56,7 @@ class TestArgumentParsing:
             "path",
             "verbose",
             "debug",
+            "real_imu",
         }
         assert args.mode == "mock"
         assert args.real_servo is True
@@ -73,7 +74,7 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
+        assert len(args.__dict__) == 9
         assert args.__dict__.keys() == {
             "mode",
             "preset",
@@ -83,6 +84,7 @@ class TestArgumentParsing:
             "real_camera",
             "verbose",
             "debug",
+            "real_imu",
         }
 
         assert args.mode == "sim"

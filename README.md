@@ -314,7 +314,7 @@ _Every time the pi boots up, you must run this in order for the servo to work. W
 sudo pigpiod
 ```
 
-### Install the dependencies needed for the camera integration:
+### Install the dependencies needed for the camera and servo integration:
 
 ```bash
 sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev
