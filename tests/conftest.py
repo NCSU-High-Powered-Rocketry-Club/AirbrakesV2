@@ -35,6 +35,7 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+# TODO: Fix this so --collect
 def pytest_ignore_collect(collection_path, config):
     # Check if the architecture is ARM64 (e.g., 'aarch64')
     if platform.machine() in ("aarch64", "arm64"):
@@ -160,6 +161,7 @@ def mocked_args_parser():
         real_camera = False
         verbose = False
         sim = False
+        real_imu = False
 
     return MockArgs()
 
