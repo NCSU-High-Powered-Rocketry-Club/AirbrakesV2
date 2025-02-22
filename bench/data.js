@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1740203832468,
+  "lastUpdate": 1740209389955,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -208,6 +208,58 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 4.4174831604678536e-7",
             "extra": "mean: 1.9776635890825156 usec\nrounds: 47439"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "37377066+harshil21@users.noreply.github.com",
+            "name": "Harshil",
+            "username": "harshil21"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f54baf49e524e1550e5f0c5f01754eb5a6fc9a4b",
+          "message": "Use 2 servos, new board, new logic (#156)\n\n* Use 2 servos, new board, new logic\n\n* new test script\n\n* Add MockServo class, rearrange stuff into `interfaces`\n\nNo tests yet, but mock works\n\n* Get tests working\n\n* Move dependency in pyproject\n\n* Try to fix arm64 tests\n\n* Skip testing test_main on arm64\n\n* Skip testing test_main on arm64 take 2\n\n* Skip testing test_main on arm64 take 3\n\n* Skip testing test_main on arm64 take 4\n\n* Skip testing test_main on arm64 take 5\n\n* Skip testing test_main on arm64 take 6\n\n* script change\n\n* Change a few constants\n\nCo-authored-by: Harshil <hoppingturtles@proton.me>\n\n* Run mock replay with real imu\n\n* Fix tests\n\n* Update some constants\n\n* Fix tests\n\n* Review: Change docstring\n\n* Actually fix tests\n\n---------\n\nCo-authored-by: dirtypi <dirtypi09@gmail.com>",
+          "timestamp": "2025-02-22T02:28:31-05:00",
+          "tree_id": "6ec7ec2df65ff83b38b8bb0f9d5f4124b5156ed7",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/commit/f54baf49e524e1550e5f0c5f01754eb5a6fc9a4b"
+        },
+        "date": 1740209373809,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_airbrakes.py::TestAirbrakesContext::test_benchmark_airbrakes_update",
+            "value": 955.7536936603351,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0008718846348093477",
+            "extra": "mean: 1.046294674698259 msec\nrounds: 415"
+          },
+          {
+            "name": "tests/test_components/test_data_processor.py::TestIMUDataProcessor::test_benchmark_data_processor_update",
+            "value": 3272.911728448225,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000012295621815999033",
+            "extra": "mean: 305.53833496576664 usec\nrounds: 1633"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 151788.7049041803,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000004563326896139129",
+            "extra": "mean: 6.588105489346327 usec\nrounds: 8636"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 514598.70531568135,
+            "unit": "iter/sec",
+            "range": "stddev: 3.931585239725915e-7",
+            "extra": "mean: 1.9432617876225486 usec\nrounds: 48356"
           }
         ]
       }
