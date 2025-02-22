@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class BaseServo(ABC):
     """
-    A custom class that represents a (mock) servo motor and the accompanying (mock) rotary encoder.
+    A custom class that represents a servo interface and the accompanying rotary encoder interface.
     The servo controls the extension of the airbrakes while the encoder measures the servo's
     position. The encoder is controlled using the gpiozero library, which provides a simple
     interface for controlling GPIO pins on the Raspberry Pi.
