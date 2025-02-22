@@ -188,7 +188,7 @@ class TestAirbrakesContext:
         )  # Set to coast state to test apogee update
         mocked_airbrakes.start()
 
-        time.sleep(0.01)  # Sleep a bit so that the IMU queue is being filled
+        time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
 
         assert mocked_airbrakes.imu._queued_imu_packets.qsize() > 0
         assert mocked_airbrakes.state.name == "CoastState"
@@ -433,7 +433,7 @@ class TestAirbrakesContext:
         """Tests whether the airbrakes receives packets from the apogee predictor and that the
         attribute `predicted_apogee` is updated correctly."""
 
-        monkeypatch.setattr("airbrakes.hardware.base_imu.MAX_FETCHED_PACKETS", 100)
+        monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(airbrakes, "imu", random_data_mock_imu)
 
         airbrakes.start()

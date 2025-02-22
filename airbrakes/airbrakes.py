@@ -4,9 +4,9 @@ import time
 from typing import TYPE_CHECKING
 
 from airbrakes.constants import MAIN_PROCESS_PRIORITY
-from airbrakes.hardware.base_imu import BaseIMU
 from airbrakes.hardware.camera import Camera
-from airbrakes.hardware.servo import Servo
+from airbrakes.interfaces.base_imu import BaseIMU
+from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.state import StandbyState, State
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import IMUDataProcessor
@@ -54,7 +54,7 @@ class AirbrakesContext:
 
     def __init__(
         self,
-        servo: Servo,
+        servo: BaseServo,
         imu: BaseIMU,
         camera: Camera,
         logger: Logger,
@@ -77,7 +77,7 @@ class AirbrakesContext:
             level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
-        self.servo: Servo = servo
+        self.servo: BaseServo = servo
         self.imu: BaseIMU = imu
         self.camera: Camera = camera
         self.logger: Logger = logger
