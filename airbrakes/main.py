@@ -85,7 +85,11 @@ def create_components(
         ApogeePredictor objects.
     """
     if args.mode in ("mock", "sim"):
-        if args.mode == "mock":
+        if args.real_imu:
+            # Use real IMU but with other mock components:
+            imu = IMU(IMU_PORT)
+
+        elif args.mode == "mock":
             # Replace hardware with mock objects for simulation
             imu = MockIMU(
                 real_time_replay=not args.fast_replay,

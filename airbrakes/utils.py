@@ -171,6 +171,15 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         default=False,
     )
 
+    # TODO: Make -f and -i mutually exclusive
+    parser.add_argument(
+        "-i",
+        "--real-imu",
+        help=f"Run the {_type} with the real imu.",
+        action="store_true",
+        default=False,
+    )
+
     if is_mock:
         parser.add_argument(
             "-p",
