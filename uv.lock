@@ -157,7 +157,6 @@ dependencies = [
     { name = "colorama" },
     { name = "faster-fifo" },
     { name = "gpiozero" },
-    { name = "lgpio" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "pandas" },
@@ -165,7 +164,6 @@ dependencies = [
     { name = "python-mscl" },
     { name = "rpi-gpio" },
     { name = "scipy" },
-    { name = "swig" },
     { name = "textual" },
 ]
 
@@ -177,6 +175,10 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+encoder = [
+    { name = "lgpio" },
+    { name = "swig" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -184,7 +186,6 @@ requires-dist = [
     { name = "colorama" },
     { name = "faster-fifo" },
     { name = "gpiozero" },
-    { name = "lgpio", specifier = ">=0.2.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "pandas" },
@@ -192,7 +193,6 @@ requires-dist = [
     { name = "python-mscl", specifier = ">=67.0.0" },
     { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "scipy" },
-    { name = "swig", specifier = ">=4.3.0" },
     { name = "textual" },
 ]
 
@@ -203,6 +203,10 @@ dev = [
     { name = "pytest-benchmark", specifier = ">=5.1.0" },
     { name = "pytest-cov" },
     { name = "ruff" },
+]
+encoder = [
+    { name = "lgpio", specifier = ">=0.2.2.0" },
+    { name = "swig", specifier = ">=4.3.0" },
 ]
 
 [[package]]

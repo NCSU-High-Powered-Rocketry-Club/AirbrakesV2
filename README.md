@@ -317,7 +317,7 @@ sudo pigpiod
 ### Install the dependencies needed for the camera and servo integration:
 
 ```bash
-sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev
+sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev liblgpio-dev
 
 uv sync --all-groups
 ```

@@ -19,8 +19,6 @@ dependencies = [
     # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
     "rpi-gpio>=0.7.1",
     "adafruit-circuitpython-servokit>=1.3.19",
-    "swig>=4.3.0",
-    "lgpio>=0.2.2.0",
 ]
 
 [dependency-groups]
@@ -38,6 +36,12 @@ dev = [
     #"rpi-libcamera>=0.1a7",
     #"rpi-kms>=0.1a1",
 #]
+
+# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
+encoder = [
+    "swig>=4.3.0",
+    "lgpio>=0.2.2.0",
+]
 
 [project.scripts]
 mock = "airbrakes.main:run_mock_flight"
