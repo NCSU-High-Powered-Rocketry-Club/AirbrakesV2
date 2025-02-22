@@ -3,7 +3,7 @@ Ensure you are in the root directory of the project and run the following comman
 uv run scripts/run_servo_and_encoder.py
 """
 
-from airbrakes.constants import SERVO_1_CHANNEL, SERVO_2_CHANNEL, SERVO_MAX_ANGLE, ServoExtension, SERVO_PIN
+from airbrakes.constants import SERVO_1_CHANNEL, SERVO_2_CHANNEL, SERVO_MAX_ANGLE, ServoExtension
 from airbrakes.hardware.servo import Servo
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
