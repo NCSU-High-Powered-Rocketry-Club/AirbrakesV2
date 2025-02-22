@@ -3,43 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from airbrakes.utils import arg_parser, convert_str_to_float, convert_to_nanoseconds, deadband
-
-
-@pytest.mark.parametrize(
-    ("input_value", "expected"),
-    [
-        ("1", 1),
-        ("0.5", 500_000_000),
-        ("invalid", None),
-    ],
-    ids=["string_int_input", "string_float_input", "invalid"],
-)
-def test_convert_to_nanoseconds_correct_inputs(input_value, expected):
-    assert convert_to_nanoseconds(input_value) == expected
-
-
-@pytest.mark.parametrize(
-    ("input_value", "expected"),
-    [
-        (1, 1),
-        (0.5, 0),
-    ],
-    ids=[
-        "int_input",
-        "float_input",
-    ],
-)
-def test_convert_to_nanoseconds_wrong_inputs(input_value, expected):
-    assert convert_to_nanoseconds(input_value) == expected
-
-
-def test_convert_to_float():
-    assert convert_str_to_float(1) == 1.0
-    assert convert_str_to_float(0.5) == 0.5
-    assert convert_str_to_float("2.5") == 2.5
-    assert convert_str_to_float("invalid") is None
-    assert convert_str_to_float(None) is None
+from airbrakes.utils import arg_parser, deadband
 
 
 def test_deadband():
@@ -53,96 +17,177 @@ def test_deadband():
 class TestArgumentParsing:
     """Tests for the argument parsing function (arg_parser())."""
 
-    def test_init(self, monkeypatch):
-        """Tests the default values of the argument parser."""
-
-        # Mock sys.argv to simulate no arguments being passed to the script
+    def test_default_invocation(self, monkeypatch):
+        """Tests that running the script without arguments results in an error."""
         monkeypatch.setattr(sys, "argv", ["main.py"])
 
+        with pytest.raises(SystemExit):
+            arg_parser()
+
+    def test_real_mode(self, monkeypatch):
+        """Tests the 'real' mode arguments."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v"])
+
         args = arg_parser()
-        assert args.__dict__ == {
-            "mock": False,
-            "real_servo": False,
-            "keep_log_file": False,
-            "fast_replay": False,
-            "debug": False,
-            "path": None,
-            "verbose": False,
-            "real_camera": False,
-            "sim": False,
+        # This is to ensure that all the arguments are correctly parsed, and to make sure that
+        # if you make a change, you update the test.
+        assert len(args.__dict__) == 3
+        assert args.__dict__.keys() == {"mode", "verbose", "debug"}
+        assert args.mode == "real"
+        assert args.verbose is True
+        assert args.debug is False
+
+    def test_mock_mode(self, monkeypatch):
+        """Tests the 'mock' mode arguments."""
+        monkeypatch.setattr(
+            sys, "argv", ["main.py", "mock", "-r", "-l", "-f", "-c", "-p", "mock/data/path"]
+        )
+
+        args = arg_parser()
+        # This is to ensure that all the arguments are correctly parsed, and to make sure that
+        # if you make a change, you update the test.
+        assert len(args.__dict__) == 8
+        assert args.__dict__.keys() == {
+            "mode",
+            "real_servo",
+            "keep_log_file",
+            "fast_replay",
+            "real_camera",
+            "path",
+            "verbose",
+            "debug",
+        }
+        assert args.mode == "mock"
+        assert args.real_servo is True
+        assert args.keep_log_file is True
+        assert args.fast_replay is True
+        assert args.real_camera is True
+        assert args.path == Path("mock/data/path")
+        assert args.verbose is False
+        assert args.debug is False
+
+    def test_sim_mode(self, monkeypatch):
+        """Tests the 'sim' mode arguments."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-r", "-l", "-f", "-c"])
+
+        args = arg_parser()
+        # This is to ensure that all the arguments are correctly parsed, and to make sure that
+        # if you make a change, you update the test.
+        assert len(args.__dict__) == 8
+        assert args.__dict__.keys() == {
+            "mode",
+            "preset",
+            "real_servo",
+            "keep_log_file",
+            "fast_replay",
+            "real_camera",
+            "verbose",
+            "debug",
         }
 
+        assert args.mode == "sim"
+        assert args.preset == "sub-scale"
+        assert args.real_servo is True
+        assert args.keep_log_file is True
+        assert args.fast_replay is True
+        assert args.real_camera is True
+        assert not hasattr(args, "path")  # `--path` should not be available in `sim` mode
+
+    def test_verbose_and_debug_exclusivity(self, monkeypatch, capsys):
+        """Tests that the `-v` and `-d` flags are mutually exclusive."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-d"])
+
+        with pytest.raises(SystemExit):
+            arg_parser()
+
+        captured = capsys.readouterr()
+        assert "not allowed with argument" in captured.err
+
     @pytest.mark.parametrize(
-        "mock_invocation",
-        [True, False],
-        ids=["uv-method", "legacy-method"],
+        ("mode", "args"),
+        [
+            ("real", ["-r"]),
+            ("real", ["-l"]),
+            ("real", ["-f"]),
+            ("real", ["-c"]),
+            ("real", ["-p", "path/to/log"]),
+        ],
+        ids=[
+            "real_with_real_servo",
+            "real_with_keep_log",
+            "real_with_fast_replay",
+            "real_with_real_camera",
+            "real_with_path",
+        ],
     )
-    def test_mock_invocation(self, monkeypatch, mock_invocation):
-        """Tests the mock invocation of the script."""
+    def test_invalid_args_in_real_mode(self, monkeypatch, mode, args, capsys):
+        """Tests that 'real' mode does not accept arguments meant for 'mock' or 'sim'."""
+        monkeypatch.setattr(sys, "argv", ["main.py", mode, *args])
 
-        # Mock sys.argv to simulate the script being run in mock mode
-        monkeypatch.setattr(sys, "argv", ["main.py", "-m"])
+        with pytest.raises(SystemExit):
+            arg_parser()
 
-        args = arg_parser(mock_invocation=mock_invocation)
-        assert args.mock is True
-        assert args.real_servo is False
-        assert args.keep_log_file is False
-        assert args.fast_replay is False
-        assert args.debug is False
-        assert args.path is None
-        assert args.verbose is False
-        assert args.real_camera is False
-        assert args.sim is False
+        captured = capsys.readouterr()
+        assert "unrecognized arguments" in captured.err
 
-    def test_path_argument(self, monkeypatch):
-        """Tests the path argument of the script."""
-
-        # Mock sys.argv to simulate the script being run with the path argument
-        monkeypatch.setattr(sys, "argv", ["main.py", "-m", "-p", "path/to/log"])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            ["mock", "-p", "mock/data/path"],
+            ["sim", "-r", "-l", "-f", "-c"],
+            ["sim", "legacy", "-r"],
+        ],
+        ids=["mock_with_path", "sim_with_common_args", "sim_with_preset_and_common_args"],
+    )
+    def test_shared_arguments(self, monkeypatch, args):
+        """Tests that shared arguments are correctly parsed across 'mock' and 'sim'."""
+        monkeypatch.setattr(sys, "argv", ["main.py", *args])
 
         args = arg_parser()
-        assert args.mock is True
-        assert args.real_servo is False
-        assert args.keep_log_file is False
-        assert args.fast_replay is False
-        assert args.debug is False
-        assert isinstance(args.path, Path)
-        assert args.path == Path("path/to/log")
-        assert args.verbose is False
-        assert args.sim is False
+        if "mock" in args.mode:
+            assert args.path == Path("mock/data/path")
+        elif "sim" in args.mode:
+            assert args.preset
+            assert not hasattr(args, "path")
+            if args.preset == "legacy":
+                assert args.real_servo is True
+                assert args.keep_log_file is False
+                assert args.fast_replay is False
+                assert args.real_camera is False
+            else:
+                assert args.real_servo is True
+                assert args.keep_log_file is True
+                assert args.fast_replay is True
+                assert args.real_camera is True
 
-    def test_mutually_exclusive_verbose_and_debug(self, monkeypatch, capsys):
-        """Tests that the verbose and debug flags are mutually exclusive."""
+    def test_sim_default_preset(self, monkeypatch):
+        """Tests that the 'sim' mode defaults to 'full-scale' if no preset is provided."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "sim"])
 
-        # Mock sys.argv to simulate the script being run with both verbose and debug flags
-        monkeypatch.setattr(sys, "argv", ["main.py", "-v", "-d"])
+        args = arg_parser()
+        assert args.mode == "sim"
+        assert args.preset == "full-scale"
 
-        with pytest.raises(SystemExit):
-            arg_parser()
-
-        captured = capsys.readouterr()
-        assert "options cannot be used together" in captured.err
-
-    @pytest.mark.parametrize(
-        "arg_type",
-        [
-            ["--real-servo"],
-            ["--keep-log-file"],
-            ["--fast-replay"],
-            ["--path", "a/path"],
-            ["--real-camera"],
-        ],
-        ids=["real_servo", "keep_log_file", "fast_replay", "path", "real_camera"],
-    )
-    def test_args_only_available_with_mock_invocation(self, monkeypatch, capsys, arg_type):
-        """Tests that the arguments that are only available in mock replay mode are not available
-        in real mode."""
-
-        # Mock sys.argv to simulate the script being run with the real servo flag
-        monkeypatch.setattr(sys, "argv", ["main.py", *arg_type])
+    def test_help_output(self, monkeypatch, capsys):
+        """Tests that help output includes global and subparser-specific arguments."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "mock", "-h"])
 
         with pytest.raises(SystemExit):
             arg_parser()
 
         captured = capsys.readouterr()
-        assert "only available in mock replay mode" in captured.err
+        assert "-v, --verbose" in captured.out
+        assert "-d, --debug" in captured.out
+        assert "--real-servo" in captured.out
+        assert "--path" in captured.out
+
+        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "-h"])
+
+        with pytest.raises(SystemExit):
+            arg_parser()
+
+        captured = capsys.readouterr()
+        assert "-v, --verbose" in captured.out
+        assert "-d, --debug" in captured.out
+        assert "--real-servo" in captured.out
+        assert "--path" not in captured.out  # `--path` should not be in `sim` help

@@ -150,7 +150,7 @@ class TestApogeePredictor:
     ):
         """Tests that our predicted apogee works in general, by passing in a few hundred data
         packets. This does not really represent a real flight, but given that case, it should
-        predict it correctly. Also tests that we have sent the apogee predictor packet
+        predict it correctly. Also tests that we have sent the Apogee Predictor Data Packet
         to the main process."""
 
         assert not threaded_apogee_predictor._apogee_predictor_packet_queue.qsize()
