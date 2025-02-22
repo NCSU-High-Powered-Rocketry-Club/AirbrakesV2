@@ -122,7 +122,7 @@ IMU_PROCESS_PRIORITY = -15
 priority over other processes. This is because we want to make sure we don't miss any data packets
 from the IMU."""
 
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 1000
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """The period at which the IMU sends raw data packets. This is the reciprocal of the frequency."""
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
@@ -252,7 +252,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1341.12
+TARGET_APOGEE_METERS = 1280.16
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.

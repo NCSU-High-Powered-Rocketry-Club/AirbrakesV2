@@ -115,8 +115,8 @@
     "legacy_launch_1.csv": {
         "date": "2025-01-25 13:39:19.385",
         "launch_site": {
-            "air_temperature_celsius": 8.89,  
-            "air_pressure_mb": null,
+            "air_temperature_celsius": 6.667,  
+            "air_pressure_mb": 1029.3,
             "wind_speed_kmh": 4.82,
             "wind_speed_direction": "N",
             "launch_coordinates": {
@@ -143,8 +143,8 @@
     "legacy_launch_2.csv": {
         "date": "2025-01-25 16:13:17.074",
         "launch_site": {
-            "air_temperature_celsius": 3.11,  
-            "air_pressure_mb": null,
+            "air_temperature_celsius": 6.11,  
+            "air_pressure_mb": 1028.4,
             "wind_speed_kmh": 7.91,
             "wind_speed_direction": "N",
             "launch_coordinates": {
