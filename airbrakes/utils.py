@@ -121,7 +121,7 @@ def arg_parser() -> argparse.Namespace:
     sim_parser.add_argument(
         "preset",
         help="Selects the preset to use for the simulation.",
-        choices=["full-scale", "sub-scale", "legacy"],
+        choices=["full-scale", "sub-scale", "legacy", "pelicanator"],
         nargs="?",  # Optional
         default="full-scale",
     )
