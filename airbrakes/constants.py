@@ -197,6 +197,7 @@ LOGS_PATH = Path("logs")
 """The path of the folder to hold the log files in."""
 TEST_LOGS_PATH = Path("test_logs")
 """The path of the folder to hold the test log files in."""
+NUMBER_OF_LINES_TO_BEFORE_LOGGING = 20
 
 STOP_SIGNAL = "STOP"
 """
