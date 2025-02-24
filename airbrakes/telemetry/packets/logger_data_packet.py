@@ -61,6 +61,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Processor Data Packet Fields
     current_altitude: float | None = None
+    integrated_altitude: float | None = None
     vertical_velocity: float | None = None
     vertical_acceleration: float | None = None
 
