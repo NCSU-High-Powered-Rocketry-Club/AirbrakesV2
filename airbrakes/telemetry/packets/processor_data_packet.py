@@ -12,6 +12,9 @@ class ProcessorDataPacket(msgspec.Struct):
 
     current_altitude: np.float64  # This is the zeroed-out altitude of the rocket.
     # This is the velocity of the rocket, in the upward axis (whichever way is up)
+    integrated_altitude: np.float64 | None
+    # This is the calculated altitude from integrating the vertical velocity. This will only be
+    # recorded when the air brakes are extended.
     vertical_velocity: np.float64
     # This is the acceleration of the rocket in the upwards direction.
     vertical_acceleration: np.float64
