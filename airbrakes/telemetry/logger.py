@@ -197,6 +197,7 @@ class Logger:
 
                 # Now also extract the fields from the ProcessorDataPacket
                 logger_packet.current_altitude = processor_data_packets[index].current_altitude
+                logger_packet.pressure_altitude = processor_data_packets[index].pressure_altitude
                 logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
                 logger_packet.vertical_acceleration = processor_data_packets[
                     index

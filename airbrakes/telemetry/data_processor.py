@@ -25,13 +25,17 @@ class IMUDataProcessor:
         "_current_orientation_quaternions",
         "_data_packets",
         "_initial_altitude",
+        "_integrated_altitudes",
         "_last_data_packet",
+        "_last_valid_altitude",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_pressure_altitudes",
         "_previous_vertical_velocity",
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
+        "use_integrated_altitude",
     )
 
     def __init__(self):
@@ -46,12 +50,16 @@ class IMUDataProcessor:
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
+        self._pressure_altitudes: npt.NDArray[np.float64] = np.array([0.0])
+        self._integrated_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
+        self._last_valid_altitude: np.float64 = np.float64(0.0)
         self._current_orientation_quaternions: R | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
+        self.use_integrated_altitude: bool = False
 
     def __str__(self) -> str:
         return (
@@ -78,6 +86,14 @@ class IMUDataProcessor:
         :return: the current zeroed-out altitude of the rocket.
         """
         return float(self._current_altitudes[-1])
+
+    @property
+    def pressure_altitude(self) -> float:
+        """
+        Returns the pressure altitude of the rocket (zeroed out) from the data points, in meters.
+        :return: the current zeroed-out pressure altitude of the rocekt.
+        """
+        return float(self._pressure_altitudes[-1])
 
     @property
     def vertical_velocity(self) -> float:
@@ -149,7 +165,20 @@ class IMUDataProcessor:
             self._vertical_velocities.max(), self._max_vertical_velocity
         )
 
-        self._current_altitudes = self._calculate_current_altitudes()
+        # we get the altitue depending on if airbrakes are deployed
+        self._pressure_altitudes = self._zero_pressure_altitudes()
+        if self.use_integrated_altitude:
+            # airbrakes are deployed: calculate altitude by integrating velocity
+            self._integrated_altitudes = self._calculate_integrated_altitudes()
+            self._current_altitudes = self._integrated_altitudes
+            self._last_valid_altitude = self._integrated_altitudes[-1]
+        else:
+            # airbrakes are retracted: use the zeroed out pressure altitude, set the last
+            # valid altitude so that when airbrakes are deployed, it uses this as the initial
+            # value.
+            self._current_altitudes = self._pressure_altitudes
+            self._last_valid_altitude = self._pressure_altitudes[-1]
+
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
 
         # Store the last data point for the next update
@@ -165,6 +194,7 @@ class IMUDataProcessor:
         return [
             ProcessorDataPacket(
                 current_altitude=self._current_altitudes[i],
+                pressure_altitude=self._pressure_altitudes[i],
                 vertical_velocity=self._vertical_velocities[i],
                 vertical_acceleration=self._rotated_accelerations[i],
                 time_since_last_data_packet=self._time_differences[i],
@@ -204,7 +234,7 @@ class IMUDataProcessor:
             scalar_first=True,  # This means the order is w, x, y, z.
         )
 
-    def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
+    def _zero_pressure_altitudes(self) -> npt.NDArray[np.float64]:
         """
         Calculates the current altitudes, by zeroing out the initial altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
@@ -215,6 +245,16 @@ class IMUDataProcessor:
                 data_packet.estPressureAlt - self._initial_altitude
                 for data_packet in self._data_packets
             ],
+        )
+
+    def _calculate_integrated_altitudes(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the altitude by integrating the vertical velocity.
+        :return: A numpy array of the current altitudes of the rocket at each data point
+        """
+        # Integrate the accelerations to get the velocities
+        return self._last_valid_altitude + np.cumsum(
+            self._vertical_velocities * self._time_differences
         )
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:

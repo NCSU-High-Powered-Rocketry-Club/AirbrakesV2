@@ -179,12 +179,14 @@ class AirbrakesContext:
         Extends the air brakes to the maximum extension.
         """
         self.servo.set_extended()
+        self.data_processor.use_integrated_altitude = True
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the air brakes to the minimum extension.
         """
         self.servo.set_retracted()
+        self.data_processor.use_integrated_altitude = False
 
     def predict_apogee(self) -> None:
         """
