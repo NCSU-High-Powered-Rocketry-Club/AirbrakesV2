@@ -180,6 +180,10 @@ def target_altitude(request):
         return 413.0  # actual apogee was about 462m
     if launch_name == "legacy_launch_1":
         return 580.0  # actual apogee was about 631.14m
+    # Airbrakes actually deployed on this flight, and we had set an apogee higher than the actual
+    # apogee achieved because of the airbrakes.
+    if launch_name == "pelicanator_launch_1":
+        return 1218.9  # actual apogee was about 1208.9m
     return 1000.0  # Default altitude
 
 

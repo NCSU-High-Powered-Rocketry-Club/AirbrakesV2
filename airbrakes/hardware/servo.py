@@ -1,11 +1,17 @@
 """Module which contains the Servo class, representing a servo motor that controls the extension of
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
+import warnings
+
 import gpiozero
 from adafruit_servokit import ServoKit
 
 # This library can only be imported on the raspberry pi.
-from gpiozero.pins.lgpio import LGPIOFactory as Factory
+try:
+    from gpiozero.pins.lgpio import LGPIOFactory as Factory
+except (ImportError, RuntimeError):
+    warnings.warn("Could not import LGPIOFactory. Using MockFactory instead.", stacklevel=2)
+    from gpiozero.pins.mock import MockFactory as Factory
 
 from airbrakes.constants import (
     SERVO_MAX_ANGLE,

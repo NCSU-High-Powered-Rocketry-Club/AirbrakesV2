@@ -153,8 +153,10 @@ class MockIMU(BaseIMU):
             # estimated data packet
             if row_dict.get("scaledAccelX"):
                 imu_data_packet = RawDataPacket(**row_dict)
-            else:
+            elif row_dict.get("estPressureAlt"):
                 imu_data_packet = EstimatedDataPacket(**row_dict)
+            else:
+                continue
 
             # Put the packet in the queue
             self._queued_imu_packets.put(imu_data_packet)

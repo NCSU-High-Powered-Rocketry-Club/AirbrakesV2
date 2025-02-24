@@ -184,9 +184,7 @@ class IMUDataProcessor:
 
         # This is us getting the rocket's initial altitude from the mean of the first data packets
         self._initial_altitude = np.mean(
-            np.array(
-                [data_packet.estPressureAlt for data_packet in self._data_packets],
-            )
+            [data_packet.estPressureAlt for data_packet in self._data_packets],
         )
 
         # This is us getting the rocket's initial orientation
