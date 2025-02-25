@@ -176,8 +176,8 @@
     "pelicanator_launch_1.csv": {
         "date": "2025-02-22 15:42:17.202",
         "launch_site": {
-            "air_temperature_celsius": 10.0,  
-            "air_pressure_mb": 1014.5,
+            "air_temperature_celsius": 8.89,  
+            "air_pressure_mb": 1026.4,
             "wind_speed_kmh": 12.81,
             "wind_speed_direction": "ENE",
             "launch_coordinates": {
