@@ -196,6 +196,8 @@ class AirbrakesContext:
         # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:
+            # if not self.last_apogee_predictor_packet.predicted_apogee:
+            #     self.data_processor.filter_vertical_velocities()
             self.apogee_predictor.update(self.processor_data_packets)
 
     def generate_data_packets(self) -> None:

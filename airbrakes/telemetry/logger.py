@@ -199,6 +199,10 @@ class Logger:
                 logger_packet.current_altitude = processor_data_packets[index].current_altitude
                 logger_packet.pressure_altitude = processor_data_packets[index].pressure_altitude
                 logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
+                logger_packet.velocity_from_altitude = processor_data_packets[
+                    index
+                ].velocity_from_altitude
+                logger_packet.filtered_velocity = processor_data_packets[index].filtered_velocity
                 logger_packet.vertical_acceleration = processor_data_packets[
                     index
                 ].vertical_acceleration

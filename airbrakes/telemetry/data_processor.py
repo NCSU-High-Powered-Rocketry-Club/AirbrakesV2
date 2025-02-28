@@ -24,16 +24,20 @@ class IMUDataProcessor:
         "_current_altitudes",
         "_current_orientation_quaternions",
         "_data_packets",
+        "_filtered_velocity",
         "_initial_altitude",
         "_integrated_altitudes",
         "_last_data_packet",
-        "_last_valid_altitude",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_pre_extension_altitude",
         "_pressure_altitudes",
+        "_previous_altitude",
+        "_previous_altitude_timestamp",
         "_previous_vertical_velocity",
         "_rotated_accelerations",
         "_time_differences",
+        "_velocity_from_alt",
         "_vertical_velocities",
         "use_integrated_altitude",
     )
@@ -54,7 +58,11 @@ class IMUDataProcessor:
         self._integrated_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
-        self._last_valid_altitude: np.float64 = np.float64(0.0)
+        self._previous_altitude: np.float64 | None = None
+        self._previous_altitude_timestamp: np.float64 | None = None
+        self._velocity_from_alt: np.float64 | None = None
+        self._filtered_velocity: np.float64 | None = None
+        self._pre_extension_altitude: np.float64 = np.float64(0.0)
         self._current_orientation_quaternions: R | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._data_packets: list[EstimatedDataPacket] = []
@@ -159,6 +167,8 @@ class IMUDataProcessor:
 
         self._time_differences = self._calculate_time_differences()
 
+        self.filter_vertical_velocities()
+
         self._rotated_accelerations = self._calculate_rotated_accelerations()
         self._vertical_velocities = self._calculate_vertical_velocity()
         self._max_vertical_velocity = max(
@@ -171,13 +181,13 @@ class IMUDataProcessor:
             # airbrakes are deployed: calculate altitude by integrating velocity
             self._integrated_altitudes = self._calculate_integrated_altitudes()
             self._current_altitudes = self._integrated_altitudes
-            self._last_valid_altitude = self._integrated_altitudes[-1]
+            self._pre_extension_altitude = self._integrated_altitudes[-1]
         else:
             # airbrakes are retracted: use the zeroed out pressure altitude, set the last
             # valid altitude so that when airbrakes are deployed, it uses this as the initial
             # value.
             self._current_altitudes = self._pressure_altitudes
-            self._last_valid_altitude = self._pressure_altitudes[-1]
+            self._pre_extension_altitude = self._pressure_altitudes[-1]
 
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
 
@@ -196,11 +206,39 @@ class IMUDataProcessor:
                 current_altitude=self._current_altitudes[i],
                 pressure_altitude=self._pressure_altitudes[i],
                 vertical_velocity=self._vertical_velocities[i],
+                velocity_from_altitude=self._velocity_from_alt,
+                filtered_velocity=self._filtered_velocity,
                 vertical_acceleration=self._rotated_accelerations[i],
                 time_since_last_data_packet=self._time_differences[i],
             )
             for i in range(len(self._data_packets))
         ]
+
+    def filter_vertical_velocities(self) -> None:
+        """
+        Calculates the vertical velocity through differentiating the pressure altitude, and filters
+        with the vertical velocity calculated through integration to correct the integration error
+        over time.
+        """
+        # setting previous values if it is the first call of this method
+        if self._previous_altitude is None or self._previous_altitude_timestamp is None:
+            self._previous_altitude = self._data_packets[-1].estPressureAlt
+            self._previous_altitude_timestamp = self._data_packets[-1].timestamp
+
+        packet = self._data_packets[-1]
+        # only differentiate velocity if the altitude value has changed
+        if packet.estPressureAlt == self._previous_altitude:
+            return
+
+        dt = (packet.timestamp - self._previous_altitude_timestamp) / 1e9
+        dx = packet.estPressureAlt - self._previous_altitude
+        self._velocity_from_alt = dx / dt
+        alpha = 0.96
+        self._filtered_velocity = (
+            alpha * self.vertical_velocity + (1 - alpha) * self._velocity_from_alt
+        )
+        self._previous_altitude = packet.estPressureAlt
+        self._previous_altitude_timestamp = packet.timestamp
 
     def _first_update(self) -> None:
         """
@@ -253,9 +291,8 @@ class IMUDataProcessor:
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
         # Integrate the accelerations to get the velocities
-        return self._last_valid_altitude + np.cumsum(
-            self._vertical_velocities * self._time_differences
-        )
+        fv = [self._filtered_velocity] * len(self._vertical_velocities)
+        return self._pre_extension_altitude + np.cumsum(fv * self._time_differences)
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """

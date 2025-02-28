@@ -16,6 +16,10 @@ class ProcessorDataPacket(msgspec.Struct):
     pressure_altitude: np.float64  # This is the zeroed-out pressure altitude of the rocket.
     # This is the velocity of the rocket, in the upward axis (whichever way is up)
     vertical_velocity: np.float64
+    # Velocity of the rocket calculated from differentiating the pressure altitude
+    velocity_from_altitude: np.float64
+    # Velocity of the rocket by filtering together integrated velocity and differentiated velocity
+    filtered_velocity: np.float64
     # This is the acceleration of the rocket in the upwards direction.
     vertical_acceleration: np.float64
     # The time difference between the current and previous data packet.

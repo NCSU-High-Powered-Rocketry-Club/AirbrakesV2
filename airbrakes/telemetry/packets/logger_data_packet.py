@@ -63,6 +63,8 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     current_altitude: float | None = None
     pressure_altitude: float | None = None
     vertical_velocity: float | None = None
+    velocity_from_altitude: float | None = None
+    filtered_velocity: float | None = None
     vertical_acceleration: float | None = None
 
     # Apogee Predictor Data Packet Fields
