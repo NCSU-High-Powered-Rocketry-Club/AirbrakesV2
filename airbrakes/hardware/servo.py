@@ -6,13 +6,6 @@ import warnings
 import gpiozero
 from adafruit_servokit import ServoKit
 
-# This library can only be imported on the raspberry pi.
-try:
-    from gpiozero.pins.lgpio import LGPIOFactory as Factory
-except (ImportError, RuntimeError):
-    warnings.warn("Could not import LGPIOFactory. Using MockFactory instead.", stacklevel=2)
-    from gpiozero.pins.mock import MockFactory as Factory
-
 from airbrakes.constants import (
     SERVO_MAX_ANGLE,
     SERVO_MAX_PULSE_WIDTH,
@@ -60,6 +53,13 @@ class Servo(BaseServo):
         servo_2.set_pulse_width_range(SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH)
         servo_1.actuation_range = SERVO_MAX_ANGLE
         servo_2.actuation_range = SERVO_MAX_ANGLE
+
+        # This library can only be imported on the raspberry pi. It's why the import is here.
+        try:
+            from gpiozero.pins.lgpio import LGPIOFactory as Factory
+        except (ImportError, RuntimeError):
+            warnings.warn("Could not import LGPIOFactory. Using MockFactory instead.", stacklevel=2)
+            from gpiozero.pins.mock import MockFactory as Factory
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
