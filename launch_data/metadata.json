@@ -95,7 +95,7 @@
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
             "wind_speed_kmh": 8.01,
-            "wind_speed_direction": "S",
+            "wind_direction": "S",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -125,7 +125,7 @@
             "air_temperature_celsius": 6.667,  
             "air_pressure_mb": 1029.3,
             "wind_speed_kmh": 4.82,
-            "wind_speed_direction": "N",
+            "wind_direction": "N",
             "launch_coordinates": {
                 "latitiude": 35.1757368,
                 "longitude": -76.8282710
@@ -155,7 +155,7 @@
             "air_temperature_celsius": 6.11,  
             "air_pressure_mb": 1028.4,
             "wind_speed_kmh": 7.91,
-            "wind_speed_direction": "N",
+            "wind_direction": "N",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -185,7 +185,7 @@
             "air_temperature_celsius": 8.89,  
             "air_pressure_mb": 1026.4,
             "wind_speed_kmh": 12.81,
-            "wind_speed_direction": "ENE",
+            "wind_direction": "ENE",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
