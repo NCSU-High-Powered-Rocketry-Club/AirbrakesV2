@@ -26,16 +26,18 @@ class TestArgumentParsing:
 
     def test_real_mode(self, monkeypatch):
         """Tests the 'real' mode arguments."""
-        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v"])
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-r", "-c"])
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 3
-        assert args.__dict__.keys() == {"mode", "verbose", "debug"}
+        assert len(args.__dict__) == 5
+        assert args.__dict__.keys() == {"mode", "verbose", "debug", "mock_servo", "mock_camera"}
         assert args.mode == "real"
         assert args.verbose is True
         assert args.debug is False
+        assert args.mock_servo is True
+        assert args.mock_camera is True
 
     def test_mock_mode(self, monkeypatch):
         """Tests the 'mock' mode arguments."""
@@ -46,7 +48,7 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 9
+        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "real_servo",
@@ -56,7 +58,6 @@ class TestArgumentParsing:
             "path",
             "verbose",
             "debug",
-            "real_imu",
         }
         assert args.mode == "mock"
         assert args.real_servo is True
@@ -74,7 +75,7 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 9
+        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "preset",
@@ -84,7 +85,6 @@ class TestArgumentParsing:
             "real_camera",
             "verbose",
             "debug",
-            "real_imu",
         }
 
         assert args.mode == "sim"
@@ -108,17 +108,13 @@ class TestArgumentParsing:
     @pytest.mark.parametrize(
         ("mode", "args"),
         [
-            ("real", ["-r"]),
             ("real", ["-l"]),
             ("real", ["-f"]),
-            ("real", ["-c"]),
             ("real", ["-p", "path/to/log"]),
         ],
         ids=[
-            "real_with_real_servo",
             "real_with_keep_log",
             "real_with_fast_replay",
-            "real_with_real_camera",
             "real_with_path",
         ],
     )
@@ -172,6 +168,18 @@ class TestArgumentParsing:
 
     def test_help_output(self, monkeypatch, capsys):
         """Tests that help output includes global and subparser-specific arguments."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-h"])
+
+        with pytest.raises(SystemExit):
+            arg_parser()
+
+        captured = capsys.readouterr()
+        assert "-v, --verbose" in captured.out
+        assert "-d, --debug" in captured.out
+        assert "--mock-servo" in captured.out
+        assert "--mock-camera" in captured.out
+        assert "--real-servo" not in captured.out  # Not in real mode
+
         monkeypatch.setattr(sys, "argv", ["main.py", "mock", "-h"])
 
         with pytest.raises(SystemExit):
@@ -193,3 +201,14 @@ class TestArgumentParsing:
         assert "-d, --debug" in captured.out
         assert "--real-servo" in captured.out
         assert "--path" not in captured.out  # `--path` should not be in `sim` help
+
+    def test_real_mode_defaults(self, monkeypatch):
+        """Tests that 'real' mode defaults to all real hardware when no flags are provided."""
+        monkeypatch.setattr(sys, "argv", ["main.py", "real"])
+
+        args = arg_parser()
+        assert args.mode == "real"
+        assert args.mock_servo is False  # Real servo by default
+        assert args.mock_camera is False  # Real camera by default
+        assert args.verbose is False
+        assert args.debug is False

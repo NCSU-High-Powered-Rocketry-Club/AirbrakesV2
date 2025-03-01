@@ -85,11 +85,7 @@ def create_components(
         ApogeePredictor objects.
     """
     if args.mode in ("mock", "sim"):
-        if args.real_imu:
-            # Use real IMU but with other mock components:
-            imu = IMU(IMU_PORT)
-
-        elif args.mode == "mock":
+        if args.mode == "mock":
             # Replace hardware with mock objects for simulation
             imu = MockIMU(
                 real_time_replay=not args.fast_replay,
@@ -113,10 +109,19 @@ def create_components(
 
     else:
         # Use real hardware components
-        servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
         imu = IMU(IMU_PORT)
         logger = Logger(LOGS_PATH)
-        camera = Camera()
+
+        # Maybe use mock components as specified by the command line arguments:
+        if args.mock_servo:
+            servo = MockServo(
+                ENCODER_PIN_A,
+                ENCODER_PIN_B,
+            )
+        else:
+            servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+
+        camera = MockCamera() if args.mock_camera else Camera()
 
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the IMUDataProcessor class and the ApogeePredictor class. There are no mock versions of

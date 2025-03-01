@@ -91,12 +91,26 @@ def arg_parser() -> argparse.Namespace:
     )
 
     # Real flight parser:
-    subparsers.add_parser(
+    real_parser = subparsers.add_parser(
         "real",
-        help="Run the real flight with all the real hardware.",
-        description="Configuration for the real flight.",
-        parents=[global_parser],  # Include the global options
-        prog="real",  # Program name in help messages
+        help="Run the real flight with all the real hardware by default.",
+        description="Configuration for the real flight. Uses real hardware unless specified.",
+        parents=[global_parser],
+        prog="real",
+    )
+    real_parser.add_argument(
+        "-r",
+        "--mock-servo",
+        help="Run the real flight with a mock servo instead of the real servo.",
+        action="store_true",
+        default=False,
+    )
+    real_parser.add_argument(
+        "-c",
+        "--mock-camera",
+        help="Run the real flight with a mock camera instead of the real camera.",
+        action="store_true",
+        default=False,
     )
 
     # Mock replay parser:
@@ -117,7 +131,6 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],  # Include the global options
         prog="sim",  # Program name in help messages
     )
-
     sim_parser.add_argument(
         "preset",
         help="Selects the preset to use for the simulation.",
@@ -167,15 +180,6 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         "-c",
         "--real-camera",
         help=f"Run the {_type} with the real camera.",
-        action="store_true",
-        default=False,
-    )
-
-    # TODO: Make -f and -i mutually exclusive
-    parser.add_argument(
-        "-i",
-        "--real-imu",
-        help=f"Run the {_type} with the real imu.",
         action="store_true",
         default=False,
     )
