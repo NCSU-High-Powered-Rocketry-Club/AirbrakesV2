@@ -80,7 +80,7 @@ def parsed_args(request, monkeypatch):
         (["main.py", "mock", "-r", "-c"]),
         (["main.py", "mock", "-r", "-c", "-l"]),
         (["main.py", "mock", "-r", "-c", "-l", "-f"]),
-        (["main.py", "mock", "-r", "-c", "-l", "-f", "-p", "launch_data/something"]),
+        (["main.py", "mock", "-r", "-c", "-l", "-f", "-p", "launch_data/interest_launch.csv"]),
         (["main.py", "sim", "sub-scale", "-r"]),
     ],
     ids=[
@@ -157,9 +157,9 @@ def test_create_components(parsed_args, monkeypatch):
 
         # Fast replay check
         if parsed_args.fast_replay:
-            assert not created_components[1]._data_fetch_process._args[1]
+            assert not created_components[1]._data_fetch_process._args[0]
         else:
-            assert created_components[1]._data_fetch_process._args[1]
+            assert created_components[1]._data_fetch_process._args[0]
 
         # Camera: mock by default, real if --real-camera is set
         if parsed_args.real_camera:
