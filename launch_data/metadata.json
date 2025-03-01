@@ -200,6 +200,6 @@
             "apogee_meters": 1208.28,
             "target_apogee_meters": 1218.2
         },
-        "flight_description": "First flight of the Pelicanator. This was the first flight with the Raspberry Pi 5, and the first flight in which airbrakes 100% worked. However the flight itself was a failed VDF launch, crash landing and thus the data was cutoff before landing."
+        "flight_description": "First flight of the Pelicanator. This was the first flight with the Raspberry Pi 5, and the first flight in which airbrakes 100% worked. However the flight itself was a failed VDF launch, crash landing and thus the data was cutoff before landing. The camera was in the payload for this flight."
     }
 }
