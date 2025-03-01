@@ -102,10 +102,16 @@ class MockIMU(BaseIMU):
         Calculate the start index based on log buffer size and time differences.
         :return: The index where the log buffer ends.
         """
+        metadata_buffer_index: int | None = self.file_metadata["flight_data"]["log_buffer_index"]
+
+        if metadata_buffer_index:
+            return metadata_buffer_index
+
         # We read the file in small chunks because it is faster than reading the whole file at once
         chunk_size = LOG_BUFFER_SIZE + 1
         for chunk in pd.read_csv(
             self._log_file_path,
+            usecols=["timestamp"],
             chunksize=chunk_size,
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
         ):
