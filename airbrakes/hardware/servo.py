@@ -4,7 +4,6 @@ the airbrakes, along with a rotary encoder to measure the servo's position."""
 import warnings
 
 import gpiozero
-from adafruit_servokit import ServoKit
 
 from airbrakes.constants import (
     SERVO_MAX_ANGLE,
@@ -43,6 +42,10 @@ class Servo(BaseServo):
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
         connected to.
         """
+        # This import fails on non raspberry pi devices running arm architecture, which is why
+        # this import is here.
+        from adafruit_servokit import ServoKit
+
         # Setup the Bonnet servo kit. This contains the servos that control the airbrakes.
         pca_9685 = ServoKit(channels=16)
         # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
