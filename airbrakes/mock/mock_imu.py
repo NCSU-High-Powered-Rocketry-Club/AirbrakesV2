@@ -14,7 +14,6 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
-    RAW_DATA_PACKET_SAMPLING_RATE,
     STOP_SIGNAL,
 )
 from airbrakes.interfaces.base_imu import BaseIMU
@@ -31,7 +30,7 @@ class MockIMU(BaseIMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_log_file_path",)
+    __slots__ = ("_log_file_path", "file_metadata")
 
     def __init__(
         self,
@@ -76,7 +75,18 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
+        file_metadata: dict = MockIMU.read_file_metadata()
+        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
+
         super().__init__(data_fetch_process, queued_imu_packets)
+
+    @staticmethod
+    def read_file_metadata() -> dict:
+        """
+        Reads the metadata from the log file and returns it as a dictionary.
+        """
+        metadata = Path("launch_data/metadata.json")
+        return msgspec.json.decode(metadata.read_text())
 
     @staticmethod
     def _convert_invalid_fields(value) -> list | None:
@@ -139,6 +149,8 @@ class MockIMU(BaseIMU):
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
         )
 
+        LAUNCH_RAW_DATA_PACKET_RATE = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
+
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in df.itertuples(index=False):
             start_time = time.time()
@@ -167,7 +179,7 @@ class MockIMU(BaseIMU):
             if real_time_replay and type(imu_data_packet) is RawDataPacket:
                 # Mimmick polling interval
                 end_time = time.time()
-                time.sleep(max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - (end_time - start_time)))
+                time.sleep(max(0.0, LAUNCH_RAW_DATA_PACKET_RATE - (end_time - start_time)))
 
     def _fetch_data_loop(
         self, log_file_path: Path, real_time_replay: bool, start_after_log_buffer: bool = False
