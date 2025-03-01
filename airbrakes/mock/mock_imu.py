@@ -71,7 +71,7 @@ class MockIMU(BaseIMU):
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
-            args=(self._log_file_path, real_time_replay, start_after_log_buffer),
+            args=(real_time_replay, start_after_log_buffer),
             name="Mock IMU Process",
         )
 
@@ -97,17 +97,15 @@ class MockIMU(BaseIMU):
         """
         return None if not value else ast.literal_eval(value)  # Convert string to list
 
-    @staticmethod
-    def _calculate_start_index(log_file_path: Path) -> int:
+    def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
-        :param log_file_path: The path of the log file to read data from.
         :return: The index where the log buffer ends.
         """
         # We read the file in small chunks because it is faster than reading the whole file at once
         chunk_size = LOG_BUFFER_SIZE + 1
         for chunk in pd.read_csv(
-            log_file_path,
+            self._log_file_path,
             chunksize=chunk_size,
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
         ):
@@ -117,22 +115,18 @@ class MockIMU(BaseIMU):
                 return buffer_end_index[0]
         return 0
 
-    def _read_file(
-        self, log_file_path: Path, real_time_replay: bool, start_after_log_buffer: bool = False
-    ) -> None:
+    def _read_file(self, real_time_replay: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param log_file_path: the name of the log file to read data from located in launch_data
-            folder.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
             or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
-        start_index = self._calculate_start_index(log_file_path) if start_after_log_buffer else 0
+        start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
         # Using pandas and itertuples to read the file:
-        df_header = pd.read_csv(log_file_path, nrows=0)
+        df_header = pd.read_csv(self._log_file_path, nrows=0)
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those
         valid_columns = list(
@@ -142,7 +136,7 @@ class MockIMU(BaseIMU):
 
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         df = pd.read_csv(
-            log_file_path,
+            self._log_file_path,
             skiprows=list(range(1, start_index + 1)),
             engine="c",
             usecols=valid_columns,
@@ -182,12 +176,10 @@ class MockIMU(BaseIMU):
                 time.sleep(max(0.0, LAUNCH_RAW_DATA_PACKET_RATE - (end_time - start_time)))
 
     def _fetch_data_loop(
-        self, log_file_path: Path, real_time_replay: bool, start_after_log_buffer: bool = False
+        self, real_time_replay: bool, start_after_log_buffer: bool = False
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
-        :param log_file_path: the name of the log file to read data from located in the launch_data
-            folder.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
             or run at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
@@ -196,7 +188,7 @@ class MockIMU(BaseIMU):
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(log_file_path, real_time_replay, start_after_log_buffer)
+            self._read_file(real_time_replay, start_after_log_buffer)
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
