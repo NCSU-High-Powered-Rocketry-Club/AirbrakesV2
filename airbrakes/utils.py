@@ -19,6 +19,15 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
+def convert_ns_to_s(nanoseconds: float) -> float:
+    """
+    Converts nanoseconds to seconds.
+    :param nanoseconds: The time in nanoseconds.
+    :return: The time in seconds.
+    """
+    return nanoseconds * 1e-9
+
+
 def set_process_priority(priority: int) -> None:
     """
     Sets the priority of the calling process to the specified nice value. Only works on Linux.

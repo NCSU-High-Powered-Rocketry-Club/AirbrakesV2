@@ -10,7 +10,7 @@ from airbrakes.constants import (
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import deadband
+from airbrakes.utils import convert_ns_to_s, deadband
 
 
 class IMUDataProcessor:
@@ -302,7 +302,7 @@ class IMUDataProcessor:
         # packet from the previous loop, and the first data packet from the current loop
         return np.diff(
             [
-                data_packet.timestamp * 1e-9
+                convert_ns_to_s(data_packet.timestamp)
                 for data_packet in [self._last_data_packet, *self._data_packets]
             ]
         )

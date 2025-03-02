@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_APOGEE_METERS,
 )
+from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.airbrakes import AirbrakesContext
@@ -158,7 +160,7 @@ class CoastState(State):
 
         # As backup in case of error, if our current altitude is less than 90% of max altitude, we
         # are in free fall.
-        if data.current_altitude <= data.max_altitude * 0.9:
+        if data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD:
             self.next_state()
             return
 
@@ -185,9 +187,9 @@ class FreeFallState(State):
         ):
             self.next_state()
 
-        # Sometimes the rocket can land and the alitude will be above the ground altitude threshold.
+        # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
         # This is a fallback condition so that we won't be stuck in freefall state.
-        if (data.current_timestamp - self.start_time_ns) * 1e-9 >= MAX_FREE_FALL_SECONDS:
+        if convert_ns_to_s(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self):
