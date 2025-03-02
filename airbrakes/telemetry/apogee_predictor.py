@@ -25,7 +25,7 @@ from airbrakes.constants import (
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import _convert_unknown_type_to_float
+from airbrakes.utils import convert_unknown_type_to_float
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
@@ -71,7 +71,7 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_float)
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
         msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
         self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
             Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)

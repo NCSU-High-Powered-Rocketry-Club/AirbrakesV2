@@ -10,7 +10,7 @@ from typing import Any
 import psutil
 
 
-def _convert_unknown_type_to_float(obj_type: Any) -> float:
+def convert_unknown_type_to_float(obj_type: Any) -> float:
     """
     Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
     :param obj_type: The object to convert.
@@ -19,15 +19,19 @@ def _convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def set_process_priority(nice_value: int) -> None:
-    """Sets the priority of the calling process to the specified nice value. Only works on Linux."""
+def set_process_priority(priority: int) -> None:
+    """
+    Sets the priority of the calling process to the specified nice value. Only works on Linux.
+    :param priority: The nice value to set the process to. This ranges from -20 to 19, with -20
+    being the highest priority and 19 being the lowest.
+    """
     if sys.platform != "win32":
         p = psutil.Process()
         try:
-            p.nice(nice_value)
+            p.nice(priority)
         except psutil.AccessDenied:
             warnings.warn(
-                f"Could not set process priority to {nice_value}. Please run the program as root "
+                f"Could not set process priority to {priority}. Please run the program as root "
                 "to set process priority.",
                 stacklevel=2,
             )
@@ -36,7 +40,7 @@ def set_process_priority(nice_value: int) -> None:
 def deadband(input_value: float, threshold: float) -> float:
     """
     Returns 0.0 if input_value is within the deadband threshold. Otherwise, returns input_value
-        adjusted by the threshold.
+    adjusted by the threshold.
     :param input_value: The value to apply the deadband to.
     :param threshold: The deadband threshold.
     :return: Adjusted input_value or 0.0 if within the deadband.
