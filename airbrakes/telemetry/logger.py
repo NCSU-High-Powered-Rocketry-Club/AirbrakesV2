@@ -15,7 +15,7 @@ from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     MAX_GET_TIMEOUT_SECONDS,
-    NUMBER_OF_LINES_TO_BEFORE_LOGGING,
+    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
@@ -349,5 +349,5 @@ class Logger:
                     # causing the pi to lose power. This caused us to lose a lot of lines of data
                     # that were not written to the log file. To prevent this from happening again,
                     # we flush the logger 20 lines.
-                    if number_of_lines_logged % NUMBER_OF_LINES_TO_BEFORE_LOGGING == 0:
+                    if number_of_lines_logged % NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING == 0:
                         file_writer.flush()
