@@ -2,7 +2,6 @@
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
 import contextlib
-import warnings
 
 import gpiozero
 
@@ -48,7 +47,7 @@ class Servo(BaseServo):
         connected to.
         """
 
-        # Setup the Bonnet servo kit. This contains the servos that control the airbrakes.
+        # Set up the Bonnet servo kit. This contains the servos that control the airbrakes.
         pca_9685 = ServoKit(channels=16)
         # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
         servo_1 = pca_9685.servo[first_servo_channel]
@@ -60,11 +59,7 @@ class Servo(BaseServo):
         servo_2.actuation_range = SERVO_MAX_ANGLE
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
-        try:
-            from gpiozero.pins.lgpio import LGPIOFactory as Factory
-        except (ImportError, RuntimeError):
-            warnings.warn("Could not import LGPIOFactory. Using MockFactory instead.", stacklevel=2)
-            from gpiozero.pins.mock import MockFactory as Factory
+        from gpiozero.pins.lgpio import LGPIOFactory as Factory
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.

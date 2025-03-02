@@ -46,6 +46,7 @@ class IMU(BaseIMU):
     Represents the IMU on the rocket. It's used to get the current motion of the rocket, including
     the acceleration, rotation, and position. This is used to interact with the data collected by
     the Parker-LORD 3DMCX5-AR. (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
+
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
@@ -224,6 +225,7 @@ class IMU(BaseIMU):
                     ):
                         # Estimated orientation quaternion
                         matrix = data_point.as_Matrix()
+                        # The imu sends the quaternions as a matrix, so we have to unpack it
                         imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
                         imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
                         imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)

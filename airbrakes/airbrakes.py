@@ -63,18 +63,18 @@ class AirbrakesContext:
     ) -> None:
         """
         Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
-            and ApogeePredictor. The state machine starts in StandbyState, which is the initial
-            state of the air brakes system.
+        and ApogeePredictor. The state machine starts in StandbyState, which is the initial
+        state of the air brakes system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
-            real servo or a mocked servo.
+        real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU,
-            mock IMU, or simulation IMU.
+        mock IMU, or simulation IMU.
         :param camera: The camera object that records video from the rocket. This can be a real
-            camera or a mock camera.
+        camera or a mock camera.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
-            a mock logger.
+        a mock logger.
         :param data_processor: The IMUDataProcessor object that processes IMU data on a higher
-            level.
+        level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: BaseServo = servo
@@ -104,6 +104,8 @@ class AirbrakesContext:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
+        # Currently there is no camera for the airbrakes, but we will leave this here for future
+        # use
         # self.camera.start()
 
     def stop(self) -> None:
@@ -138,7 +140,7 @@ class AirbrakesContext:
 
         # Split the data packets into estimated and raw data packets for use in processing and
         # logging.
-        self.est_data_packets = [
+        self.est_data_packets: list[EstimatedDataPacket] = [  # type: ignore
             data_packet
             for data_packet in self.imu_data_packets
             if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
