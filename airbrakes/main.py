@@ -188,19 +188,19 @@ if __name__ == "__main__":
     # The main Airbrakes program can be run in different modes:
 
     # uv run real [ARGS]: Runs the flight with real hardware. Optional arguments:
-    #     -r, --mock-servo   : Uses a mock servo instead of the real one.
+    #     -s, --mock-servo   : Uses a mock servo instead of the real one.
     #     -c, --mock-camera  : Uses a mock camera instead of the real one.
     # uv run mock [ARGS]: Runs the program in mock replay mode, using pre-recorded flight data.
 
     #   Optional arguments include:
-    #     -r, --real-servo   : Uses the real servo instead of a mock one.
+    #     -s, --real-servo   : Uses the real servo instead of a mock one.
     #     -c, --real-camera  : Uses the real camera instead of a mock one.
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
 
     # uv run sim [ARGS]: Runs a flight simulation alongside the mock replay.
     #   Optional arguments include:
-    #     -r, --real-servo   : Uses the real servo instead of a mock one.
+    #     -s, --real-servo   : Uses the real servo instead of a mock one.
     #     -c, --real-camera  : Uses the real camera instead of a mock one.
     #     -f, --fast-replay  : Runs the simulation at full speed instead of real-time.
     #     preset             : Specifies a preset (full-scale, sub-scale, etc).

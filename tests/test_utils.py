@@ -26,7 +26,7 @@ class TestArgumentParsing:
 
     def test_real_mode(self, monkeypatch):
         """Tests the 'real' mode arguments."""
-        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-r", "-c"])
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-s", "-c"])
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
@@ -42,7 +42,7 @@ class TestArgumentParsing:
     def test_mock_mode(self, monkeypatch):
         """Tests the 'mock' mode arguments."""
         monkeypatch.setattr(
-            sys, "argv", ["main.py", "mock", "-r", "-l", "-f", "-c", "-p", "mock/data/path"]
+            sys, "argv", ["main.py", "mock", "-s", "-l", "-f", "-c", "-p", "mock/data/path"]
         )
 
         args = arg_parser()
@@ -70,7 +70,7 @@ class TestArgumentParsing:
 
     def test_sim_mode(self, monkeypatch):
         """Tests the 'sim' mode arguments."""
-        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-r", "-l", "-f", "-c"])
+        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-s", "-l", "-f", "-c"])
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
@@ -132,8 +132,8 @@ class TestArgumentParsing:
         "args",
         [
             ["mock", "-p", "mock/data/path"],
-            ["sim", "-r", "-l", "-f", "-c"],
-            ["sim", "legacy", "-r"],
+            ["sim", "-s", "-l", "-f", "-c"],
+            ["sim", "legacy", "-s"],
         ],
         ids=["mock_with_path", "sim_with_common_args", "sim_with_preset_and_common_args"],
     )

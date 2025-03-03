@@ -112,7 +112,7 @@ def arg_parser() -> argparse.Namespace:
         prog="real",
     )
     real_parser.add_argument(
-        "-r",
+        "-s",
         "--mock-servo",
         help="Run the real flight with a mock servo instead of the real servo.",
         action="store_true",
@@ -166,7 +166,7 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
     _type = "mock replay" if is_mock else "sim"
 
     parser.add_argument(
-        "-r",
+        "-s",
         "--real-servo",
         help=f"Run the {_type} with the real servo",
         action="store_true",
