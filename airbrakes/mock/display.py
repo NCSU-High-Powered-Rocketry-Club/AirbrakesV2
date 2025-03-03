@@ -149,6 +149,8 @@ class FlightDisplay:
         if abs(self._context.data_processor.vertical_velocity) > 2:
             has_large_velocity = True
 
+        # While normally it is bad practice to access private variables, we kind of consider the
+        # display outside of/an addon to the main program, so we are okay with it here.
         if self._context.data_processor._last_data_packet:
             invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
             has_invalid_fields = bool(invalid_fields)
