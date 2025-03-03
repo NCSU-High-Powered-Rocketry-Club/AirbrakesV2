@@ -13,7 +13,7 @@ from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacke
 from airbrakes.utils import convert_ns_to_s, deadband
 
 
-class IMUDataProcessor:
+class DataProcessor:
     """
     Performs high level calculations on the estimated data packets received from the IMU. Includes
     calculation the vertical acceleration, velocity, maximum altitude so far, etc., from the set of
@@ -66,7 +66,7 @@ class IMUDataProcessor:
     def max_altitude(self) -> float:
         """
         Returns the highest altitude (zeroed-out) attained by the rocket for the entire flight
-            so far, in meters.
+        so far, in meters.
         :return: the maximum zeroed-out altitude of the rocket.
         """
         return float(self._max_altitude)
@@ -83,7 +83,7 @@ class IMUDataProcessor:
     def vertical_velocity(self) -> float:
         """
         The current vertical velocity of the rocket in m/s. Calculated by integrating the
-            compensated acceleration after rotating it to the vertical direction.
+        compensated acceleration after rotating it to the vertical direction.
         :return: The vertical velocity of the rocket.
         """
         return float(self._vertical_velocities[-1])
@@ -127,7 +127,7 @@ class IMUDataProcessor:
     def update(self, data_packets: list[EstimatedDataPacket]) -> None:
         """
         Updates the data points to process. This will recompute all information such as altitude,
-            velocity, etc.
+        velocity, etc.
         :param data_packets: A list of EstimatedDataPacket objects to process
         """
         # If the data points are empty, we don't want to try to process anything
@@ -158,8 +158,8 @@ class IMUDataProcessor:
     def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
         Processes the data points and returns a list of ProcessorDataPacket objects. The length
-            of the list should be the same as the length of the list of estimated data packets most
-            recently passed in by update()
+        of the list should be the same as the length of the list of estimated data packets most
+        recently passed in by update()
         :return: A list of ProcessorDataPacket objects.
         """
         return [
@@ -261,7 +261,7 @@ class IMUDataProcessor:
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
         Calculates the velocity of the rocket based on the rotated acceleration. Integrates that
-            acceleration to get the velocity.
+        acceleration to get the velocity.
         :return: A numpy array of the vertical velocity of the rocket at each data packet
         """
         # Gets the vertical accelerations from the rotated vertical acceleration. gravity needs to

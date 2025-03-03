@@ -14,7 +14,7 @@ from airbrakes.hardware.camera import Camera
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
@@ -44,7 +44,7 @@ class TestAirbrakesContext:
         assert airbrakes.camera == mock_camera
         assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert airbrakes.data_processor == data_processor
-        assert isinstance(airbrakes.data_processor, IMUDataProcessor)
+        assert isinstance(airbrakes.data_processor, DataProcessor)
         assert isinstance(airbrakes.state, StandbyState)
         assert isinstance(airbrakes.apogee_predictor, ApogeePredictor)
         assert isinstance(airbrakes.camera, Camera)

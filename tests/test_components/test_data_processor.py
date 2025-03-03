@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pytest
 import scipy.spatial
 
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
 
@@ -74,7 +74,7 @@ def load_data_packets(csv_path, n_packets):
 
 @pytest.fixture
 def data_processor():
-    return IMUDataProcessor()
+    return DataProcessor()
 
 
 class TestIMUDataProcessor:
@@ -112,7 +112,7 @@ class TestIMUDataProcessor:
     ]
 
     def test_slots(self):
-        inst = IMUDataProcessor()
+        inst = DataProcessor()
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
             if isinstance(val, np.ndarray):
@@ -461,7 +461,7 @@ class TestIMUDataProcessor:
     )
     def test_calculate_rotations(self, csv_path, expected_value, n_packets):
         data_packets = load_data_packets(csv_path, n_packets)
-        d = IMUDataProcessor()
+        d = DataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
         assert len(rotations) == n_packets

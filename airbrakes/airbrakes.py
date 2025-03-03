@@ -9,7 +9,7 @@ from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.state import StandbyState, State
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
@@ -58,7 +58,7 @@ class AirbrakesContext:
         imu: BaseIMU,
         camera: Camera,
         logger: Logger,
-        data_processor: IMUDataProcessor,
+        data_processor: DataProcessor,
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
@@ -81,7 +81,7 @@ class AirbrakesContext:
         self.imu: BaseIMU = imu
         self.camera: Camera = camera
         self.logger: Logger = logger
-        self.data_processor: IMUDataProcessor = data_processor
+        self.data_processor: DataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)

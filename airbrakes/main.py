@@ -26,7 +26,7 @@ from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
@@ -76,7 +76,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[BaseServo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
+) -> tuple[BaseServo, BaseIMU, Camera, Logger, DataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the air brakes system. Depending on its arguments, it
     will return either mock, sim, or real components.
@@ -126,7 +126,7 @@ def create_components(
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the IMUDataProcessor class and the ApogeePredictor class. There are no mock versions of
     # these classes.
-    data_processor = IMUDataProcessor()
+    data_processor = DataProcessor()
     apogee_predictor = ApogeePredictor()
     return servo, imu, camera, logger, data_processor, apogee_predictor
 
