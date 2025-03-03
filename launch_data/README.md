@@ -15,6 +15,7 @@ the IMU.
 6. `legacy_launch_2.csv`: We changed the IMU packet frequency to 50Hz for estimated packets, and 100Hz for raw packets. Unfortunately, this flight was a dud since our velocity was negative even in StandbyState, which indicated that the IMU had severe issues.
 7. `pelicanator_launch_1.csv`: This was the first flight of the Pelicanator rocket. The airbrakes deployed during coast for roughly 4 seconds, and then retracted, successfully lowering our apogee by about 60 meters. However, the recovery system of the rocket failed, causing the rocket to crash land. Our Raspberry Pi 5 switched off, resulting in the loss of about 22 seconds of data. The camera was in the payload, which didn't work, so there's no footage of the airbrakes.
 
+## Videos
 
 There is a video of the launch from the rocket's perspective in the `videos` folder.
 
