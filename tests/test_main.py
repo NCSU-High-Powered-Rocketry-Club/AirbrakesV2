@@ -103,8 +103,14 @@ def test_create_components(parsed_args, monkeypatch):
 
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
+    def mock_servo__init__(self, *args, **kwargs):
+        """Mock the __init__ of the airbrakes Servo class. Because the import of LGPIOFactory
+        fails on non-raspberry pi devices, we need to mock the Servo class."""
+
     monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
+    monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
+
     created_components = create_components(parsed_args)
 
     assert len(created_components) == 6
