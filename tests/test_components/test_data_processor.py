@@ -77,8 +77,8 @@ def data_processor():
     return DataProcessor()
 
 
-class TestIMUDataProcessor:
-    """Tests the IMUDataProcessor class"""
+class TestDataProcessor:
+    """Tests the DataProcessor class"""
 
     packets = [
         EstimatedDataPacket(
@@ -120,7 +120,7 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        """Tests whether the IMUDataProcessor is correctly initialized"""
+        """Tests whether the DataProcessor is correctly initialized"""
         d = data_processor
         # Test attributes on init
         assert d._max_altitude == 0.0
@@ -149,8 +149,7 @@ class TestIMUDataProcessor:
 
     def test_str(self, data_processor):
         data_str = (
-            "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, "
-            "max_velocity=0.0, "
+            "DataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, max_velocity=0.0, "
         )
         assert str(data_processor) == data_str
 
