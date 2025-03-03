@@ -48,11 +48,11 @@ class EstimatedDataPacket(IMUDataPacket):
     It contains a timestamp and the estimated values of the relevant data points.
     """
 
+    estPressureAlt: float | None = None
     estOrientQuaternionW: float | None = None
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
-    estPressureAlt: float | None = None
     estAttitudeUncertQuaternionW: float | None = None
     estAttitudeUncertQuaternionX: float | None = None
     estAttitudeUncertQuaternionY: float | None = None
