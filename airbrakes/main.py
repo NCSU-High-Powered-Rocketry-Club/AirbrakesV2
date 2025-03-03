@@ -188,7 +188,7 @@ if __name__ == "__main__":
     # Command line args (after these are run, you can press Ctrl+C to exit the program):
     # python -m airbrakes.main real -v: Run a real flight with the display showing much more data
     # python -m airbrakes.main mock: Runs a mock replay on your computer
-    # python -m airbrakes.main mock -r: Runs a mock replay on your computer with the real servo
+    # python -m airbrakes.main mock -s: Runs a mock replay on your computer with the real servo
     # python -m airbrakes.main mock -l: Runs a mock replay on your computer and keeps the log file
     #   after the mock replay stops
     # python -m airbrakes.main mock -f: Runs a mock replay on your computer at full speed
