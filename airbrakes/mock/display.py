@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 from airbrakes.constants import DisplayEndingType
 
 if TYPE_CHECKING:
-    from airbrakes.airbrakes import AirbrakesContext
+    from airbrakes.context import AirbrakesContext
 
 
 G = Fore.GREEN

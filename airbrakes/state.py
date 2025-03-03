@@ -15,7 +15,7 @@ from airbrakes.constants import (
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
-    from airbrakes.airbrakes import AirbrakesContext
+    from airbrakes.context import AirbrakesContext
 
 
 class State(ABC):

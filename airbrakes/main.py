@@ -5,7 +5,6 @@ import argparse
 import sys
 import time
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -14,6 +13,7 @@ from airbrakes.constants import (
     SERVO_1_CHANNEL,
     SERVO_2_CHANNEL,
 )
+from airbrakes.context import AirbrakesContext
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo

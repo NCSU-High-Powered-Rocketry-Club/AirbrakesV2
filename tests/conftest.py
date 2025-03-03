@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -13,6 +12,7 @@ from airbrakes.constants import (
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
 )
+from airbrakes.context import AirbrakesContext
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.mock.mock_camera import MockCamera

@@ -3,13 +3,13 @@ import time
 
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     APOGEE_PREDICTION_MIN_PACKETS,
     IMU_TIMEOUT_SECONDS,
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
+from airbrakes.context import AirbrakesContext
 from airbrakes.hardware.camera import Camera
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
