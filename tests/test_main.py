@@ -25,7 +25,7 @@ from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
@@ -103,13 +103,19 @@ def test_create_components(parsed_args, monkeypatch):
 
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
+    def mock_servo__init__(self, *args, **kwargs):
+        """Mock the __init__ of the airbrakes Servo class. Because the import of LGPIOFactory
+        fails on non-raspberry pi devices, we need to mock the Servo class."""
+
     monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
+    monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
+
     created_components = create_components(parsed_args)
 
     assert len(created_components) == 6
     assert isinstance(created_components[-1], ApogeePredictor)
-    assert isinstance(created_components[-2], IMUDataProcessor)
+    assert isinstance(created_components[-2], DataProcessor)
 
     if parsed_args.mode == "real":
         # Servo: real by default, mock if --mock-servo is set

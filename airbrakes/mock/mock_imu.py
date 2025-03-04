@@ -13,7 +13,8 @@ from faster_fifo import Queue
 from pandas.io.parsers.readers import TextFileReader
 
 from airbrakes.constants import (
-    LOG_BUFFER_SIZE,
+    CHUNK_SIZE,
+    DEFAULT,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     STOP_SIGNAL,
@@ -24,13 +25,6 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-
-CHUNK_SIZE = LOG_BUFFER_SIZE + 1
-"""The size of the chunk to read from the log file at a time. This has 2 benefits. Less memory
-usage and faster initial read of the file."""
-
-DEFAULT = object()
-"""Default sentinel value for usecols in the read_csv method."""
 
 
 class MockIMU(BaseIMU):
@@ -137,6 +131,7 @@ class MockIMU(BaseIMU):
             usecols=self._needed_fields if usecols is DEFAULT else usecols,
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
             skiprows=range(1, start_index + 1),
+            memory_map=True,
             **kwargs,
         )
 
@@ -164,14 +159,14 @@ class MockIMU(BaseIMU):
     def _read_file(self, real_time_replay: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
-            or run at full speed, e.g. for using it in the CI.
+        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period,
+        or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
-        LAUNCH_RAW_DATA_PACKET_RATE = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
+        launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
 
         # and chunk read the file because it's faster and memory efficient
         reader: TextFileReader = typing.cast(
@@ -204,23 +199,23 @@ class MockIMU(BaseIMU):
                 # Put the packet in the queue
                 self._queued_imu_packets.put(imu_data_packet)
 
-                # sleep only if we are running a real-time replay
-                # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
-                # pretend to be real-time
+                # Sleep only if we are running a real-time replay
+                # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 ms
+                # between each packet to pretend to be real-time
                 if real_time_replay and type(imu_data_packet) is RawDataPacket:
-                    # Mimmick polling interval
+                    # Mimic the polling interval so it "runs in real time"
                     end_time = time.time()
-                    time.sleep(max(0.0, LAUNCH_RAW_DATA_PACKET_RATE - (end_time - start_time)))
+                    time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
 
     def _fetch_data_loop(
         self, real_time_replay: bool, start_after_log_buffer: bool = False
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
-        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period,
-            or run at full speed.
+        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period,
+        or run at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-            was filled for Standby state.
+        was filled for Standby state.
         """
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt

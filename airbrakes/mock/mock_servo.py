@@ -47,19 +47,20 @@ class MockServo(BaseServo):
 
         super().__init__(first_servo, second_servo, encoder)
 
-    def _set_extension(self, extension: ServoExtension) -> None:
-        """
-        Sets the servo to the specified extension.
-        :param extension: The extension to set the servo to.
-        """
-        super()._set_extension(extension)
-        self.first_servo.value = self._min_max_scaling(extension.value)
-        self.second_servo.value = self._min_max_scaling(extension.value)
-
-    def _min_max_scaling(self, extension: float) -> float:
+    @staticmethod
+    def _scale_min_max(extension: float) -> float:
         """
         Scales the extension value to the range [0, 1] to set the servo value.
         :param extension: The extension to set the servo to.
         :return: The scaled extension value.
         """
         return extension / SERVO_MAX_ANGLE
+
+    def _set_extension(self, extension: ServoExtension) -> None:
+        """
+        Sets the servo to the specified extension.
+        :param extension: The extension to set the servo to.
+        """
+        super()._set_extension(extension)
+        self.first_servo.value = MockServo._scale_min_max(extension.value)
+        self.second_servo.value = MockServo._scale_min_max(extension.value)

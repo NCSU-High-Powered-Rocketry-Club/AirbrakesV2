@@ -14,6 +14,7 @@ with suppress(ImportError):
     from picamera2.outputs import CircularOutput
 
 
+# !!! Currently, we are not actually using a camera on our air brakes pi
 class Camera:
     """
     This is the class used to interact with the camera on our rocket. It records on a separate

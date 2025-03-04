@@ -1,14 +1,21 @@
 import csv
 import multiprocessing
 import multiprocessing.sharedctypes
+import threading
 import time
 from collections import deque
+from functools import partial
 
 import faster_fifo
 import pytest
 from msgspec.structs import asdict
 
-from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
+from airbrakes.constants import (
+    IDLE_LOG_CAPACITY,
+    LOG_BUFFER_SIZE,
+    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+    STOP_SIGNAL,
+)
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
@@ -68,6 +75,18 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
         else:
             new_d[k] = str(v)
     return new_d
+
+
+@pytest.fixture
+def threaded_logger(monkeypatch):
+    """Modifies the Logger to run in a separate thread instead of a process."""
+    logger = Logger(LOG_PATH)
+    # Cannot use signals from child threads, so we need to monkeypatch it:
+    monkeypatch.setattr("signal.signal", lambda _, __: None)
+    target = threading.Thread(target=logger._logging_loop)
+    logger._log_process = target
+    yield logger
+    logger.stop()
 
 
 class TestLogger:
@@ -815,6 +834,121 @@ class TestLogger:
         for logger_data_packet, expected in zip(logger_data_packets, expected_outputs, strict=True):
             assert isinstance(logger_data_packet, LoggerDataPacket)
             assert logger_data_packet == expected
+
+    @pytest.mark.parametrize(
+        ("num_packets", "expected_flush_calls", "expected_lines_in_file"),
+        [
+            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING // 3, 0, 0),  # Below threshold, no flush
+            (
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+                1,
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # At threshold, one flush
+            (
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING + 5,
+                1,
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # Above threshold, still one flush
+            (
+                2 * NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+                2,
+                2 * NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # Two flush cycles
+        ],
+        ids=[
+            "below_flush_threshold",
+            "at_flush_threshold",
+            "above_flush_threshold",
+            "two_flush_cycles",
+        ],
+    )
+    def test_flush_called_with_monkeypatch(
+        self,
+        threaded_logger,
+        num_packets: int,
+        expected_flush_calls: int,
+        expected_lines_in_file,
+        monkeypatch,
+    ):
+        """
+        Tests that the logger calls flush() every x lines by monkeypatching the file object's
+        flush method.
+        """
+        # Prepare sample data packets
+        context_packet = make_context_data_packet(state_letter="M")  # Avoid buffering
+        servo_packet = make_servo_data_packet(set_extension="0.0")
+        imu_data_packets = deque([make_raw_data_packet()])
+
+        flush_calls = 0
+        # Monkeypatch Path.open to return our custom TextIOWrapper
+        original_open = threaded_logger.log_path.open
+
+        def some_flush(original_flush):
+            nonlocal flush_calls
+            flush_calls += 1
+            original_flush()
+
+        def mocked_open(*args, **kwargs):
+            # Call the original open with all keyword arguments
+            file = original_open(**kwargs)
+            original_flush = file.flush
+            file.flush = partial(some_flush, original_flush)
+            return file
+
+        monkeypatch.setattr(threaded_logger.log_path.__class__, "open", mocked_open)
+
+        # Reinitialize logger to use the monkeypatched open
+        threaded_logger.start()
+        assert threaded_logger.is_running
+
+        # Log the specified number of packets
+        for _ in range(num_packets):
+            threaded_logger.log(
+                context_packet,
+                servo_packet,
+                imu_data_packets.copy(),
+                processor_data_packets=[],
+                apogee_predictor_data_packets=[],
+            )
+
+        # Give the process time to process the queue
+        time.sleep(0.1)
+
+        # Verify the number of flush calls before stop():
+        assert flush_calls == expected_flush_calls, (
+            f"Expected {expected_flush_calls} flush calls, got {flush_calls}"
+        )
+
+        # Verify the number of lines in the file before stop():
+
+        # This might be higher than expected_lines_in_file because:
+        # 1. io.DEFAULT_BUFFER_SIZE is 8192 bytes, which means if more than 8192 bytes are written
+        # to the file, the data will automatically be flushed to the file, calling
+        # BufferedWriter.flush() instead of TextIOWrapper.flush(). This is why the number of
+        # flush_calls is not changed.
+        # 2. The current test setup, truncation, fields logged, etc give one row of RawDataPacket
+        # as 254 bytes. This means that the file will be flushed after 8192 / 254 ~= 32 packets.
+        # This is why the test case is doing a // 3 (i.e. 100 // 3), and why it works for that case.
+        # 3. So as it turns out the flush() we do is actually totally unnecessary, because the file
+        # is flushed automatically by the BufferedWriter much more often than we do it manually.
+        with threaded_logger.log_path.open() as f:
+            lines = f.readlines()
+            num_data_lines = len(lines) - 1  # Subtract header
+            assert num_data_lines >= expected_lines_in_file, (
+                f"Expected {expected_lines_in_file} lines or more, got {num_data_lines}"
+            )
+
+        # Stop the logger cleanly to ensure all data is processed
+        threaded_logger.stop()
+        assert not threaded_logger.is_running
+
+        # Verify all packets are written
+        with threaded_logger.log_path.open() as f:
+            lines = f.readlines()
+            num_data_lines = len(lines) - 1  # Subtract header
+            assert num_data_lines == num_packets, (
+                f"Expected {num_packets} lines, got {num_data_lines}"
+            )
 
     def test_benchmark_log_method(self, benchmark, logger):
         """Tests the performance of the _prepare_logger_packets method."""

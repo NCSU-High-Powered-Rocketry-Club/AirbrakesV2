@@ -8,7 +8,7 @@ import numpy.testing as npt
 import pytest
 import scipy.spatial
 
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
 
@@ -74,11 +74,11 @@ def load_data_packets(csv_path, n_packets):
 
 @pytest.fixture
 def data_processor():
-    return IMUDataProcessor()
+    return DataProcessor()
 
 
-class TestIMUDataProcessor:
-    """Tests the IMUDataProcessor class"""
+class TestDataProcessor:
+    """Tests the DataProcessor class"""
 
     packets = [
         EstimatedDataPacket(
@@ -112,7 +112,7 @@ class TestIMUDataProcessor:
     ]
 
     def test_slots(self):
-        inst = IMUDataProcessor()
+        inst = DataProcessor()
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
             if isinstance(val, np.ndarray):
@@ -120,7 +120,7 @@ class TestIMUDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        """Tests whether the IMUDataProcessor is correctly initialized"""
+        """Tests whether the DataProcessor is correctly initialized"""
         d = data_processor
         # Test attributes on init
         assert d._max_altitude == 0.0
@@ -149,8 +149,7 @@ class TestIMUDataProcessor:
 
     def test_str(self, data_processor):
         data_str = (
-            "IMUDataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, "
-            "max_velocity=0.0, "
+            "DataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, max_velocity=0.0, "
         )
         assert str(data_processor) == data_str
 
@@ -461,7 +460,7 @@ class TestIMUDataProcessor:
     )
     def test_calculate_rotations(self, csv_path, expected_value, n_packets):
         data_packets = load_data_packets(csv_path, n_packets)
-        d = IMUDataProcessor()
+        d = DataProcessor()
         d.update(data_packets)
         rotations = d._rotated_accelerations
         assert len(rotations) == n_packets

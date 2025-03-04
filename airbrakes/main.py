@@ -5,7 +5,6 @@ import argparse
 import sys
 import time
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -14,6 +13,7 @@ from airbrakes.constants import (
     SERVO_1_CHANNEL,
     SERVO_2_CHANNEL,
 )
+from airbrakes.context import AirbrakesContext
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -26,7 +26,7 @@ from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
@@ -34,7 +34,7 @@ from airbrakes.utils import arg_parser
 def run_real_flight() -> None:
     """Entry point for the application to run the real flight. Entered when run with
     `uv run real` or `uvx --from git+... real`."""
-    # Modify sys.argv to include `real` as the first argument:
+    # Modify sys.argv to include real as the first argument:
     sys.argv.insert(1, "real")
     args = arg_parser()
     run_flight(args)
@@ -43,7 +43,7 @@ def run_real_flight() -> None:
 def run_mock_flight() -> None:
     """Entry point for the application to run the mock flight. Entered when run with
     `uvx --from git+... mock` or `uv run mock`."""
-    # Modify sys.argv to include `mock` as the first argument:
+    # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
     args = arg_parser()
     run_flight(args)
@@ -52,7 +52,7 @@ def run_mock_flight() -> None:
 def run_sim_flight() -> None:
     """Entry point for the application to run the sim flight. Entered when run with
     `uvx --from git+... sim` or `uv run sim`."""
-    # Modify sys.argv to include `sim` as the first argument:
+    # Modify sys.argv to include sim as the first argument:
     sys.argv.insert(1, "sim")
     args = arg_parser()
     run_flight(args)
@@ -76,13 +76,13 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[BaseServo, BaseIMU, Camera, Logger, IMUDataProcessor, ApogeePredictor]:
+) -> tuple[BaseServo, BaseIMU, Camera, Logger, DataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the air brakes system. Depending on its arguments, it
-        will return either mock, sim, or real components.
+    will return either mock, sim, or real components.
     :param args: Command line arguments determining the program configuration.
     :return: A tuple containing the Servo, IMU, Camera, Logger, IMUDataProcessor, and
-        ApogeePredictor objects.
+    ApogeePredictor objects.
     """
     if args.mode in ("mock", "sim"):
         if args.mode == "mock":
@@ -126,7 +126,7 @@ def create_components(
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the IMUDataProcessor class and the ApogeePredictor class. There are no mock versions of
     # these classes.
-    data_processor = IMUDataProcessor()
+    data_processor = DataProcessor()
     apogee_predictor = ApogeePredictor()
     return servo, imu, camera, logger, data_processor, apogee_predictor
 
@@ -182,20 +182,32 @@ def run_flight_loop(
 
 
 if __name__ == "__main__":
-    # Legacy way to run the program:
+    # Deprecated way to run the program:
     # python -m airbrakes.main [ARGS]
 
-    # Command line args (after these are run, you can press Ctrl+C to exit the program):
-    # python -m airbrakes.main real -v: Run a real flight with the display showing much more data
-    # python -m airbrakes.main mock: Runs a mock replay on your computer
-    # python -m airbrakes.main mock -s: Runs a mock replay on your computer with the real servo
-    # python -m airbrakes.main mock -l: Runs a mock replay on your computer and keeps the log file
-    #   after the mock replay stops
-    # python -m airbrakes.main mock -f: Runs a mock replay on your computer at full speed
-    # python -m airbrakes.main mock -d: Runs a mock replay on your computer in debug
-    #   mode (w/o display)
-    # python -m airbrakes.main mock -c: Runs a mock replay on your computer with the real camera
-    # python -m airbrakes.main mock -p [path]: Runs a mock replay on your computer using the
-    #   launch data at the path specified after -p
+    # The main Airbrakes program can be run in different modes:
+
+    # `uv run real [ARGS]`: Runs the flight with real hardware. Optional arguments:
+    #     -s, --mock-servo   : Uses a mock servo instead of the real one.
+    #     -c, --mock-camera  : Uses a mock camera instead of the real one.
+
+    # `uv run mock [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
+    #   Optional arguments include:
+    #     -s, --real-servo   : Uses the real servo instead of a mock one.
+    #     -c, --real-camera  : Uses the real camera instead of a mock one.
+    #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
+    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
+
+    # `uv run sim [ARGS]`: Runs a flight simulation alongside the mock replay.
+    #   Optional arguments include:
+    #     -s, --real-servo   : Uses the real servo instead of a mock one.
+    #     -c, --real-camera  : Uses the real camera instead of a mock one.
+    #     -f, --fast-replay  : Runs the simulation at full speed instead of real-time.
+    #     preset             : Specifies a preset (full-scale, sub-scale, etc).
+
+    # Global options for all modes:
+    #     -d, --debug   : Runs without a display, allowing inspection of print statements.
+    #     -v, --verbose : Enables a detailed display with more flight data.
+
     args = arg_parser()
     run_flight(args)
