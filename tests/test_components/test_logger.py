@@ -871,7 +871,7 @@ class TestLogger:
         monkeypatch,
     ):
         """
-        Tests that the logger calls flush() every so many lines by monkeypatching the file object's
+        Tests that the logger calls flush() every x lines by monkeypatching the file object's
         flush method.
         """
         # Prepare sample data packets
@@ -920,11 +920,22 @@ class TestLogger:
         )
 
         # Verify the number of lines in the file before stop():
+
+        # This might be higher than expected_lines_in_file because:
+        # 1. io.DEFAULT_BUFFER_SIZE is 8192 bytes, which means if more than 8192 bytes are written
+        # to the file, the data will automatically be flushed to the file, calling
+        # BufferedWriter.flush() instead of TextIOWrapper.flush(). This is why the number of
+        # flush_calls is not changed.
+        # 2. The current test setup, truncation, fields logged, etc give one row of RawDataPacket
+        # as 254 bytes. This means that the file will be flushed after 8192 / 254 ~= 32 packets.
+        # This is why the test case is doing a // 3 (i.e. 100 // 3), and why it works for that case.
+        # 3. So as it turns out the flush() we do is actually totally unnecessary, because the file
+        # is flushed automatically by the BufferedWriter much more often than we do it manually.
         with threaded_logger.log_path.open() as f:
             lines = f.readlines()
             num_data_lines = len(lines) - 1  # Subtract header
-            assert num_data_lines == expected_lines_in_file, (
-                f"Expected {expected_lines_in_file} lines, got {num_data_lines}"
+            assert num_data_lines >= expected_lines_in_file, (
+                f"Expected {expected_lines_in_file} lines or more, got {num_data_lines}"
             )
 
         # Stop the logger cleanly to ensure all data is processed
