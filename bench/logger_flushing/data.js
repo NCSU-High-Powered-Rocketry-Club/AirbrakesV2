@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741061778580,
+  "lastUpdate": 1741103198408,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -192,6 +192,54 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 3.5608855921303177e-7",
             "extra": "mean: 2.0690670402756877 usec\nrounds: 64767"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "committer": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "id": "4588cff0e20e53c19bd83db25f36c7de04bb80fe",
+          "message": "Add Logger flushing",
+          "timestamp": "2025-03-04T05:18:40Z",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/pull/161/commits/4588cff0e20e53c19bd83db25f36c7de04bb80fe"
+        },
+        "date": 1741103182938,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_airbrakes.py::TestAirbrakesContext::test_benchmark_airbrakes_update",
+            "value": 1051.5274292400802,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0008608371143204587",
+            "extra": "mean: 950.997541474198 usec\nrounds: 434"
+          },
+          {
+            "name": "tests/test_components/test_data_processor.py::TestDataProcessor::test_benchmark_data_processor_update",
+            "value": 3050.8170438095667,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003494546613168484",
+            "extra": "mean: 327.78104541834347 usec\nrounds: 1255"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 143873.60297109897,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000057645981854838925",
+            "extra": "mean: 6.950545335275144 usec\nrounds: 8393"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 494913.8090811456,
+            "unit": "iter/sec",
+            "range": "stddev: 8.662203306666836e-7",
+            "extra": "mean: 2.0205538452374054 usec\nrounds: 50608"
           }
         ]
       }
