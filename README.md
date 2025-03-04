@@ -37,11 +37,11 @@ _A video of our air brakes extending and retracting_
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
 
 1. **Gets data from the IMU**
-2. **Processes the data** in the IMU Data Processor (calculates velocity, averages, maximums, etc.)
+2. **Processes the data** in the Data Processor (calculates velocity, averages, maximums, etc.)
 3. **Updates the current state** with the processed data
 4. **Predicts the apogee** If the program is in Coast State
 5. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
-6. **Logs all data** from the IMU, IMU Data Processor, Servo, Apogee Predictor and States
+6. **Logs all data** from the IMU, Data Processor, Servo, Apogee Predictor and States
 
 ### System Architecture Flowchart
 ```mermaid
@@ -91,11 +91,11 @@ flowchart TD
     Airbrakes ---|Child Process| Apogee_Predictor((Apogee Predictor)):::circular
     IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
 
-    %% IMU Data Processing
-    IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
-    IMUDataProcessor --> Velocity[(Velocity)]:::outputSquare
-    IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
-    IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
+    %% Data Processing
+    IMUDataPacket --> DataProcessor[Data Processor]:::circular
+    DataProcessor --> Velocity[(Velocity)]:::outputSquare
+    DataProcessor --> Altitude[(Altitude)]:::outputSquare
+    DataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
     Velocity -->  ProcessedData[(Processor Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processor Data Packet)]:::outputSquare
@@ -118,12 +118,12 @@ flowchart TD
     Airbrakes --> Servo
 
 ```
-| Type        | Color                                                                     | Examples                                                                                                       |
-|-------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
-| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
-| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                     |
+| Type        | Color                                                                     | Examples                                                                                                   |
+|-------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                    |
+| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
+| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                   |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                 |
 
 ### Launch Data
 
@@ -210,14 +210,6 @@ uv run pre-commit install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
 
-### 4. Make your changes and commit:
-
-After you have made your changes, you can commit them:
-```bash
-git add .
-git commit -m "Your commit message"
-```
-
 You will see the linter run now. If one of the checks failed, you can resolve them by following the 
 instructions in [Running the Linter](#running-the-linter).
 
@@ -293,6 +285,10 @@ To format the code, run:
 ```bash
 ruff format .
 ```
+You can also run the linter with `uv`:
+```bash
+uv run ruff format .
+```
 
 ## Pi Usage
 
@@ -305,13 +301,6 @@ In order to connect to the Pi, you need first to set up a mobile hotspot with th
 ssh pi@[IP.ADDRESS]
 # Its password is "raspberry"
 cd AirbrakesV2/
-```
-
-### Install and start the pigpio daemon on the Raspberry Pi:
-_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using [`htop`](https://htop.dev/)._
-
-```bash
-sudo pigpiod
 ```
 
 ### Install the dependencies needed for the camera and servo integration:

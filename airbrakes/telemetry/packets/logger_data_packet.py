@@ -37,11 +37,11 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     scaledAmbientPressure: float | None = None
 
     # Estimated Data Packet Fields
+    estPressureAlt: float | None = None
     estOrientQuaternionW: float | None = None
     estOrientQuaternionX: float | None = None
     estOrientQuaternionY: float | None = None
     estOrientQuaternionZ: float | None = None
-    estPressureAlt: float | None = None
     estAttitudeUncertQuaternionW: float | None = None
     estAttitudeUncertQuaternionX: float | None = None
     estAttitudeUncertQuaternionY: float | None = None

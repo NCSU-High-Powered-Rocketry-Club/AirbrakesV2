@@ -4,10 +4,8 @@ hardware."""
 import signal
 from time import sleep
 
+from airbrakes.constants import BYTES_PER_0_1_SECONDS
 from airbrakes.hardware.camera import Camera
-
-BYTES_PER_30_SECONDS = 9 * 1024 * 1024  # 9 MB in bytes
-BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300  # 30 seconds / 300 = 0.1 seconds
 
 
 class MockCamera(Camera):

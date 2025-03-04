@@ -106,6 +106,40 @@ class DisplayEndingType(StrEnum):
 
 
 # -------------------------------------------------------
+# Logging Configuration
+# -------------------------------------------------------
+
+LOGS_PATH = Path("logs")
+"""The path of the folder to hold the log files in."""
+TEST_LOGS_PATH = Path("test_logs")
+"""The path of the folder to hold the test log files in."""
+NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 100
+"""The number of lines we log before manually flushing the buffer."""
+
+STOP_SIGNAL = "STOP"
+"""
+The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue
+to stop the processes.
+"""
+
+# Formula for converting number of packets to seconds and vice versa:
+# If N = total number of packets, T = total time in seconds:
+# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
+# T = N/f => T = N/1000
+
+IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 5 seconds of data
+"""
+The maximum number of data packets to log in the StandbyState and LandedState. This is to prevent
+log file sizes from growing too large. Some of our 2023-2024 launches were >300 mb.
+"""
+LOG_BUFFER_SIZE = 5000
+"""
+Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
+sure we don't lose data.
+"""
+
+
+# -------------------------------------------------------
 # IMU Configuration
 # -------------------------------------------------------
 
@@ -115,7 +149,6 @@ The port that the IMU is connected to. This is typically the default port where 
 to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the
 system in Linux.
 """
-
 
 IMU_PROCESS_PRIORITY = -15
 """The priority of the IMU process. This is a really high priority so the OS knows to give it
@@ -161,6 +194,13 @@ packet) before it is considered to have timed out. This is used to prevent the p
 deadlocking if the IMU stops sending data.
 """
 
+CHUNK_SIZE = LOG_BUFFER_SIZE + 1
+"""The size of the chunk to read from the log file at a time. This has 2 benefits. Less memory
+usage and faster initial read of the file."""
+
+DEFAULT = object()
+"""Default sentinel value for usecols in the read_csv method."""
+
 # Constants for IMU field names and quantifiers
 DELTA_THETA_FIELD = 32775
 DELTA_VEL_FIELD = 32776
@@ -188,38 +228,10 @@ AMBIENT_PRESSURE_QUALIFIER = 58
 
 CAMERA_SAVE_PATH = Path("logs/video.h264")
 """The path that the output of the camera will save to."""
-
-# -------------------------------------------------------
-# Logging Configuration
-# -------------------------------------------------------
-
-LOGS_PATH = Path("logs")
-"""The path of the folder to hold the log files in."""
-TEST_LOGS_PATH = Path("test_logs")
-"""The path of the folder to hold the test log files in."""
-
-STOP_SIGNAL = "STOP"
-"""
-The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue
-to stop the processes.
-"""
-
-
-# Formula for converting number of packets to seconds and vice versa:
-# If N = total number of packets, T = total time in seconds:
-# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
-# T = N/f => T = N/1000
-
-IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
-"""
-The maximum number of data packets to log in the StandbyState and LandedState. This is to prevent
-log file sizes from growing too large. Some of our 2023-2024 launches were >300 mb.
-"""
-LOG_BUFFER_SIZE = 5000
-"""
-Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
-sure we don't lose data.
-"""
+BYTES_PER_30_SECONDS = 9 * 1024 * 1024
+"""The number of bytes that the camera will write in 30 seconds."""
+BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300
+"""The number of bytes that the camera will write in 0.1 seconds."""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -256,6 +268,13 @@ TARGET_APOGEE_METERS = 1218.16
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.
+"""
+
+MAX_ALTITUDE_THRESHOLD = 0.9
+"""
+We don't care too much about accurately changing to the freefall state, so we just check if the
+rocket is less than 90% of the max altitude it reached. We do this because it would be catastrophic
+if we detected freefall too early.
 """
 
 # ----------------- Freefall to Landing -----------------
