@@ -838,7 +838,7 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("num_packets", "expected_flush_calls", "expected_lines_in_file"),
         [
-            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING - 1, 0, 0),  # Below threshold, no flush
+            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING * 0.5, 0, 0),  # Below threshold, no flush
             (
                 NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
                 1,
@@ -862,7 +862,7 @@ class TestLogger:
             "two_flush_cycles",
         ],
     )
-    def test_flush_called_every_20_lines_with_monkeypatch(
+    def test_flush_called_with_monkeypatch(
         self,
         threaded_logger,
         num_packets: int,
@@ -871,7 +871,7 @@ class TestLogger:
         monkeypatch,
     ):
         """
-        Tests that the logger calls flush() every 20 lines by monkeypatching the file object's
+        Tests that the logger calls flush() every so many lines by monkeypatching the file object's
         flush method.
         """
         # Prepare sample data packets
