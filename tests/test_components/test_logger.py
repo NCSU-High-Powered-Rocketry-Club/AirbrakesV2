@@ -838,7 +838,7 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("num_packets", "expected_flush_calls", "expected_lines_in_file"),
         [
-            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING // 2, 0, 0),  # Below threshold, no flush
+            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING // 3, 0, 0),  # Below threshold, no flush
             (
                 NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
                 1,
