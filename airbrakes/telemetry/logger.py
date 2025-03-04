@@ -15,6 +15,7 @@ from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     MAX_GET_TIMEOUT_SECONDS,
+    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
@@ -328,6 +329,7 @@ class Logger:
         # Set up the csv logging in the new process
         with self.log_path.open(mode="a", newline="") as file_writer:
             writer = csv.writer(file_writer)
+            number_of_lines_logged = 0
             while True:
                 # Get a message from the queue (this will block until a message is available)
                 # Because there's no timeout, it will wait indefinitely until it gets a message.
@@ -342,3 +344,10 @@ class Logger:
                     if message_field == STOP_SIGNAL:
                         return
                     writer.writerow(Logger._truncate_floats(message_field))
+                    number_of_lines_logged += 1
+                    # During our Pelicanator flight, the rocket fell and had an very hard impact
+                    # causing the pi to lose power. This caused us to lose a lot of lines of data
+                    # that were not written to the log file. To prevent this from happening again,
+                    # we flush the logger 20 lines.
+                    if number_of_lines_logged % NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING == 0:
+                        file_writer.flush()

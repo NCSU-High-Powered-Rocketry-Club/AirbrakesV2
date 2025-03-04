@@ -131,6 +131,7 @@ class MockIMU(BaseIMU):
             usecols=self._needed_fields if usecols is DEFAULT else usecols,
             converters={"invalid_fields": MockIMU._convert_invalid_fields},
             skiprows=range(1, start_index + 1),
+            memory_map=True,
             **kwargs,
         )
 
