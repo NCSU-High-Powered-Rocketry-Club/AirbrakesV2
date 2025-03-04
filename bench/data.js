@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1741025577727,
+  "lastUpdate": 1741065579775,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -416,6 +416,58 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 4.856897482457075e-7",
             "extra": "mean: 2.0173177103724047 usec\nrounds: 45211"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "85963782+JacksonElia@users.noreply.github.com",
+            "name": "Jack",
+            "username": "JacksonElia"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6f9be4181722114b69f13f99c0abd8096ed9706b",
+          "message": "Merge pull request #164 from NCSU-High-Powered-Rocketry-Club/pelicanator-data\n\nAdd pelicanator launch and fix mock",
+          "timestamp": "2025-03-04T00:18:36-05:00",
+          "tree_id": "555833db82c240a048dfe44fbcac354e540e8fe4",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/commit/6f9be4181722114b69f13f99c0abd8096ed9706b"
+        },
+        "date": 1741065564340,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_airbrakes.py::TestAirbrakesContext::test_benchmark_airbrakes_update",
+            "value": 1083.181153113098,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0008556252689326917",
+            "extra": "mean: 923.2066096478576 usec\nrounds: 456"
+          },
+          {
+            "name": "tests/test_components/test_data_processor.py::TestIMUDataProcessor::test_benchmark_data_processor_update",
+            "value": 3177.7892140769545,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001470326360787043",
+            "extra": "mean: 314.68418218873836 usec\nrounds: 1718"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 158282.7727186124,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000473066903305692",
+            "extra": "mean: 6.317806940226859 usec\nrounds: 9510"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 499072.32491764316,
+            "unit": "iter/sec",
+            "range": "stddev: 4.2699725022824036e-7",
+            "extra": "mean: 2.0037175977750716 usec\nrounds: 72464"
           }
         ]
       }
