@@ -127,7 +127,7 @@ to stop the processes.
 # f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
 # T = N/f => T = N/1000
 
-IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 3.33 seconds of data
+IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 5 seconds of data
 """
 The maximum number of data packets to log in the StandbyState and LandedState. This is to prevent
 log file sizes from growing too large. Some of our 2023-2024 launches were >300 mb.
