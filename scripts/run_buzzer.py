@@ -25,4 +25,3 @@ if __name__ == "__main__":
     switch_on(bz)
     time.sleep(1)
     switch_off(bz)
-

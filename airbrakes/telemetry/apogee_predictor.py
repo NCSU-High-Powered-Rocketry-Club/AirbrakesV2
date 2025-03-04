@@ -25,7 +25,7 @@ from airbrakes.constants import (
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import _convert_unknown_type_to_float
+from airbrakes.utils import convert_unknown_type_to_float
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
@@ -71,7 +71,7 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=_convert_unknown_type_to_float)
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
         msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
         self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
             Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
@@ -140,7 +140,7 @@ class ApogeePredictor:
     def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
         """
         Gets *all* of the apogee prediction data packets from the queue. This operation is
-            non-blocking.
+        non-blocking.
         :return: A deque containing the latest IMU data packets from the packet queue.
         """
         total_packets = []
@@ -166,7 +166,7 @@ class ApogeePredictor:
     def _curve_fit(self) -> CurveCoefficients:
         """
         Calculates the curve fit function of vertical direction of the acceleration. Uses the
-            function y = A(1-Bt)^4, where A and B are parameters being fit.
+        function y = A(1-Bt)^4, where A and B are parameters being fit.
         :return: The CurveCoefficients class, containing the A and B values from curve fit function
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
@@ -191,7 +191,7 @@ class ApogeePredictor:
         Curve fits the acceleration data and uses the curve fit to make a lookup table of velocity
         vs Δheight.
         :param: curve_coefficients: The CurveCoefficients class, containing the A and B values
-            from curve fit function.
+        from curve fit function.
         """
 
         # We need to store the velocity for when we start the prediction, so we can use it to
@@ -287,7 +287,7 @@ class ApogeePredictor:
     def _extract_processor_data_packets(self, data_packets: list[ProcessorDataPacket]) -> None:
         """
         Extracts the processor data packets from the data packets and appends them to the
-            respective internal lists.
+        respective internal lists.
         :param data_packets: a list of ProcessorDataPackets to extract.
         """
         for data_packet in data_packets:
@@ -300,8 +300,8 @@ class ApogeePredictor:
     def _predict_apogee(self) -> np.float64:
         """
         Predicts the apogee using the lookup table and linear interpolation. It gets the change in
-            height from the lookup table, and adds it to the current height, thus giving you the
-            predicted apogee.
+        height from the lookup table, and adds it to the current height, thus giving you the
+        predicted apogee.
         :return: the predicted apogee as a float.
         """
         return (

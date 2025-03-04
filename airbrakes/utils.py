@@ -10,7 +10,7 @@ from typing import Any
 import psutil
 
 
-def _convert_unknown_type_to_float(obj_type: Any) -> float:
+def convert_unknown_type_to_float(obj_type: Any) -> float:
     """
     Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
     :param obj_type: The object to convert.
@@ -19,15 +19,28 @@ def _convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def set_process_priority(nice_value: int) -> None:
-    """Sets the priority of the calling process to the specified nice value. Only works on Linux."""
+def convert_ns_to_s(nanoseconds: float) -> float:
+    """
+    Converts nanoseconds to seconds.
+    :param nanoseconds: The time in nanoseconds.
+    :return: The time in seconds.
+    """
+    return nanoseconds * 1e-9
+
+
+def set_process_priority(priority: int) -> None:
+    """
+    Sets the priority of the calling process to the specified nice value. Only works on Linux.
+    :param priority: The nice value to set the process to. This ranges from -20 to 19, with -20
+    being the highest priority and 19 being the lowest.
+    """
     if sys.platform != "win32":
         p = psutil.Process()
         try:
-            p.nice(nice_value)
+            p.nice(priority)
         except psutil.AccessDenied:
             warnings.warn(
-                f"Could not set process priority to {nice_value}. Please run the program as root "
+                f"Could not set process priority to {priority}. Please run the program as root "
                 "to set process priority.",
                 stacklevel=2,
             )
@@ -36,7 +49,7 @@ def set_process_priority(nice_value: int) -> None:
 def deadband(input_value: float, threshold: float) -> float:
     """
     Returns 0.0 if input_value is within the deadband threshold. Otherwise, returns input_value
-        adjusted by the threshold.
+    adjusted by the threshold.
     :param input_value: The value to apply the deadband to.
     :param threshold: The deadband threshold.
     :return: Adjusted input_value or 0.0 if within the deadband.
@@ -91,12 +104,26 @@ def arg_parser() -> argparse.Namespace:
     )
 
     # Real flight parser:
-    subparsers.add_parser(
+    real_parser = subparsers.add_parser(
         "real",
-        help="Run the real flight with all the real hardware.",
-        description="Configuration for the real flight.",
-        parents=[global_parser],  # Include the global options
-        prog="real",  # Program name in help messages
+        help="Run the real flight with all the real hardware by default.",
+        description="Configuration for the real flight. Uses real hardware unless specified.",
+        parents=[global_parser],
+        prog="real",
+    )
+    real_parser.add_argument(
+        "-s",
+        "--mock-servo",
+        help="Run the real flight with a mock servo instead of the real servo.",
+        action="store_true",
+        default=False,
+    )
+    real_parser.add_argument(
+        "-c",
+        "--mock-camera",
+        help="Run the real flight with a mock camera instead of the real camera.",
+        action="store_true",
+        default=False,
     )
 
     # Mock replay parser:
@@ -117,7 +144,6 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],  # Include the global options
         prog="sim",  # Program name in help messages
     )
-
     sim_parser.add_argument(
         "preset",
         help="Selects the preset to use for the simulation.",
@@ -140,7 +166,7 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
     _type = "mock replay" if is_mock else "sim"
 
     parser.add_argument(
-        "-r",
+        "-s",
         "--real-servo",
         help=f"Run the {_type} with the real servo",
         action="store_true",
@@ -167,15 +193,6 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         "-c",
         "--real-camera",
         help=f"Run the {_type} with the real camera.",
-        action="store_true",
-        default=False,
-    )
-
-    # TODO: Make -f and -i mutually exclusive
-    parser.add_argument(
-        "-i",
-        "--real-imu",
-        help=f"Run the {_type} with the real imu.",
         action="store_true",
         default=False,
     )

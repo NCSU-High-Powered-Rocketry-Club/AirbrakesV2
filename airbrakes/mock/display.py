@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 from airbrakes.constants import DisplayEndingType
 
 if TYPE_CHECKING:
-    from airbrakes.airbrakes import AirbrakesContext
+    from airbrakes.context import AirbrakesContext
 
 
 G = Fore.GREEN
@@ -39,6 +39,7 @@ class FlightDisplay:
         "_convergence_time_seconds",
         "_cpu_thread",
         "_cpu_usages",
+        "_display_header",
         "_launch_file",
         "_launch_time_ns",
         "_pitch_at_startup",
@@ -92,6 +93,9 @@ class FlightDisplay:
         except AttributeError:  # If it failed, that means we are running a real flight!
             self._launch_file = "N/A"
 
+        # The string to show at the top of the display:
+        self._display_header = f"{Y}{'=' * 15} {'REPLAY' if self._args.mode == 'mock' else 'REAL TIME'} INFO {'=' * 15}{RESET}"  # noqa: E501
+
     def start(self) -> None:
         """
         Starts the display and cpu monitoring thread. Also prepares the processes for monitoring
@@ -136,10 +140,6 @@ class FlightDisplay:
         Sounds an audible alarm if the IMU has invalid fields or large change in velocity. This is
         most useful on real flights, where it is hard to see the display due to sunlight.
         """
-        # We only care about standby state and if we are running a real:
-        if self._context.state.name != "StandbyState" or self._args.mode != "real":
-            return
-
         has_invalid_fields = False
         has_large_velocity = False
         imu_queue_backlog = False
@@ -149,9 +149,10 @@ class FlightDisplay:
         if abs(self._context.data_processor.vertical_velocity) > 2:
             has_large_velocity = True
 
-        if self._context.data_processor._last_data_packet:
-            invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
-            has_invalid_fields = bool(invalid_fields)
+        # While normally it is bad practice to access private variables, we kind of consider the
+        # display outside of/an addon to the main program, so we are okay with it here.
+        invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
+        has_invalid_fields = bool(invalid_fields)
 
         if self._context.imu.imu_packets_per_cycle > 30:
             imu_queue_backlog = True
@@ -163,7 +164,7 @@ class FlightDisplay:
             pitch_drift = True
 
         if has_invalid_fields or has_large_velocity or imu_queue_backlog or pitch_drift:
-            print("\a", end="")
+            print("\a", end="")  # \a is the bell character, which makes a beep sound
 
     def update_display(self) -> None:
         """
@@ -174,15 +175,22 @@ class FlightDisplay:
         if self._args.debug:
             return
 
+        # Wait till we processed a data packet. This is to prevent the display from updating
+        # before we have any data to display.
+        while not self._context.data_processor._last_data_packet:
+            pass
+
         # Update the display as long as the program is running:
         while self._running:
             self._update_display()
-            self.sound_alarm_if_imu_is_having_issues()
 
-            # If we are running a real flight, we will stop the display when the rocket takes off:
-            if self._args.mode == "real" and self._context.state.name == "MotorBurnState":
-                self._update_display(DisplayEndingType.TAKEOFF)
-                break
+            # If we are running a real flight, check if there is any cause of concern:
+            if self._args.mode == "real":
+                self.sound_alarm_if_imu_is_having_issues()
+                # We will stop the display when the rocket takes off (performance reasons)
+                if self._context.state.name == "MotorBurnState":
+                    self._update_display(DisplayEndingType.TAKEOFF)
+                    break
 
         # The program has ended, so we print the final display, depending on how it ended:
         if self.end_mock_natural.is_set():
@@ -193,27 +201,19 @@ class FlightDisplay:
     def _update_display(self, end_type: DisplayEndingType | None = None) -> None:
         """
         Updates the display with real-time data.
-        :param end_type: Whether the replay ended or was interrupted.
+        :param end_type: The type of ending for the flight data display.
         """
-        try:
-            current_queue_size = self._context.imu._queued_imu_packets.qsize()
-        except NotImplementedError:
-            # Returns NotImplementedError on arm architecture (Raspberry Pi)
-            current_queue_size = "N/A"
-
-        fetched_packets_in_main = len(self._context.imu_data_packets)
+        current_queue_size = self._context.imu.queued_imu_packets
+        fetched_packets_in_main = self._context.context_data_packet.retrieved_imu_packets
         fetched_packets_from_imu = (
             self._context.imu.imu_packets_per_cycle if self._args.mode == "real" else "N/A"
         )
 
         data_processor = self._context.data_processor
 
-        if data_processor._last_data_packet:
-            invalid_fields = data_processor._last_data_packet.invalid_fields
-            if invalid_fields:
-                invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
-        else:
-            invalid_fields = "N/A"
+        invalid_fields = data_processor._last_data_packet.invalid_fields
+        if invalid_fields:
+            invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
 
         # Set the launch time if it hasn't been set yet:
         if not self._launch_time_ns and self._context.state.name == "MotorBurnState":
@@ -243,12 +243,12 @@ class FlightDisplay:
             )
 
         # Assign the startup pitch value when it is available:
-        if not self._pitch_at_startup and data_processor._current_orientation_quaternions:
+        if not self._pitch_at_startup:
             self._pitch_at_startup = data_processor.average_pitch
 
         # Prepare output
         output = [
-            f"{Y}{'=' * 15} {'REPLAY' if self._args.mode == 'mock' else 'STANDBY'} INFO {'=' * 15}{RESET}",  # noqa: E501
+            self._display_header,
             f"Replay file:                  {C}{self._launch_file}{RESET}",
             f"Time since replay start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",

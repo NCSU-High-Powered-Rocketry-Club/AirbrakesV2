@@ -239,6 +239,13 @@ class Logger:
 
         return logger_data_packets
 
+    def _log_the_buffer(self):
+        """
+        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
+        """
+        self._log_queue.put_many(list(self._log_buffer))
+        self._log_buffer.clear()
+
     def start(self) -> None:
         """
         Starts the logging process. This is called before the main while loop starts.
@@ -301,13 +308,6 @@ class Logger:
             # Reset the counter for other states
             self._log_counter = 0
             self._log_queue.put_many(logger_data_packets)
-
-    def _log_the_buffer(self):
-        """
-        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
-        """
-        self._log_queue.put_many(list(self._log_buffer))
-        self._log_buffer.clear()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from airbrakes.airbrakes import AirbrakesContext
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -13,13 +12,14 @@ from airbrakes.constants import (
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
 )
+from airbrakes.context import AirbrakesContext
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
@@ -32,14 +32,6 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-
-
-# TODO: Fix this so --collect
-def pytest_ignore_collect(collection_path, config):
-    # Check if the architecture is ARM64 (e.g., 'aarch64')
-    # if platform.machine() in ("aarch64", "arm64"):
-    # Ignore test_main.py on ARM64
-    return collection_path.name == "test_main.py"
 
 
 def pytest_collection_modifyitems(config, items):
@@ -67,7 +59,7 @@ def logger():
 
 @pytest.fixture
 def data_processor():
-    return IMUDataProcessor()
+    return DataProcessor()
 
 
 @pytest.fixture
@@ -180,6 +172,10 @@ def target_altitude(request):
         return 413.0  # actual apogee was about 462m
     if launch_name == "legacy_launch_1":
         return 580.0  # actual apogee was about 631.14m
+    # Airbrakes actually deployed on this flight, and we had set an apogee higher than the actual
+    # apogee achieved because of the airbrakes.
+    if launch_name == "pelicanator_launch_1":
+        return 1218.9  # actual apogee was about 1208.9m
     return 1000.0  # Default altitude
 
 

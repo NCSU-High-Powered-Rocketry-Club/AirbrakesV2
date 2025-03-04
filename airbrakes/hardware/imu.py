@@ -46,6 +46,7 @@ class IMU(BaseIMU):
     Represents the IMU on the rocket. It's used to get the current motion of the rocket, including
     the acceleration, rotation, and position. This is used to interact with the data collected by
     the Parker-LORD 3DMCX5-AR. (https://www.microstrain.com/inertial-sensors/3dm-cx5-15).
+
     Here is the setup docs: https://github.com/LORD-MicroStrain/MSCL/blob/master/HowToUseMSCL.md
     Here is the software for configuring the IMU: https://www.microstrain.com/software/sensorconnect
     """
@@ -99,7 +100,7 @@ class IMU(BaseIMU):
         # - using 2 inner loops depending on the type of packet, this reduces the number of `if`
         # checks the interpreter has to do
         # - Using integers for comparison instead of strings (O(1) vs O(n) complexity)
-        # - Checking for raw data packets first, since that is 2x the frequency of estimated packets
+        # - Checking for raw data packets or estimated data packets, not both
         # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
         # - High priority for the process
         while self.is_running:
@@ -117,129 +118,135 @@ class IMU(BaseIMU):
                 # Initialize packet with the timestamp, determines if the packet is raw or estimated
                 if descriptor_set == RAW_DESCRIPTOR_SET:
                     imu_data_packet = RawDataPacket(timestamp)
+                    # Iterate through each data point in the packet.
+                    for data_point in packet.data():
+                        # Extract the channel name of the data point.
+                        qualifier = data_point.qualifier()
+                        field_name = data_point.field()
+
+                        if field_name == SCALED_ACCEL_FIELD:
+                            # Scaled acceleration data
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.scaledAccelX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.scaledAccelY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.scaledAccelZ = data_point.as_float()
+
+                        elif field_name == SCALED_GYRO_FIELD:
+                            # Scaled gyroscope data
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.scaledGyroX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.scaledGyroY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.scaledGyroZ = data_point.as_float()
+
+                        elif field_name == DELTA_VEL_FIELD:
+                            # Delta velocity (change in velocity)
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.deltaVelX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.deltaVelY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.deltaVelZ = data_point.as_float()
+
+                        elif field_name == DELTA_THETA_FIELD:
+                            # Delta theta (change in orientation)
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.deltaThetaX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.deltaThetaY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.deltaThetaZ = data_point.as_float()
+
+                        elif (
+                            field_name == SCALED_AMBIENT_PRESSURE_FIELD
+                            and qualifier == AMBIENT_PRESSURE_QUALIFIER
+                        ):
+                            # Scaled ambient pressure data
+                            imu_data_packet.scaledAmbientPressure = data_point.as_float()
+
                 elif descriptor_set == ESTIMATED_DESCRIPTOR_SET:
                     imu_data_packet = EstimatedDataPacket(timestamp)
+                    for data_point in packet.data():
+                        # Extract the channel name of the data point.
+                        qualifier = data_point.qualifier()
+                        field_name = data_point.field()
+
+                        if (
+                            field_name == EST_PRESSURE_ALT_FIELD
+                            and qualifier == PRESSURE_ALT_QUALIFIER
+                        ):
+                            # Estimated pressure altitude
+                            imu_data_packet.estPressureAlt = data_point.as_float()
+
+                        elif (
+                            field_name == EST_ORIENT_QUATERNION_FIELD
+                            and qualifier == ATTITUDE_UNCERT_QUALIFIER
+                        ):
+                            # Estimated orientation quaternion
+                            matrix = data_point.as_Matrix()
+                            # The imu sends the quaternions as a matrix, so we have to unpack it
+                            imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
+                            imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
+                            imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
+                            imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
+
+                        elif (
+                            field_name == EST_ATTITUDE_UNCERT_FIELD
+                            and qualifier == ATTITUDE_UNCERT_QUALIFIER
+                        ):
+                            # Estimated attitude uncertainty quaternion
+                            matrix = data_point.as_Matrix()
+                            imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
+                            imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
+                            imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
+                            imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
+
+                        elif field_name == EST_ANGULAR_RATE_FIELD:
+                            # Estimated angular rate
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.estAngularRateX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.estAngularRateY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.estAngularRateZ = data_point.as_float()
+
+                        elif field_name == EST_COMPENSATED_ACCEL_FIELD:
+                            # Estimated compensated acceleration
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.estCompensatedAccelX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.estCompensatedAccelY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.estCompensatedAccelZ = data_point.as_float()
+
+                        elif field_name == EST_LINEAR_ACCEL_FIELD:
+                            # Estimated linear acceleration
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.estLinearAccelX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.estLinearAccelY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.estLinearAccelZ = data_point.as_float()
+
+                        elif field_name == EST_GRAVITY_VECTOR_FIELD:
+                            # Estimated gravity vector
+                            if qualifier == X_QUALIFIER:
+                                imu_data_packet.estGravityVectorX = data_point.as_float()
+                            elif qualifier == Y_QUALIFIER:
+                                imu_data_packet.estGravityVectorY = data_point.as_float()
+                            elif qualifier == Z_QUALIFIER:
+                                imu_data_packet.estGravityVectorZ = data_point.as_float()
+
+                        # Check if the data point is invalid and update the invalid fields list.
+                        if not data_point.valid():
+                            if imu_data_packet.invalid_fields is None:
+                                imu_data_packet.invalid_fields = []
+                            imu_data_packet.invalid_fields.append(data_point.channelName())
                 else:
                     continue  # We never actually reach here, but keeping it just in case
-
-                # Iterate through each data point in the packet.
-                for data_point in packet.data():
-                    # Extract the channel name of the data point.
-                    qualifier = data_point.qualifier()
-                    field_name = data_point.field()
-
-                    if field_name == DELTA_THETA_FIELD:
-                        # Delta theta (change in orientation)
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.deltaThetaX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.deltaThetaY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.deltaThetaZ = data_point.as_float()
-
-                    elif field_name == DELTA_VEL_FIELD:
-                        # Delta velocity (change in velocity)
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.deltaVelX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.deltaVelY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.deltaVelZ = data_point.as_float()
-
-                    elif field_name == SCALED_ACCEL_FIELD:
-                        # Scaled acceleration data
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.scaledAccelX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.scaledAccelY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.scaledAccelZ = data_point.as_float()
-
-                    elif (
-                        field_name == SCALED_AMBIENT_PRESSURE_FIELD
-                        and qualifier == AMBIENT_PRESSURE_QUALIFIER
-                    ):
-                        # Scaled ambient pressure data
-                        imu_data_packet.scaledAmbientPressure = data_point.as_float()
-
-                    elif field_name == SCALED_GYRO_FIELD:
-                        # Scaled gyroscope data
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.scaledGyroX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.scaledGyroY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.scaledGyroZ = data_point.as_float()
-
-                    elif field_name == EST_ANGULAR_RATE_FIELD:
-                        # Estimated angular rate
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.estAngularRateX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.estAngularRateY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.estAngularRateZ = data_point.as_float()
-
-                    elif (
-                        field_name == EST_ATTITUDE_UNCERT_FIELD
-                        and qualifier == ATTITUDE_UNCERT_QUALIFIER
-                    ):
-                        # Estimated attitude uncertainty quaternion
-                        matrix = data_point.as_Matrix()
-                        imu_data_packet.estAttitudeUncertQuaternionW = matrix.as_floatAt(0, 0)
-                        imu_data_packet.estAttitudeUncertQuaternionX = matrix.as_floatAt(0, 1)
-                        imu_data_packet.estAttitudeUncertQuaternionY = matrix.as_floatAt(0, 2)
-                        imu_data_packet.estAttitudeUncertQuaternionZ = matrix.as_floatAt(0, 3)
-
-                    elif field_name == EST_COMPENSATED_ACCEL_FIELD:
-                        # Estimated compensated acceleration
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.estCompensatedAccelX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.estCompensatedAccelY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.estCompensatedAccelZ = data_point.as_float()
-
-                    elif field_name == EST_GRAVITY_VECTOR_FIELD:
-                        # Estimated gravity vector
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.estGravityVectorX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.estGravityVectorY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.estGravityVectorZ = data_point.as_float()
-
-                    elif field_name == EST_LINEAR_ACCEL_FIELD:
-                        # Estimated linear acceleration
-                        if qualifier == X_QUALIFIER:
-                            imu_data_packet.estLinearAccelX = data_point.as_float()
-                        elif qualifier == Y_QUALIFIER:
-                            imu_data_packet.estLinearAccelY = data_point.as_float()
-                        elif qualifier == Z_QUALIFIER:
-                            imu_data_packet.estLinearAccelZ = data_point.as_float()
-
-                    elif (
-                        field_name == EST_ORIENT_QUATERNION_FIELD
-                        and qualifier == ATTITUDE_UNCERT_QUALIFIER
-                    ):
-                        # Estimated orientation quaternion
-                        matrix = data_point.as_Matrix()
-                        imu_data_packet.estOrientQuaternionW = matrix.as_floatAt(0, 0)
-                        imu_data_packet.estOrientQuaternionX = matrix.as_floatAt(0, 1)
-                        imu_data_packet.estOrientQuaternionY = matrix.as_floatAt(0, 2)
-                        imu_data_packet.estOrientQuaternionZ = matrix.as_floatAt(0, 3)
-
-                    elif (
-                        field_name == EST_PRESSURE_ALT_FIELD and qualifier == PRESSURE_ALT_QUALIFIER
-                    ):
-                        # Estimated pressure altitude
-                        imu_data_packet.estPressureAlt = data_point.as_float()
-
-                    # Check if the data point is invalid and update the invalid fields list.
-                    if not data_point.valid():
-                        if imu_data_packet.invalid_fields is None:
-                            imu_data_packet.invalid_fields = []
-                        imu_data_packet.invalid_fields.append(data_point.channelName())
 
                     # Unused channels include: `gpsCorrelTimestamp(Tow,WeekNum,Flags)`,
                     # `estFilterGpsTimeTow`, `estFilterGpsTimeWeekNum`. But we

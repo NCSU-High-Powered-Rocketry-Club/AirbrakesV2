@@ -1,5 +1,6 @@
 """Module to test the main script."""
 
+import platform
 import sys
 import time
 from functools import partial
@@ -24,7 +25,7 @@ from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import IMUDataProcessor
+from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
@@ -66,34 +67,33 @@ def parsed_args(request, monkeypatch):
     return arg_parser()
 
 
-@pytest.mark.skipif(sys.platform == "arm64", reason="This test is not supported on arm64.")
+@pytest.mark.skipif(platform.machine() in ("arm64", "aarch64"), reason="arm64 ServoKit import fail")
 @pytest.mark.parametrize(
     "parsed_args",
     [
         (["main.py", "real"]),
+        (["main.py", "real", "-s"]),
+        (["main.py", "real", "-c"]),
+        (["main.py", "real", "-s", "-c"]),
         (["main.py", "mock"]),
-        (["main.py", "mock", "-r"]),
-        (["main.py", "mock", "-r", "-c"]),
-        (["main.py", "mock", "-r", "-c", "-l"]),
-        (["main.py", "mock", "-r", "-c", "-l", "-f"]),
-        (["main.py", "mock", "-r", "-c", "-l", "-f", "-p", "launch_data/something"]),
-        (
-            [
-                "main.py",
-                "sim",
-                "sub-scale",
-                "-r",
-            ]
-        ),
+        (["main.py", "mock", "-s"]),
+        (["main.py", "mock", "-s", "-c"]),
+        (["main.py", "mock", "-s", "-c", "-l"]),
+        (["main.py", "mock", "-s", "-c", "-l", "-f"]),
+        (["main.py", "mock", "-s", "-c", "-l", "-f", "-p", "launch_data/interest_launch.csv"]),
+        (["main.py", "sim", "sub-scale", "-s"]),
     ],
     ids=[
-        "real flight",
-        "mock",
+        "real flight default (all real)",
+        "real with mock servo",
+        "real with mock camera",
+        "real with mock servo and camera",
+        "mock default (all mock)",
         "mock with real servo",
         "mock with real servo and camera",
-        "mock with real servo, camera and log file kept",
-        "mock with real servo, camera, log file kept and fast replay",
-        "mock with real servo, camera, log file kept, fast replay and specific launch file",
+        "mock with real servo, camera, and log file kept",
+        "mock with real servo, camera, log file kept, and fast replay",
+        "mock with real servo, camera, log file kept, fast replay, and specific launch file",
         "sim with real servo",
     ],
     indirect=True,
@@ -103,41 +103,45 @@ def test_create_components(parsed_args, monkeypatch):
 
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
+    def mock_servo__init__(self, *args, **kwargs):
+        """Mock the __init__ of the airbrakes Servo class. Because the import of LGPIOFactory
+        fails on non-raspberry pi devices, we need to mock the Servo class."""
+
     monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
+    monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
+
     created_components = create_components(parsed_args)
 
     assert len(created_components) == 6
     assert isinstance(created_components[-1], ApogeePredictor)
-    assert isinstance(created_components[-2], IMUDataProcessor)
+    assert isinstance(created_components[-2], DataProcessor)
 
-    if parsed_args.mode in ("mock", "sim"):
-        if parsed_args.mode == "mock":
-            assert type(created_components[1]) is MockIMU
-
-            if parsed_args.path:
-                assert created_components[1]._log_file_path == parsed_args.path
-            else:
-                # First file in the launch_data directory:
-                assert "launch_data" in str(created_components[1]._log_file_path)
-
-        else:  # sim
-            assert type(created_components[1]) is SimIMU
-
-        if parsed_args.fast_replay:
-            assert not created_components[1]._data_fetch_process._args[1]
+    if parsed_args.mode == "real":
+        # Servo: real by default, mock if --mock-servo is set
+        if parsed_args.mock_servo:
+            assert type(created_components[0]) is MockServo
+            assert isinstance(
+                created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
+            )
         else:
-            assert created_components[1]._data_fetch_process._args[1]
+            assert type(created_components[0]) is Servo
 
-        # check if the real camera is created:
-        if parsed_args.real_camera:
-            assert type(created_components[2]) is Camera
-        else:
+        # IMU: always real in real mode (no option to mock it)
+        assert type(created_components[1]) is IMU
+
+        # Camera: real by default, mock if --mock-camera is set
+        if parsed_args.mock_camera:
             assert type(created_components[2]) is MockCamera
+        else:
+            assert type(created_components[2]) is Camera
 
-        # This particular test case is bad, I'm not testing whether our pin factory is PiGPIO or not
-        # since I don't want to run the constructor of that class, which errors out.
-        # TODO: Use a magic mock?
+        # Logger: always real in real mode
+        assert type(created_components[3]) is Logger
+
+    elif parsed_args.mode in ("mock", "sim"):
+        # Servo: mock by default, real if --real-servo is set
+        # TODO: Maybe use MagicMock?
         if parsed_args.real_servo:
             assert type(created_components[0]) is Servo
         else:
@@ -146,19 +150,35 @@ def test_create_components(parsed_args, monkeypatch):
                 created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
             )
 
-        # A mock logger object is always created:
+        # IMU: mock or sim-specific, no real IMU option anymore
+        if parsed_args.mode == "mock":
+            assert type(created_components[1]) is MockIMU
+            if parsed_args.path:
+                assert created_components[1]._log_file_path == parsed_args.path
+            else:
+                # First file in the launch_data directory:
+                assert "launch_data" in str(created_components[1]._log_file_path)
+        else:  # sim
+            assert type(created_components[1]) is SimIMU
+
+        # Fast replay check
+        if parsed_args.fast_replay:
+            assert not created_components[1]._data_fetch_process._args[0]
+        else:
+            assert created_components[1]._data_fetch_process._args[0]
+
+        # Camera: mock by default, real if --real-camera is set
+        if parsed_args.real_camera:
+            assert type(created_components[2]) is Camera
+        else:
+            assert type(created_components[2]) is MockCamera
+
+        # Logger: always mock in mock/sim, with keep_log_file option
         assert type(created_components[3]) is MockLogger
         if parsed_args.keep_log_file:
             assert created_components[3]._delete_log_file is False
         else:
             assert created_components[3]._delete_log_file is True
-
-    # Real hardware components:
-    else:
-        assert type(created_components[1]) is IMU
-        assert type(created_components[0]) is Servo
-        assert type(created_components[2]) is Camera
-        assert type(created_components[3]) is Logger
 
 
 def test_run_real_flight(monkeypatch):
