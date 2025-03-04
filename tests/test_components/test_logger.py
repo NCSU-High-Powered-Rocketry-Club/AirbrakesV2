@@ -10,7 +10,12 @@ import faster_fifo
 import pytest
 from msgspec.structs import asdict
 
-from airbrakes.constants import IDLE_LOG_CAPACITY, LOG_BUFFER_SIZE, STOP_SIGNAL
+from airbrakes.constants import (
+    IDLE_LOG_CAPACITY,
+    LOG_BUFFER_SIZE,
+    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+    STOP_SIGNAL,
+)
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
@@ -833,10 +838,22 @@ class TestLogger:
     @pytest.mark.parametrize(
         ("num_packets", "expected_flush_calls", "expected_lines_in_file"),
         [
-            (19, 0, 0),  # Below threshold, no flush
-            (20, 1, 20),  # At threshold, one flush
-            (25, 1, 20),  # Above threshold, still one flush
-            (40, 2, 40),  # Two flush cycles
+            (NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING - 1, 0, 0),  # Below threshold, no flush
+            (
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+                1,
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # At threshold, one flush
+            (
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING + 5,
+                1,
+                NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # Above threshold, still one flush
+            (
+                2 * NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+                2,
+                2 * NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
+            ),  # Two flush cycles
         ],
         ids=[
             "below_flush_threshold",
