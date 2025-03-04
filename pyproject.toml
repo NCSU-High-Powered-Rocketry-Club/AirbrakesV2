@@ -86,6 +86,7 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 [tool.pytest.ini_options]
 filterwarnings = [
     "error",  # treat warnings as errors
+    "ignore:Could not import LGPIOFactory",  # ignore warning about LGPIO
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
     "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit

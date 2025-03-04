@@ -34,14 +34,6 @@ LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
-# TODO: Fix this so --collect
-def pytest_ignore_collect(collection_path, config):
-    # Check if the architecture is ARM64 (e.g., 'aarch64')
-    # if platform.machine() in ("aarch64", "arm64"):
-    # Ignore test_main.py on ARM64
-    return collection_path.name == "test_main.py"
-
-
 def pytest_collection_modifyitems(config, items):
     marker = "imu_benchmark"
     marker_expr = config.getoption("-m", None)
@@ -180,6 +172,10 @@ def target_altitude(request):
         return 413.0  # actual apogee was about 462m
     if launch_name == "legacy_launch_1":
         return 580.0  # actual apogee was about 631.14m
+    # Airbrakes actually deployed on this flight, and we had set an apogee higher than the actual
+    # apogee achieved because of the airbrakes.
+    if launch_name == "pelicanator_launch_1":
+        return 1218.9  # actual apogee was about 1208.9m
     return 1000.0  # Default altitude
 
 

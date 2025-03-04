@@ -1,11 +1,14 @@
 """Module which contains the Servo class, representing a servo motor that controls the extension of
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
-import gpiozero
-from adafruit_servokit import ServoKit
+import contextlib
+import warnings
 
-# This library can only be imported on the raspberry pi.
-from gpiozero.pins.lgpio import LGPIOFactory as Factory
+import gpiozero
+
+# This import fails on non raspberry pi devices running arm architecture
+with contextlib.suppress(AttributeError):
+    from adafruit_servokit import ServoKit
 
 from airbrakes.constants import (
     SERVO_MAX_ANGLE,
@@ -44,6 +47,7 @@ class Servo(BaseServo):
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
         connected to.
         """
+
         # Setup the Bonnet servo kit. This contains the servos that control the airbrakes.
         pca_9685 = ServoKit(channels=16)
         # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
@@ -54,6 +58,13 @@ class Servo(BaseServo):
         servo_2.set_pulse_width_range(SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH)
         servo_1.actuation_range = SERVO_MAX_ANGLE
         servo_2.actuation_range = SERVO_MAX_ANGLE
+
+        # This library can only be imported on the raspberry pi. It's why the import is here.
+        try:
+            from gpiozero.pins.lgpio import LGPIOFactory as Factory
+        except (ImportError, RuntimeError):
+            warnings.warn("Could not import LGPIOFactory. Using MockFactory instead.", stacklevel=2)
+            from gpiozero.pins.mock import MockFactory as Factory
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.

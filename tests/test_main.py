@@ -1,5 +1,6 @@
 """Module to test the main script."""
 
+import platform
 import sys
 import time
 from functools import partial
@@ -66,7 +67,7 @@ def parsed_args(request, monkeypatch):
     return arg_parser()
 
 
-@pytest.mark.skipif(sys.platform == "arm64", reason="This test is not supported on arm64.")
+@pytest.mark.skipif(platform.machine() in ("arm64", "aarch64"), reason="arm64 ServoKit import fail")
 @pytest.mark.parametrize(
     "parsed_args",
     [
