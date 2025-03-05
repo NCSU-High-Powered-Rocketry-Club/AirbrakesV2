@@ -189,6 +189,13 @@ class AirbrakesContext:
         """
         self.servo.set_retracted()
 
+    def start_velocity_calibration(self) -> None:
+        """
+        Because we integrate for velocity, error can accumulate. This function starts the
+        calibration process for velocity.
+        """
+        self.data_processor.start_storing_altitude_data()
+
     def predict_apogee(self) -> None:
         """
         Predicts the apogee of the rocket based on the current processed data. This
@@ -197,7 +204,6 @@ class AirbrakesContext:
         # Once we start predicting apogee, we also want to start our quadratic fit for our altitude
         # which we will then differentiate. This is because we need to have accurate velocity to
         # predict apogee.
-        self.data_processor.store_altitude_data = True
 
         # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.

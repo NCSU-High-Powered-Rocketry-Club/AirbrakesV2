@@ -32,9 +32,9 @@ class DataProcessor:
         "_previous_altitude_data_points",
         "_previous_vertical_velocity",
         "_rotated_accelerations",
+        "_store_altitude_data",
         "_time_differences",
         "_vertical_velocities",
-        "store_altitude_data",
     )
 
     def __init__(self):
@@ -58,7 +58,7 @@ class DataProcessor:
         self._integrating_for_altitude = False
         # This a list of tuples with (timestamp in seconds, altitude)
         self._previous_altitude_data_points: list[tuple[float, float]] = []
-        self.store_altitude_data = False
+        self._store_altitude_data = False
 
     def __str__(self) -> str:
         return (
@@ -159,7 +159,7 @@ class DataProcessor:
         self._current_altitudes = self._calculate_current_altitudes()
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
 
-        if self.store_altitude_data:
+        if self._store_altitude_data:
             # Stores the altitude data points for the quadratic fit
             self._previous_altitude_data_points.append(
                 (convert_ns_to_s(self.current_timestamp), self.current_altitude)
@@ -185,6 +185,12 @@ class DataProcessor:
             for i in range(len(self._data_packets))
         ]
 
+    def start_storing_altitude_data(self) -> None:
+        """
+        Starts storing altitude data for the purpose of calibrating the velocity.
+        """
+        self._store_altitude_data = True
+
     def prepare_for_extending_airbrakes(self) -> None:
         """
         When we extend the airbrakes, it messes with the pressure sensor which messes up the
@@ -192,27 +198,37 @@ class DataProcessor:
         strong acceleration from the motor burn. Because of these things, this function makes the
         data processor start integrating for altitude and "calibrates" the velocity.
         """
-        self.store_altitude_data = False
+        self._store_altitude_data = False
         self._integrating_for_altitude = True
 
         if len(self._previous_altitude_data_points) > 0:
             # First we have to only keep the data points with unique altitudes
-            unique_time_stamps = [self._previous_altitude_data_points[0][0]]
-            unique_altitudes = [self._previous_altitude_data_points[1][0]]
-            for time_stamp, altitude in self._previous_altitude_data_points:
-                if altitude != unique_altitudes[-1]:
-                    unique_time_stamps.append(time_stamp)
-                    unique_altitudes.append(altitude)
+            data = np.array(self._previous_altitude_data_points)
+            # Makes numpy arrays
+            timestamps = data[:, 0]
+            altitudes = data[:, 1]
 
-            # Now we fit a quadratic curve to the data points
-            coeffs = np.polyfit(unique_time_stamps, unique_altitudes, 2)
+            # Create a boolean mask that keeps the first point and every point where the altitude
+            # changes. Basically we're just keeping the points with unique altitudes.
+            mask = np.concatenate(([True], altitudes[1:] != altitudes[:-1]))
+            unique_timestamps = timestamps[mask]
+            unique_altitudes = altitudes[mask]
+
+            # Makes it so the first timestamp is 0 so the polyfit doesn't shit itself
+            first_timestamp = unique_timestamps[0]
+            shifted_timestamps = unique_timestamps - first_timestamp
+
+            # Fit a quadratic curve using the shifted timestamps
+            coeffs = np.polyfit(shifted_timestamps, unique_altitudes, 2)
             altitude_fit = np.poly1d(coeffs)
             velocity_fit = altitude_fit.deriv()
 
             # This resets the vertical velocity to the value of the derivative of the quadratic
             # fit at the current time. We do this because the velocity data could have accumulated
             # error due to the strong acceleration from the motor burn.
-            self._previous_vertical_velocity = velocity_fit(convert_ns_to_s(self.current_timestamp))
+            self._previous_vertical_velocity = velocity_fit(
+                convert_ns_to_s(self.current_timestamp) - first_timestamp
+            )
 
     def _first_update(self) -> None:
         """
