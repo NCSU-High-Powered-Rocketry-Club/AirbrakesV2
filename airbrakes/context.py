@@ -187,6 +187,7 @@ class AirbrakesContext:
         """
         Retracts the air brakes to the minimum extension.
         """
+        self.data_processor.prepare_for_retracting_airbrakes()
         self.servo.set_retracted()
 
     def start_velocity_calibration(self) -> None:
@@ -201,10 +202,6 @@ class AirbrakesContext:
         Predicts the apogee of the rocket based on the current processed data. This
         should only be called in the coast state, before we start controlling the air brakes.
         """
-        # Once we start predicting apogee, we also want to start our quadratic fit for our altitude
-        # which we will then differentiate. This is because we need to have accurate velocity to
-        # predict apogee.
-
         # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:

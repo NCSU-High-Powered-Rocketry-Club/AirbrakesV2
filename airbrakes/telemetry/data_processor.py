@@ -7,6 +7,7 @@ from scipy.spatial.transform import Rotation as R
 from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
+    SECONDS_UNTIL_PRESSURE_STABILIZATION,
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -32,6 +33,7 @@ class DataProcessor:
         "_previous_altitude",
         "_previous_altitude_data_points",
         "_previous_vertical_velocity",
+        "_retraction_timestamp",
         "_rotated_accelerations",
         "_store_altitude_data",
         "_time_differences",
@@ -61,6 +63,7 @@ class DataProcessor:
         # This a list of tuples with (timestamp in seconds, altitude)
         self._previous_altitude_data_points: list[tuple[float, float]] = []
         self._store_altitude_data = False
+        self._retraction_timestamp = 0
 
     def __str__(self) -> str:
         return (
@@ -232,6 +235,14 @@ class DataProcessor:
                 convert_ns_to_s(self.current_timestamp) - first_timestamp
             )
 
+    def prepare_for_retracting_airbrakes(self) -> None:
+        """
+        After we retract airbrakes, we want to switch back to using pressure altitude, but we need
+        to wait a little bit of time for the pressure to stabilize.
+        """
+        self._integrating_for_altitude = False
+        self._retraction_timestamp = self.current_timestamp
+
     def _first_update(self) -> None:
         """
         Sets up the initial values for the data processor. This includes setting the initial
@@ -271,7 +282,11 @@ class DataProcessor:
         # While the airbrakes are extended, we integrate acceleration for the altitude rather than
         # using the pressure sensor data. This is because the pressure sensor data is unreliable
         # when the airbrakes are extended as the pressure gets fucky
-        if self._integrating_for_altitude:
+        if self._integrating_for_altitude or (
+            not self._integrating_for_altitude
+            and convert_ns_to_s(self.current_timestamp - self._retraction_timestamp)
+            > SECONDS_UNTIL_PRESSURE_STABILIZATION
+        ):
             # Integrate the vertical velocities to get altitudes:
             # Start with the previous altitude and add the cumulative sum of (velocity * dt).
             altitudes = self._previous_altitude + np.cumsum(
