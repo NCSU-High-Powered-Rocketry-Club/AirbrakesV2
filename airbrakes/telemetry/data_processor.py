@@ -285,7 +285,7 @@ class DataProcessor:
         if self._integrating_for_altitude or (
             not self._integrating_for_altitude
             and convert_ns_to_s(self.current_timestamp - self._retraction_timestamp)
-            > SECONDS_UNTIL_PRESSURE_STABILIZATION
+            < SECONDS_UNTIL_PRESSURE_STABILIZATION
         ):
             # Integrate the vertical velocities to get altitudes:
             # Start with the previous altitude and add the cumulative sum of (velocity * dt).
