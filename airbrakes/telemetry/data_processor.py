@@ -29,6 +29,7 @@ class DataProcessor:
         "_last_data_packet",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_previous_altitude",
         "_previous_altitude_data_points",
         "_previous_vertical_velocity",
         "_rotated_accelerations",
@@ -45,6 +46,7 @@ class DataProcessor:
         some of these values.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
+        self._previous_altitude: np.float64 = np.float64(0.0)
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
@@ -262,16 +264,32 @@ class DataProcessor:
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the current altitudes, by zeroing out the initial altitude.
+        Calculates the current altitudes, by zeroing out the initial altitude. It either uses the
+        altitude from the pressure sensor, or integrates acceleration for the altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
+        # While the airbrakes are extended, we integrate acceleration for the altitude rather than
+        # using the pressure sensor data. This is because the pressure sensor data is unreliable
+        # when the airbrakes are extended as the pressure gets fucky
+        if self._integrating_for_altitude:
+            # Integrate the vertical velocities to get altitudes:
+            # Start with the previous altitude and add the cumulative sum of (velocity * dt).
+            altitudes = self._previous_altitude + np.cumsum(
+                self._vertical_velocities * self._time_differences
+            )
+        else:
+            altitudes = np.array(
+                [
+                    data_packet.estPressureAlt - self._initial_altitude
+                    for data_packet in self._data_packets
+                ],
+            )
+
+        # Update the stored previous altitude for the next calculation.
+        self._previous_altitude = altitudes[-1]
+
         # Get the pressure altitudes from the data points and zero out the initial altitude
-        return np.array(
-            [
-                data_packet.estPressureAlt - self._initial_altitude
-                for data_packet in self._data_packets
-            ],
-        )
+        return altitudes
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
