@@ -176,28 +176,6 @@ class AirbrakesContext:
             self.apogee_predictor_data_packets,
         )
 
-    def extend_airbrakes(self) -> None:
-        """
-        Extends the air brakes to the maximum extension.
-        """
-        self.servo.set_extended()
-
-    def retract_airbrakes(self) -> None:
-        """
-        Retracts the air brakes to the minimum extension.
-        """
-        self.servo.set_retracted()
-
-    def predict_apogee(self) -> None:
-        """
-        Predicts the apogee of the rocket based on the current processed data. This
-        should only be called in the coast state, before we start controlling the air brakes.
-        """
-        # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
-        # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
-        if self.est_data_packets:
-            self.apogee_predictor.update(self.processor_data_packets)
-
     def generate_data_packets(self) -> None:
         """
         Generates the Context Data Packet and Servo Data Packet to be logged.
@@ -219,3 +197,42 @@ class AirbrakesContext:
             set_extension=str(self.servo.current_extension.value),
             encoder_position=self.servo.get_encoder_reading(),
         )
+
+    def extend_airbrakes(self) -> None:
+        """
+        Extends the air brakes to the maximum extension.
+        """
+        self.data_processor.prepare_for_extending_airbrakes()
+        self.servo.set_extended()
+
+    def retract_airbrakes(self) -> None:
+        """
+        Retracts the air brakes to the minimum extension.
+        """
+        self.servo.set_retracted()
+
+    def switch_altitude_back_to_pressure(self) -> None:
+        """
+        Switches the altitude back to pressure, after airbrakes have been retracted.
+        """
+        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
+        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
+        # want this to be called every time.
+        self.data_processor.prepare_for_retracting_airbrakes()
+
+    def start_velocity_calibration(self) -> None:
+        """
+        Because we integrate for velocity, error can accumulate. This function starts the
+        calibration process for velocity.
+        """
+        self.data_processor.start_storing_altitude_data()
+
+    def predict_apogee(self) -> None:
+        """
+        Predicts the apogee of the rocket based on the current processed data. This
+        should only be called in the coast state, before we start controlling the air brakes.
+        """
+        # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
+        # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
+        if self.est_data_packets:
+            self.apogee_predictor.update(self.processor_data_packets)

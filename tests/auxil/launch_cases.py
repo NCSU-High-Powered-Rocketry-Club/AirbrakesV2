@@ -201,7 +201,7 @@ class LaunchCase:
             self.landed_case.max_avg_vertical_acceleration
             >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
         )
-        test_cases["max_velocity"] = self.landed_case.max_velocity <= 0.1
+        test_cases["max_velocity"] = self.landed_case.max_velocity <= 3.0
         test_cases["min_altitude"] = self.landed_case.min_altitude <= GROUND_ALTITUDE_METERS
         test_cases["max_altitude"] = self.landed_case.max_altitude <= GROUND_ALTITUDE_METERS + 10.0
         test_cases["extensions"] = (

@@ -265,7 +265,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1218.16
+TARGET_APOGEE_METERS = 430
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.
@@ -296,6 +296,16 @@ LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 50.0
 """
 The acceleration in m/s^2 that the rocket must be above before we consider it to have landed. Upon
 landing, the rocket has a large spike in acceleration that is used to detect landing.
+"""
+
+# -------------------------------------------------------
+# Data Processor Configuration
+# -------------------------------------------------------
+
+SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
+"""
+After airbrakes retract, it takes some time for the pressure to stabilize. DataProcessor will wait
+this amount of time before switching back to using pressure altitude.
 """
 
 # -------------------------------------------------------
