@@ -113,8 +113,9 @@ LOGS_PATH = Path("logs")
 """The path of the folder to hold the log files in."""
 TEST_LOGS_PATH = Path("test_logs")
 """The path of the folder to hold the test log files in."""
-NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 100
-"""The number of lines we log before manually flushing the buffer."""
+NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 1000  # 1 second of data
+"""The number of lines we log before manually flushing the buffer and forcing the OS to write
+to the file."""
 
 STOP_SIGNAL = "STOP"
 """
