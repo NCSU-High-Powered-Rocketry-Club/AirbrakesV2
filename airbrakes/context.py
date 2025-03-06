@@ -215,6 +215,9 @@ class AirbrakesContext:
         """
         Switches the altitude back to pressure, after airbrakes have been retracted.
         """
+        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
+        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
+        # want this to be called every time.
         self.data_processor.prepare_for_retracting_airbrakes()
 
     def start_velocity_calibration(self) -> None:

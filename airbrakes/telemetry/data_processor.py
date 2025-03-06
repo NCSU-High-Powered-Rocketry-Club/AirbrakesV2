@@ -65,15 +65,6 @@ class DataProcessor:
         self._store_altitude_data = False
         self._retraction_timestamp: float | None = None
 
-    def __str__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"max_altitude={self.max_altitude}, "
-            f"current_altitude={self.current_altitude}, "
-            f"velocity={self.vertical_velocity}, "
-            f"max_velocity={self.max_vertical_velocity}, "
-        )
-
     @property
     def max_altitude(self) -> float:
         """
@@ -166,9 +157,10 @@ class DataProcessor:
 
         if self._store_altitude_data:
             # Stores the altitude data points for the quadratic fit
-            self._previous_altitude_data_points.append(
-                (convert_ns_to_s(self.current_timestamp), self.current_altitude)
-            )
+            for i, data_packet in enumerate(data_packets):
+                self._previous_altitude_data_points.append(
+                    (convert_ns_to_s(data_packet.timestamp), float(self._current_altitudes[i]))
+                )
 
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
