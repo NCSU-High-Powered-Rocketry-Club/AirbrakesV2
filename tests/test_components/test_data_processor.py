@@ -153,100 +153,139 @@ class TestDataProcessor:
         assert d.current_timestamp == 0
         assert d.average_vertical_acceleration == 0.0
 
-    def test_calculate_vertical_velocity(self, data_processor):
-        """Tests whether the vertical velocity is correctly calculated"""
+    @pytest.mark.parametrize(
+        ("initial_packets", "initial_expected", "subsequent_packets", "subsequent_expected"),
+        [
+            (
+                # Initial update packets (e.g. during interest launch)
+                [
+                    EstimatedDataPacket(
+                        2 * 1e9,
+                        estCompensatedAccelX=0,
+                        estCompensatedAccelY=0,
+                        estCompensatedAccelZ=70,
+                        estPressureAlt=106,
+                        estOrientQuaternionW=0.35,
+                        estOrientQuaternionX=-0.036,
+                        estOrientQuaternionY=-0.039,
+                        estOrientQuaternionZ=0.936,
+                        estGravityVectorX=0,
+                        estGravityVectorY=0,
+                        estGravityVectorZ=9.8,
+                        estAngularRateX=-0.17,
+                        estAngularRateY=0.18,
+                        estAngularRateZ=3.7,
+                    ),
+                    EstimatedDataPacket(
+                        2.1 * 1e9,
+                        estCompensatedAccelX=0,
+                        estCompensatedAccelY=0,
+                        estCompensatedAccelZ=-30,
+                        estPressureAlt=110,
+                        estAngularRateX=-0.8,
+                        estAngularRateY=0.05,
+                        estAngularRateZ=3.5,
+                    ),
+                    EstimatedDataPacket(
+                        2.2 * 1e9,
+                        estCompensatedAccelX=0,
+                        estCompensatedAccelY=0,
+                        estCompensatedAccelZ=-10,
+                        estPressureAlt=123,
+                        estAngularRateX=-0.08,
+                        estAngularRateY=-0.075,
+                        estAngularRateZ=3.4,
+                    ),
+                ],
+                # Expected results after the initial update:
+                {
+                    "prev_vertical_velocity": 1.971628,
+                    "vertical_velocities_length": 3,
+                    "max_equals_vertical": True,
+                    # _max_vertical_velocity equals vertical_velocity
+                },
+                # Subsequent update packets (simulating falling)
+                [
+                    EstimatedDataPacket(
+                        5 * 1e9,
+                        estCompensatedAccelX=0,
+                        estCompensatedAccelY=0,
+                        estCompensatedAccelZ=30,
+                        estPressureAlt=24,
+                        estAngularRateX=0.01,
+                        estAngularRateY=0.02,
+                        estAngularRateZ=0.03,
+                    ),
+                    EstimatedDataPacket(
+                        6 * 1e9,
+                        estCompensatedAccelX=6,
+                        estCompensatedAccelY=7,
+                        estCompensatedAccelZ=8,
+                        estPressureAlt=25,
+                        estAngularRateX=0.01,
+                        estAngularRateY=0.02,
+                        estAngularRateZ=0.03,
+                    ),
+                    EstimatedDataPacket(
+                        7 * 1e9,
+                        estCompensatedAccelX=0,
+                        estCompensatedAccelY=0,
+                        estCompensatedAccelZ=5,
+                        estPressureAlt=26,
+                        estAngularRateX=0.01,
+                        estAngularRateY=0.02,
+                        estAngularRateZ=0.03,
+                    ),
+                ],
+                # Expected results after the subsequent update:
+                {
+                    "prev_vertical_velocity": -138.0245,
+                    "vertical_velocity": -138.0245,
+                    "vertical_velocities_length": 3,
+                    "max_greater": True,  # _max_vertical_velocity > vertical_velocity
+                },
+            ),
+            # Additional test cases can be added here as new tuples.
+        ],
+    )
+    def test_calculate_vertical_velocity(
+        self,
+        data_processor,
+        initial_packets,
+        initial_expected,
+        subsequent_packets,
+        subsequent_expected,
+    ):
+        """
+        Tests whether the vertical velocity is correctly calculated over two update phases.
+        """
         d = data_processor
+
+        # Assert initial conditions
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
         assert d._previous_vertical_velocity == 0
 
-        d.update(
-            [
-                # reference data is interest launch (very rounded data)
-                EstimatedDataPacket(
-                    2 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=70,
-                    estPressureAlt=106,
-                    estOrientQuaternionW=0.35,
-                    estOrientQuaternionX=-0.036,
-                    estOrientQuaternionY=-0.039,
-                    estOrientQuaternionZ=0.936,
-                    estGravityVectorX=0,
-                    estGravityVectorY=0,
-                    estGravityVectorZ=9.8,
-                    estAngularRateX=-0.17,
-                    estAngularRateY=0.18,
-                    estAngularRateZ=3.7,
-                ),
-                EstimatedDataPacket(
-                    2.1 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=-30,
-                    estPressureAlt=110,
-                    estAngularRateX=-0.8,
-                    estAngularRateY=0.05,
-                    estAngularRateZ=3.5,
-                ),
-                EstimatedDataPacket(
-                    2.2 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=-10,
-                    estPressureAlt=123,
-                    estAngularRateX=-0.08,
-                    estAngularRateY=-0.075,
-                    estAngularRateZ=3.4,
-                ),
-            ]
+        # Update with the initial packets.
+        d.update(initial_packets)
+        # Validate expected results after the first update.
+        assert d._previous_vertical_velocity == pytest.approx(
+            initial_expected["prev_vertical_velocity"]
         )
-        # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(1.971628)
-        assert len(d._vertical_velocities) == 3
-        assert d._max_vertical_velocity == d.vertical_velocity
+        assert len(d._vertical_velocities) == initial_expected["vertical_velocities_length"]
+        if initial_expected.get("max_equals_vertical", False):
+            assert d._max_vertical_velocity == d.vertical_velocity
 
-        # This tests that we are now falling (the accel is less than 9.8)
-        d.update(
-            [
-                EstimatedDataPacket(
-                    5 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=30,
-                    estPressureAlt=24,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
-                ),
-                EstimatedDataPacket(
-                    6 * 1e9,
-                    estCompensatedAccelX=6,
-                    estCompensatedAccelY=7,
-                    estCompensatedAccelZ=8,
-                    estPressureAlt=25,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
-                ),
-                EstimatedDataPacket(
-                    7 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=5,
-                    estPressureAlt=26,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
-                ),
-            ]
+        # Update with the subsequent packets (e.g. simulating a falling phase).
+        d.update(subsequent_packets)
+        # Validate expected results after the subsequent update.
+        assert d._previous_vertical_velocity == pytest.approx(
+            subsequent_expected["prev_vertical_velocity"]
         )
-        assert d._previous_vertical_velocity == pytest.approx(-138.0245)
-        assert d.vertical_velocity == pytest.approx(-138.0245)
-        assert len(d._vertical_velocities) == 3
-        # It's falling now so the max velocity should greater than the current velocity
-        assert d._max_vertical_velocity > d.vertical_velocity
+        assert d.vertical_velocity == pytest.approx(subsequent_expected["vertical_velocity"])
+        assert len(d._vertical_velocities) == subsequent_expected["vertical_velocities_length"]
+        if subsequent_expected.get("max_greater", False):
+            assert d._max_vertical_velocity > d.vertical_velocity
 
     def test_first_update_no_data_packets(self, data_processor):
         """Tests whether the update() method works correctly, when no data packets are passed."""
@@ -411,19 +450,23 @@ class TestDataProcessor:
     @pytest.mark.parametrize(
         ("packets", "expected_velocity"),
         [
-            # Test case 1: Using the function -(x-3)^2+9: (1,5), (2,8), (3,9)
+            # Test case 1: Using the function -(x-3)^2+9
             (
                 [(1.0, 5.0), (2.0, 8.0), (3.0, 9.0)],
                 0.0,
             ),
-            # You can add additional test cases here
-            # Example:
-            # (
-            #     [(1.0, 5.0), (2.0, 8.0), (3.0, 9.0), (4.0, 8.0)],
-            #     4,
-            #     5.0,
-            # ),
+            # Test case 2: Using the function -(x-5)^2+25
+            (
+                [(1.0, 10.0), (2.0, 17.0), (3.0, 22.0)],
+                4.0,
+            ),
+            # Test case 3: Using the function -(x-3)^2+9
+            (
+                [(1.0, 10.0), (2.0, 17.0), (3.0, 22.0), (7.0, 22.0)],
+                -4.0,
+            ),
         ],
+        ids=["vel at apogee", "vel before apogee", "vel after apogee"],
     )
     def test_velocity_calibration(self, data_processor, packets, expected_velocity):
         """
@@ -468,6 +511,103 @@ class TestDataProcessor:
         # After preparing for airbrakes, the vertical velocity should be reset to 0.
         d.prepare_for_extending_airbrakes()
         assert expected_velocity == pytest.approx(d._previous_vertical_velocity)
+
+    @pytest.mark.parametrize(
+        ("packets", "initial_altitude", "initial_velocity", "expected_altitudes"),
+        [
+            # Test case 1:
+            # Dummy packet at 1e9 ns, then two packets at 2e9 and 3e9.
+            # dt1 = 1.0 sec, dt2 = 1.0 sec.
+            # With a constant vertical velocity of 10 m/s,
+            # altitudes will be: [initial_altitude + 10*1, initial_altitude + 10*2]
+            (
+                [(2e9, -9.8, 105), (3e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 120.0],
+            ),
+            # Test case 2:
+            # Dummy packet at 1e9 ns, then three packets at 2e9, 2.5e9, and 3.5e9.
+            # dt1 = 1.0 sec, dt2 = 0.5 sec, dt3 = 1.0 sec.
+            # Altitude integration: [100+10*1, 100+10*1+10*0.5, 100+10*1+10*0.5+10*1]
+            # Expected altitudes: [110, 115, 125]
+            (
+                [(2e9, -9.8, 105), (2.5e9, -9.8, 105), (3.5e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 115.0, 125.0],
+            ),
+        ],
+    )
+    def test_calculate_altitude_integration(
+        self, data_processor, packets, initial_altitude, initial_velocity, expected_altitudes
+    ):
+        """
+        Tests whether altitude integration (using a simple Riemann sum of vertical velocity * dt)
+        is computed correctly when integrating for altitude is enabled.
+        """
+        d = data_processor
+
+        # Perform a dummy update to establish initial conditions.
+        # This avoids calling _first_update() during our test.
+        dummy_packet = EstimatedDataPacket(
+            timestamp=1e9,  # 1 second in ns
+            estCompensatedAccelX=0,
+            estCompensatedAccelY=0,
+            estCompensatedAccelZ=-9.8,  # so that rotated acceleration becomes 9.8 m/s²
+            estPressureAlt=100.0,
+            estOrientQuaternionW=1,
+            estOrientQuaternionX=0,
+            estOrientQuaternionY=0,
+            estOrientQuaternionZ=0,
+            estAngularRateX=0,
+            estAngularRateY=0,
+            estAngularRateZ=0,
+        )
+        d.update([dummy_packet])
+
+        # Set our known initial conditions.
+        d._previous_altitude = initial_altitude
+        d._previous_vertical_velocity = initial_velocity
+
+        # Force the altitude integration branch to run.
+        d._integrating_for_altitude = True
+
+        # Build new data packets based on the parameterized input.
+        # Each tuple is (timestamp, estCompensatedAccelZ, estPressureAlt).
+        # We use zero angular rates and identity orientation (quaternion = [1,0,0,0])
+        new_packets = []
+        for ts, accel_z, pressure_alt in packets:
+            new_packets.append(
+                EstimatedDataPacket(
+                    timestamp=ts,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=accel_z,
+                    estPressureAlt=pressure_alt,
+                    estOrientQuaternionW=1,
+                    estOrientQuaternionX=0,
+                    estOrientQuaternionY=0,
+                    estOrientQuaternionZ=0,
+                    estAngularRateX=0,
+                    estAngularRateY=0,
+                    estAngularRateZ=0,
+                )
+            )
+
+        # Update with the new packets.
+        d.update(new_packets)
+
+        # When integrating, the altitude is computed as:
+        #     altitude = previous_altitude + cumsum(vertical_velocity * dt)
+        # In our test, because the rotated acceleration comes out as 9.8 m/s²,
+        # deadband(9.8 - 9.8, ...) returns 0, so the vertical velocity remains constant.
+        # Thus, with a constant vertical velocity, altitude should increase linearly.
+        computed_altitudes = d._current_altitudes
+
+        # Compare each computed altitude with the expected value.
+        for computed, expected in zip(computed_altitudes, expected_altitudes, strict=False):
+            assert computed == pytest.approx(expected)
 
     def test_max_altitude(self, data_processor):
         """Tests whether the max altitude is correctly calculated even when altitude decreases"""
