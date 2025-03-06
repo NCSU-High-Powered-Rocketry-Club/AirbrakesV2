@@ -63,7 +63,7 @@ class DataProcessor:
         # This a list of tuples with (timestamp in seconds, altitude)
         self._previous_altitude_data_points: list[tuple[float, float]] = []
         self._store_altitude_data = False
-        self._retraction_timestamp = 0
+        self._retraction_timestamp: float | None = None
 
     def __str__(self) -> str:
         return (
@@ -283,7 +283,7 @@ class DataProcessor:
         # using the pressure sensor data. This is because the pressure sensor data is unreliable
         # when the airbrakes are extended as the pressure gets fucky
         if self._integrating_for_altitude or (
-            not self._integrating_for_altitude
+            self._retraction_timestamp is not None
             and convert_ns_to_s(self.current_timestamp - self._retraction_timestamp)
             < SECONDS_UNTIL_PRESSURE_STABILIZATION
         ):
