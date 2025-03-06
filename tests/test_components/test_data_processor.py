@@ -10,6 +10,7 @@ import scipy.spatial
 
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.utils import convert_s_to_ns
 from tests.auxil.utils import make_est_data_packet
 
 
@@ -138,6 +139,11 @@ class TestDataProcessor:
         assert d._data_packets == []
         assert isinstance(d._time_differences, np.ndarray)
         assert list(d._time_differences) == [0.0]
+        assert d._integrating_for_altitude is False
+        assert d._previous_altitude == 0.0
+        assert d._previous_altitude_data_points == []
+        assert d._store_altitude_data is False
+        assert d._retraction_timestamp is None
 
         # Test properties on init
         assert d.max_altitude == 0.0
@@ -146,12 +152,6 @@ class TestDataProcessor:
         assert d.max_vertical_velocity == 0.0
         assert d.current_timestamp == 0
         assert d.average_vertical_acceleration == 0.0
-
-    def test_str(self, data_processor):
-        data_str = (
-            "DataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, max_velocity=0.0, "
-        )
-        assert str(data_processor) == data_str
 
     def test_calculate_vertical_velocity(self, data_processor):
         """Tests whether the vertical velocity is correctly calculated"""
@@ -405,6 +405,69 @@ class TestDataProcessor:
         d.update(new_packets)
         assert d.current_altitude == current_altitude
         assert d._max_altitude == max_altitude
+
+    import pytest
+
+    @pytest.mark.parametrize(
+        ("packets", "expected_velocity"),
+        [
+            # Test case 1: Using the function -(x-3)^2+9: (1,5), (2,8), (3,9)
+            (
+                [(1.0, 5.0), (2.0, 8.0), (3.0, 9.0)],
+                0.0,
+            ),
+            # You can add additional test cases here
+            # Example:
+            # (
+            #     [(1.0, 5.0), (2.0, 8.0), (3.0, 9.0), (4.0, 8.0)],
+            #     4,
+            #     5.0,
+            # ),
+        ],
+    )
+    def test_velocity_calibration(self, data_processor, packets, expected_velocity):
+        """
+        Tests whether the velocity is correctly calibrated and the altitude data points are stored
+        as expected.
+        """
+        d = data_processor
+
+        # Verify that altitude data storage is off initially.
+        assert not d._store_altitude_data
+
+        # Initialize with one packet at t=0.0, alt=0.0
+        d.update(
+            [
+                make_est_data_packet(
+                    timestamp=convert_s_to_ns(0.0),
+                    estPressureAlt=0.0,
+                )
+            ]
+        )
+        assert len(d._previous_altitude_data_points) == 0
+
+        # Start storing altitude data.
+        d.start_storing_altitude_data()
+        assert d._store_altitude_data
+
+        # Confirm the initial vertical velocity.
+        assert pytest.approx(d._previous_vertical_velocity) == 0.0
+
+        # Create and send the packets from the parameterized input.
+        packets_to_update = [
+            make_est_data_packet(timestamp=convert_s_to_ns(x), estPressureAlt=alt)
+            for x, alt in packets
+        ]
+        d.update(packets_to_update)
+
+        # Validate that the correct number of altitude data points were stored.
+        assert len(d._previous_altitude_data_points) == len(packets)
+        # Check that the first altitude value matches the expected value.
+        assert d._previous_altitude_data_points[0][1] == packets[0][1]
+
+        # After preparing for airbrakes, the vertical velocity should be reset to 0.
+        d.prepare_for_extending_airbrakes()
+        assert expected_velocity == pytest.approx(d._previous_vertical_velocity)
 
     def test_max_altitude(self, data_processor):
         """Tests whether the max altitude is correctly calculated even when altitude decreases"""

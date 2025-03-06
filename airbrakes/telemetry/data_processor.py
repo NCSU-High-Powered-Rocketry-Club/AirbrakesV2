@@ -198,7 +198,7 @@ class DataProcessor:
         self._store_altitude_data = False
         self._integrating_for_altitude = True
 
-        if len(self._previous_altitude_data_points) > 0:
+        if len(self._previous_altitude_data_points) >= 3:
             # First we have to only keep the data points with unique altitudes
             data = np.array(self._previous_altitude_data_points)
             # Makes numpy arrays
