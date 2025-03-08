@@ -177,9 +177,8 @@ class FlightDisplay:
 
         # Wait till we processed a data packet. This is to prevent the display from updating
         # before we have any data to display.
-        while True:
-            if self._context.data_processor._last_data_packet and self._context.context_data_packet:
-                break
+        while not self._context.data_processor._last_data_packet:
+            pass
 
         # Update the display as long as the program is running:
         while self._running:
