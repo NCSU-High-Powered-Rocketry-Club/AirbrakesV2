@@ -18,7 +18,8 @@ from tests.auxil.launch_cases import (
     GenesisLaunchCase,
     InterestLaunchCase,
     LegacyLaunchCase,
-    PelicanatorLaunchCase,
+    PelicanatorLaunchCase1,
+    PelicanatorLaunchCase2,
     PurpleLaunchCase,
     StateInformation,
 )
@@ -61,7 +62,9 @@ class TestIntegration:
         elif launch_name == "interest_launch":
             launch_case = InterestLaunchCase
         elif launch_name == "pelicanator_launch_1":
-            launch_case = PelicanatorLaunchCase
+            launch_case = PelicanatorLaunchCase1
+        elif launch_name == "pelicanator_launch_2":
+            launch_case = PelicanatorLaunchCase2
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
