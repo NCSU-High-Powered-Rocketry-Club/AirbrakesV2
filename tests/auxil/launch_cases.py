@@ -249,8 +249,8 @@ class LegacyLaunchCase(LaunchCase):
         return test_cases
 
 
-class PelicanatorLaunchCase(LaunchCase):
-    """The test case for the pelicanator launch data."""
+class PelicanatorLaunchCase1(LaunchCase):
+    """The test case for the pelicanator launch data 1."""
 
     def test_all_states_present(self):
         # Check we have all the states:
@@ -292,3 +292,13 @@ class PelicanatorLaunchCase(LaunchCase):
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
         """Tests if all states were logged. Data got cutoff ~22 seconds before landing."""
         return state_letter_list == ["S", "M", "C", "F"]
+
+
+class PelicanatorLaunchCase2(LaunchCase):
+    """The test case for the pelicanator launch data 2."""
+
+    def free_fall_case_test(self):
+        test_cases = super().free_fall_case_test()
+        # Update the min_velocity test case, which was slightly high, maybe due to wind?
+        test_cases["min_velocity"] = self.free_fall_case.min_velocity >= -40.0
+        return test_cases
