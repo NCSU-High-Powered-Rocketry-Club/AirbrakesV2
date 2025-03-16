@@ -40,7 +40,7 @@
 
         - name: Run benchmarking tests
           run: |
-            uv run pytest --benchmark-only --benchmark-json output.json -v tests/
+            PYTHON_JIT=1 uv run pytest --benchmark-only --benchmark-json output.json -v tests/
 
         - name: Store benchmark result
           uses: benchmark-action/github-action-benchmark@v1
