@@ -258,7 +258,7 @@ pytest --cov=airbrakes --cov-report=term
 
 To performance test the code:
 ```bash
-pytest --benchmark-only
+pytest --benchmark-only --benchmark-save=name
 ```
 
 See the [pytest-benchmark documentation](https://pytest-benchmark.readthedocs.io/en/stable/) for more information.
