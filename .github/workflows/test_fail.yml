@@ -1,0 +1,33 @@
+  name: Test arm64 failure
+
+  on:
+    pull_request:
+      branches:
+        - '**'  # Matches all branch names, for PRs
+    push:
+      branches:
+        - 'main'  # Run tests on main branch
+
+  jobs:
+    pytest:
+      name: pytest
+      runs-on: ${{ matrix.os }}
+      timeout-minutes: 5
+      strategy:
+        matrix:
+          os: [ubuntu-24.04-arm]
+        fail-fast: False
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Install uv
+          uses: astral-sh/setup-uv@v5
+          with:
+            enable-cache: true
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version-file: "pyproject.toml"
+
+        - name: Install the project
+          run: uv pip -v install faster-fifo
