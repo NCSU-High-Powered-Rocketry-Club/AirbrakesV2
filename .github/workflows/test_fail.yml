@@ -30,4 +30,4 @@
             python-version-file: "pyproject.toml"
 
         - name: Install the project
-          run: uv pip -v install faster-fifo
+          run: uv pip -v install --system faster-fifo
