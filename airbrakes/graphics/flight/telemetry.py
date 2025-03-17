@@ -16,23 +16,27 @@ class DebugTelemetry(Static):
     """Collapsible panel for displaying debug telemetry data."""
 
     context: AirbrakesContext
-    imu_queue_size = reactive(0)
+    queued_imu_packets = reactive(0)
     cpu_usage = reactive("")
     state = var("Standby")
     apogee = var(0.0)
     apogee_convergence_time = reactive(0.0)
+    average_pitch = reactive(0.0)
+    average_acceleration = reactive(0.0)
     alt_at_convergence = reactive(0.0)
     apogee_at_convergence = reactive(0.0)
     log_buffer_size = reactive(0)
-    fetched_packets = reactive(0)
+    retrieved_packets = reactive(0)
     coast_start_time = 0
 
     def compose(self) -> ComposeResult:
-        yield Label("IMU Queue Size: ", id="imu_queue_size", expand=True)
+        yield Label("Average Pitch: ", id="average_pitch", expand=True)
+        yield Label("Average Accel: ", id="average_acceleration", expand=True)
+        yield Label("Queued packets: ", id="queued_imu_packets", expand=True)
         yield Label("Convergence Time: ", id="apogee_convergence_time")
         yield Label("Convergence Height: ", id="alt_at_convergence")
         yield Label("Pred. Ap. @ Conv: ", id="apogee_at_convergence")
-        yield Label("Fetched packets: ", id="fetched_packets", expand=True)
+        yield Label("Retrieved packets: ", id="retrieved_packets", expand=True)
         yield Label("Log buffer size: ", id="log_buffer_size")
         cpu_usage = CPUUsage(id="cpu_usage_widget")
         cpu_usage.border_title = "CPU Usage"
@@ -42,9 +46,9 @@ class DebugTelemetry(Static):
         self.context = context
         self.query_one(CPUUsage).initialize_widgets(context)
 
-    def watch_imu_queue_size(self) -> None:
-        imu_queue_size_label = self.query_one("#imu_queue_size", Label)
-        imu_queue_size_label.update(f"IMU Queue Size: {self.imu_queue_size}")
+    def watch_queued_imu_packets(self) -> None:
+        imu_queue_size_label = self.query_one("#queued_imu_packets", Label)
+        imu_queue_size_label.update(f"Queued packets: {self.queued_imu_packets}")
 
     def watch_state(self) -> None:
         if self.state == "CoastState":
@@ -76,15 +80,25 @@ class DebugTelemetry(Static):
         log_buffer_size_label = self.query_one("#log_buffer_size", Label)
         log_buffer_size_label.update(f"Log buffer size: {self.log_buffer_size} packets")
 
-    def watch_fetched_packets(self) -> None:
-        fetched_packets_label = self.query_one("#fetched_packets", Label)
-        fetched_packets_label.update(f"Fetched packets: {self.fetched_packets}")
+    def watch_retrieved_packets(self) -> None:
+        fetched_packets_label = self.query_one("#retrieved_packets", Label)
+        fetched_packets_label.update(f"Retrieved packets: {self.retrieved_packets}")
+
+    def watch_average_pitch(self) -> None:
+        average_pitch_label = self.query_one("#average_pitch", Label)
+        average_pitch_label.update(f"Average Pitch: {self.average_pitch:.2f}\u00b0")
+
+    def watch_average_acceleration(self) -> None:
+        average_accel_label = self.query_one("#average_acceleration", Label)
+        average_accel_label.update(f"Average Accel: {self.average_acceleration:.2f} m/s\u00b2")
 
     def update_debug_telemetry(self) -> None:
-        self.imu_queue_size = self.context.context_data_packet.queued_imu_packets
+        self.average_pitch = self.context.data_processor.average_pitch
+        self.average_acceleration = self.context.data_processor.average_vertical_acceleration
+        self.queued_imu_packets = self.context.context_data_packet.queued_imu_packets
+        self.retrieved_packets = self.context.context_data_packet.retrieved_imu_packets
         self.log_buffer_size = len(self.context.logger._log_buffer)
         self.apogee = self.context.last_apogee_predictor_packet.predicted_apogee
-        self.fetched_packets = len(self.context.imu_data_packets)
         self.state = self.context.state.name
 
 
