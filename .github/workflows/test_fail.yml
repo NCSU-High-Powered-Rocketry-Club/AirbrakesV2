@@ -30,7 +30,7 @@
             python-version-file: "pyproject.toml"
 
         - name: Install the project
-          run: uv pip -v install --no-cache --system faster-fifo
+          run: uvx --no-cache -v uv@0.6.5 pip install faster-fifo
 
         - name: Run python and import faster_fifo
           run: |
