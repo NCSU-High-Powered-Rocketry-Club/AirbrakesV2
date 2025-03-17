@@ -5,6 +5,51 @@
     # background: green;
 }
 
+#flight-header {
+    layout: grid;
+    overflow-y: auto;
+    grid-size: 3; /* 3 columns */
+    grid-rows: auto;
+    grid-gutter: 1;
+
+    #launch-file-name {
+        # background: black;
+        text-align: center;
+        width: 100%;
+    }
+
+    #normal-sim-time {
+        text-align: center;
+        width: 100%;
+    }
+
+    Button {
+        min-width: 0;
+        border: none;
+    }
+
+    #launch-clock {
+        # background: blue;
+        text-align: center;
+    }
+
+    #state {
+        align: left bottom;
+        content-align: left bottom;
+        text-align: center;
+        width: 100%;
+        # background: orange;
+    }
+
+    #sim-speed-panel {
+        max-height: 1;
+        # background: teal;
+        Horizontal {
+            align: center middle;
+        }
+    }
+}
+
 #flight-information-panel {
     layout: grid;
     grid-size: 3;  /* 3 columns */
@@ -26,7 +71,8 @@
         #cpu_usage_widget {
             layout: grid;
             border: solid;
-            grid-size: 5 3;
+            /* 4 Processes = 4 columns */
+            grid-size: 4 3;
             overflow: auto;
             grid-gutter: 1;
             grid-columns: 1fr;
@@ -69,49 +115,4 @@
 Placeholder {
     width: auto;
     height: auto;
-}
-
-
-#flight-header {
-    layout: grid;
-    overflow-y: auto;
-    grid-size: 3; /* 3 columns */
-    grid-rows: auto;
-    grid-gutter: 1;
-
-    #launch-file-name {
-        # background: black;
-        text-align: center;
-        width: 100%;
-    }
-
-    #normal-sim-time {
-        text-align: center;
-        width: 100%;
-    }
-
-    Button {
-        min-width: 0;
-        border: none;
-    }
-
-    #launch-clock {
-        # background: blue;
-        text-align: center;
-    }
-
-    #state {
-        align: left bottom;
-        content-align: left bottom;
-        text-align: center;
-        width: 100%;
-        # background: green;
-    }
-
-    #sim-speed-panel {
-        # background: green;
-        Horizontal {
-            align: center middle;
-        }
-    }
 }
