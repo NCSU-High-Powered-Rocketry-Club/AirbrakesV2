@@ -3,29 +3,22 @@
 import ast
 import contextlib
 import multiprocessing
-import sys
 import time
 import typing
 from pathlib import Path
 
 import msgspec
 import pandas as pd
-from pandas.io.parsers.readers import TextFileReader
-
-if sys.platform != "win32":
-    from faster_fifo import Queue
-else:
-    from functools import partial
-
-    from airbrakes.utils import get_all_from_queue
+from faster_fifo import Queue
 
 from airbrakes.constants import (
-    LOG_BUFFER_SIZE,
+    CHUNK_SIZE,
+    DEFAULT,
     MAX_FETCHED_PACKETS,
-    RAW_DATA_PACKET_SAMPLING_RATE,
+    MAX_QUEUE_SIZE,
     STOP_SIGNAL,
 )
-from airbrakes.hardware.base_imu import BaseIMU
+from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
@@ -33,12 +26,8 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 )
 from airbrakes.utils import convert_to_nanoseconds
 
-CHUNK_SIZE = LOG_BUFFER_SIZE + 1
-"""The size of the chunk to read from the log file at a time. This has 2 benefits. Less memory
-usage and faster initial read of the file."""
-
-DEFAULT = object()
-"""Default sentinel value for usecols in the read_csv method."""
+if typing.TYPE_CHECKING:
+    from pandas.io.parsers.readers import TextFileReader
 
 
 class MockIMU(BaseIMU):
@@ -63,15 +52,13 @@ class MockIMU(BaseIMU):
     ):
         """
         Initializes the object that pretends to be an IMU for testing purposes by reading from a
-        log file.
-
-        We don't call the parent constructor as the IMU class has different parameters, so we
-        manually start the process that fetches data from the log file
+            log file. We don't call the parent constructor as the IMU class has different
+            parameters, so we manually start the process that fetches data from the log file.
+        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
+            run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
-        :param real_time_replay: Whether to mimmick a real flight by sleeping for a set
-        period, or run at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         # Check if the launch data file exists:
         if log_file_path is None:
@@ -80,31 +67,18 @@ class MockIMU(BaseIMU):
             # `uvx --from git+... mock` on any machine from any state.
             root_dir = Path(__file__).parent.parent.parent
             log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
-        self._log_file_path: Path = typing.cast(Path, log_file_path)
-
-        self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
-        self._needed_fields = list(
-            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
-            & set(self._headers.columns)
-        )
-
-        file_metadata: dict = MockIMU.read_file_metadata()
-        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
 
         # If it's not a real time replay, we limit how big the queue gets when doing an integration
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-            data_queue: multiprocessing.Queue[IMUDataPacket] = multiprocessing.Queue(
-                maxsize=MAX_FETCHED_PACKETS
-            )
-
-            data_queue.get_many = partial(get_all_from_queue, data_queue)
-        else:
-            data_queue: Queue[IMUDataPacket] = Queue(maxsize=MAX_FETCHED_PACKETS)
+        msgpack_encoder = msgspec.msgpack.Encoder()
+        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
+        queued_imu_packets: Queue[IMUDataPacket] = Queue(
+            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
+        )
         # Starts the process that fetches data from the log file
         data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
@@ -112,26 +86,21 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
-        super().__init__(data_fetch_process, data_queue)
+        self._log_file_path: Path = typing.cast("Path", log_file_path)
+
+        self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
+        # Get the columns that are common between the data packet and the log file, since we only
+        # care about those (it's also faster to read few columns rather than all)
+        self._needed_fields = list(
+            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
+            & set(self._headers.columns)
+        )
+        file_metadata: dict = MockIMU.read_file_metadata()
+        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
+
+        super().__init__(data_fetch_process, queued_imu_packets)
 
         self._sim_speed_factor = multiprocessing.Value("d", real_time_replay)
-
-    def _read_csv(
-        self,
-        *,
-        start_index: int = 0,
-        usecols: list[str] | typing.Literal[DEFAULT] = DEFAULT,
-        **kwargs,
-    ) -> "pd.DataFrame | TextFileReader":
-        """Reads the csv file and returns it as a pandas DataFrame."""
-        return pd.read_csv(
-            self._log_file_path,
-            engine="c",
-            usecols=self._needed_fields if usecols is DEFAULT else usecols,
-            converters={"invalid_fields": MockIMU._convert_invalid_fields},
-            skiprows=range(1, start_index + 1),
-            **kwargs,
-        )
 
     @staticmethod
     def read_file_metadata() -> dict:
@@ -142,18 +111,43 @@ class MockIMU(BaseIMU):
         return msgspec.json.decode(metadata.read_text())
 
     @staticmethod
-    def _convert_invalid_fields(value) -> list:
+    def _convert_invalid_fields(value) -> list | None:
         """
         Convert invalid fields to Python objects or None.
         :param value: The value to convert.
-        :return: The converted value
+        :return: The converted value.
         """
         return None if not value else ast.literal_eval(value)  # Convert string to list
+
+    def _read_csv(
+        self,
+        *,
+        start_index: int = 0,
+        usecols: list[str] | object = DEFAULT,
+        **kwargs,
+    ) -> "pd.DataFrame | TextFileReader":
+        """Reads the csv file and returns it as a pandas DataFrame.
+
+        :param start_index: The index to start reading the file from. Must be a keyword argument.
+        :param usecols: The columns to read from the file. Must be a keyword argument.
+        :param kwargs: Additional keyword arguments to pass to pd.read_csv.
+
+        :return: The DataFrame or TextFileReader object.
+        """
+        # Read the csv, starting from the row after the log buffer, and using only the valid columns
+        return pd.read_csv(
+            self._log_file_path,
+            engine="c",
+            usecols=self._needed_fields if usecols is DEFAULT else usecols,
+            converters={"invalid_fields": MockIMU._convert_invalid_fields},
+            skiprows=range(1, start_index + 1),
+            memory_map=True,
+            **kwargs,
+        )
 
     def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
-        :param log_file_path: The path of the log file to read data from.
         :return: The index where the log buffer ends.
         """
         metadata_buffer_index: int | None = self.file_metadata["flight_data"]["log_buffer_index"]
@@ -180,18 +174,19 @@ class MockIMU(BaseIMU):
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
-        # Get the columns that are common between the data packet and the log file, since we only
-        # care about those
+        # Find the sampling rate of the raw data packets:
+        launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
+
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         # and chunk read the file because it's faster and memory efficient
         reader: TextFileReader = typing.cast(
-            TextFileReader,
+            "TextFileReader",
             self._read_csv(
                 start_index=start_index,
                 chunksize=CHUNK_SIZE,
             ),
         )
-        # Using pandas and itertuples to read the file:
+        # Iterate over the rows of the dataframe and put the data packets in the queue
         for chunk in reader:
             for row in chunk.itertuples(index=False):
                 start_time = time.time()
@@ -204,23 +199,25 @@ class MockIMU(BaseIMU):
 
                 # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is an
                 # estimated data packet
-                if row_dict.get("scaledAccelX"):
+                raw_packet = row_dict.get("scaledAccelX")
+                if raw_packet:
                     imu_data_packet = RawDataPacket(**row_dict)
-                else:
+                elif row_dict.get("estPressureAlt"):
                     imu_data_packet = EstimatedDataPacket(**row_dict)
+                else:
+                    continue
 
                 # Put the packet in the queue
-                self._data_queue.put(imu_data_packet)
+                self._queued_imu_packets.put(imu_data_packet)
 
                 # sleep only if we are running a real-time simulation
                 # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
                 # pretend to be real-time
-                if isinstance(imu_data_packet, RawDataPacket):
-                    # Simulate polling interval
-                    execution_time = time.time() - start_time
-                    sleep_time = max(0.0, RAW_DATA_PACKET_SAMPLING_RATE - execution_time)
+                if raw_packet:
                     sim_speed = self._sim_speed_factor.value
                     if sim_speed > 0:
+                        execution_time = time.time() - start_time
+                        sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
                         adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
                         time.sleep(adjusted_sleep_time)
                     else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
@@ -237,9 +234,9 @@ class MockIMU(BaseIMU):
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
             self._read_file(start_after_log_buffer)
-            # For the mock, once we're done reading the file, we say it is no longer running
-            self._running.value = False
-            self._data_queue.put(STOP_SIGNAL)
+        # For the mock, once we're done reading the file, we say it is no longer running
+        self._running.value = False
+        self._queued_imu_packets.put(STOP_SIGNAL)
 
     def get_launch_time(self) -> int:
         """Gets the launch time, from reading the csv file.

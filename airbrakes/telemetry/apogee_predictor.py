@@ -3,22 +3,13 @@
 import contextlib
 import multiprocessing
 import signal
-import sys
 from collections import deque
 from typing import Literal
 
 import msgspec
 import numpy as np
 import numpy.typing as npt
-
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-
-# If we are not on windows, we can use the faster_fifo library to speed up the queue operations
-if sys.platform != "win32":
-    from faster_fifo import Empty, Queue
-else:
-    from queue import Empty
-
+from faster_fifo import Empty, Queue
 from scipy.optimize import curve_fit
 
 from airbrakes.constants import (
@@ -32,24 +23,29 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     UNCERTAINTY_THRESHOLD,
 )
+from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.utils import modify_multiprocessing_queue_windows
+from airbrakes.utils import convert_unknown_type_to_float
 
 PREDICTED_COAST_TIMESTAMPS = np.arange(0, FLIGHT_LENGTH_SECONDS, INTEGRATION_TIME_STEP_SECONDS)
 
 
 class LookupTable(msgspec.Struct):
-    """The lookup table for the apogee predictor. This will store the respective velocities and
+    """
+    The lookup table for the apogee predictor. This will store the respective velocities and
     delta heights for the lookup table. Updated every time the curve fit is run, until it
-    converges."""
+    converges.
+    """
 
     velocities: npt.NDArray[np.float64] = np.array([0.0, 0.1])
     delta_heights: npt.NDArray[np.float64] = np.array([0.1, 0.1])
 
 
 class CurveCoefficients(msgspec.Struct):
-    """The curve coefficients for the apogee predictor. This will store the respective A and B
-    values for the curve fit function."""
+    """
+    The curve coefficients for the apogee predictor. This will store the respective A and B
+    values for the curve fit function.
+    """
 
     A: np.float64 = np.float64(0.0)
     B: np.float64 = np.float64(0.0)
@@ -57,10 +53,7 @@ class CurveCoefficients(msgspec.Struct):
 
 
 class ApogeePredictor:
-    """
-    Class that performs the calculations to predict the apogee of the rocket during flight, will
-    be used to determine servo extension. Will use multiprocessing in the future.
-    """
+    """Class that performs the calculations to predict the apogee of the rocket during flight."""
 
     __slots__ = (
         "_accelerations",
@@ -78,27 +71,16 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        if sys.platform == "win32":
-            # On Windows, we use a multiprocessing.Queue because the faster_fifo.Queue is not
-            # available on Windows
-
-            # This queue is for the data in
-            self._processor_data_packet_queue: multiprocessing.Queue[
-                list[ProcessorDataPacket] | Literal["STOP"]
-            ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
-            # This queue is for the data out
-            self._apogee_predictor_packet_queue: multiprocessing.Queue[
-                ApogeePredictorDataPacket
-            ] = multiprocessing.Queue()
-            modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
-        else:
-            self._processor_data_packet_queue: Queue[
-                list[ProcessorDataPacket] | Literal["STOP"]
-            ] = Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
-            self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES
-            )
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
+        msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
+            Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
+        )
+        self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+            dumps=msgpack_encoder.encode,
+            loads=msgpack_decoder.decode,
+        )
 
         self._prediction_process = multiprocessing.Process(
             target=self._prediction_loop, name="Apogee Prediction Process"
@@ -111,7 +93,7 @@ class ApogeePredictor:
         # list of all the dt's since motor burn out
         self._time_differences: deque[np.float64] = deque()
         self._current_altitude: np.float64 = np.float64(0.0)
-        self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the vertical axis
+        self._current_velocity: np.float64 = np.float64(0.0)  # Velocity in the upwards axis
         self._has_apogee_converged: bool = False
         self._initial_velocity = None
         self.lookup_table: LookupTable = LookupTable()
@@ -121,19 +103,21 @@ class ApogeePredictor:
     def is_running(self) -> bool:
         """
         Returns whether the prediction process is running.
+        :return: True if the process is running, False otherwise.
         """
         return self._prediction_process.is_alive()
 
     @property
     def processor_data_packet_queue_size(self) -> int:
         """
-        :return: The number of data packets in the processor data packet queue.
+        Gets the number of data packets in the processor data packet queue
+        :return: The number of ProcessorDataPacket in the processor data packet queue.
         """
         return self._processor_data_packet_queue.qsize()
 
     def start(self) -> None:
         """
-        Starts the prediction process. This is called before the main while loop starts.
+        Starts the prediction process. This is called before the main loop starts.
         """
         self._prediction_process.start()
 
@@ -149,14 +133,15 @@ class ApogeePredictor:
         """
         Updates the apogee predictor to include the most recent processor data packets. This method
         should only be called during the coast phase of the rocket's flight.
-
         :param processor_data_packets: A list of ProcessorDataPacket objects to add to the queue.
         """
         self._processor_data_packet_queue.put_many(processor_data_packets)
 
     def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
         """
-        Gets *all* the apogee prediction data packets from the queue. This operation is non-blocking
+        Gets *all* of the apogee prediction data packets from the queue. This operation is
+        non-blocking.
+        :return: A deque containing the latest IMU data packets from the packet queue.
         """
         total_packets = []
         # get_many doesn't actually get all of the packets, so we need to keep checking until
@@ -180,8 +165,8 @@ class ApogeePredictor:
 
     def _curve_fit(self) -> CurveCoefficients:
         """
-        Calculates the curve fit function of rotated compensated acceleration
-        Uses the function y = A(1-Bt)^4, where A and B are parameters being fit
+        Calculates the curve fit function of vertical direction of the acceleration. Uses the
+        function y = A(1-Bt)^4, where A and B are parameters being fit.
         :return: The CurveCoefficients class, containing the A and B values from curve fit function
         """
         # curve fit that returns popt: list of fitted parameters, and pcov: list of uncertainties
@@ -206,7 +191,7 @@ class ApogeePredictor:
         Curve fits the acceleration data and uses the curve fit to make a lookup table of velocity
         vs Δheight.
         :param: curve_coefficients: The CurveCoefficients class, containing the A and B values
-            from curve fit function.
+        from curve fit function.
         """
 
         # We need to store the velocity for when we start the prediction, so we can use it to
@@ -245,17 +230,10 @@ class ApogeePredictor:
     def _prediction_loop(self) -> None:
         """
         Responsible for fetching data packets, curve fitting, updating our lookup table, and
-        finally predicting the apogee.
-
-        Runs in a separate process.
+        finally predicting the apogee. Runs in a separate process.
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-
-        # Unfortunately, we need to modify the queue here again because the modifications made in
-        # the __init__ are not copied to the new process.
-        modify_multiprocessing_queue_windows(self._processor_data_packet_queue)
-        modify_multiprocessing_queue_windows(self._apogee_predictor_packet_queue)
 
         last_run_length = 0
 
@@ -310,6 +288,7 @@ class ApogeePredictor:
         """
         Extracts the processor data packets from the data packets and appends them to the
         respective internal lists.
+        :param data_packets: a list of ProcessorDataPackets to extract.
         """
         for data_packet in data_packets:
             self._accelerations.append(data_packet.vertical_acceleration)
@@ -320,9 +299,10 @@ class ApogeePredictor:
 
     def _predict_apogee(self) -> np.float64:
         """
-        Predicts the apogee using the lookup table and linear interpolation.
-        It gets the change in height from the lookup table, and adds it to the
-        current height, thus giving you the predicted apogee.
+        Predicts the apogee using the lookup table and linear interpolation. It gets the change in
+        height from the lookup table, and adds it to the current height, thus giving you the
+        predicted apogee.
+        :return: the predicted apogee as a float.
         """
         return (
             np.interp(

@@ -239,7 +239,7 @@ class TestCoastState:
         ]
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", predicted_apogee)
+        monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", predicted_apogee)
         coast_state.update()
         assert isinstance(coast_state.context.state, expected_state), (
             f"Got {coast_state.context.state.name}, expected {expected_state!r}"
@@ -278,7 +278,7 @@ class TestCoastState:
 
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", target_altitude)
+        monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", target_altitude)
         coast_state.update()
         assert coast_state.context.servo.current_extension == expected_airbrakes
 
@@ -294,7 +294,7 @@ class TestCoastState:
         # patch the extend_airbrakes method to count the number of calls made:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 900.0)
+        monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 900.0)
         coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=1000.0,
         )
@@ -315,7 +315,7 @@ class TestCoastState:
         we retract the airbrakes."""
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
-        monkeypatch.setattr("airbrakes.state.TARGET_ALTITUDE_METERS", 1000.0)
+        monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 1000.0)
 
         # set the airbrakes to be extended:
         coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(

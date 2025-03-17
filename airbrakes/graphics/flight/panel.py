@@ -3,14 +3,14 @@
 from textual.app import ComposeResult
 from textual.widgets import Placeholder, Static
 
-from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.context import AirbrakesContext
 from airbrakes.graphics.flight.telemetry import DebugTelemetry, FlightTelemetry
 
 
 class FlightInformation(Static):
     """Panel displaying the real-time flight information."""
 
-    airbrakes: AirbrakesContext | None = None
+    context: AirbrakesContext | None = None
 
     def compose(self) -> ComposeResult:
         self.flight_telemetry = FlightTelemetry(id="flight_data_panel")
@@ -24,10 +24,10 @@ class FlightInformation(Static):
         yield Placeholder("downrange map")
         yield Placeholder("2d rocket vis")
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
-        self.airbrakes = airbrakes
-        self.flight_telemetry.initialize_widgets(self.airbrakes)
-        self.debug_telemetry.initialize_widgets(self.airbrakes)
+    def initialize_widgets(self, context: AirbrakesContext) -> None:
+        self.context = context
+        self.flight_telemetry.initialize_widgets(self.context)
+        self.debug_telemetry.initialize_widgets(self.context)
 
     def update_flight_information(self) -> None:
         self.flight_telemetry.update_flight_telemetry()

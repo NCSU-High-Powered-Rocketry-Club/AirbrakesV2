@@ -96,7 +96,7 @@ LEGACY_CONFIG = SimulationConfig(
     motor="AeroTech_J500G",
     airbrake_retracted_cd=np.array([[0.05, 0.2, 0.3], [0.5, 0.445, 0.43]]),
     airbrake_extended_cd=np.array([[0.05, 0.2, 0.3], [0.65, 0.595, 0.58]]),
-    rocket_mass=np.float64(5.103),
+    rocket_mass=np.float64(5.76),
     reference_area=np.float64(0.008107),
     airbrakes_reference_area=np.float64(0.00487741),
     air_temperature=np.float64(10),
@@ -104,6 +104,22 @@ LEGACY_CONFIG = SimulationConfig(
     launch_rod_pitch=np.float64(5.0),
     launch_rod_azimuth=np.float64(0.0),
     rand_config=SUB_SCALE_RAND_CONFIG,
+)
+
+PELICANATOR_CONFIG = SimulationConfig(
+    raw_time_step=np.float64(0.002),
+    est_time_step=np.float64(0.002),
+    motor="AeroTech_L1520T",
+    airbrake_retracted_cd=np.array([[0.1, 0.2, 0.3, 0.5, 0.7], [0.55, 0.45, 0.375, 0.34, 0.34]]),
+    airbrake_extended_cd=np.array([[0.1, 0.2, 0.3, 0.5, 0.7], [0.7, 0.6, 0.525, 0.49, 0.49]]),
+    rocket_mass=np.float64(19.65),
+    reference_area=np.float64(0.01929),
+    airbrakes_reference_area=np.float64(0.01),
+    air_temperature=np.float64(3),
+    wgs_vertical=np.array([0, 0, 1]),
+    launch_rod_pitch=np.float64(5.0),
+    launch_rod_azimuth=np.float64(0.0),
+    rand_config=DEFAULT_RAND_CONFIG,
 )
 
 
@@ -121,5 +137,7 @@ def get_configuration(config_type: str) -> SimulationConfig:
             return SUB_SCALE_CONFIG
         case "legacy":
             return LEGACY_CONFIG
+        case "pelicanator":
+            return PELICANATOR_CONFIG
         case _:
             raise ValueError(f"Invalid config type: {config_type}")

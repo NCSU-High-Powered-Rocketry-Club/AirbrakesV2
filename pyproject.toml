@@ -1,12 +1,11 @@
 [project]
 name = "AirbrakesV2"
-description = "Logic for airbrakes as a part of the NASA Student Launch Competition"
+description = "Logic for air brakes as a part of the NASA Student Launch Competition"
 requires-python = ">=3.13"
-version = "0.1.0"
+version = "1.1.0"
 readme = "README.md"
 dependencies = [
     "gpiozero",
-    "pigpio", # Run sudo pigpiod before running the program
     "msgspec",
     "numpy",
     "psutil",
@@ -15,9 +14,12 @@ dependencies = [
     "textual",
     "textual-dev>=1.7.0",
     "textual-plotext>=1.0.1",
-    "faster-fifo; sys_platform != 'win32'",
-    "textual",
+    "faster-fifo",
     "python-mscl>=67.0.0",
+    # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
+    # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
+    "rpi-gpio>=0.7.1",
+    "adafruit-circuitpython-servokit>=1.3.19",
 ]
 
 [dependency-groups]
@@ -26,13 +28,20 @@ dev = [
     "pytest-cov",
     "ruff>=0.8.4",
     "pre-commit",
+    "pytest-benchmark>=5.1.0",
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
-camera = [
-    "picamera2>=0.3.24",
-    "rpi-libcamera>=0.1a7",
-    "rpi-kms>=0.1a1",
+#camera = [
+    #"picamera2>=0.3.24",
+    #"rpi-libcamera>=0.1a7",
+    #"rpi-kms>=0.1a1",
+#]
+
+# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
+encoder = [
+    "swig>=4.3.0",
+    "lgpio>=0.2.2.0",
 ]
 
 [project.scripts]
@@ -78,9 +87,15 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 [tool.pytest.ini_options]
 filterwarnings = [
     "error",  # treat warnings as errors
+    "ignore:Could not import LGPIOFactory",  # ignore warning about LGPIO
     "ignore:This process:DeprecationWarning",  # ignore warning about fork()
     "ignore:To reduce servo jitter",  # ignore warning about pigpio
     "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
+    "ignore:Could not set process priority"  # ignore warning about process priority
+]
+addopts = "--benchmark-skip"  # skip benchmarks by default:
+markers = [
+    "imu_benchmark",
 ]
 
 [tool.coverage.run]
@@ -102,15 +117,13 @@ omit = [
 [tool.coverage.report]
 skip_covered = false
 skip_empty = true
-exclude_lines = [
+exclude_also = [
     "def __repr__",
     "if self\\.debug",
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == \"__main__\":",
     "if sys.platform == 'win32'",
-]
-exclude_also = [
     "@overload",
     "@abstractmethod",
     "if TYPE_CHECKING:",

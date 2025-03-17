@@ -9,7 +9,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import Button, Label, Static
 
-from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.context import AirbrakesContext
 from airbrakes.graphics.custom_widgets import TimeDisplay
 
 
@@ -77,7 +77,7 @@ class FlightHeader(Static):
 
     state: reactive[str] = reactive("Standby")
 
-    airbrakes: AirbrakesContext | None = None
+    context: AirbrakesContext | None = None
     t_zero_time = reactive(0)
     takeoff_time = 0
     sim_start_time: int = 0
@@ -106,7 +106,7 @@ class FlightHeader(Static):
         state_label = self.query_one("#state", Label)
 
         if not self.takeoff_time and self.state == "MotorBurnState":
-            self.takeoff_time = self.airbrakes.state.start_time_ns
+            self.takeoff_time = self.context.state.start_time_ns
 
         label = self.state.removesuffix("State")
         state_label.update(f"STATUS: {label}")
@@ -115,20 +115,20 @@ class FlightHeader(Static):
         time_display = self.query_one("#normal-sim-time", Label)
         time_display.update(TimeDisplay.format_ns_to_min_s_ms(self.current_sim_time))
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext, is_mock: bool) -> None:
-        self.airbrakes = airbrakes
+    def initialize_widgets(self, context: AirbrakesContext, is_mock: bool) -> None:
+        self.context = context
         self.is_mock = is_mock
-        self.query_one(SimulationSpeed).sim_speed = self.airbrakes.imu._sim_speed_factor.value
+        self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
 
         file_name = self.query_one("#launch-file-name", Label)
 
         if file_name.disabled:
-            launch_file_name = self.airbrakes.imu._log_file_path.stem.replace("_", " ").title()
+            launch_file_name = self.context.imu._log_file_path.stem.replace("_", " ").title()
             file_name.update(launch_file_name)
             file_name.disabled = False
 
         if not self._pre_calculated_motor_burn_time:
-            self._pre_calculated_motor_burn_time = self.airbrakes.imu.get_launch_time()
+            self._pre_calculated_motor_burn_time = self.context.imu.get_launch_time()
 
         self.sim_start_time = monotonic_ns()
 
@@ -139,17 +139,17 @@ class FlightHeader(Static):
         """
         # Just update our launch time, if it was set (see watch_state)
         if self.takeoff_time:
-            current_timestamp = self.airbrakes.data_processor.current_timestamp
+            current_timestamp = self.context.data_processor.current_timestamp
             return current_timestamp - self.takeoff_time
 
         # We are before launch (T-0). Only happens when running a mock:
         if self.is_mock:
-            current_timestamp = self.airbrakes.data_processor.current_timestamp
+            current_timestamp = self.context.data_processor.current_timestamp
             return current_timestamp - self._pre_calculated_motor_burn_time
 
         return 0
 
     def update_header(self) -> None:
-        self.state = self.airbrakes.state.name
+        self.state = self.context.state.name
         self.t_zero_time = self.calculate_launch_time()
         self.current_sim_time = monotonic_ns() - self.sim_start_time

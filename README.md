@@ -27,7 +27,7 @@
 
 
 ## Overview
-This project is for controlling our Air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 4 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
+This project is for controlling our air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 5 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
 https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
@@ -39,8 +39,9 @@ As per the finite state machine design pattern, we have a context class which li
 1. **Gets data from the IMU**
 2. **Processes the data** in the Data Processor (calculates velocity, averages, maximums, etc.)
 3. **Updates the current state** with the processed data
-4. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
-5. **Logs all data** from the IMU, Data Processor, Servo, and States
+4. **Predicts the apogee** If the program is in Coast State
+5. **Controls the servo extension** based on the current state's instructions (e.g., extends air brakes to slow down the rocket)
+6. **Logs all data** from the IMU, Data Processor, Servo, Apogee Predictor and States
 
 ### System Architecture Flowchart
 ```mermaid
@@ -67,21 +68,22 @@ flowchart TD
     
     %% States as individual nodes
     State((State)):::circular
-    CoastState((Coast)):::circular
     Standbystate((Standby)):::circular
+    MotorBurnState((Motor Burn)):::circular
+    CoastState((Coast)):::circular
     FreefallState((Freefall)):::circular
     LandedState((Landed)):::circular
-    MotorBurnState((Motor Burn)):::circular
+    
 
     %% Connections between States and Airbrakes
     State((State)):::circular --> Airbrakes:::circular
     State --> Update
     
-    CoastState((Coast)):::circular --> State
     Standbystate((Standby)):::circular --> State
+    MotorBurnState((Motor Burn)):::circular --> State
+    CoastState((Coast)):::circular --> State
     FreefallState((Freefall)):::circular --> State
     LandedState((Landed)):::circular --> State
-    MotorBurnState((Motor Burn)):::circular --> State
     
     %% Connections with Labels
     Airbrakes ---|Child Process| Logger((Logger)):::circular
@@ -89,11 +91,11 @@ flowchart TD
     Airbrakes ---|Child Process| Apogee_Predictor((Apogee Predictor)):::circular
     IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
 
-    %% IMU Data Processing
-    IMUDataPacket --> IMUDataProcessor[IMU Data Processor]:::circular
-    IMUDataProcessor --> Velocity[(Velocity)]:::outputSquare
-    IMUDataProcessor --> Altitude[(Altitude)]:::outputSquare
-    IMUDataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
+    %% Data Processing
+    IMUDataPacket --> DataProcessor[Data Processor]:::circular
+    DataProcessor --> Velocity[(Velocity)]:::outputSquare
+    DataProcessor --> Altitude[(Altitude)]:::outputSquare
+    DataProcessor --> Rotated_Accel[(Rotated Acceleration)]:::outputSquare
     
     Velocity -->  ProcessedData[(Processor Data Packet)]:::outputSquare
     Altitude -->  ProcessedData[(Processor Data Packet)]:::outputSquare
@@ -116,22 +118,24 @@ flowchart TD
     Airbrakes --> Servo
 
 ```
-| Type        | Color                                                                     | Examples                                                                                                       |
-|-------------|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                        |
-| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, IMU Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
-| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                       |
-| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                     |
+| Type        | Color                                                                     | Examples                                                                                                   |
+|-------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| Entry point | ![#ac6600](https://via.placeholder.com/15/ac6600/000000?text=+) `#ac6600` | Main.py                                                                                                    |
+| Classes     | ![#44007e](https://via.placeholder.com/15/44007e/000000?text=+) `#44007e` | Airbrakes Context, State, Logger, IMU, Data Processor, Servo, Coast, Standby, Freefall, Landed, Motor Burn |
+| Methods     | ![#164b6c](https://via.placeholder.com/15/164b6c/000000?text=+) `#164b6c` | update(), log(), extend_airbrakes(), retract_airbrakes()                                                   |
+| Outputs     | ![#044728](https://via.placeholder.com/15/044728/000000?text=+) `#044728` | IMU Data Packet, Processor Data Packet, Logger Data Packet                                                 |
 
 ### Launch Data
 
 This is our interest launch flight data, altitude over time. The different colors of the line are different states the rocket goes through:
-1. Stand By - when the rocket is on the rail on the ground
-2. Motor Burn - when the motor is burning and the rocket is accelerating
-3. Coast - when the motor has burned out and the rocket is coasting, this is when air brakes will be deployed
-4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air brakes will be
-retracted
-5. Landed - when the rocket has landed on the ground
+1. Standby - when the rocket is on the rail on the ground.
+2. Motor Burn - when the motor is burning and the rocket is accelerating.
+3. Coast - after the motor has burned out and the rocket is coasting, this is when air brakes
+deployment will be controlled by the bang-bang controller.
+4. Free Fall - when the rocket is falling back to the ground after apogee, this is when the air
+brakes will be retracted.
+5. Landed - when the rocket lands on the ground. After a few seconds in landed state, the
+Airbrakes program will end.
 <img alt="graph" src="https://github.com/user-attachments/assets/39cf0556-d388-458b-8668-64177506c9de" width="70%">
 
 ### File Structure
@@ -148,7 +152,7 @@ AirbrakesV2/
 │   │   ├── [files related to our custom air brakes sim ...]
 |   ├── telemetry/
 │   │   ├── [files related to the processing of data ...]
-│   ├── [files which control the airbrakes at a high level ...]
+│   ├── [files which control the air brakes at a high level ...]
 |   ├── main.py [main file used to run on the rocket]
 |   ├── constants.py [file for constants used in the project]
 ├── tests/  [used for testing all the code]
@@ -165,7 +169,7 @@ AirbrakesV2/
 
 ## Quick Start
 
-This project strongly recommends using [`uv`](https://docs.astral.sh/uv/) to manage and install
+This project only supports Linux. We also strongly recommend using [`uv`](https://docs.astral.sh/uv/) to manage and install
 the project. To quickly run the mock replay, simply run:
 
 ```bash
@@ -205,14 +209,6 @@ _Note 2: The more "correct" command to run is `uv sync`. This will install the p
 uv run pre-commit install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
-
-### 4. Make your changes and commit:
-
-After you have made your changes, you can commit them:
-```bash
-git add .
-git commit -m "Your commit message"
-```
 
 You will see the linter run now. If one of the checks failed, you can resolve them by following the 
 instructions in [Running the Linter](#running-the-linter).
@@ -260,6 +256,21 @@ To generate a coverage report from the tests:
 pytest --cov=airbrakes --cov-report=term
 ```
 
+To performance test the code:
+```bash
+pytest --benchmark-only
+```
+
+See the [pytest-benchmark documentation](https://pytest-benchmark.readthedocs.io/en/stable/) for more information.
+
+To run a performance benchmark with the real IMU on the raspberry pi:
+```bash
+sudo $(which uv) run pytest -m imu_benchmark
+```
+
+Note that the use of `sudo` is required to set process priorities for the IMU and main process,
+which is critical for accurate benchmarking.
+
 If you make a change to the code, please make sure to update or add the necessary tests.
 
 ### Running the Linter
@@ -273,6 +284,10 @@ ruff check . --fix --unsafe-fixes
 To format the code, run:
 ```bash
 ruff format .
+```
+You can also run the linter with `uv`:
+```bash
+uv run ruff format .
 ```
 
 ## Pi Usage
@@ -288,17 +303,10 @@ ssh pi@[IP.ADDRESS]
 cd AirbrakesV2/
 ```
 
-### Install and start the pigpio daemon on the Raspberry Pi:
-_Every time the pi boots up, you must run this in order for the servo to work. We have already added this command to run on startup, but you may want to confirm that it is running, e.g. by using [`htop`](https://htop.dev/)._
+### Install the dependencies needed for the camera and servo integration:
 
 ```bash
-sudo pigpiod
-```
-
-### Install the dependencies needed for the camera integration:
-
-```bash
-sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev
+sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev liblgpio-dev
 
 uv sync --all-groups
 ```
@@ -306,7 +314,7 @@ uv sync --all-groups
 
 ### Run a real flight with real hardware:
 ```bash
-uv run real
+sudo $(which uv) run real -v
 ```
 
 ### Running Test Scripts

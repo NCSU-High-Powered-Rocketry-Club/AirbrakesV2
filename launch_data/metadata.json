@@ -53,7 +53,8 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 136.47
+            "flight_length_seconds": 136.47,
+            "target_apogee_meters": 1554.0
         },
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to mimmick a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
@@ -82,7 +83,8 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 53.34
+            "flight_length_seconds": 53.34,
+            "target_apogee_meters": 10.0
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
 
@@ -112,8 +114,99 @@
                 "latitude": 35.1751266,
                 "longitude": -76.826902
             },
-            "flight_length_seconds": 54.15
+            "flight_length_seconds": 54.15,
+            "target_apogee_meters": 10.0
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
+    },
+    "legacy_launch_1.csv": {
+        "date": "2025-01-25T13:39:19.385-05:00",
+        "launch_site": {
+            "air_temperature_celsius": 6.667,  
+            "air_pressure_mb": 1029.3,
+            "wind_speed_kmh": 4.82,
+            "wind_direction": "N",
+            "launch_coordinates": {
+                "latitiude": 35.1757368,
+                "longitude": -76.8282710
+            },
+            "launch_rod_angle": 2.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 631.14,
+            "landed_coordinates:": {
+                "latitude": 35.1753907,
+                "longitude": -76.8268360
+            },
+            "flight_length_seconds": 60.12,
+            "target_apogee_meters": 1
+        },
+        "flight_description": "First flight with encoder and camera. Very high uncertainity in quaternions from the IMU. The timestamp also jumped a bit, and a few seconds of data was missing and/or inconsistent. Encoder and video data did show airbrakes physically deploying though."
+    },
+    "legacy_launch_2.csv": {
+        "date": "2025-01-25T16:13:17.074-05:00",
+        "launch_site": {
+            "air_temperature_celsius": 6.11,  
+            "air_pressure_mb": 1028.4,
+            "wind_speed_kmh": 7.91,
+            "wind_direction": "N",
+            "launch_coordinates": {
+                "latitiude": 35.1758000,
+                "longitude": -76.8283400
+            },
+            "launch_rod_angle": 3.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": null,
+            "landed_coordinates:": {
+                "latitude": null,
+                "longitude": null
+            },
+            "flight_length_seconds": 0.0,
+            "target_apogee_meters": 1
+        },
+        "flight_description": "Complete waste of a flight since the velocity was negative at standby state due to excessive gyro drift. No data past standby state."
+    },
+    "pelicanator_launch_1.csv": {
+        "date": "2025-02-22T15:42:17.202-05:00",
+        "launch_site": {
+            "air_temperature_celsius": 8.89,  
+            "air_pressure_mb": 1026.4,
+            "wind_speed_kmh": 12.81,
+            "wind_direction": "ENE",
+            "launch_coordinates": {
+                "latitiude": 35.1758000,
+                "longitude": -76.8283400
+            },
+            "launch_rod_angle": 5.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 500.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 1208.28,
+            "landed_coordinates:": {
+                "latitude": 35.17778228496852,
+                "longitude": -76.8299311341451
+            },
+            "flight_length_seconds": 36.36,
+            "target_apogee_meters": 1218.2
+        },
+        "flight_description": "First flight of the Pelicanator. This was the first flight with the Raspberry Pi 5, and the first flight in which airbrakes 100% worked. However the flight itself was a failed VDF launch, crash landing and thus the data was cutoff before landing. The camera was in the payload for this flight."
     }
 }

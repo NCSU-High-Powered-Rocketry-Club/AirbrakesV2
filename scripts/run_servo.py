@@ -4,10 +4,10 @@ Make sure you are in the root directory of the project, not inside scripts, and 
 For the pi, you will have to use python3
 """
 
-from airbrakes.constants import ServoExtension, SERVO_PIN, ENCODER_PIN_A, ENCODER_PIN_B
+from airbrakes.constants import ServoExtension, SERVO_1_CHANNEL, SERVO_2_CHANNEL , ENCODER_PIN_A, ENCODER_PIN_B
 from airbrakes.hardware.servo import Servo
 
-servo = Servo(SERVO_PIN)
+servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
 print("0 for testing exending/retracting, 1 for testing positions")
 if int(input()) == 0:

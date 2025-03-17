@@ -1,118 +1,79 @@
 """Module which contains the Servo class, representing a servo motor that controls the extension of
-the airbrakes."""
+the airbrakes, along with a rotary encoder to measure the servo's position."""
 
-import threading
-import warnings
+import contextlib
 
 import gpiozero
 
-from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B, SERVO_DELAY_SECONDS, ServoExtension
+# This import fails on non raspberry pi devices running arm architecture
+with contextlib.suppress(AttributeError):
+    from adafruit_servokit import ServoKit
+
+from airbrakes.constants import (
+    SERVO_MAX_ANGLE,
+    SERVO_MAX_PULSE_WIDTH,
+    SERVO_MIN_PULSE_WIDTH,
+    ServoExtension,
+)
+from airbrakes.interfaces.base_servo import BaseServo
 
 
-class Servo:
+class Servo(BaseServo):
     """
-    A custom class that represents a servo motor, controlling the extension of the airbrakes. The
-    servo is controlled using the gpiozero library, which provides a simple interface for
-    controlling GPIO pins on the Raspberry Pi.
+    A custom class that represents a servo motor and the accompanying rotary encoder. The servo
+    controls the extension of the airbrakes while the encoder measures the servo's position.
+    the encoder is controlled using the gpiozero library, which provides a simple
+    interface for controlling GPIO pins on the Raspberry Pi 5.
+
+    The servo we use is the DS3235, which is a coreless digital servo. There are two of these on
+    the Servo Bonnet (https://www.adafruit.com/product/3416), which is connected to the Pi 5.
     """
 
-    __slots__ = (
-        "_go_to_max_no_buzz",
-        "_go_to_min_no_buzz",
-        "current_extension",
-        "encoder",
-        "servo",
-    )
+    __slots__ = ()
 
-    def __init__(self, gpio_pin_number: int, pin_factory=None) -> None:
+    def __init__(
+        self,
+        first_servo_channel: int,
+        second_servo_channel: int,
+        encoder_pin_number_a: int,
+        encoder_pin_number_b: int,
+    ) -> None:
         """
-        Initializes the servo object with the specified GPIO pin.
-        :param gpio_pin_number: The GPIO pin that the servo is connected to.
-        :param pin_factory: The pin factory to use for controlling the GPIO pins. If None, the
-        default PiGPIOFactory from the gpiozero library is used, which is commonly used on
-        Raspberry Pi for more precise servo control. The pin factory provides an abstraction
-        layer that allows the Servo class to work across different hardware platforms or with
-        different GPIO libraries (e.g., RPi.GPIO or pigpio).
+        :param first_servo_channel: The channel where the first servo is connected to on the board
+        :param second_servo_channel: The channel where the second servo is connected to on the board
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is
+        connected to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
+        connected to.
         """
-        self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
-        # Sets up the servo with the specified GPIO pin number
-        # For this to work, you have to run the pigpio daemon on the Raspberry Pi (sudo pigpiod)
-        if pin_factory is None:
-            gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
-        else:
-            # The servo always prints a warning about jitter, so we suppress it here
-            warnings.filterwarnings(message="To reduce servo jitter", action="ignore")
-            # We use a MockFactory for testing, which simulates the GPIO pins:
-            gpiozero.Device.pin_factory = pin_factory
+        # Set up the Bonnet servo kit. This contains the servos that control the airbrakes.
+        pca_9685 = ServoKit(channels=16)
+        # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
+        servo_1 = pca_9685.servo[first_servo_channel]
+        servo_2 = pca_9685.servo[second_servo_channel]
 
-        self.servo = gpiozero.Servo(gpio_pin_number, initial_value=self.current_extension.value)
+        servo_1.set_pulse_width_range(SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH)
+        servo_2.set_pulse_width_range(SERVO_MIN_PULSE_WIDTH, SERVO_MAX_PULSE_WIDTH)
+        servo_1.actuation_range = SERVO_MAX_ANGLE
+        servo_2.actuation_range = SERVO_MAX_ANGLE
+
+        # This library can only be imported on the raspberry pi. It's why the import is here.
+        from gpiozero.pins.lgpio import LGPIOFactory as Factory
+
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
-        self.encoder = gpiozero.RotaryEncoder(ENCODER_PIN_A, ENCODER_PIN_B, max_steps=0)
+        encoder = gpiozero.RotaryEncoder(
+            encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
+        )
 
-        # We have to use threading to avoid blocking the main thread because our extension methods
-        # need to run at a specific time. Yes this is bad practice but we had a mechanical issue and
-        # we had to fix it in code.
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
-
-    def set_extended(self) -> None:
-        """
-        Extends the servo to the maximum extension. Starts a timer to stop the buzzing after the
-        servo reaches the maximum extension.
-        """
-        # If we are already going to the minimum extension, we cancel that operation before
-        # extending the servo.
-        self._go_to_min_no_buzz.cancel()
-
-        self._set_extension(ServoExtension.MAX_EXTENSION)
-
-        # Creates a timer to stop the buzzing after the servo reaches the maximum extension
-        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
-        self._go_to_max_no_buzz.start()
-
-    def set_retracted(self) -> None:
-        """
-        Retracts the servo to the minimum extension. Starts a timer to stop the buzzing after the
-        servo reaches the minimum extension.
-        """
-        # If we are already going to the maximum extension, we cancel that operation before
-        # retracting the servo.
-        self._go_to_max_no_buzz.cancel()
-
-        self._set_extension(ServoExtension.MIN_EXTENSION)
-
-        # Creates a timer to stop the buzzing after the servo reaches the minimum extension
-        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
-        self._go_to_min_no_buzz.start()
-
-    def get_encoder_reading(self) -> int:
-        """
-        Gets the current reading (in steps) of the rotary encoder.
-
-        :return: The current reading of the rotary encoder
-        """
-        return self.encoder.steps
-
-    def _set_max_no_buzz(self) -> None:
-        """
-        Extends the servo to the stop buzz position. This extends the servo such that it reaches
-        the physical end of the airbrakes, and then sets its extension to its actual extension.
-        """
-        self._set_extension(ServoExtension.MAX_NO_BUZZ)
-
-    def _set_min_no_buzz(self) -> None:
-        """
-        Retracts the servo to the stop buzz position. This retracts the servo such that it reaches
-        the physical start of the airbrakes, and then sets its extension to its actual extension.
-        """
-        self._set_extension(ServoExtension.MIN_NO_BUZZ)
+        super().__init__(servo_1, servo_2, encoder)
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
-        Sets the extension of the servo.
-        :param extension: The extension of the servo, there are 4 possible values, see constants.
+        Sets the servo to the specified extension.
+        :param extension: The extension to set the servo to.
         """
-        self.current_extension = extension
-        self.servo.value = self.current_extension.value
+        super()._set_extension(extension)
+        self.first_servo.angle = extension.value
+        self.second_servo.angle = extension.value

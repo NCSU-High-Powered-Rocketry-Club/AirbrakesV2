@@ -9,13 +9,13 @@ from textual.widget import Widget
 from textual.widgets import Label, Static
 from textual.worker import get_current_worker
 
-from airbrakes.airbrakes import AirbrakesContext
+from airbrakes.context import AirbrakesContext
 
 
 class DebugTelemetry(Static):
     """Collapsible panel for displaying debug telemetry data."""
 
-    airbrakes: AirbrakesContext
+    context: AirbrakesContext
     imu_queue_size = reactive(0)
     cpu_usage = reactive("")
     state = var("Standby")
@@ -38,9 +38,9 @@ class DebugTelemetry(Static):
         cpu_usage.border_title = "CPU Usage"
         yield cpu_usage
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
-        self.airbrakes = airbrakes
-        self.query_one(CPUUsage).initialize_widgets(airbrakes)
+    def initialize_widgets(self, context: AirbrakesContext) -> None:
+        self.context = context
+        self.query_one(CPUUsage).initialize_widgets(context)
 
     def watch_imu_queue_size(self) -> None:
         imu_queue_size_label = self.query_one("#imu_queue_size", Label)
@@ -48,14 +48,14 @@ class DebugTelemetry(Static):
 
     def watch_state(self) -> None:
         if self.state == "CoastState":
-            self.coast_start_time = self.airbrakes.state.start_time_ns
+            self.coast_start_time = self.context.state.start_time_ns
 
     def watch_apogee(self) -> None:
         if self.coast_start_time and not self.apogee_convergence_time:
             self.apogee_convergence_time = (
-                self.airbrakes.data_processor.current_timestamp - self.coast_start_time
+                self.context.data_processor.current_timestamp - self.coast_start_time
             ) * 1e-9
-            self.alt_at_convergence = self.airbrakes.data_processor.current_altitude
+            self.alt_at_convergence = self.context.data_processor.current_altitude
             self.apogee_at_convergence = self.apogee
 
     def watch_apogee_convergence_time(self) -> None:
@@ -81,11 +81,11 @@ class DebugTelemetry(Static):
         fetched_packets_label.update(f"Fetched packets: {self.fetched_packets}")
 
     def update_debug_telemetry(self) -> None:
-        self.imu_queue_size = self.airbrakes.imu._data_queue.qsize()
-        self.log_buffer_size = len(self.airbrakes.logger._log_buffer)
-        self.apogee = self.airbrakes.last_apogee_predictor_packet.predicted_apogee
-        self.fetched_packets = len(self.airbrakes.imu_data_packets)
-        self.state = self.airbrakes.state.name
+        self.imu_queue_size = self.context.context_data_packet.queued_imu_packets
+        self.log_buffer_size = len(self.context.logger._log_buffer)
+        self.apogee = self.context.last_apogee_predictor_packet.predicted_apogee
+        self.fetched_packets = len(self.context.imu_data_packets)
+        self.state = self.context.state.name
 
 
 class CPUBar(Static):
@@ -158,7 +158,7 @@ class CPUBars(Static):
 class CPUUsage(Static):
     """Panel displaying the CPU usage."""
 
-    _airbrakes: AirbrakesContext = None
+    context: AirbrakesContext = None
     cpu_usages = reactive({})
 
     def __init__(self, *args, **kwargs) -> None:
@@ -184,8 +184,8 @@ class CPUUsage(Static):
         yield Label("Apogee", id="cpu_apogee_label", expand=True)
         yield Label("Cam", id="cpu_cam_label", expand=True)
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
-        self._airbrakes = airbrakes
+    def initialize_widgets(self, context: AirbrakesContext) -> None:
+        self.context = context
 
     def start(self) -> None:
         self.processes = self.prepare_process_dict()
@@ -233,10 +233,10 @@ class CPUUsage(Static):
         :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
-        imu_process = self._airbrakes.imu._data_fetch_process
-        log_process = self._airbrakes.logger._log_process
-        apogee_process = self._airbrakes.apogee_predictor._prediction_process
-        camera_process = self._airbrakes.camera.camera_control_process
+        imu_process = self.context.imu._data_fetch_process
+        log_process = self.context.logger._log_process
+        apogee_process = self.context.apogee_predictor._prediction_process
+        camera_process = self.context.camera.camera_control_process
         current_process = multiprocessing.current_process()
         process_dict = {
             "IMU": imu_process,
@@ -274,7 +274,7 @@ class CPUUsage(Static):
 class FlightTelemetry(Static):
     """Panel displaying real-time flight information."""
 
-    airbrakes: AirbrakesContext
+    context: AirbrakesContext
     vertical_velocity = reactive(0.0)
     max_vertical_velocity = reactive(0.0)
     current_height = reactive(0.0)
@@ -290,8 +290,8 @@ class FlightTelemetry(Static):
         yield Label("Predicted Apogee: ", id="apogee_prediction")
         yield Label("Airbrakes Extension: ", id="airbrakes_extension")
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
-        self.airbrakes = airbrakes
+    def initialize_widgets(self, context: AirbrakesContext) -> None:
+        self.context = context
 
     def watch_vertical_velocity(self) -> None:
         vertical_velocity_label = self.query_one("#vertical_velocity", Label)
@@ -318,9 +318,9 @@ class FlightTelemetry(Static):
         airbrakes_extension_label.update(f"Airbrakes Extension: {self.airbrakes_extension:.2f}")
 
     def update_flight_telemetry(self) -> None:
-        self.vertical_velocity = self.airbrakes.data_processor.vertical_velocity
-        self.max_vertical_velocity = self.airbrakes.data_processor.max_vertical_velocity
-        self.current_height = self.airbrakes.data_processor.current_altitude
-        self.max_height = self.airbrakes.data_processor.max_altitude
-        self.apogee_prediction = self.airbrakes.last_apogee_predictor_packet.predicted_apogee
-        self.airbrakes_extension = self.airbrakes.servo.current_extension.value
+        self.vertical_velocity = self.context.data_processor.vertical_velocity
+        self.max_vertical_velocity = self.context.data_processor.max_vertical_velocity
+        self.current_height = self.context.data_processor.current_altitude
+        self.max_height = self.context.data_processor.max_altitude
+        self.apogee_prediction = self.context.last_apogee_predictor_packet.predicted_apogee
+        self.airbrakes_extension = self.context.servo.current_extension.value
