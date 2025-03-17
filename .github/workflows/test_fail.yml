@@ -30,8 +30,8 @@
             python-version-file: "pyproject.toml"
 
         - name: Install the project
-          run: uvx --no-cache -v uv@0.6.5 pip install faster-fifo
+          run: uvx --python-preference only-managed --no-cache -v uv@0.6.5 pip install faster-fifo
 
         - name: Run python and import faster_fifo
           run: |
-            PYTHON_JIT=1 uvx --no-cache -v --with faster_fifo python -c "import faster_fifo; print(faster_fifo.Queue)"
+            PYTHON_JIT=1 uvx --python-preference only-managed --no-cache -v --with faster_fifo python -c "import faster_fifo; print(faster_fifo.Queue)"
