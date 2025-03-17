@@ -29,6 +29,9 @@
           with:
             python-version-file: "pyproject.toml"
 
+        - name: Install build dependencies
+          run: sudo apt install -y build-essential gcc g++
+
         - name: Install the project
           run: uv sync --verbose --group dev
 
