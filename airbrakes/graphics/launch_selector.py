@@ -110,7 +110,7 @@ class LaunchConfiguration(Widget):
         )
 
 
-class LaunchSelector(Screen):
+class LaunchSelector(Screen[SelectedLaunchConfiguration]):
     """The launch file selection screen displayed on startup."""
 
     CSS_PATH = "css/launch_selector.tcss"

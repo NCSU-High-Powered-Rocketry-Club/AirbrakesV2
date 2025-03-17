@@ -3,7 +3,6 @@
 import time
 from typing import ClassVar
 
-from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Footer
@@ -51,17 +50,21 @@ class AirbrakesApplication(App):
         self._args = arg_parser()
         self._pre_calculated_motor_burn_time: int = None
 
-    @work
-    async def on_mount(self) -> None:
-        await self.push_screen("launch_selector", self.create_components, wait_for_dismiss=True)
+    def on_mount(self) -> None:
+        """Mount the launch selector screen to get the launch configuration."""
+        self.push_screen("launch_selector", self.receive_launch_configuration)
+
+    def on_unmount(self) -> None:
+        """Stop the airbrakes system when the app is unmounted."""
+        if self.context:
+            self.context.stop()
+
+    def receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
+        """Receives the launch configuration from the launch selector screen."""
+        self.create_components(launch_config)
         self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
         self.start()
-
-    @work
-    async def on_unmount(self) -> None:
-        if self.context:
-            self.context.stop()
 
     def initialize_widgets(self) -> None:
         """Supplies the airbrakes context and related objects to the widgets for proper

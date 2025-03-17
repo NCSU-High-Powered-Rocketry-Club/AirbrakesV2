@@ -145,8 +145,12 @@ sure we don't lose data.
 # -------------------------------------------------------
 
 MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 20  # 20 Hz
+"""The frequency at which the display updates in replay or sim mode. Increasing this value will
+negatively affect the performance when running with a "fast" simulation."""
 
 REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
+"""The frequency at which the display updates in real mode. Decreasing this value will not show
+major performance improvements, but increasing it will negatively affect the performance."""
 
 # -------------------------------------------------------
 # IMU Configuration
