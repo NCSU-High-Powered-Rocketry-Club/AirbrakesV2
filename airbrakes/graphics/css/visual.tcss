@@ -11,6 +11,7 @@
     grid-size: 3; /* 3 columns */
     grid-rows: auto;
     grid-gutter: 1;
+    # background: orange;
 
     #launch-file-name {
         # background: black;
@@ -38,7 +39,7 @@
         content-align: left bottom;
         text-align: center;
         width: 100%;
-        # background: orange;
+        # background: blue;
     }
 
     #sim-speed-panel {
@@ -46,6 +47,46 @@
         # background: teal;
         Horizontal {
             align: center middle;
+        }
+    }
+
+    #flight-progress-bar {
+        column-span: 3;
+        width: 100%;
+        # background: green;
+
+        Bar {
+            width: 1fr;
+
+            &.standby {
+                .bar--bar {
+                    color: orange;
+                }
+            }
+
+            &.motorburn {
+                .bar--bar {
+                    color: red;
+                }
+            }
+
+            &.coast {
+                .bar--bar {
+                    color: yellow;
+                }
+            }
+
+            &.freefall {
+                .bar--bar {
+                    color: green;
+                }
+            }
+
+            &.landed {
+                .bar--bar {
+                    color: indigo;
+                }
+            }
         }
     }
 }

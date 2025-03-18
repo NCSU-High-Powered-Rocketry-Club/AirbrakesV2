@@ -1,6 +1,6 @@
 """Contains the constants used in the Airbrakes module."""
 
-from enum import Enum, StrEnum
+from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
@@ -93,16 +93,14 @@ ENCODER_PIN_B = 24
 # Display Configuration
 # -------------------------------------------------------
 
+# TODO: This should be in the launch selector screen:
+MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 100  # 100 Hz
+"""The frequency at which the display updates in replay or sim mode. Increasing this value will
+negatively affect the performance when running with a "fast" simulation."""
 
-class DisplayEndingType(StrEnum):
-    """Enum that represents the different ways the display can end."""
-
-    NATURAL = "natural"
-    """The display ends naturally, when the rocket lands, in a mock replay."""
-    INTERRUPTED = "interrupted"
-    """The display ends because the user interrupted the program."""
-    TAKEOFF = "takeoff"
-    """The display ends because the rocket took off, in a real launch."""
+REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
+"""The frequency at which the display updates in real mode. Decreasing this value will not show
+major performance improvements, but increasing it will negatively affect the performance."""
 
 
 # -------------------------------------------------------
@@ -139,18 +137,6 @@ Buffer size if CAPACITY is reached. Once the state changes, this buffer will be 
 sure we don't lose data.
 """
 
-
-# -------------------------------------------------------
-# Display Configuration
-# -------------------------------------------------------
-
-MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 20  # 20 Hz
-"""The frequency at which the display updates in replay or sim mode. Increasing this value will
-negatively affect the performance when running with a "fast" simulation."""
-
-REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
-"""The frequency at which the display updates in real mode. Decreasing this value will not show
-major performance improvements, but increasing it will negatively affect the performance."""
 
 # -------------------------------------------------------
 # IMU Configuration

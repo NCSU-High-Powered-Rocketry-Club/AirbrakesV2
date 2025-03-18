@@ -224,8 +224,18 @@ Testing our code can be difficult, so we've developed a way to run mock launches
 
 To run a mock launch, run:
 ```bash
-uv run mock
+uv run textual run -c mock
 ```
+
+To connect to the dev console, open another terminal, and run:
+```bash
+uv run textual console
+```
+and then run:
+```bash
+uv run textual run -c --dev mock
+```
+
 If you want to run a mock launch, but with the real servo running, run:
 ```bash
 uv run mock -r

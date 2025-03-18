@@ -1,12 +1,11 @@
 """Module to show the terminal GUI for the airbrakes system."""
 
-import time
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Footer
-from textual.worker import Worker, WorkerState, get_current_worker
+from textual.worker import Worker, WorkerState
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
@@ -34,6 +33,9 @@ from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
+if TYPE_CHECKING:
+    from textual.timer import Timer
+
 
 class AirbrakesApplication(App):
     """A terminal based GUI for displaying real-time flight data."""
@@ -49,6 +51,7 @@ class AirbrakesApplication(App):
         self.is_mock: bool = False
         self._args = arg_parser()
         self._pre_calculated_motor_burn_time: int = None
+        self.timer: Timer = None
 
     def on_mount(self) -> None:
         """Mount the launch selector screen to get the launch configuration."""
@@ -80,6 +83,13 @@ class AirbrakesApplication(App):
         self.context.start()
         self.query_one(CPUUsage).start()
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
+        self.timer = self.set_interval(MOCK_DISPLAY_UPDATE_FREQUENCY, self.update_telemetry)
+
+    def stop(self) -> None:
+        """Stops the flight display."""
+        self.timer.stop()
+        self.context.stop()
+        self.query_one(CPUUsage).stop()
 
     def change_sim_speed(self, sim_speed: float) -> None:
         self.context.imu._sim_speed_factor.value = sim_speed
@@ -146,8 +156,6 @@ class AirbrakesApplication(App):
         # if is_sim:
         #     context.imu.set_airbrakes_status(context.servo.current_extension)
 
-        worker = get_current_worker()
-        start_time = time.perf_counter()
         while True:
             self.context.update()
 
@@ -155,25 +163,15 @@ class AirbrakesApplication(App):
             # in the loop condition.
             # Stop the simulation when the data is exhausted, the worker is cancelled, or when
             # shutdown is requested.
-            if (
-                self.context.shutdown_requested
-                or worker.is_cancelled
-                or not self.context.imu.is_running
-            ):
+            if self.context.shutdown_requested or not self.context.imu.is_running:
                 break
 
-            if self.is_mock and time.perf_counter() - start_time > MOCK_DISPLAY_UPDATE_FREQUENCY:
-                self.call_from_thread(self.update_telemetry)
-                start_time = time.perf_counter()
-
-                # If the sim is paused, we don't want to overwork the CPU
-                if not self.context.imu._sim_speed_factor.value:
-                    time.sleep(0.5)
+        self.stop()
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Used to shut down the airbrakes system when the data is exhausted."""
         if event.worker.name == "Flight Loop" and event.state == WorkerState.SUCCESS:
-            self.context.stop()
+            self.stop()
 
     def compose(self) -> ComposeResult:
         """Create the layout of the app."""

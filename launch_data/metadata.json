@@ -83,7 +83,7 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 53.34,
+            "flight_length_seconds": 42.69,
             "target_apogee_meters": 10.0
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
@@ -114,7 +114,7 @@
                 "latitude": 35.1751266,
                 "longitude": -76.826902
             },
-            "flight_length_seconds": 54.15,
+            "flight_length_seconds": 45.54,
             "target_apogee_meters": 10.0
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."

@@ -5,11 +5,11 @@ import multiprocessing
 import psutil
 from textual.app import ComposeResult
 from textual.reactive import reactive, var
-from textual.widget import Widget
 from textual.widgets import Label, Static
-from textual.worker import get_current_worker
+from textual.worker import Worker, get_current_worker
 
 from airbrakes.context import AirbrakesContext
+from airbrakes.graphics.utils import set_only_class
 
 
 class DebugTelemetry(Static):
@@ -139,7 +139,7 @@ class CPUBars(Static):
         for i, bar in enumerate(bars):
             if i + 1 < bars_to_update and solid_bars:
                 bar.update(CPUBars.FULL_BLOCK)
-                self.set_only_class(bar, "active")
+                set_only_class(bar, "active")
             elif i + 1 == bars_to_update and shaded_block > 0:
                 if shaded_block <= 3.3:
                     bar.update(CPUBars.LIGHT_SHADE)
@@ -147,7 +147,7 @@ class CPUBars(Static):
                     bar.update(CPUBars.MEDIUM_SHADE)
                 elif shaded_block <= 10.0:
                     bar.update(CPUBars.DARK_SHADE)
-                self.set_only_class(bar, "active")
+                set_only_class(bar, "active")
             else:
                 bar.update(CPUBars.LIGHT_SHADE)
                 bar.remove_class("active")
@@ -163,11 +163,6 @@ class CPUBars(Static):
         for bar in active_bars:
             bar.add_class(cpu_color_class)
 
-    def set_only_class(self, obj: Widget, class_name: str) -> None:
-        """Sets the only class of the object to the given class name, removes all others."""
-        obj.remove_class(*obj.classes)
-        obj.set_class(True, class_name)
-
 
 class CPUUsage(Static):
     """Panel displaying the CPU usage."""
@@ -179,6 +174,7 @@ class CPUUsage(Static):
         super().__init__(*args, **kwargs)
         self.processes: dict[str, psutil.Process] = {}
         self.set_reactive(CPUUsage.cpu_usages, {})
+        self.cpu_worker: Worker = None
 
     def compose(self) -> ComposeResult:
         # 3x4 grid:
@@ -204,7 +200,12 @@ class CPUUsage(Static):
 
     def start(self) -> None:
         self.processes = self.prepare_process_dict()
-        self.run_worker(self.update_cpu_usage, name="CPU Polling", thread=True, exclusive=True)
+        self.worker = self.run_worker(
+            self.update_cpu_usage, name="CPU Polling", thread=True, exclusive=True
+        )
+
+    def stop(self) -> None:
+        self.worker.cancel()
 
     def update_labels(self) -> None:
         main_pct_label = self.query_one("#cpu_main_pct", Label)
@@ -274,7 +275,7 @@ class CPUUsage(Static):
             for name, process in self.processes.items():
                 # interval=None is not recommended and can be inaccurate.
                 try:
-                    self.cpu_usages.update({name: process.cpu_percent(interval=0.3)})
+                    self.cpu_usages.update({name: process.cpu_percent(interval=0.9)})
                 except psutil.NoSuchProcess:
                     # The process has ended, so we set the CPU usage to 0.
                     self.cpu_usages.update({name: 0.0})
@@ -295,11 +296,11 @@ class FlightTelemetry(Static):
 
     def compose(self) -> ComposeResult:
         yield Label("Velocity: ", id="vertical_velocity", expand=True)
-        yield Label("Max Velocity: ", id="max_vertical_velocity")
-        yield Label("Altitude: ", id="current_height")
+        yield Label("Max Velocity: ", id="max_vertical_velocity", expand=True)
+        yield Label("Altitude: ", id="current_height", expand=True)
         yield Label("Max altitude: ", id="max_height", expand=True)
-        yield Label("Predicted Apogee: ", id="apogee_prediction")
-        yield Label("Airbrakes Extension: ", id="airbrakes_extension")
+        yield Label("Predicted Apogee: ", id="apogee_prediction", expand=True)
+        yield Label("Airbrakes Extension: ", id="airbrakes_extension", expand=True)
 
     def initialize_widgets(self, context: AirbrakesContext) -> None:
         self.context = context

@@ -15,7 +15,6 @@ from airbrakes.constants import (
     CHUNK_SIZE,
     DEFAULT,
     MAX_FETCHED_PACKETS,
-    MAX_QUEUE_SIZE,
     STOP_SIGNAL,
 )
 from airbrakes.interfaces.base_imu import BaseIMU
@@ -68,14 +67,10 @@ class MockIMU(BaseIMU):
             root_dir = Path(__file__).parent.parent.parent
             log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
-        # If it's not a real time replay, we limit how big the queue gets when doing an integration
-        # test, because we read the file much faster than update(), sometimes resulting thousands
-        # of data packets in the queue, which will obviously mess up data processing calculations.
-        # We limit it to 15 packets, which is more realistic for a real flight.
         msgpack_encoder = msgspec.msgpack.Encoder()
         msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
         queued_imu_packets: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
+            maxsize=MAX_FETCHED_PACKETS,
             dumps=msgpack_encoder.encode,
             loads=msgpack_decoder.decode,
         )
