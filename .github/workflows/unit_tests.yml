@@ -23,14 +23,12 @@
         - name: Install uv
           uses: astral-sh/setup-uv@v5
           with:
+            enable-cache: true
             version: "0.6.7"
         - name: Set up Python
           uses: actions/setup-python@v5
           with:
             python-version-file: "pyproject.toml"
-
-        - name: Install build dependencies
-          run: sudo apt install -y build-essential gcc g++
 
         - name: Install the project
           run: uv sync --verbose --group dev
