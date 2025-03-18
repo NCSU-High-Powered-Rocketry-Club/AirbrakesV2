@@ -1,4 +1,4 @@
-import _testinternalcapi
+# import _testinternalcapi
 import threading
 import time
 
@@ -500,8 +500,9 @@ class TestAirbrakesContext:
 
     def test_benchmark_airbrakes_update(self, airbrakes, benchmark, random_data_mock_imu):
         """Benchmark the update method of the airbrakes system."""
-        if _testinternalcapi.get_optimizer() is None:
-            pytest.fail("Please run benchmarks with PYTHON_JIT=1!")
+        # uv managed arm64 python is still not built with JIT, thus this is commented out.
+        # if _testinternalcapi.get_optimizer() is None:
+        #     pytest.fail("Please run benchmarks with PYTHON_JIT=1!")
         ab = airbrakes
         ab.imu = random_data_mock_imu
         ab.start()
