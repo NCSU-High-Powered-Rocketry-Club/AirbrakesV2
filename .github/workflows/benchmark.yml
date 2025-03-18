@@ -30,6 +30,7 @@
           uses: astral-sh/setup-uv@v5
           with:
             enable-cache: true
+            version: "0.6.7"
         - name: Set up Python
           uses: actions/setup-python@v5
           with:
@@ -40,7 +41,7 @@
 
         - name: Run benchmarking tests
           run: |
-            uv run pytest --benchmark-only --benchmark-json output.json -v tests/
+            PYTHON_JIT=1 uv run -v pytest --benchmark-only --benchmark-json output.json -v tests/
 
         - name: Store benchmark result
           uses: benchmark-action/github-action-benchmark@v1
