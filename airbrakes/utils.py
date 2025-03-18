@@ -56,6 +56,27 @@ def convert_ns_to_s(nanoseconds: float) -> float:
     return nanoseconds * 1e-9
 
 
+def convert_seconds_to_packets(
+    seconds: float, raw_packet_freq: float, est_packet_freq: float
+) -> int:
+    """Returns the number of packets which are expected to be received, given the time in seconds,
+    the raw packet rate, and the estimated packet rate.
+
+    :param seconds: The time in seconds.
+    :param raw_packet_freq: The raw packet rate, in Hz.
+    :param est_packet_freq: The estimated packet rate, in Hz.
+
+    :return: The number of packets expected to be received.
+    """
+    # Formula for converting number of packets to seconds and vice versa:
+    # If N = total number of packets, T = total time in seconds:
+    # f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
+    # T = N/f => N = T * 1000
+
+    # Calculate the number of packets expected to be received:
+    return int(seconds * (raw_packet_freq + est_packet_freq))
+
+
 def set_process_priority(priority: int) -> None:
     """
     Sets the priority of the calling process to the specified nice value. Only works on Linux.

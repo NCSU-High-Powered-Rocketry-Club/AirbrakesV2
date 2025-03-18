@@ -103,6 +103,11 @@ REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
 major performance improvements, but increasing it will negatively affect the performance."""
 
 
+GRAPH_DATA_STORE_INTERVAL_SECONDS = 20
+"""The interval in seconds at which the graph data is stored. This is to prevent the graph from
+growing too large and taking up too much memory."""
+
+
 # -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------

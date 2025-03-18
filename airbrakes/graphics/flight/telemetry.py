@@ -232,16 +232,6 @@ class CPUUsage(Static):
     def watch_cpu_usages(self) -> None:
         self.update_labels()
         self.update_cpu_bars()
-        # plt_obj = self.query_one("#cpu_usage_plotext", PlotextPlot)
-        # plt = plt_obj.plt
-        # plt.clear_data()
-        # plt.ylim(0)
-        # names = list(self.cpu_usages.keys())
-        # names = [name[0].upper() for name in names]
-        # values = list(self.cpu_usages.values())
-        # plt.bar(names, values, width=0.01, orientation="horizontal")
-        # plt.title("CPU Usage")
-        # plt_obj.refresh()
 
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
