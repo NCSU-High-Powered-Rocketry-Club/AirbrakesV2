@@ -153,11 +153,13 @@ class AirbrakesApplication(App):
 
             # See https://github.com/python/cpython/issues/130279 for why this is here and not
             # in the loop condition.
-            if self.context.shutdown_requested:
-                break
-
-            # Stop the simulation when the data is exhausted
-            if not self.context.imu.is_running or worker.is_cancelled:
+            # Stop the simulation when the data is exhausted, the worker is cancelled, or when
+            # shutdown is requested.
+            if (
+                self.context.shutdown_requested
+                or worker.is_cancelled
+                or not self.context.imu.is_running
+            ):
                 break
 
             if self.is_mock and time.perf_counter() - start_time > MOCK_DISPLAY_UPDATE_FREQUENCY:

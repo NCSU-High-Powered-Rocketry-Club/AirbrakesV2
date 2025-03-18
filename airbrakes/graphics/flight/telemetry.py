@@ -269,16 +269,12 @@ class CPUUsage(Static):
     def update_cpu_usage(self) -> None:
         """Update CPU usage for each monitored process every `interval` seconds. This is run in
         another thread because polling for CPU usage is a blocking operation."""
-        cpu_count = psutil.cpu_count()
         worker = get_current_worker()
         while not worker.is_cancelled:
             for name, process in self.processes.items():
                 # interval=None is not recommended and can be inaccurate.
-                # We normalize the CPU usage by the number of CPUs to get average cpu usage,
-                # otherwise it's usually > 100%.
                 try:
-                    self.cpu_usages.update({name: process.cpu_percent(interval=0.3) / cpu_count})
-                    # self.cpu_usages[name] = process.cpu_percent(interval=0.3) / cpu_count
+                    self.cpu_usages.update({name: process.cpu_percent(interval=0.3)})
                 except psutil.NoSuchProcess:
                     # The process has ended, so we set the CPU usage to 0.
                     self.cpu_usages.update({name: 0.0})
