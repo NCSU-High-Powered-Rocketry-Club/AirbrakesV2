@@ -51,6 +51,8 @@ class AirbrakesApplication(App):
         self.is_mock: bool = False
         self._args = arg_parser()
         self._pre_calculated_motor_burn_time: int = None
+        self.flight_information: FlightInformation = None
+        self.flight_header: FlightHeader = None
         self.timer: Timer = None
 
     def on_mount(self) -> None:
@@ -67,15 +69,16 @@ class AirbrakesApplication(App):
         self.create_components(launch_config)
         self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
+        self.watch(self.flight_header, "t_zero_time_ns", self.monitor_flight_time, init=False)
         self.start()
 
     def initialize_widgets(self) -> None:
         """Supplies the airbrakes context and related objects to the widgets for proper
         operation."""
-        flight_header = self.query_one(FlightHeader)
-        flight_information = self.query_one(FlightInformation)
-        flight_header.initialize_widgets(self.context, self.is_mock)
-        flight_information.initialize_widgets(self.context)
+        self.flight_header = self.query_one(FlightHeader)
+        self.flight_information = self.query_one(FlightInformation)
+        self.flight_header.initialize_widgets(self.context, self.is_mock)
+        self.flight_information.initialize_widgets(self.context)
 
     def start(self) -> None:
         """Starts the flight display."""
@@ -84,6 +87,7 @@ class AirbrakesApplication(App):
         self.query_one(CPUUsage).start()
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
         self.timer = self.set_interval(MOCK_DISPLAY_UPDATE_FREQUENCY, self.update_telemetry)
+        # TODO: Reduce frequency of update_telemetry to 10Hz when paused
 
     def stop(self) -> None:
         """Stops the flight display."""
@@ -141,10 +145,13 @@ class AirbrakesApplication(App):
 
     def update_telemetry(self) -> None:
         """Updates all the reactive variables with the latest telemetry data."""
-        flight_header = self.query_one(FlightHeader)
-        flight_header.update_header()
-        flight_information = self.query_one(FlightInformation)
-        flight_information.update_flight_information()
+        self.flight_header.update_header()
+        self.flight_information.update_flight_information()
+
+    def monitor_flight_time(self, flight_time_ns: int) -> None:
+        """Updates the graphs when the time changes."""
+        # TODO: Refactor everything to update when the time changes.
+        self.flight_information.flight_graph.update_data(flight_time_ns)
 
     def run_flight_loop(self) -> None:
         """Main flight control loop that runs until shutdown is requested or interrupted."""

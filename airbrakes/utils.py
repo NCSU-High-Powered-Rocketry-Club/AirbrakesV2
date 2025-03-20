@@ -47,7 +47,7 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
             return None
 
 
-def convert_ns_to_s(nanoseconds: float) -> float:
+def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.
     :param nanoseconds: The time in nanoseconds.

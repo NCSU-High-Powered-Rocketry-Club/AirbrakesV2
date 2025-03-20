@@ -94,15 +94,40 @@
 #flight-information-panel {
     layout: grid;
     grid-size: 3;  /* 3 columns */
-    grid-rows: auto;
+    # grid-rows: auto;
+    grid-rows: 1fr;
     # grid-columns: auto;
     height: 100%;
     overflow: auto;
     # background: maroon;
 
-    #flight_data_panel {
+    #flight-data-panel {
         border: solid;
         overflow-y: auto;
+    }
+
+    #flight-graph-panel {
+        # height: 100;
+        # background: orange;
+
+        PlotWidget {
+            # background: yellow;
+            height: auto;
+        }
+
+        TabbedContent #--content-tab-accel-tab {
+            color: red;
+        }
+        TabbedContent #--content-tab-vel-tab {
+            color: blue;
+        }
+        TabbedContent #--content-tab-alt-tab {
+            color: green;
+        }
+        TabbedContent #--content-tab-pred-apogee-tab {
+            color: purple;
+        }
+
     }
 
     #debug-flight-data-panel {

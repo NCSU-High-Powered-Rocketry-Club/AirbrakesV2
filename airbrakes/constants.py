@@ -94,7 +94,7 @@ ENCODER_PIN_B = 24
 # -------------------------------------------------------
 
 # TODO: This should be in the launch selector screen:
-MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 100  # 100 Hz
+MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 500
 """The frequency at which the display updates in replay or sim mode. Increasing this value will
 negatively affect the performance when running with a "fast" simulation."""
 
@@ -103,9 +103,9 @@ REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
 major performance improvements, but increasing it will negatively affect the performance."""
 
 
-GRAPH_DATA_STORE_INTERVAL_SECONDS = 20
-"""The interval in seconds at which the graph data is stored. This is to prevent the graph from
-growing too large and taking up too much memory."""
+GRAPH_DATA_STORE_INTERVAL_SECONDS = 4
+"""The interval in seconds at which the graph data is stored. This is used so that it is easy
+to look at the changing data in real time."""
 
 
 # -------------------------------------------------------
