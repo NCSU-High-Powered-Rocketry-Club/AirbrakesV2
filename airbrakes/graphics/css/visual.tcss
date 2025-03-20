@@ -1,0 +1,184 @@
+#main-grid {
+    layout: grid;
+    grid-size: 1;
+    grid-rows: auto 1fr;
+    # background: green;
+}
+
+#flight-header {
+    layout: grid;
+    overflow-y: auto;
+    grid-size: 3; /* 3 columns */
+    grid-rows: auto;
+    grid-gutter: 1;
+    # background: orange;
+
+    #launch-file-name {
+        # background: black;
+        text-align: center;
+        width: 100%;
+    }
+
+    #normal-sim-time {
+        text-align: center;
+        width: 100%;
+    }
+
+    Button {
+        min-width: 0;
+        border: none;
+    }
+
+    #launch-clock {
+        # background: blue;
+        text-align: center;
+    }
+
+    #state {
+        align: left bottom;
+        content-align: left bottom;
+        text-align: center;
+        width: 100%;
+        # background: blue;
+    }
+
+    #sim-speed-panel {
+        max-height: 1;
+        # background: teal;
+        Horizontal {
+            align: center middle;
+        }
+    }
+
+    #flight-progress-bar {
+        column-span: 3;
+        width: 100%;
+        # background: green;
+
+        Bar {
+            width: 1fr;
+
+            &.standby {
+                .bar--bar {
+                    color: orange;
+                }
+            }
+
+            &.motorburn {
+                .bar--bar {
+                    color: red;
+                }
+            }
+
+            &.coast {
+                .bar--bar {
+                    color: yellow;
+                }
+            }
+
+            &.freefall {
+                .bar--bar {
+                    color: green;
+                }
+            }
+
+            &.landed {
+                .bar--bar {
+                    color: indigo;
+                }
+            }
+        }
+    }
+}
+
+#flight-information-panel {
+    layout: grid;
+    grid-size: 3;  /* 3 columns */
+    # grid-rows: auto;
+    grid-rows: 1fr;
+    # grid-columns: auto;
+    height: 100%;
+    overflow: auto;
+    # background: maroon;
+
+    #flight-data-panel {
+        border: solid;
+        overflow-y: auto;
+    }
+
+    #flight-graph-panel {
+        # height: 100;
+        # background: orange;
+
+        PlotWidget {
+            # background: yellow;
+            height: auto;
+        }
+
+        TabbedContent #--content-tab-accel-tab {
+            color: red;
+        }
+        TabbedContent #--content-tab-vel-tab {
+            color: blue;
+        }
+        TabbedContent #--content-tab-alt-tab {
+            color: green;
+        }
+        TabbedContent #--content-tab-pred-apogee-tab {
+            color: purple;
+        }
+
+    }
+
+    #debug-flight-data-panel {
+        overflow: auto;
+        border: solid;
+
+        #cpu_usage_widget {
+            layout: grid;
+            border: solid;
+            /* 4 Processes = 4 columns */
+            grid-size: 4 3;
+            overflow: auto;
+            grid-gutter: 1;
+            grid-columns: 1fr;
+            grid-rows: auto;
+
+            CPUBars {
+                max-height: 10;
+                content-align: center middle;
+            }
+
+            CPUBar {
+                color: grey 50%;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+
+                &.active {
+                    &.low {
+                        color: white 80%;
+                    }
+
+                    &.medium {
+                        color: yellow 80%;
+                    }
+
+                    &.high {
+                        color: red 80%;
+                    }
+                }
+            }
+
+            Label {
+                content-align: center middle;
+                text-align: center;
+            }
+        }
+    }
+}
+
+Placeholder {
+    width: auto;
+    height: auto;
+}

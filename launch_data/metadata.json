@@ -83,7 +83,7 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 53.34,
+            "flight_length_seconds": 42.69,
             "target_apogee_meters": 10.0
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
@@ -114,7 +114,7 @@
                 "latitude": 35.1751266,
                 "longitude": -76.826902
             },
-            "flight_length_seconds": 54.15,
+            "flight_length_seconds": 45.54,
             "target_apogee_meters": 10.0
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
@@ -174,7 +174,7 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": null,
+            "flight_length_seconds": 0.0,
             "target_apogee_meters": 1
         },
         "flight_description": "Complete waste of a flight since the velocity was negative at standby state due to excessive gyro drift. No data past standby state."
@@ -204,7 +204,7 @@
                 "latitude": 35.17778228496852,
                 "longitude": -76.8299311341451
             },
-            "flight_length_seconds": null,
+            "flight_length_seconds": 36.36,
             "target_apogee_meters": 1218.2
         },
         "flight_description": "First flight of the Pelicanator. This was the first flight with the Raspberry Pi 5, and the first flight in which airbrakes 100% worked. However the flight itself was a failed VDF launch, crash landing and thus the data was cutoff before landing. The camera was in the payload for this flight."

@@ -89,6 +89,14 @@ class DataProcessor:
         return float(self._vertical_velocities[-1])
 
     @property
+    def vertical_acceleration(self) -> float:
+        """
+        The current vertical acceleration of the rocket in m/s^2.
+        :return: The vertical acceleration of the rocket.
+        """
+        return float(self._rotated_accelerations[-1])
+
+    @property
     def max_vertical_velocity(self) -> float:
         """
         The maximum vertical velocity the rocket has attained during the flight, in m/s.
