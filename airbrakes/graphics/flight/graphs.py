@@ -2,6 +2,7 @@
 
 import bisect
 
+from textual import on
 from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import TabbedContent, TabPane
@@ -70,7 +71,7 @@ class FlightGraph(Widget):
 
     def compose(self) -> ComposeResult:
         """Compose the main layout, consisting of 3 tabs."""
-        self.tabbed_content = TabbedContent(id="tabbed-content", initial="accel-tab")
+        self.tabbed_content = TabbedContent(id="tabbed-content", initial="accel-tab", disabled=True)
         with self.tabbed_content:
             with TabPane("Acceleration", id="accel-tab"):
                 self.accel_plot = PlotWidget(allow_pan_and_zoom=False)
@@ -100,6 +101,7 @@ class FlightGraph(Widget):
         self.information_store.initalize_new_data("alt")
         self.information_store.initalize_new_data("pred_apogee")
         self.information_store.initalize_new_data("time")
+        self.tabbed_content.disabled = False
 
     def update_data(self, current_flight_time_ns: int) -> None:
         """Update the graphs (i.e. add data) when the time since launch changes."""
@@ -117,18 +119,42 @@ class FlightGraph(Widget):
         # Call the currently active tab's function:
         active_pane = self.tabbed_content.active_pane
         if active_pane.id == "accel-tab":
-            self.accel_tab()
+            self.plot_acceleration()
         elif active_pane.id == "vel-tab":
-            self.vel_tab()
+            self.plot_velocity()
         elif active_pane.id == "alt-tab":
-            self.alt_tab()
+            self.plot_altitude()
         elif active_pane.id == "pred-apogee-tab":
-            self.apogee_tab()
+            self.plot_predicted_apogee()
         else:
             return
 
-    def accel_tab(self) -> None:
+    @on(TabbedContent.TabActivated, pane="#accel-tab")
+    def accel_tab_switch(self) -> None:
         """Show the acceleration graph when the acceleration tab is activated."""
+        if self.information_store is not None:
+            self.plot_acceleration()
+
+    @on(TabbedContent.TabActivated, pane="#vel-tab")
+    def vel_tab_switch(self) -> None:
+        """Show the velocity graph when the velocity tab is activated."""
+        if self.information_store is not None:
+            self.plot_velocity()
+
+    @on(TabbedContent.TabActivated, pane="#alt-tab")
+    def alt_tab_switch(self) -> None:
+        """Show the altitude graph when the altitude tab is activated."""
+        if self.information_store is not None:
+            self.plot_altitude()
+
+    @on(TabbedContent.TabActivated, pane="#pred-apogee-tab")
+    def apogee_tab_switch(self) -> None:
+        """Show the predicted apogee graph when the predicted apogee tab is activated."""
+        if self.information_store is not None:
+            self.plot_predicted_apogee()
+
+    def plot_acceleration(self) -> None:
+        """Plot the acceleration graph when the acceleration tab is activated."""
         plot = self.accel_plot
         y = self.information_store.get_data("accel")
         line_color = "red"
@@ -136,8 +162,8 @@ class FlightGraph(Widget):
         x = self.information_store.get_data("time")
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
-    def vel_tab(self) -> None:
-        """Show the velocity graph when the velocity tab is activated."""
+    def plot_velocity(self) -> None:
+        """Plot the velocity graph when the velocity tab is activated."""
         plot = self.vel_plot
         y = self.information_store.get_data("vel")
         line_color = "blue"
@@ -145,8 +171,8 @@ class FlightGraph(Widget):
         x = self.information_store.get_data("time")
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
-    def alt_tab(self) -> None:
-        """Show the altitude graph when the altitude tab is activated."""
+    def plot_altitude(self) -> None:
+        """Plot the altitude graph when the altitude tab is activated."""
         plot = self.alt_plot
         y = self.information_store.get_data("alt")
         line_color = "green"
@@ -154,8 +180,8 @@ class FlightGraph(Widget):
         x = self.information_store.get_data("time")
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
-    def apogee_tab(self) -> None:
-        """Show the predicted apogee graph when the predicted apogee tab is activated."""
+    def plot_predicted_apogee(self) -> None:
+        """Plot the predicted apogee graph when the predicted apogee tab is activated."""
         plot = self.apogee_plot
         y = self.information_store.get_data("pred_apogee")
         line_color = "purple"
