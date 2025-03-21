@@ -97,7 +97,6 @@ class AirbrakesApplication(App):
 
     def change_sim_speed(self, sim_speed: float) -> None:
         self.context.imu._sim_speed_factor.value = sim_speed
-        # TODO: Make the time blink if sim_speed == 0
 
     def create_components(self, launch_config: SelectedLaunchConfiguration) -> None:
         """Create the system components needed for the airbrakes system."""

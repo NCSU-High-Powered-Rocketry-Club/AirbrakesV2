@@ -6,6 +6,7 @@ from typing import ClassVar, Literal
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button, Label, ProgressBar, Static
 
@@ -28,10 +29,18 @@ class SimulationSpeed(Static, can_focus=True):
     sim_speed: reactive[float] = reactive(1.0, bindings=True)
     old_sim_speed: float = 1.0
 
+    class State(Message):
+        """Sends a message to the parent widget when the sim is paused / unpaused."""
+
+        def __init__(self, paused: bool) -> None:
+            self.paused = paused
+            super().__init__()
+
     def compose(self) -> ComposeResult:
         with Horizontal():
             yield Button("<", id="speed_decrease_button")
-            yield Label("1.0x", id="simulation_speed")
+            self.sim_speed_label = Label("1.0x", id="simulation_speed")
+            yield self.sim_speed_label
             yield Button(">", id="speed_increase_button")
 
     def validate_sim_speed(self, sim_speed: float) -> float:
@@ -41,9 +50,14 @@ class SimulationSpeed(Static, can_focus=True):
             return 2.0
         return round(sim_speed, 2)
 
-    def watch_sim_speed(self, old_sim_speed: float, sim_speed: float) -> None:
-        self.query_one("#simulation_speed", Label).update(f"{sim_speed:.1f}x")
+    def watch_sim_speed(self, old_sim_speed: float, new_sim_speed: float) -> None:
+        self.sim_speed_label.update(f"{new_sim_speed:.1f}x")
         self.old_sim_speed = old_sim_speed
+
+        if new_sim_speed == 0.0:
+            self.post_message(self.State(paused=True))
+        elif old_sim_speed == 0.0 and new_sim_speed > 0.0:
+            self.post_message(self.State(paused=False))
 
     def action_pause_sim(self) -> None:
         self.sim_speed = 0.0
@@ -122,13 +136,15 @@ class FlightHeader(Static):
         yield Label("00:00.00", id="normal-sim-time")
         yield Static()
         yield Static()
-        yield TimeDisplay("T+00:00", id="launch-clock")
+        self.time_display = TimeDisplay("T+00:00", id="launch-clock")
+        yield self.time_display
         yield Static()
         yield Label("STATUS: ", id="state")
         yield SimulationSpeed(id="sim-speed-panel")
         yield Static()
         # Takes all the columns in the last row:
-        yield FlightProgressBar(id="flight-progress-bar")
+        self.flight_progress_bar = FlightProgressBar(id="flight-progress-bar")
+        yield self.flight_progress_bar
 
     def initialize_widgets(self, context: AirbrakesContext, is_mock: bool) -> None:
         """Initializes the widgets with the context and the mock flag."""
@@ -150,14 +166,14 @@ class FlightHeader(Static):
         file_metadata = self.context.imu.file_metadata
         flight_length = file_metadata["flight_data"]["flight_length_seconds"]
 
-        self.query_one(FlightProgressBar).initialize_widgets(flight_length)
+        self.flight_progress_bar.initialize_widgets(flight_length)
 
         self.sim_start_time = monotonic_ns()
 
     def watch_t_zero_time_ns(self) -> None:
         """Updates the launch time display, and the progress bar."""
         # Update the launch time display:
-        time_display = self.query_one("#launch-clock", TimeDisplay)
+        time_display = self.time_display
         after_launch = self.t_zero_time_ns > 0
         launch_time = TimeDisplay.format_ns_to_min_s_ms(abs(self.t_zero_time_ns))
         launch_time = f"T+{launch_time}" if after_launch else f"T-{launch_time}"
@@ -165,7 +181,7 @@ class FlightHeader(Static):
 
         # Update the progress bar with the launch time:
         launch_time_seconds = convert_ns_to_s(self.t_zero_time_ns)
-        self.query_one(FlightProgressBar).set_progress(launch_time_seconds)
+        self.flight_progress_bar.set_progress(launch_time_seconds)
 
     def watch_state(self) -> None:
         if not self.context:
@@ -177,11 +193,23 @@ class FlightHeader(Static):
 
         label = self.state.removesuffix("State")
         state_label.update(f"STATUS: {label}")
-        self.query_one(FlightProgressBar).update_progress_bar_color(label)
+        self.flight_progress_bar.update_progress_bar_color(label)
 
     def watch_current_sim_time(self) -> None:
         time_display = self.query_one("#normal-sim-time", Label)
         time_display.update(TimeDisplay.format_ns_to_min_s_ms(self.current_sim_time))
+
+    def on_simulation_speed_state(self, message: SimulationSpeed.State) -> None:
+        """Start a timer which add and removes a class to the launch clock to make it blink."""
+
+        def start_blinking() -> None:
+            self.time_display.toggle_class("blink")
+
+        if message.paused:
+            self.time_display_blink_timer = self.set_interval(0.5, start_blinking)
+        else:
+            self.time_display.remove_class("blink")
+            self.time_display_blink_timer.stop()
 
     def calculate_launch_time(self) -> int:
         """

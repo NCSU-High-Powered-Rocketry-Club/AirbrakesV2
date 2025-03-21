@@ -32,6 +32,10 @@
     #launch-clock {
         # background: blue;
         text-align: center;
+
+        &.blink {
+            visibility: hidden;
+        }
     }
 
     #state {
@@ -104,6 +108,54 @@
     #flight-data-panel {
         border: solid;
         overflow-y: auto;
+        row-span: 2;
+
+        #debug-telemetry {
+            overflow: auto;
+            border: solid;
+
+            #cpu_usage_widget {
+                layout: grid;
+                border: solid;
+                /* 4 Processes = 4 columns */
+                grid-size: 4 3;
+                overflow: auto;
+                grid-gutter: 1;
+                grid-columns: 1fr;
+                grid-rows: auto;
+
+                CPUBars {
+                    max-height: 10;
+                    content-align: center middle;
+                }
+
+                CPUBar {
+                    color: grey 50%;
+                    margin: 0;
+                    padding: 0;
+                    text-align: center;
+
+                    &.active {
+                        &.low {
+                            color: white 80%;
+                        }
+
+                        &.medium {
+                            color: yellow 80%;
+                        }
+
+                        &.high {
+                            color: red 80%;
+                        }
+                    }
+                }
+
+                Label {
+                    content-align: center middle;
+                    text-align: center;
+                }
+            }
+        }
     }
 
     #flight-graph-panel {
@@ -128,53 +180,6 @@
             color: purple;
         }
 
-    }
-
-    #debug-flight-data-panel {
-        overflow: auto;
-        border: solid;
-
-        #cpu_usage_widget {
-            layout: grid;
-            border: solid;
-            /* 4 Processes = 4 columns */
-            grid-size: 4 3;
-            overflow: auto;
-            grid-gutter: 1;
-            grid-columns: 1fr;
-            grid-rows: auto;
-
-            CPUBars {
-                max-height: 10;
-                content-align: center middle;
-            }
-
-            CPUBar {
-                color: grey 50%;
-                margin: 0;
-                padding: 0;
-                text-align: center;
-
-                &.active {
-                    &.low {
-                        color: white 80%;
-                    }
-
-                    &.medium {
-                        color: yellow 80%;
-                    }
-
-                    &.high {
-                        color: red 80%;
-                    }
-                }
-            }
-
-            Label {
-                content-align: center middle;
-                text-align: center;
-            }
-        }
     }
 }
 

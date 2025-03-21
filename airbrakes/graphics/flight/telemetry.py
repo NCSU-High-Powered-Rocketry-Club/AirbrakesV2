@@ -291,9 +291,13 @@ class FlightTelemetry(Static):
         yield Label("Max altitude: ", id="max_height", expand=True)
         yield Label("Predicted Apogee: ", id="apogee_prediction", expand=True)
         yield Label("Airbrakes Extension: ", id="airbrakes_extension", expand=True)
+        self.debug_telemetry = DebugTelemetry(id="debug-telemetry")
+        self.debug_telemetry.border_title = "DEBUG TELEMETRY"
+        yield self.debug_telemetry
 
     def initialize_widgets(self, context: AirbrakesContext) -> None:
         self.context = context
+        self.debug_telemetry.initialize_widgets(context)
 
     def watch_vertical_velocity(self) -> None:
         vertical_velocity_label = self.query_one("#vertical_velocity", Label)
@@ -326,3 +330,5 @@ class FlightTelemetry(Static):
         self.max_height = self.context.data_processor.max_altitude
         self.apogee_prediction = self.context.last_apogee_predictor_packet.predicted_apogee
         self.airbrakes_extension = self.context.servo.current_extension.value
+
+        self.debug_telemetry.update_debug_telemetry()
