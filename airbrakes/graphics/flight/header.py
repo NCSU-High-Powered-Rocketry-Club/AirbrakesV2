@@ -133,13 +133,14 @@ class FlightHeader(Static):
         """Composes the header panel."""
         # Grid layout, 4 rows, 3 columns:
         yield Label("", id="launch-file-name", disabled=True)
-        yield Label("00:00.00", id="normal-sim-time")
+        self.sim_time_label = Label("00:00.00", id="normal-sim-time")
+        yield self.sim_time_label
         yield Static()
         yield Static()
         self.time_display = TimeDisplay("T+00:00", id="launch-clock")
         yield self.time_display
         yield Static()
-        yield Label("STATUS: ", id="state")
+        yield Label("", id="state")
         yield SimulationSpeed(id="sim-speed-panel")
         yield Static()
         # Takes all the columns in the last row:
@@ -184,20 +185,17 @@ class FlightHeader(Static):
         self.flight_progress_bar.set_progress(launch_time_seconds)
 
     def watch_state(self) -> None:
-        if not self.context:
-            return
         state_label = self.query_one("#state", Label)
 
         if not self.takeoff_time_ns and self.state == "MotorBurnState":
             self.takeoff_time_ns = self.context.state.start_time_ns
 
         label = self.state.removesuffix("State")
-        state_label.update(f"STATUS: {label}")
+        state_label.update(f"[b]{label.upper()}[/b]")
         self.flight_progress_bar.update_progress_bar_color(label)
 
     def watch_current_sim_time(self) -> None:
-        time_display = self.query_one("#normal-sim-time", Label)
-        time_display.update(TimeDisplay.format_ns_to_min_s_ms(self.current_sim_time))
+        self.sim_time_label.update(TimeDisplay.format_ns_to_min_s_ms(self.current_sim_time))
 
     def on_simulation_speed_state(self, message: SimulationSpeed.State) -> None:
         """Start a timer which add and removes a class to the launch clock to make it blink."""
