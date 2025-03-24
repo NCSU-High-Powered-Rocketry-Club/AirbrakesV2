@@ -138,10 +138,6 @@ class DataProcessor:
         velocity, etc.
         :param data_packets: A list of EstimatedDataPacket objects to process
         """
-        # If the data points are empty, we don't want to try to process anything
-        if not data_packets:
-            return
-
         self._data_packets = data_packets
 
         # If we don't have a last data point, we can't calculate the time differences needed

@@ -132,7 +132,6 @@ class AirbrakesApplication(App):
             camera = MockCamera() if self._args.mock_camera else Camera()
             imu = IMU(IMU_PORT)
             logger = Logger(LOGS_PATH)
-            camera = Camera()
             data_processor = DataProcessor()
 
         apogee_predictor = ApogeePredictor()

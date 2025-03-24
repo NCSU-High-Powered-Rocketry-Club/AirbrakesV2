@@ -146,12 +146,11 @@ class AirbrakesContext:
             if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
         ]
 
-        # Update the data processor with the new data packets.
-        self.data_processor.update(self.est_data_packets)
-
         # Get the Processor Data Packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
         if self.est_data_packets:
+            # Update the data processor with the new data packets.
+            self.data_processor.update(self.est_data_packets)
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
         # Gets the Apogee Predictor Data Packets
