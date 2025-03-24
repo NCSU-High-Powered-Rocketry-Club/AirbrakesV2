@@ -1,13 +1,16 @@
 """Utility functions for the graphics module."""
 
 import bisect
+from collections.abc import Generator
+from contextlib import contextmanager
+from typing import Self
 
 from textual.widget import Widget
 
 
 class InformationStore:
     """Class to store the information to be displayed in the graphs. A set amount of time's
-    worth of data is stored as a rolling buffer. This class is independent of the GUI, because
+    worth of data is stored as a rolling buffer. This class is independent of the TUI, because
     it is meant to be extensible and reusable, for example for use in scripts, to show other IMU
     data.
     """
@@ -44,11 +47,19 @@ class InformationStore:
         """
         return self.data[data_name]
 
-    def resize_data(self) -> None:
+    @contextmanager
+    def resize_data(self) -> Generator[Self]:
         """Trims the data if the time difference between the first and last data points is greater
-        than the time to store for."""
-        # TODO: Make a context manager to avoid calling this function every time
-        # TODO: Benchmark the numpy approach
+        than the time to store for.
+
+        Use as:
+        ```
+        with information_store.resize_data() as store:
+            store.add_data_point("data_name", data)
+        ```
+        """
+        yield self
+        # The numpy approach is slower by about 30%
         last_time = self.data["time"][-1]
         min_time = last_time - self.time_to_store_for
         min_time_index = bisect.bisect_left(self.data["time"], min_time)

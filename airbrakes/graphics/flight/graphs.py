@@ -58,16 +58,15 @@ class FlightGraph(Widget):
     def update_data(self, current_flight_time_ns: int) -> None:
         """Update the graphs (i.e. add data) when the time since launch changes."""
         current_flight_time_s: float = convert_ns_to_s(current_flight_time_ns)
-        self.information_store.add_data_point("time", current_flight_time_s)
-        self.information_store.add_data_point(
-            "accel", self.context.data_processor.vertical_acceleration
-        )
-        self.information_store.add_data_point("vel", self.context.data_processor.vertical_velocity)
-        self.information_store.add_data_point("alt", self.context.data_processor.current_altitude)
-        self.information_store.add_data_point(
-            "pred_apogee", self.context.last_apogee_predictor_packet.predicted_apogee
-        )
-        self.information_store.resize_data()
+
+        with self.information_store.resize_data() as store:
+            store.add_data_point("time", current_flight_time_s)
+            store.add_data_point("accel", self.context.data_processor.vertical_acceleration)
+            store.add_data_point("vel", self.context.data_processor.vertical_velocity)
+            store.add_data_point("alt", self.context.data_processor.current_altitude)
+            store.add_data_point(
+                "pred_apogee", self.context.last_apogee_predictor_packet.predicted_apogee
+            )
         # Call the currently active tab's function:
         active_pane = self.tabbed_content.active_pane
         if active_pane.id == "accel-tab":
