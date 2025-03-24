@@ -1,7 +1,5 @@
 """Module to show various graphs, e.g. altitude, velocity, acceleration, etc."""
 
-import bisect
-
 from textual import on
 from textual.app import ComposeResult
 from textual.widget import Widget
@@ -11,54 +9,8 @@ from textual_plot import PlotWidget
 
 from airbrakes.constants import GRAPH_DATA_STORE_INTERVAL_SECONDS
 from airbrakes.context import AirbrakesContext
+from airbrakes.graphics.utils import InformationStore
 from airbrakes.utils import convert_ns_to_s
-
-
-class InformationStore:
-    """Class to store the information to be displayed in the graphs. A set amount of time's
-    worth of data is stored as a rolling buffer. This class is independent of the GUI, because
-    it is meant to be extensible and reusable, for example for use in scripts, to show other IMU
-    data."""
-
-    __slots__ = ("data", "time_to_store_for")
-
-    def __init__(self, time_to_store_for: float) -> None:
-        self.time_to_store_for = time_to_store_for
-        self.data: dict[str, list[float]] = {}
-
-    def initalize_new_data(self, data_name: str) -> None:
-        """Initializes a new data set to store in the buffer.
-
-        :param data_name: The name of the data to store.
-        """
-        self.data[data_name] = []
-
-    def add_data_point(self, data_name: str, data: float) -> None:
-        """Adds data to the buffer.
-
-        :param data_name: The name of the data to store.
-        :param data: The data to store.
-        """
-        self.data[data_name].append(data)
-
-    def get_data(self, data_name: str) -> list[float]:
-        """Returns the data stored in the buffer.
-
-        :param data_name: The name of the data to return.
-        """
-        return self.data[data_name]
-
-    def resize_data(self) -> None:
-        """Trims the data if the time difference between the first and last data points is greater
-        than the time to store for."""
-        # TODO: Make a context manager to avoid calling this function every time
-        # TODO: Benchmark the numpy approach
-        last_time = self.data["time"][-1]
-        min_time = last_time - self.time_to_store_for
-        min_time_index = bisect.bisect_left(self.data["time"], min_time)
-
-        for data_name in self.data:
-            self.data[data_name] = self.data[data_name][min_time_index:]
 
 
 class FlightGraph(Widget):

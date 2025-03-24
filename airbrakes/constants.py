@@ -94,11 +94,11 @@ ENCODER_PIN_B = 24
 # -------------------------------------------------------
 
 # TODO: This should be in the launch selector screen:
-MOCK_DISPLAY_UPDATE_FREQUENCY = 1 / 500
+MOCK_DISPLAY_UPDATE_RATE = 1 / 20
 """The frequency at which the display updates in replay or sim mode. Increasing this value will
 negatively affect the performance when running with a "fast" simulation."""
 
-REAL_TIME_DISPLAY_UPDATE_FREQUENCY = 1 / 10  # 10 Hz
+REAL_TIME_DISPLAY_UPDATE_RATE = 1 / 10  # 10 Hz
 """The frequency at which the display updates in real mode. Decreasing this value will not show
 major performance improvements, but increasing it will negatively affect the performance."""
 

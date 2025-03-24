@@ -1,5 +1,6 @@
 """Module to show the terminal GUI for the airbrakes system."""
 
+import time
 from typing import TYPE_CHECKING, ClassVar
 
 from textual.app import App, ComposeResult
@@ -12,7 +13,7 @@ from airbrakes.constants import (
     ENCODER_PIN_B,
     IMU_PORT,
     LOGS_PATH,
-    MOCK_DISPLAY_UPDATE_FREQUENCY,
+    MOCK_DISPLAY_UPDATE_RATE,
     SERVO_1_CHANNEL,
     SERVO_2_CHANNEL,
 )
@@ -24,6 +25,7 @@ from airbrakes.graphics.launch_selector import LaunchSelector, SelectedLaunchCon
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
+from airbrakes.mock.extended_data_processor import ExtendedDataProcessor
 from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
@@ -86,12 +88,9 @@ class AirbrakesApplication(App):
         self.context.start()
         self.query_one(CPUUsage).start()
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
-        self.timer = self.set_interval(MOCK_DISPLAY_UPDATE_FREQUENCY, self.update_telemetry)
-        # TODO: Reduce frequency of update_telemetry to 10Hz when paused
 
     def stop(self) -> None:
         """Stops the flight display."""
-        self.timer.stop()
         self.context.stop()
         self.query_one(CPUUsage).stop()
 
@@ -118,6 +117,7 @@ class AirbrakesApplication(App):
                 )
             )
             camera = MockCamera() if not launch_config.launch_options.real_camera else Camera()
+            data_processor = ExtendedDataProcessor()
             self.is_mock = True
         else:
             # Maybe use mock components as specified by the command line arguments:
@@ -133,9 +133,8 @@ class AirbrakesApplication(App):
             imu = IMU(IMU_PORT)
             logger = Logger(LOGS_PATH)
             camera = Camera()
+            data_processor = DataProcessor()
 
-        # Initialize data processing and prediction
-        data_processor = DataProcessor()
         apogee_predictor = ApogeePredictor()
 
         self.context = AirbrakesContext(
@@ -162,15 +161,20 @@ class AirbrakesApplication(App):
         # if is_sim:
         #     context.imu.set_airbrakes_status(context.servo.current_extension)
 
+        start_time = time.monotonic()
         while True:
             self.context.update()
 
             # See https://github.com/python/cpython/issues/130279 for why this is here and not
             # in the loop condition.
-            # Stop the simulation when the data is exhausted, the worker is cancelled, or when
-            # shutdown is requested.
+            # Stop the simulation when the data is exhausted or when shutdown is requested:
             if self.context.shutdown_requested or not self.context.imu.is_running:
                 break
+
+            # Update the telemetry display at a fixed frequency:
+            if time.monotonic() - start_time >= MOCK_DISPLAY_UPDATE_RATE:
+                self.call_from_thread(self.update_telemetry)
+                start_time = time.monotonic()
 
         self.stop()
 

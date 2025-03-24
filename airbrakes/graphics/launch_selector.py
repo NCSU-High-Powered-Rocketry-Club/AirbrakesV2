@@ -64,6 +64,7 @@ class LaunchMetadataDisplay(Widget):
         )
 
     def update_metadata(self, launch_metadata: dict, table: DataTable, update: bool) -> None:
+        # Add time and description fields to the table:
         fields = {
             "Launch date": format_date_string(launch_metadata["date"]),
             "Flight Length": format_seconds_to_mins_and_secs(

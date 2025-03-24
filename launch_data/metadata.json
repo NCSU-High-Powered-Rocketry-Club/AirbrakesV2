@@ -59,7 +59,7 @@
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to mimmick a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
     "genesis_launch_1.csv": {
-        "date": "2024-11-16T13:45:58.732-05:00",
+        "date": "2024-11-16T13:54:22.792-05:00",
         "launch_site": {
             "air_temperature_celsius": 16.0,
             "air_pressure_mb": 1016.18,
@@ -90,7 +90,7 @@
 
     },
     "genesis_launch_2.csv": {
-        "date": "2024-11-16T16:45:13.844-05:00",
+        "date": "2024-11-16T16:55:20.731-05:00",
         "launch_site": {
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
@@ -171,8 +171,8 @@
             "log_buffer_index": 5000,
             "apogee_meters": null,
             "landed_coordinates:": {
-                "latitude": null,
-                "longitude": null
+                "latitude": 35.17482376,
+                "longitude": -76.82660675
             },
             "flight_length_seconds": 0.0,
             "target_apogee_meters": 1

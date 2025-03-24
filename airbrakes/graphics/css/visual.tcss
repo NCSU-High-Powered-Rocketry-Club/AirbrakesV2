@@ -181,6 +181,28 @@
         }
 
     }
+
+    #downrange-map-panel {
+        #downrange-map-widget {
+            height: 88%;
+            width: 90%;
+        }
+
+        #x-distance-label {
+            margin-left: 4;
+            color: orange;
+        }
+
+        #y-distance-label {
+            color: orange;
+            margin-left: 4;
+            margin-right: 4;
+        }
+
+        #horizontal-range-label {
+            color: green;
+        }
+    }
 }
 
 Placeholder {
