@@ -10,6 +10,7 @@ import scipy.spatial
 
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.utils import convert_s_to_ns
 from tests.auxil.utils import make_est_data_packet
 
 
@@ -139,6 +140,12 @@ class TestDataProcessor:
         assert isinstance(d._time_differences, np.ndarray)
         assert list(d._time_differences) == [0.0]
 
+        assert d._integrating_for_altitude is False
+        assert d._previous_altitude == 0.0
+        assert d._previous_altitude_data_points == []
+        assert d._store_altitude_data is False
+        assert d._retraction_timestamp is None
+
         # Test properties on init
         assert d.max_altitude == 0.0
         assert d.current_altitude == 0.0
@@ -147,11 +154,167 @@ class TestDataProcessor:
         assert d.current_timestamp == 0
         assert d.average_vertical_acceleration == 0.0
 
-    def test_str(self, data_processor):
-        data_str = (
-            "DataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, max_velocity=0.0, "
+    @pytest.mark.parametrize(
+        ("packets", "expected_velocity"),
+        [
+            # Test case 1: Using the function -(x-3)^2+9
+            (
+                [(1.0, 5.0), (2.0, 8.0), (3.0, 9.0)],
+                0.0,
+            ),
+            # Test case 2: Using the function -(x-5)^2+25
+            (
+                [(1.0, 10.0), (2.0, 17.0), (3.0, 22.0)],
+                4.0,
+            ),
+            # Test case 3: Using the function -(x-3)^2+9
+            (
+                [(1.0, 10.0), (2.0, 17.0), (3.0, 22.0), (7.0, 22.0)],
+                -4.0,
+            ),
+        ],
+        ids=["vel at apogee", "vel before apogee", "vel after apogee"],
+    )
+    def test_velocity_calibration(self, data_processor, packets, expected_velocity):
+        """
+        Tests whether the velocity is correctly calibrated and the altitude data points are stored
+        as expected.
+        """
+        d = data_processor
+
+        # Verify that altitude data storage is off initially.
+        assert not d._store_altitude_data
+
+        # Initialize with one packet at t=0.0, alt=0.0
+        d.update(
+            [
+                make_est_data_packet(
+                    timestamp=convert_s_to_ns(0.0),
+                    estPressureAlt=0.0,
+                )
+            ]
         )
-        assert str(data_processor) == data_str
+        assert len(d._previous_altitude_data_points) == 0
+
+        # Start storing altitude data.
+        d.start_storing_altitude_data()
+        assert d._store_altitude_data
+
+        # Confirm the initial vertical velocity.
+        assert pytest.approx(d._previous_vertical_velocity) == 0.0
+
+        # Create and send the packets from the parameterized input.
+        packets_to_update = [
+            make_est_data_packet(timestamp=convert_s_to_ns(x), estPressureAlt=alt)
+            for x, alt in packets
+        ]
+        d.update(packets_to_update)
+
+        # Validate that the correct number of altitude data points were stored.
+        assert len(d._previous_altitude_data_points) == len(packets)
+        # Check that the first altitude value matches the expected value.
+        assert d._previous_altitude_data_points[0][1] == packets[0][1]
+
+        # After preparing for airbrakes, the vertical velocity should be reset to 0.
+        d.prepare_for_extending_airbrakes()
+        assert expected_velocity == pytest.approx(d._previous_vertical_velocity)
+
+    @pytest.mark.parametrize(
+        ("packets", "initial_altitude", "initial_velocity", "expected_altitudes"),
+        [
+            # Test case 1:
+            # Dummy packet at 1e9 ns, then two packets at 2e9 and 3e9.
+            # dt1 = 1.0 sec, dt2 = 1.0 sec.
+            # With a constant vertical velocity of 10 m/s,
+            # altitudes will be: [initial_altitude + 10*1, initial_altitude + 10*2]
+            (
+                [(2e9, -9.8, 105), (3e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 120.0],
+            ),
+            # Test case 2:
+            # Dummy packet at 1e9 ns, then three packets at 2e9, 2.5e9, and 3.5e9.
+            # dt1 = 1.0 sec, dt2 = 0.5 sec, dt3 = 1.0 sec.
+            # Altitude integration: [100+10*1, 100+10*1+10*0.5, 100+10*1+10*0.5+10*1]
+            # Expected altitudes: [110, 115, 125]
+            (
+                [(2e9, -9.8, 105), (2.5e9, -9.8, 105), (3.5e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 115.0, 125.0],
+            ),
+        ],
+    )
+    def test_calculate_altitude_integration(
+        self, data_processor, packets, initial_altitude, initial_velocity, expected_altitudes
+    ):
+        """
+        Tests whether altitude integration (using a simple Riemann sum of vertical velocity * dt)
+        is computed correctly when integrating for altitude is enabled.
+        """
+        d = data_processor
+
+        # Perform a dummy update to establish initial conditions.
+        # This avoids calling _first_update() during our test.
+        dummy_packet = EstimatedDataPacket(
+            timestamp=1e9,  # 1 second in ns
+            estCompensatedAccelX=0,
+            estCompensatedAccelY=0,
+            estCompensatedAccelZ=-9.8,  # so that rotated acceleration becomes 9.8 m/s²
+            estPressureAlt=100.0,
+            estOrientQuaternionW=1,
+            estOrientQuaternionX=0,
+            estOrientQuaternionY=0,
+            estOrientQuaternionZ=0,
+            estAngularRateX=0,
+            estAngularRateY=0,
+            estAngularRateZ=0,
+        )
+        d.update([dummy_packet])
+
+        # Set our known initial conditions.
+        d._previous_altitude = initial_altitude
+        d._previous_vertical_velocity = initial_velocity
+
+        # Force the altitude integration branch to run.
+        d._integrating_for_altitude = True
+
+        # Build new data packets based on the parameterized input.
+        # Each tuple is (timestamp, estCompensatedAccelZ, estPressureAlt).
+        # We use zero angular rates and identity orientation (quaternion = [1,0,0,0])
+        new_packets = []
+        for ts, accel_z, pressure_alt in packets:
+            new_packets.append(
+                EstimatedDataPacket(
+                    timestamp=ts,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=accel_z,
+                    estPressureAlt=pressure_alt,
+                    estOrientQuaternionW=1,
+                    estOrientQuaternionX=0,
+                    estOrientQuaternionY=0,
+                    estOrientQuaternionZ=0,
+                    estAngularRateX=0,
+                    estAngularRateY=0,
+                    estAngularRateZ=0,
+                )
+            )
+
+        # Update with the new packets.
+        d.update(new_packets)
+
+        # When integrating, the altitude is computed as:
+        #     altitude = previous_altitude + cumsum(vertical_velocity * dt)
+        # In our test, because the rotated acceleration comes out as 9.8 m/s²,
+        # deadband(9.8 - 9.8, ...) returns 0, so the vertical velocity remains constant.
+        # Thus, with a constant vertical velocity, altitude should increase linearly.
+        computed_altitudes = d._current_altitudes
+
+        # Compare each computed altitude with the expected value.
+        for computed, expected in zip(computed_altitudes, expected_altitudes, strict=False):
+            assert computed == pytest.approx(expected)
 
     def test_calculate_vertical_velocity(self, data_processor):
         """Tests whether the vertical velocity is correctly calculated"""

@@ -180,6 +180,7 @@ class AirbrakesContext:
         """
         Extends the air brakes to the maximum extension.
         """
+        self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
@@ -187,6 +188,22 @@ class AirbrakesContext:
         Retracts the air brakes to the minimum extension.
         """
         self.servo.set_retracted()
+
+    def switch_altitude_back_to_pressure(self) -> None:
+        """
+        Switches the altitude back to pressure, after airbrakes have been retracted.
+        """
+        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
+        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
+        # want this to be called every time.
+        self.data_processor.prepare_for_retracting_airbrakes()
+
+    def start_velocity_calibration(self) -> None:
+        """
+        Because we integrate for velocity, error can accumulate. This function starts the
+        calibration process for velocity.
+        """
+        self.data_processor.start_storing_altitude_data()
 
     def predict_apogee(self) -> None:
         """

@@ -106,6 +106,16 @@ class DisplayEndingType(StrEnum):
 
 
 # -------------------------------------------------------
+# Data Processor Configuration
+# -------------------------------------------------------
+
+SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
+"""
+After airbrakes retract, it takes some time for the pressure to stabilize. DataProcessor will wait
+this amount of time before switching back to using pressure altitude.
+"""
+
+# -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
 

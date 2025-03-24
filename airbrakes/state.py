@@ -130,6 +130,7 @@ class CoastState(State):
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
         self.airbrakes_extended = False
+        self.context.start_velocity_calibration()
 
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
@@ -151,6 +152,7 @@ class CoastState(State):
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
+            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
         # if our velocity is zero or negative, we are in free fall.
@@ -174,6 +176,10 @@ class FreeFallState(State):
     """
 
     __slots__ = ()
+
+    def __init__(self, context: "AirbrakesContext"):
+        super().__init__(context)
+        self.context.switch_altitude_back_to_pressure()
 
     def update(self):
         """Check if the rocket has landed, based on our altitude and a spike in acceleration."""
