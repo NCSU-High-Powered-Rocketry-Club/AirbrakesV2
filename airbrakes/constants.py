@@ -275,7 +275,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1127.76
+TARGET_APOGEE_METERS = 1218
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.

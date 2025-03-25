@@ -130,7 +130,6 @@ class CoastState(State):
     def __init__(self, context: "AirbrakesContext"):
         super().__init__(context)
         self.airbrakes_extended = False
-        self.context.start_velocity_calibration()
 
     def update(self):
         """Checks to see if the rocket has reached apogee, indicating the start of free fall."""

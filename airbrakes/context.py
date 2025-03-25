@@ -198,13 +198,6 @@ class AirbrakesContext:
         # want this to be called every time.
         self.data_processor.prepare_for_retracting_airbrakes()
 
-    def start_velocity_calibration(self) -> None:
-        """
-        Because we integrate for velocity, error can accumulate. This function starts the
-        calibration process for velocity.
-        """
-        self.data_processor.start_storing_altitude_data()
-
     def predict_apogee(self) -> None:
         """
         Predicts the apogee of the rocket based on the current processed data. This
