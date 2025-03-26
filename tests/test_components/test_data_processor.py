@@ -17,7 +17,7 @@ def generate_altitude_sine_wave(
     n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
 ):
     """Generates a random distribution of altitudes that follow a sine wave pattern, with some
-    noise added to mimmick variations in the readings.
+    noise added to mimic variations in the readings.
 
     :param n_points: The number of altitude points to generate.
     :param frequency: The frequency of the sine wave.
@@ -139,6 +139,10 @@ class TestDataProcessor:
         assert isinstance(d._time_differences, np.ndarray)
         assert list(d._time_differences) == [0.0]
 
+        assert d._integrating_for_altitude is False
+        assert d._previous_altitude == 0.0
+        assert d._retraction_timestamp is None
+
         # Test properties on init
         assert d.max_altitude == 0.0
         assert d.current_altitude == 0.0
@@ -147,11 +151,102 @@ class TestDataProcessor:
         assert d.current_timestamp == 0
         assert d.average_vertical_acceleration == 0.0
 
-    def test_str(self, data_processor):
-        data_str = (
-            "DataProcessor(max_altitude=0.0, current_altitude=0.0, velocity=0.0, max_velocity=0.0, "
+    @pytest.mark.parametrize(
+        ("packets", "initial_altitude", "initial_velocity", "expected_altitudes"),
+        [
+            # Test case 1:
+            # Dummy packet at 1e9 ns, then two packets at 2e9 and 3e9.
+            # dt1 = 1.0 sec, dt2 = 1.0 sec.
+            # With a constant vertical velocity of 10 m/s,
+            # altitudes will be: [initial_altitude + 10*1, initial_altitude + 10*2]
+            (
+                [(2e9, -9.8, 105), (3e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 120.0],
+            ),
+            # Test case 2:
+            # Dummy packet at 1e9 ns, then three packets at 2e9, 2.5e9, and 3.5e9.
+            # dt1 = 1.0 sec, dt2 = 0.5 sec, dt3 = 1.0 sec.
+            # Altitude integration: [100+10*1, 100+10*1+10*0.5, 100+10*1+10*0.5+10*1]
+            # Expected altitudes: [110, 115, 125]
+            (
+                [(2e9, -9.8, 105), (2.5e9, -9.8, 105), (3.5e9, -9.8, 105)],
+                100.0,
+                10.0,
+                [110.0, 115.0, 125.0],
+            ),
+        ],
+    )
+    def test_calculate_altitude_integration(
+        self, data_processor, packets, initial_altitude, initial_velocity, expected_altitudes
+    ):
+        """
+        Tests whether altitude integration (using a simple Riemann sum of vertical velocity * dt)
+        is computed correctly when integrating for altitude is enabled.
+        """
+        d = data_processor
+
+        # Perform a dummy update to establish initial conditions.
+        # This avoids calling _first_update() during our test.
+        dummy_packet = EstimatedDataPacket(
+            timestamp=1e9,  # 1 second in ns
+            estCompensatedAccelX=0,
+            estCompensatedAccelY=0,
+            estCompensatedAccelZ=-9.8,  # so that rotated acceleration becomes 9.8 m/s²
+            estPressureAlt=100.0,
+            estOrientQuaternionW=1,
+            estOrientQuaternionX=0,
+            estOrientQuaternionY=0,
+            estOrientQuaternionZ=0,
+            estAngularRateX=0,
+            estAngularRateY=0,
+            estAngularRateZ=0,
         )
-        assert str(data_processor) == data_str
+        d.update([dummy_packet])
+
+        # Set our known initial conditions.
+        d._previous_altitude = initial_altitude
+        d._previous_vertical_velocity = initial_velocity
+
+        # Force the altitude integration branch to run.
+        d._integrating_for_altitude = True
+
+        # Build new data packets based on the parameterized input.
+        # Each tuple is (timestamp, estCompensatedAccelZ, estPressureAlt).
+        # We use zero angular rates and identity orientation (quaternion = [1,0,0,0])
+        new_packets = []
+        for ts, accel_z, pressure_alt in packets:
+            new_packets.append(
+                EstimatedDataPacket(
+                    timestamp=ts,
+                    estCompensatedAccelX=0,
+                    estCompensatedAccelY=0,
+                    estCompensatedAccelZ=accel_z,
+                    estPressureAlt=pressure_alt,
+                    estOrientQuaternionW=1,
+                    estOrientQuaternionX=0,
+                    estOrientQuaternionY=0,
+                    estOrientQuaternionZ=0,
+                    estAngularRateX=0,
+                    estAngularRateY=0,
+                    estAngularRateZ=0,
+                )
+            )
+
+        # Update with the new packets.
+        d.update(new_packets)
+
+        # When integrating, the altitude is computed as:
+        #     altitude = previous_altitude + cumsum(vertical_velocity * dt)
+        # In our test, because the rotated acceleration comes out as 9.8 m/s²,
+        # deadband(9.8 - 9.8, ...) returns 0, so the vertical velocity remains constant.
+        # Thus, with a constant vertical velocity, altitude should increase linearly.
+        computed_altitudes = d._current_altitudes
+
+        # Compare each computed altitude with the expected value.
+        for computed, expected in zip(computed_altitudes, expected_altitudes, strict=False):
+            assert computed == pytest.approx(expected)
 
     def test_calculate_vertical_velocity(self, data_processor):
         """Tests whether the vertical velocity is correctly calculated"""
@@ -477,3 +572,18 @@ class TestDataProcessor:
             for idx in range(10)
         ]
         benchmark(data_processor.update, data_packets)
+
+    def test_prepare_for_extending_then_retracting(self, data_processor):
+        """
+        Tests whether prepare_for_extending_airbrakes() and prepare_for_retracting_airbrakes() work
+        correctly
+        """
+        d = data_processor
+        assert d._retraction_timestamp is None
+        assert not d._integrating_for_altitude
+        d.prepare_for_extending_airbrakes()
+        assert d._retraction_timestamp is None
+        assert d._integrating_for_altitude
+        d.prepare_for_retracting_airbrakes()
+        assert d._retraction_timestamp is not None
+        assert not d._integrating_for_altitude

@@ -77,6 +77,15 @@ def convert_seconds_to_packets(
     return int(seconds * (raw_packet_freq + est_packet_freq))
 
 
+def convert_s_to_ns(seconds: float) -> float:
+    """
+    Converts seconds to nanoseconds.
+    :param seconds: The time in seconds.
+    :return: The time in nanoseconds.
+    """
+    return seconds * 1e9
+
+
 def set_process_priority(priority: int) -> None:
     """
     Sets the priority of the calling process to the specified nice value. Only works on Linux.

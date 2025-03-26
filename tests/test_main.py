@@ -270,9 +270,9 @@ def test_run_flight(monkeypatch, mocked_args_parser):
     def patched_run_flight_loop(*args, **kwargs):
         calls.append("run_flight_loop")
 
-    class PatchedAirbrakesContext:
+    class PatchedContext:
         def __init__(self, *args, **_):
-            calls.append("AirbrakesContext")
+            calls.append("Context")
             called_args.append(args)
 
     class PatchedFlightDisplay:
@@ -281,19 +281,19 @@ def test_run_flight(monkeypatch, mocked_args_parser):
             called_args.append(args)
 
     monkeypatch.setattr("airbrakes.main.run_flight_loop", patched_run_flight_loop)
-    monkeypatch.setattr("airbrakes.main.AirbrakesContext", PatchedAirbrakesContext)
+    monkeypatch.setattr("airbrakes.main.Context", PatchedContext)
     monkeypatch.setattr("airbrakes.main.FlightDisplay", PatchedFlightDisplay)
 
     run_flight(mocked_args_parser)
 
     assert len(calls) == 3
-    assert calls == ["AirbrakesContext", "FlightDisplay", "run_flight_loop"]
+    assert calls == ["Context", "FlightDisplay", "run_flight_loop"]
     assert len(called_args) == 2
     # For airbrakes context, we should have the components as arguments:
     assert len(called_args[0]) == 6  # These are all the components
 
     # For the flight display, we should have the airbrakes, the mock time start, and the args:
     assert len(called_args[1]) == 3  # These are the airbrakes, the display, and the args
-    assert isinstance(called_args[1][0], PatchedAirbrakesContext)
+    assert isinstance(called_args[1][0], PatchedContext)
     assert called_args[1][1] == pytest.approx(time.time())
     assert called_args[1][2] == mocked_args_parser

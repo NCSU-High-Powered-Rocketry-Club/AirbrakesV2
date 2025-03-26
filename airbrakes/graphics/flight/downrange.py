@@ -9,14 +9,14 @@ from textual.widgets import Label
 from textual_hires_canvas import HiResMode
 from textual_plot import PlotWidget
 
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.graphics.utils import InformationStore
 
 
 class DownrangeMap(Widget):
     """Panel displaying the downrange map."""
 
-    context: AirbrakesContext | None = None
+    context: Context | None = None
     x_distance: reactive[float] = reactive(0.0)
     y_distance: reactive[float] = reactive(0.0)
     horizontal_range: reactive[float] = reactive(0.0)
@@ -45,7 +45,7 @@ class DownrangeMap(Widget):
     def watch_horizontal_range(self) -> None:
         self.horizontal_range_label.update(f"Range: {self.horizontal_range:.2f} m")
 
-    def initialize_widgets(self, airbrakes: AirbrakesContext) -> None:
+    def initialize_widgets(self, airbrakes: Context) -> None:
         self.context = airbrakes
         self.information_store = InformationStore(time_to_store_for=None)
         self.information_store.initalize_new_data("x_distance")

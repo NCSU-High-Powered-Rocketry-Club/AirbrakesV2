@@ -10,7 +10,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button, Label, ProgressBar, Static
 
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.utils import set_only_class
 from airbrakes.utils import convert_ns_to_s
@@ -121,7 +121,7 @@ class FlightHeader(Static):
 
     state: reactive[str] = reactive("Standby")
 
-    context: AirbrakesContext | None = None
+    context: Context | None = None
     t_zero_time_ns = reactive(0)
     takeoff_time_ns = 0
     sim_start_time: int = 0
@@ -147,7 +147,7 @@ class FlightHeader(Static):
         self.flight_progress_bar = FlightProgressBar(id="flight-progress-bar")
         yield self.flight_progress_bar
 
-    def initialize_widgets(self, context: AirbrakesContext, is_mock: bool) -> None:
+    def initialize_widgets(self, context: Context, is_mock: bool) -> None:
         """Initializes the widgets with the context and the mock flag."""
         self.context = context
         self.is_mock = is_mock

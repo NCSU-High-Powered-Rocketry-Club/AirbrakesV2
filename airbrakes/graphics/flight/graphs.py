@@ -8,7 +8,7 @@ from textual_hires_canvas import HiResMode
 from textual_plot import PlotWidget
 
 from airbrakes.constants import GRAPH_DATA_STORE_INTERVAL_SECONDS
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.graphics.utils import InformationStore
 from airbrakes.utils import convert_ns_to_s
 
@@ -18,7 +18,7 @@ class FlightGraph(Widget):
     on the main screen."""
 
     mode = HiResMode.BRAILLE
-    context: AirbrakesContext | None = None
+    context: Context | None = None
     information_store: InformationStore | None = None
 
     def compose(self) -> ComposeResult:
@@ -42,7 +42,7 @@ class FlightGraph(Widget):
                 self.apogee_plot._margin_left = 5
                 yield self.apogee_plot
 
-    def initialize_widgets(self, context: AirbrakesContext) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         """Initializes the widgets with the context."""
         self.context = context
         self.information_store = InformationStore(

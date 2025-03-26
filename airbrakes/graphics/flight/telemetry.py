@@ -8,14 +8,14 @@ from textual.reactive import reactive, var
 from textual.widgets import Label, Static
 from textual.worker import Worker, get_current_worker
 
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.graphics.utils import set_only_class
 
 
 class DebugTelemetry(Static):
     """Collapsible panel for displaying debug telemetry data."""
 
-    context: AirbrakesContext
+    context: Context
     queued_imu_packets = reactive(0)
     cpu_usage = reactive("")
     state = var("Standby")
@@ -42,7 +42,7 @@ class DebugTelemetry(Static):
         cpu_usage.border_title = "CPU Usage"
         yield cpu_usage
 
-    def initialize_widgets(self, context: AirbrakesContext) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         self.context = context
         self.query_one(CPUUsage).initialize_widgets(context)
 
@@ -167,7 +167,7 @@ class CPUBars(Static):
 class CPUUsage(Static):
     """Panel displaying the CPU usage."""
 
-    context: AirbrakesContext = None
+    context: Context = None
     cpu_usages = reactive({})
 
     def __init__(self, *args, **kwargs) -> None:
@@ -195,7 +195,7 @@ class CPUUsage(Static):
         yield Label("Apogee", id="cpu_apogee_label", expand=True)
         # yield Label("Cam", id="cpu_cam_label", expand=True)
 
-    def initialize_widgets(self, context: AirbrakesContext) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         self.context = context
 
     def start(self) -> None:
@@ -276,7 +276,7 @@ class CPUUsage(Static):
 class FlightTelemetry(Static):
     """Panel displaying real-time flight information."""
 
-    context: AirbrakesContext
+    context: Context
     vertical_velocity = reactive(0.0)
     max_vertical_velocity = reactive(0.0)
     current_height = reactive(0.0)
@@ -295,7 +295,7 @@ class FlightTelemetry(Static):
         self.debug_telemetry.border_title = "DEBUG TELEMETRY"
         yield self.debug_telemetry
 
-    def initialize_widgets(self, context: AirbrakesContext) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         self.context = context
         self.debug_telemetry.initialize_widgets(context)
 

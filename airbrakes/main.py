@@ -1,4 +1,4 @@
-"""The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object
+"""The main file which will be run on the Raspberry Pi. It will create the Context object
 and run the main loop."""
 
 import sys

@@ -17,7 +17,7 @@ from airbrakes.constants import (
     SERVO_1_CHANNEL,
     SERVO_2_CHANNEL,
 )
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.graphics.flight.header import FlightHeader
 from airbrakes.graphics.flight.panel import FlightInformation
 from airbrakes.graphics.flight.telemetry import CPUUsage
@@ -49,7 +49,7 @@ class AirbrakesApplication(App):
 
     def __init__(self) -> None:
         super().__init__()
-        self.context: AirbrakesContext = None
+        self.context: Context = None
         self.is_mock: bool = False
         self._args = arg_parser()
         self._pre_calculated_motor_burn_time: int = None
@@ -136,9 +136,7 @@ class AirbrakesApplication(App):
 
         apogee_predictor = ApogeePredictor()
 
-        self.context = AirbrakesContext(
-            servo, imu, camera, logger, data_processor, apogee_predictor
-        )
+        self.context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
 
     def update_telemetry(self) -> None:
         """Updates all the reactive variables with the latest telemetry data."""

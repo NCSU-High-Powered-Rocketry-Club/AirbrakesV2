@@ -15,7 +15,7 @@ from airbrakes.constants import (
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
-    from airbrakes.context import AirbrakesContext
+    from airbrakes.context import Context
 
 
 class State(ABC):
@@ -37,7 +37,7 @@ class State(ABC):
 
     __slots__ = ("context", "start_time_ns")
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         """
         :param context: The Airbrakes Context managing the state machine.
         """
@@ -97,7 +97,7 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         super().__init__(context)
         self.context.camera.start_recording()
 
@@ -127,7 +127,7 @@ class CoastState(State):
 
     __slots__ = ("airbrakes_extended",)
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         super().__init__(context)
         self.airbrakes_extended = False
 
@@ -151,16 +151,15 @@ class CoastState(State):
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
+            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
-        # if our velocity is zero or negative, we are in free fall.
-        if data.vertical_velocity <= 0:
-            self.next_state()
-            return
-
-        # As backup in case of error, if our current altitude is less than 90% of max altitude, we
+        # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.
-        if data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD:
+        if (
+            data.vertical_velocity <= 0
+            and data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD
+        ):
             self.next_state()
             return
 
@@ -174,6 +173,10 @@ class FreeFallState(State):
     """
 
     __slots__ = ()
+
+    def __init__(self, context: "Context"):
+        super().__init__(context)
+        self.context.switch_altitude_back_to_pressure()
 
     def update(self):
         """Check if the rocket has landed, based on our altitude and a spike in acceleration."""

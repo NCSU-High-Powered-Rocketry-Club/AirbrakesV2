@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
-class AirbrakesContext:
+class Context:
     """
     Manages the state machine for the rocket's air brakes system, keeping track of the current state
     and communicating with hardware like the servo and IMU. This class is what connects the state
@@ -62,7 +62,7 @@ class AirbrakesContext:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
+        Initializes Context with the specified hardware objects, Logger, IMUDataProcessor,
         and ApogeePredictor. The state machine starts in StandbyState, which is the initial
         state of the air brakes system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
@@ -179,6 +179,7 @@ class AirbrakesContext:
         """
         Extends the air brakes to the maximum extension.
         """
+        self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
@@ -186,6 +187,15 @@ class AirbrakesContext:
         Retracts the air brakes to the minimum extension.
         """
         self.servo.set_retracted()
+
+    def switch_altitude_back_to_pressure(self) -> None:
+        """
+        Switches the altitude back to pressure, after airbrakes have been retracted.
+        """
+        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
+        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
+        # want this to be called every time.
+        self.data_processor.prepare_for_retracting_airbrakes()
 
     def predict_apogee(self) -> None:
         """
