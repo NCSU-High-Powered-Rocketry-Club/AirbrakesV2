@@ -54,7 +54,7 @@ class DataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: R | None = None
-        self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
+        self._rotated_accelerations: npt.NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64)
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
@@ -87,6 +87,14 @@ class DataProcessor:
         return float(self._vertical_velocities[-1])
 
     @property
+    def vertical_acceleration(self) -> float:
+        """
+        The current vertical acceleration of the rocket in m/s^2.
+        :return: The vertical acceleration of the rocket.
+        """
+        return float(self._rotated_accelerations[2][-1])
+
+    @property
     def max_vertical_velocity(self) -> float:
         """
         The maximum vertical velocity the rocket has attained during the flight, in m/s.
@@ -100,7 +108,7 @@ class DataProcessor:
         The average vertical acceleration of the rocket in m/s^2.
         :return: The average vertical acceleration of the rocket.
         """
-        return float(np.mean(self._rotated_accelerations))
+        return float(np.mean(self._rotated_accelerations[2]))
 
     @property
     def average_pitch(self) -> float:
@@ -128,10 +136,6 @@ class DataProcessor:
         velocity, etc.
         :param data_packets: A list of EstimatedDataPacket objects to process
         """
-        # If the data points are empty, we don't want to try to process anything
-        if not data_packets:
-            return
-
         self._data_packets = data_packets
 
         # If we don't have a last data point, we can't calculate the time differences needed
@@ -164,7 +168,7 @@ class DataProcessor:
             ProcessorDataPacket(
                 current_altitude=self._current_altitudes[i],
                 vertical_velocity=self._vertical_velocities[i],
-                vertical_acceleration=self._rotated_accelerations[i],
+                vertical_acceleration=self._rotated_accelerations[2][i],
                 time_since_last_data_packet=self._time_differences[i],
             )
             for i in range(len(self._data_packets))
@@ -257,11 +261,17 @@ class DataProcessor:
         :return: numpy list of vertical rotated accelerations.
         """
         # We pre-allocate the space for our accelerations first
-        rotated_accelerations = np.zeros(len(self._data_packets))
+        length_of_data_packets = len(self._data_packets)
+
+        # We are going to store the rotated accelerations in a numpy array (3xN) where N is the
+        # number of data points.
+        # rotated_accelerations = np.zeros(length_of_data_packets)
+        rotated_accelerations = np.zeros((3, length_of_data_packets))
 
         current_orientation = self._current_orientation_quaternions
         # Iterates through the data points and time differences between the data points
-        for i in range(len(self._data_packets)):
+        # TODO: Consider coriolis effect when we get a magnetometer
+        for i in range(length_of_data_packets):
             data_packet = self._data_packets[i]
             dt = self._time_differences[i]
             # Accelerations are in m/s^2
@@ -286,7 +296,8 @@ class DataProcessor:
             # regardless of orientation. For simplicity, we multiply by -1 so that acceleration
             # during motor burn is positive, and acceleration due to drag force during coast phase
             # is negative.
-            rotated_accelerations[i] = -rotated_accel[2]
+            # Store the negative of the rotated acceleration vector in our array
+            rotated_accelerations[:, i] = -rotated_accel
 
         # Update the class attribute with the latest quaternion orientation
         self._current_orientation_quaternions = current_orientation
@@ -307,7 +318,7 @@ class DataProcessor:
                     vertical_acceleration - GRAVITY_METERS_PER_SECOND_SQUARED,
                     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
                 )
-                for vertical_acceleration in self._rotated_accelerations
+                for vertical_acceleration in self._rotated_accelerations[2]
             ]
         )
         # Technical notes: Trying to vectorize the deadband function via np.vectorize() or

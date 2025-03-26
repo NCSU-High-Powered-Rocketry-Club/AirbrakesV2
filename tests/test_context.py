@@ -83,7 +83,7 @@ class TestContext:
         context.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, context):
-        """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
+        """Tests whether the Context handles ctrl+c events correctly."""
         context.start()
 
         try:
@@ -98,7 +98,7 @@ class TestContext:
         assert context.shutdown_requested
 
     def test_airbrakes_ctrl_c_exception(self, context):
-        """Tests whether the AirbrakesContext handles unknown exceptions."""
+        """Tests whether the Context handles unknown exceptions."""
 
         context.start()
         try:
