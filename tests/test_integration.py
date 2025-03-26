@@ -243,11 +243,11 @@ class TestIntegration:
         assert launch_case_init.log_file_states_logged(state_list)
 
     @pytest.mark.imu_benchmark
-    def test_fetched_imu_packets_integration(self, airbrakes):
+    def test_fetched_imu_packets_integration(self, context):
         """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
         $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
-        ab = airbrakes
+        ab = context
 
         ab.state = MotorBurnState(ab)  # Simulate start of camera recording
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
@@ -267,8 +267,8 @@ class TestIntegration:
         t.start()
         ab.start()
 
-        while not airbrakes.shutdown_requested:
-            airbrakes.update()
+        while not context.shutdown_requested:
+            context.update()
 
             if time.time() - start_time >= SNAPSHOT_INTERVAL:
                 imu_packets_per_cycle_list.append(ab.imu.imu_packets_per_cycle)
@@ -277,11 +277,11 @@ class TestIntegration:
         # Wait for the airbrakes to stop.
         has_airbrakes_stopped.wait(TEST_TIME_SECONDS)
         t.join()
-        assert not airbrakes.imu.is_running
-        assert not airbrakes.logger.is_running
-        assert not airbrakes.apogee_predictor.is_running
-        assert not airbrakes.imu._running.value
-        assert not airbrakes.imu._data_fetch_process.is_alive()
-        assert not airbrakes.logger._log_process.is_alive()
-        assert not airbrakes.apogee_predictor._prediction_process.is_alive()
+        assert not context.imu.is_running
+        assert not context.logger.is_running
+        assert not context.apogee_predictor.is_running
+        assert not context.imu._running.value
+        assert not context.imu._data_fetch_process.is_alive()
+        assert not context.logger._log_process.is_alive()
+        assert not context.apogee_predictor._prediction_process.is_alive()
         assert sum(imu_packets_per_cycle_list) / len(imu_packets_per_cycle_list) <= 10

@@ -28,6 +28,15 @@ def convert_ns_to_s(nanoseconds: float) -> float:
     return nanoseconds * 1e-9
 
 
+def convert_s_to_ns(seconds: float) -> float:
+    """
+    Converts seconds to nanoseconds.
+    :param seconds: The time in seconds.
+    :return: The time in nanoseconds.
+    """
+    return seconds * 1e9
+
+
 def set_process_priority(priority: int) -> None:
     """
     Sets the priority of the calling process to the specified nice value. Only works on Linux.

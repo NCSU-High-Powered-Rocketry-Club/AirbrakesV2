@@ -7,6 +7,7 @@ from scipy.spatial.transform import Rotation as R
 from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
+    SECONDS_UNTIL_PRESSURE_STABILIZATION,
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -25,10 +26,13 @@ class DataProcessor:
         "_current_orientation_quaternions",
         "_data_packets",
         "_initial_altitude",
+        "_integrating_for_altitude",
         "_last_data_packet",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_previous_altitude",
         "_previous_vertical_velocity",
+        "_retraction_timestamp",
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
@@ -42,6 +46,7 @@ class DataProcessor:
         some of these values.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
+        self._previous_altitude: np.float64 = np.float64(0.0)
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
@@ -52,15 +57,8 @@ class DataProcessor:
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
-
-    def __str__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"max_altitude={self.max_altitude}, "
-            f"current_altitude={self.current_altitude}, "
-            f"velocity={self.vertical_velocity}, "
-            f"max_velocity={self.max_vertical_velocity}, "
-        )
+        self._integrating_for_altitude = False
+        self._retraction_timestamp: float | None = None
 
     @property
     def max_altitude(self) -> float:
@@ -172,6 +170,23 @@ class DataProcessor:
             for i in range(len(self._data_packets))
         ]
 
+    def prepare_for_extending_airbrakes(self) -> None:
+        """
+        When we extend the airbrakes, it messes with the pressure sensor which messes up the
+        altitude data. Additionally, the velocity data could have accumulated error due to the
+        strong acceleration from the motor burn. Because of these things, this function makes the
+        data processor start integrating for altitude.
+        """
+        self._integrating_for_altitude = True
+
+    def prepare_for_retracting_airbrakes(self) -> None:
+        """
+        After we retract airbrakes, we want to switch back to using pressure altitude, but we need
+        to wait a little bit of time for the pressure to stabilize.
+        """
+        self._integrating_for_altitude = False
+        self._retraction_timestamp = self.current_timestamp
+
     def _first_update(self) -> None:
         """
         Sets up the initial values for the data processor. This includes setting the initial
@@ -204,16 +219,36 @@ class DataProcessor:
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the current altitudes, by zeroing out the initial altitude.
+        Calculates the current altitudes, by zeroing out the initial altitude. It either uses the
+        altitude from the pressure sensor, or integrates acceleration for the altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
+        # While the airbrakes are extended, we integrate acceleration for the altitude rather than
+        # using the pressure sensor data. This is because the pressure sensor data is unreliable
+        # when the airbrakes are extended as the pressure gets fucky
+        if self._integrating_for_altitude or (
+            self._retraction_timestamp is not None
+            and convert_ns_to_s(self.current_timestamp - self._retraction_timestamp)
+            < SECONDS_UNTIL_PRESSURE_STABILIZATION
+        ):
+            # Integrate the vertical velocities to get altitudes:
+            # Start with the previous altitude and add the cumulative sum of (velocity * dt).
+            altitudes = self._previous_altitude + np.cumsum(
+                self._vertical_velocities * self._time_differences
+            )
+        else:
+            altitudes = np.array(
+                [
+                    data_packet.estPressureAlt - self._initial_altitude
+                    for data_packet in self._data_packets
+                ],
+            )
+
+        # Update the stored previous altitude for the next calculation.
+        self._previous_altitude = altitudes[-1]
+
         # Get the pressure altitudes from the data points and zero out the initial altitude
-        return np.array(
-            [
-                data_packet.estPressureAlt - self._initial_altitude
-                for data_packet in self._data_packets
-            ],
-        )
+        return altitudes
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """

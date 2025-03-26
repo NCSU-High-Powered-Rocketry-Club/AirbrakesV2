@@ -13,7 +13,7 @@ from airbrakes.constants import (
     SERVO_1_CHANNEL,
     SERVO_2_CHANNEL,
 )
-from airbrakes.context import AirbrakesContext
+from airbrakes.context import Context
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -67,7 +67,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
     servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)
     # Initialize the Airbrakes Context and display
-    context = AirbrakesContext(servo, imu, camera, logger, data_processor, apogee_predictor)
+    context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(context, mock_time_start, args)
 
     # Run the main flight loop
@@ -132,7 +132,7 @@ def create_components(
 
 
 def run_flight_loop(
-    context: AirbrakesContext,
+    context: Context,
     flight_display: FlightDisplay,
     is_mock: bool,
     is_sim: bool,
