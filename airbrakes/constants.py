@@ -281,7 +281,7 @@ The target apogee in meters that we want the rocket to reach. This is used with 
 controller to determine when to extend and retract the air brakes.
 """
 
-MAX_ALTITUDE_THRESHOLD = 0.9
+MAX_ALTITUDE_THRESHOLD = 0.95
 """
 We don't care too much about accurately changing to the freefall state, so we just check if the
 rocket is less than 90% of the max altitude it reached. We do this because it would be catastrophic

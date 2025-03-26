@@ -208,14 +208,23 @@ class TestCoastState:
         [
             (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_EXTENSION),
             (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_EXTENSION),
-            (100.0, 400.0, 140.1, 5000.1, FreeFallState, ServoExtension.MIN_EXTENSION),
-            (200.1, 200.1, 0.0, 200.1, FreeFallState, ServoExtension.MIN_EXTENSION),
+            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MIN_EXTENSION),
+            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MIN_EXTENSION),
+            (
+                200.1,
+                200.1,
+                0.0,
+                200.1 * MAX_VELOCITY_THRESHOLD,
+                FreeFallState,
+                ServoExtension.MIN_EXTENSION,
+            ),
         ],
         ids=[
             "climbing",
             "just_descent",
             "faulty_speed",
             "at_apogee",
+            "at_apogee_threshold",
         ],
     )
     def test_update_without_controls(

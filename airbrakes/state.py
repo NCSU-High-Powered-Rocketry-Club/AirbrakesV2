@@ -154,14 +154,12 @@ class CoastState(State):
             self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
-        # if our velocity is zero or negative, we are in free fall.
-        if data.vertical_velocity <= 0 and data.current_altitude > GROUND_ALTITUDE_METERS:
-            self.next_state()
-            return
-
-        # As backup in case of error, if our current altitude is less than 90% of max altitude, we
+        # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.
-        if data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD:
+        if (
+            data.vertical_velocity <= 0
+            and data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD
+        ):
             self.next_state()
             return
 
