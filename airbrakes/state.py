@@ -155,7 +155,7 @@ class CoastState(State):
             self.airbrakes_extended = False
 
         # if our velocity is zero or negative, we are in free fall.
-        if data.vertical_velocity <= 0:
+        if data.vertical_velocity <= 0 and data.current_altitude > GROUND_ALTITUDE_METERS:
             self.next_state()
             return
 
