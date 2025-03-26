@@ -17,7 +17,7 @@ def generate_altitude_sine_wave(
     n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
 ):
     """Generates a random distribution of altitudes that follow a sine wave pattern, with some
-    noise added to mimmick variations in the readings.
+    noise added to mimic variations in the readings.
 
     :param n_points: The number of altitude points to generate.
     :param frequency: The frequency of the sine wave.
@@ -572,3 +572,18 @@ class TestDataProcessor:
             for idx in range(10)
         ]
         benchmark(data_processor.update, data_packets)
+
+    def test_prepare_for_extending_then_retracting(self, data_processor):
+        """
+        Tests whether prepare_for_extending_airbrakes() and prepare_for_retracting_airbrakes() work
+        correctly
+        """
+        d = data_processor
+        assert d._retraction_timestamp is None
+        assert not d._integrating_for_altitude
+        d.prepare_for_extending_airbrakes()
+        assert d._retraction_timestamp is None
+        assert d._integrating_for_altitude
+        d.prepare_for_retracting_airbrakes()
+        assert d._retraction_timestamp is not None
+        assert not d._integrating_for_altitude

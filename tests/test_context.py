@@ -1,4 +1,3 @@
-# import _testinternalcapi
 import threading
 import time
 
@@ -27,8 +26,8 @@ from tests.auxil.utils import (
 )
 
 
-class TestAirbrakesContext:
-    """Tests the AirbrakesContext class"""
+class TestContext:
+    """Tests the Context class"""
 
     def test_slots(self, airbrakes):
         inst = airbrakes
@@ -509,3 +508,14 @@ class TestAirbrakesContext:
         time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
         benchmark(airbrakes.update)
         ab.stop()
+
+    def test_switch_altitude_back_to_pressure(self, airbrakes):
+        """Tests whether the switch_altitude_back_to_pressure method works correctly."""
+        # When this method is called, we know it's been integrating for altitude
+        airbrakes.data_processor._integrating_for_altitude = True
+
+        assert airbrakes.data_processor._integrating_for_altitude
+        assert airbrakes.data_processor._retraction_timestamp is None
+        airbrakes.switch_altitude_back_to_pressure()
+        assert not airbrakes.data_processor._integrating_for_altitude
+        assert airbrakes.data_processor._retraction_timestamp is not None

@@ -331,6 +331,9 @@ class TestCoastState:
         coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=1100.0,
         )
+        # If the airbrakes have been extended, it means we've been integrating for altitude
+        coast_state.context.data_processor._integrating_for_altitude = True
+
         coast_state.update()
         assert coast_state.airbrakes_extended
         assert coast_state.context.servo.current_extension == ServoExtension.MAX_EXTENSION
@@ -343,6 +346,11 @@ class TestCoastState:
 
         coast_state.update()
         assert not coast_state.airbrakes_extended
+        assert not coast_state.context.data_processor._integrating_for_altitude
+        assert (
+            coast_state.context.data_processor._retraction_timestamp
+            == coast_state.context.data_processor.current_timestamp
+        )
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
