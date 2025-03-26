@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
-class AirbrakesContext:
+class Context:
     """
     Manages the state machine for the rocket's air brakes system, keeping track of the current state
     and communicating with hardware like the servo and IMU. This class is what connects the state

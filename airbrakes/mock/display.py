@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 from airbrakes.constants import DisplayEndingType
 
 if TYPE_CHECKING:
-    from airbrakes.context import AirbrakesContext
+    from airbrakes.context import Context
 
 
 G = Fore.GREEN
@@ -52,9 +52,7 @@ class FlightDisplay:
         "end_mock_natural",
     )
 
-    def __init__(
-        self, context: "AirbrakesContext", start_time: float, args: argparse.Namespace
-    ) -> None:
+    def __init__(self, context: "Context", start_time: float, args: argparse.Namespace) -> None:
         """
         Initializes the FlightDisplay object.
         :param conetxt: The AirbrakesContext object.

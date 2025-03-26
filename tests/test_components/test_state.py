@@ -24,7 +24,7 @@ from tests.auxil.utils import make_apogee_predictor_data_packet
 
 
 @pytest.fixture
-def state(airbrakes):
+def state(context):
     """Dummy state class to test the base State class"""
 
     class StateImpl(State):
@@ -36,38 +36,38 @@ def state(airbrakes):
         def next_state(self):
             pass
 
-    return StateImpl(airbrakes)
+    return StateImpl(context)
 
 
 @pytest.fixture
-def standby_state(airbrakes):
-    return StandbyState(airbrakes)
+def standby_state(context):
+    return StandbyState(context)
 
 
 @pytest.fixture
-def motor_burn_state(airbrakes):
-    m = MotorBurnState(airbrakes)
+def motor_burn_state(context):
+    m = MotorBurnState(context)
     m.context.state = m
     return m
 
 
 @pytest.fixture
-def coast_state(airbrakes):
-    c = CoastState(airbrakes)
+def coast_state(context):
+    c = CoastState(context)
     c.context.state = c
     return c
 
 
 @pytest.fixture
-def free_fall_state(airbrakes):
-    f = FreeFallState(airbrakes)
+def free_fall_state(context):
+    f = FreeFallState(context)
     f.context.state = f
     return f
 
 
 @pytest.fixture
-def landed_state(airbrakes):
-    ls = LandedState(airbrakes)
+def landed_state(context):
+    ls = LandedState(context)
     ls.context.state = ls
     return ls
 
@@ -80,9 +80,9 @@ class TestState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, state, airbrakes):
-        assert state.context == airbrakes
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
+    def test_init(self, state, context):
+        assert state.context == context
+        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -97,8 +97,8 @@ class TestStandbyState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, standby_state, airbrakes):
-        assert standby_state.context == airbrakes
+    def test_init(self, standby_state, context):
+        assert standby_state.context == context
         assert issubclass(standby_state.__class__, State)
 
     def test_name(self, standby_state):
@@ -131,20 +131,20 @@ class TestMotorBurnState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, motor_burn_state, airbrakes):
-        assert motor_burn_state.context == airbrakes
+    def test_init(self, motor_burn_state, context):
+        assert motor_burn_state.context == context
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
-    def test_camera_recording_started(self, airbrakes):
+    def test_camera_recording_started(self, context):
         """Tests that the camera recording is started when the motor burn starts."""
 
-        assert airbrakes.camera.motor_burn_started.is_set() is False
+        assert context.camera.motor_burn_started.is_set() is False
 
-        m = MotorBurnState(airbrakes)
+        m = MotorBurnState(context)
         m.context.state = m
 
-        assert airbrakes.camera.motor_burn_started.is_set() is True
+        assert context.camera.motor_burn_started.is_set() is True
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
@@ -189,8 +189,8 @@ class TestCoastState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, coast_state, airbrakes):
-        assert coast_state.context == airbrakes
+    def test_init(self, coast_state, context):
+        assert coast_state.context == context
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(coast_state.__class__, State)
 
@@ -362,8 +362,8 @@ class TestFreeFallState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, free_fall_state, airbrakes):
-        assert free_fall_state.context == airbrakes
+    def test_init(self, free_fall_state, context):
+        assert free_fall_state.context == context
         assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(free_fall_state.__class__, State)
 
@@ -446,31 +446,31 @@ class TestLandedState:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, landed_state, airbrakes):
-        assert landed_state.context == airbrakes
+    def test_init(self, landed_state, context):
+        assert landed_state.context == context
         assert landed_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
 
-    def test_update(self, landed_state, airbrakes):
+    def test_update(self, landed_state, context):
         # Test that calling update before shutdown delay does not shut down the system:
-        airbrakes.start()
+        context.start()
         landed_state.update()
-        assert airbrakes.logger.is_running
-        assert airbrakes.imu.is_running
-        assert not airbrakes.logger.is_log_buffer_full
+        assert context.logger.is_running
+        assert context.imu.is_running
+        assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
-        airbrakes.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
-        assert airbrakes.logger.is_log_buffer_full
+        context.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        assert context.logger.is_log_buffer_full
         landed_state.update()
-        assert airbrakes.shutdown_requested
-        assert not airbrakes.logger.is_running
-        assert not airbrakes.imu.is_running
-        assert airbrakes.servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert not airbrakes.logger.is_log_buffer_full
-        assert len(airbrakes.logger._log_buffer) == 0
+        assert context.shutdown_requested
+        assert not context.logger.is_running
+        assert not context.imu.is_running
+        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert not context.logger.is_log_buffer_full
+        assert len(context.logger._log_buffer) == 0
 
     def test_next_state_does_nothing(self, landed_state):
         landed_state.next_state()

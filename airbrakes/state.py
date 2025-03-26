@@ -15,7 +15,7 @@ from airbrakes.constants import (
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
-    from airbrakes.context import AirbrakesContext
+    from airbrakes.context import Context
 
 
 class State(ABC):
@@ -37,7 +37,7 @@ class State(ABC):
 
     __slots__ = ("context", "start_time_ns")
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         """
         :param context: The Airbrakes Context managing the state machine.
         """
@@ -97,7 +97,7 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         super().__init__(context)
         self.context.camera.start_recording()
 
@@ -127,7 +127,7 @@ class CoastState(State):
 
     __slots__ = ("airbrakes_extended",)
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         super().__init__(context)
         self.airbrakes_extended = False
 
@@ -174,7 +174,7 @@ class FreeFallState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "AirbrakesContext"):
+    def __init__(self, context: "Context"):
         super().__init__(context)
         self.context.switch_altitude_back_to_pressure()
 
