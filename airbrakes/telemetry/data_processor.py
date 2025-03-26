@@ -175,7 +175,7 @@ class DataProcessor:
         When we extend the airbrakes, it messes with the pressure sensor which messes up the
         altitude data. Additionally, the velocity data could have accumulated error due to the
         strong acceleration from the motor burn. Because of these things, this function makes the
-        data processor start integrating for altitude and "calibrates" the velocity.
+        data processor start integrating for altitude.
         """
         self._integrating_for_altitude = True
 
