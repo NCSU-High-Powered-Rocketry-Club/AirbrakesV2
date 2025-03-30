@@ -3,6 +3,7 @@
 import bisect
 from collections.abc import Generator
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Self
 
 from textual.widget import Widget
@@ -66,6 +67,27 @@ class InformationStore:
 
         for data_name in self.data:
             self.data[data_name] = self.data[data_name][min_time_index:]
+
+
+def get_date_from_iso_string(input_string: str) -> str:
+    """Gets the date from an ISO string and formats it to 'ddth Month, YYYY'."""
+    datetime_obj = datetime.fromisoformat(input_string)
+    return datetime_obj.strftime("%d{} %B, %Y").format(
+        "th"
+        if 11 <= datetime_obj.day <= 13
+        else {1: "st", 2: "nd", 3: "rd"}.get(datetime_obj.day % 10, "th")
+    )
+
+
+def get_time_from_iso_string(input_string: str) -> str:
+    """Gets the time from an ISO string and formats it to 'HH:MM AM/PM'."""
+    datetime_obj = datetime.fromisoformat(input_string)
+    return datetime_obj.strftime("%I:%M %p").lstrip("0").replace("AM", "am").replace("PM", "pm")
+
+
+def format_seconds_to_mins_and_secs(seconds: int) -> str:
+    """Converts seconds to a string in the format 'm:ss'."""
+    return f"{seconds // 60:.0f}:{seconds % 60:02.0f}"
 
 
 def set_only_class(obj: Widget, class_name: str) -> None:

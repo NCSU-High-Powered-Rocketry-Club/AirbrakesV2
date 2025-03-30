@@ -39,7 +39,7 @@ class FlightTelemetry(Static):
             yield Static("Max:", id="max-acceleration-static-label")
             self.max_accel_label = Label("0.0", id="max-acceleration-label")
             yield self.max_accel_label
-            yield Static("[red]m/s\u00b2[/]", id="acceleration-units-static-label")
+            yield Static("m/s\u00b2", id="acceleration-units-static-label", classes="units")
 
             # Row 2:
             yield Static("Vertical Velocity:", id="vertical-velocity-static-label")
@@ -48,7 +48,7 @@ class FlightTelemetry(Static):
             yield Static("Max:", id="max-vertical-velocity-static-label")
             self.max_velocity_label = Label("0.0", id="max-vertical-velocity-label")
             yield self.max_velocity_label
-            yield Static("[red]m/s[/]", id="vertical-velocity-units-static-label")
+            yield Static("m/s", id="vertical-velocity-units-static-label", classes="units")
 
             # Row 3:
             yield Static("Total Velocity:", id="total-velocity-static-label")
@@ -57,7 +57,7 @@ class FlightTelemetry(Static):
             yield Static("Max:", id="max-total-velocity-static-label")
             self.max_total_velocity_label = Label("0.0", id="max-total-velocity-label")
             yield self.max_total_velocity_label
-            yield Static("[red]m/s[/]", id="total-velocity-units-static-label")
+            yield Static("m/s", id="total-velocity-units-static-label", classes="units")
 
             # Row 4:
             yield Static("Altitude:", id="altitude-static-label")
@@ -66,7 +66,7 @@ class FlightTelemetry(Static):
             yield Static("Max:", id="max-altitude-static-label")
             self.max_altitude_label = Label("0.0", id="max-altitude-label")
             yield self.max_altitude_label
-            yield Static("[red]m[/]", id="altitude-units-static-label")
+            yield Static("m", id="altitude-units-static-label", classes="units")
 
             # Row 5:
             yield Static("Pressure Alt:", id="pressure-altitude-static-label")
@@ -75,7 +75,7 @@ class FlightTelemetry(Static):
             yield Static("Max:", id="max-pressure-altitude-static-label")
             self.max_pressure_alt_label = Label("0.0", id="max-pressure-altitude-label")
             yield self.max_pressure_alt_label
-            yield Static("[red]m[/]", id="pressure-altitude-units-static-label")
+            yield Static("m", id="pressure-altitude-units-static-label", classes="units")
 
             # Row 6:
             yield Static("Predicted Apogee:", id="predicted-apogee-static-label")
@@ -83,7 +83,7 @@ class FlightTelemetry(Static):
             yield self.apogee_label
             yield Static()
             yield Static()
-            yield Static("[red]m[/]", id="apogee-units-static-label")
+            yield Static("m", id="apogee-units-static-label", classes="units")
 
             # Row 7:
             yield Static("Airbrakes Extension:", id="airbrakes-extension-static-label")
@@ -91,7 +91,7 @@ class FlightTelemetry(Static):
             yield self.airbrakes_label
             yield Static()
             yield Static()
-            yield Static("[red]\u00b0[/]", id="airbrakes-extension-units-static-label")
+            yield Static("\u00b0", id="airbrakes-extension-units-static-label", classes="units")
 
         self.debug_telemetry = DebugTelemetry(id="debug-telemetry")
         self.debug_telemetry.border_title = "DEBUG TELEMETRY"
@@ -175,25 +175,25 @@ class DebugTelemetry(Static):
             yield Static("Average Pitch:", id="average-pitch-static-label")
             self.pitch_label = Label("0.0", id="average-pitch-label")
             yield self.pitch_label
-            yield Static("[red]\u00b0[/]", id="pitch-units")
+            yield Static("\u00b0", id="pitch-units", classes="units")
 
             # Row 2:
             yield Static("First Apogee:", id="apogee-static-label")
             self.apogee_label = Label("0.0", id="apogee-label")
             yield self.apogee_label
-            yield Static("[red]m[/]", id="apogee-units")
+            yield Static("m", id="apogee-units", classes="units")
 
             # Row 3:
             yield Static("Convergence Time:", id="apogee-convergence-time-static-label")
             self.convergence_time_label = Label("0.0", id="apogee-convergence-time-label")
             yield self.convergence_time_label
-            yield Static("[red]s[/]", id="convergence-time-units")
+            yield Static("s", id="convergence-time-units", classes="units")
 
             # Row 4:
             yield Static("Convergence Height:", id="alt-at-convergence-static-label")
             self.alt_convergence_label = Label("0.0", id="altitude-at-convergence-label")
             yield self.alt_convergence_label
-            yield Static("[red]m[/]", id="altitude-at-convergence-units")
+            yield Static("m", id="altitude-at-convergence-units", classes="units")
 
             # Row 5:
             yield Static("Invalid fields:", id="invalid-fields-static-label")
@@ -258,7 +258,7 @@ class DebugTelemetry(Static):
         # TODO: make this not a string:
         invalid_fields = self.invalid_fields.replace("[", "").replace("]", "").strip()
         if invalid_fields != "None":
-            invalid_fields = f"[red]{invalid_fields}[/]"
+            invalid_fields = f"[$text-error]{invalid_fields}[/]"
 
         self.invalid_fields_label.update(f"{invalid_fields}")
 

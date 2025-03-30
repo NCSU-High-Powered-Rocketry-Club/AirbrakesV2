@@ -59,6 +59,7 @@ class AirbrakesApplication(App):
 
     def on_mount(self) -> None:
         """Mount the launch selector screen to get the launch configuration."""
+        self.theme = "catppuccin-mocha"
         self.push_screen("launch_selector", self.receive_launch_configuration)
 
     def on_unmount(self) -> None:

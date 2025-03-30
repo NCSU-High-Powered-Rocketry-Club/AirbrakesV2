@@ -4,7 +4,6 @@ command line arguments"""
 import argparse
 import sys
 import warnings
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -18,20 +17,6 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     :return: The converted object.
     """
     return float(obj_type)
-
-
-def format_date_string(input_string: str) -> str:
-    datetime_obj = datetime.fromisoformat(input_string)
-    return datetime_obj.strftime("%d{} %B, %Y").format(
-        "th"
-        if 11 <= datetime_obj.day <= 13
-        else {1: "st", 2: "nd", 3: "rd"}.get(datetime_obj.day % 10, "th")
-    )
-
-
-def format_seconds_to_mins_and_secs(seconds: int) -> str:
-    """Converts seconds to a string in the format 'm:ss'."""
-    return f"{seconds // 60:.0f}:{seconds % 60:02.0f}"
 
 
 def convert_to_nanoseconds(timestamp_str: str) -> int | None:

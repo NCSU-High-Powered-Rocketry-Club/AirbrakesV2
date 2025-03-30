@@ -10,13 +10,14 @@
     overflow-y: auto;
     grid-size: 3; /* 3 columns */
     grid-rows: auto;
-    grid-gutter: 1;
-    # background: orange;
+    # grid-gutter: 1;
 
     #launch-file-name {
-        # background: black;
-        text-align: center;
-        width: 100%;
+        background: $primary-muted;
+        color: $text-primary;
+        text-style: bold;
+        width: auto;
+        # width: 100%;
     }
 
     #normal-sim-time {
@@ -31,7 +32,10 @@
 
     #launch-clock {
         # background: blue;
+        color: $primary;
         text-align: center;
+        content-align: center middle;
+        height: 100%;
 
         &.blink {
             visibility: hidden;
@@ -39,11 +43,15 @@
     }
 
     #state {
-        align: left bottom;
-        content-align: left bottom;
+        padding-top: 1;
+        color: $primary 80%;
+        text-style: bold;
+    }
+
+    #target-apogee-label {
         text-align: center;
         width: 100%;
-        # background: blue;
+        text-style: underline;
     }
 
     #sim-speed-panel {
@@ -106,11 +114,23 @@
     # background: maroon;
 
     #flight-data-panel {
-        border: round;
+        border: round $border 80%;
         border-title-align: center;
+        border-title-style: bold;
         overflow-y: auto;
         row-span: 2;
+        background: $surface 30%;
         height: 100%;
+
+        /* TODO: Other widgets are overridiing this color */
+        &:hover {
+            background: $surface 50%;
+        }
+
+        /* style the unit labels */
+        .units {
+            color: $secondary;
+        }
 
         #flight-telemetry-grid{
             grid-size: 5;  /* 5 columns */
@@ -119,16 +139,17 @@
             grid-gutter: 0 1;
             height: auto;
 
-            /* make the numbers in the telemetry grid yellow */
+            /* assign the color for the numbers in the telemetry grid */
             Label {
-                color: yellow;
+                color: $text-accent;
             }
         }
 
         #debug-telemetry {
             overflow: auto;
-            border-top: round;
+            border-top: round $border 80%;
             border-title-align: center;
+            border-title-style: bold;
 
             #debug-telemetry-grid{
                 grid-size: 3;  /* 3 columns */
@@ -141,9 +162,9 @@
                     column-span: 2;
                 }
 
-                /* make the numbers in the debug telemetry grid yellow */
+                /* assign the color for the numbers in the debug telemetry grid */
                 Label {
-                    color: yellow;
+                    color: $text-accent;
                 }
             }
 
@@ -152,15 +173,17 @@
                 text-align: center;
                 grid-size: 4;  /* 3 columns */
                 grid-columns: 1fr;
-                border-top: solid;
-                border-bottom: solid;
+                border-top: round $border 80%;
                 grid-rows: auto;
+                padding-top: 1;
+                margin-bottom: 1;
                 grid-gutter: 0 1;
                 height: auto;
 
                 /* aligning the text in the center of the grid */
                 Label {
                     text-align: center;
+                    color: $text-accent;
                     width: 100%;
                 }
 
@@ -173,7 +196,7 @@
 
             #cpu_usage_widget {
                 layout: grid;
-                border-top: round;
+                border-top: round $border 80%;
                 /* 4 Processes = 4 columns */
                 grid-size: 4 3;
                 overflow: auto;
@@ -218,14 +241,21 @@
     #flight-graph-panel {
         # height: 100;
         # background: orange;
-        border-top: round;
-        border-left: round;
-        border-right: round;
+        border-top: round $border 80%;
+        border-left: round $border 80%;
+        border-right: round $border 80%;
+        border-title-style: bold;
         border-title-align: center;
 
+        #tabbed-content {
+            margin-top: 1;
+        }
+        
+    
         PlotWidget {
-            # background: yellow;
             height: auto;
+            margin-top: -1;
+            margin-right: 3;
         }
 
         TabbedContent #--content-tab-accel-tab {
@@ -244,15 +274,17 @@
     }
 
     #downrange-map-panel {
-        border-bottom: round;
-        border-left: round;
-        border-right: round;
-        border-top: solid;
+        border-bottom: round $border 80%;
+        border-left: round $border 80%;
+        border-right: round $border 80%;
+        border-top: solid $border 80%;
+        border-title-style: bold;
         border-title-align: center;
 
         #downrange-map-widget {
-            height: 96%;
-            width: 96%;
+            height: auto;
+            margin-top: -1;
+            margin-right: 3;
         }
 
         #x-distance-label {

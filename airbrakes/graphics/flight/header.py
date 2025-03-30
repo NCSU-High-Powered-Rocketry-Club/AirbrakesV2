@@ -5,11 +5,13 @@ from typing import ClassVar, Literal
 
 from textual import on
 from textual.app import ComposeResult
-from textual.containers import Horizontal
+from textual.containers import Center, Horizontal
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button, Label, ProgressBar, Static
+from textual_pyfiglet import FigletWidget
 
+from airbrakes.constants import TARGET_APOGEE_METERS
 from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.utils import set_only_class
@@ -132,15 +134,16 @@ class FlightHeader(Static):
     def compose(self) -> ComposeResult:
         """Composes the header panel."""
         # Grid layout, 4 rows, 3 columns:
-        yield Label("", id="launch-file-name", disabled=True)
+        with Center():
+            yield Label("", id="launch-file-name", disabled=True)
         self.sim_time_label = Label("00:00.00", id="normal-sim-time")
         yield self.sim_time_label
         yield Static()
-        yield Static()
+        yield FigletWidget("", id="state", markup=False, font="smblock")
         self.time_display = TimeDisplay("T+00:00", id="launch-clock")
         yield self.time_display
         yield Static()
-        yield Label("", id="state")
+        yield Label("", id="target-apogee-label")
         yield SimulationSpeed(id="sim-speed-panel")
         yield Static()
         # Takes all the columns in the last row:
@@ -159,6 +162,10 @@ class FlightHeader(Static):
             launch_file_name = self.context.imu._log_file_path.stem.replace("_", " ").title()
             file_name.update(launch_file_name)
             file_name.disabled = False
+
+        # Set the target apogee label:
+        target_apogee_label = self.query_one("#target-apogee-label", Label)
+        target_apogee_label.update(f"Target Apogee: [b]{TARGET_APOGEE_METERS} m[/]")
 
         if not self._pre_calculated_motor_burn_time_ns:
             self._pre_calculated_motor_burn_time_ns = self.context.imu.get_launch_time()
@@ -185,13 +192,13 @@ class FlightHeader(Static):
         self.flight_progress_bar.set_progress(launch_time_seconds)
 
     def watch_state(self) -> None:
-        state_label = self.query_one("#state", Label)
+        state_label = self.query_one("#state", FigletWidget)
 
         if not self.takeoff_time_ns and self.state == "MotorBurnState":
             self.takeoff_time_ns = self.context.state.start_time_ns
 
         label = self.state.removesuffix("State")
-        state_label.update(f"[b]{label.upper()}[/b]")
+        state_label.update(f"{label.upper()}")
         self.flight_progress_bar.update_progress_bar_color(label)
 
     def watch_current_sim_time(self) -> None:

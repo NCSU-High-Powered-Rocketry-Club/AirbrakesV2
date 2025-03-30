@@ -1,64 +1,101 @@
-#title {
-    content-align: center middle;
-    column-span: 3;
-    border: solid;
-}
-
-#launch-metadata-container {
-    content-align: right middle;
-    border: solid;
-    # height: auto;
-}
-
-#launch-files-container {
-    # border: solid;
-    align: center middle;
-
-    #launch-files-radio-set {
-        # width: 100%;
-        # height: 100%;
-
-    }
-}
-
-#launch-configuration-container {
-    border: solid;
-}
-
-#button-container {
-    content-align: center middle;
-    column-span: 3;
-    border: solid;
-
-    Button {
-        width: 100%;
-    }
-}
-
-LaunchSelector {
-    layout: grid;
-    grid-size: 3 3; /* 3 columns, 3 rows */
+#launch-selector-grid {
+    grid-size: 3; /* 3 columns */
     grid-gutter: 1;
-    # grid-rows: 100%;
-    grid-columns: 1.7fr 1fr 1.2fr;
-}
+    grid-rows: 0.5fr 2fr 1fr;
+    grid-columns: 2.1fr 1.2fr 1fr;
 
-
-#launch-configuration-grid {
-    grid-size: 2;  /* 2 columns */
-    grid-gutter: 1;
-    grid-columns: 60% auto;
-    grid-rows: auto;
-    align: center middle;
-
-    Switch {
-        border: none;
-        padding: 0;
+    #title {
         content-align: center middle;
+        column-span: 3;
+        color: orange;
     }
 
-    Label {
-        content-align: center middle;
+    #launch-image-widget {
+        # background: blue;
+        align: center middle;
     }
 
+    #launch-image{
+        height: auto;
+        width: auto;
+    }
+
+    #launch-configuration-container {
+        border: round $border 60%;
+        border-title-align: center;
+
+        #launch-configuration-grid {
+            grid-size: 2;  /* 2 columns */
+            grid-gutter: 1;
+            grid-columns: 60% auto;
+            grid-rows: auto;
+            align: center middle;
+            # background: lightgray;
+            }
+
+            Switch {
+                border: none;
+                padding: 0;
+                content-align: center middle;
+            }
+
+            Label {
+                content-align: center middle;
+            }
+
+            &:hover {
+                border: round $border;
+            }
+        }
+
+    #launch-metadata-container {
+        content-align: right middle;
+        border-title-align: center;
+        border: round $border 60%;
+        # height: auto;
+
+        &:hover, &:focus {
+            border: round $border;
+        }
+    }
+
+    #launch-files-container {
+        align: center middle;
+        # background: lightgray;
+
+        #launch-files-radio-set {
+            align: left middle;
+            border-title-align: center;
+            border: round $border 60%;
+            background: $background;
+            width: 100%;
+            height: 100%;
+
+            /* Style the heck out of the radio buttons */
+            & > RadioButton {
+                margin-bottom: 1;
+                # width: 100%;
+
+                & > .toggle--button {
+                    background: $background;
+                }
+            }
+
+            &:focus {
+                border: round $border;
+            }
+
+        }
+    }
+
+
+    #button-container {
+        content-align: center middle;
+        column-span: 2;
+        # border: round;
+
+        Button {
+            width: 100%;
+        }
+    }
 }
