@@ -22,10 +22,8 @@ class DownrangeMap(Widget):
     horizontal_range: reactive[float] = reactive(0.0)
 
     def compose(self) -> ComposeResult:
-        with Center():
-            yield Label("Downrange Map", id="downrange-map-title")
         self.downrange_plot = PlotWidget(allow_pan_and_zoom=False, id="downrange-map-widget")
-        self.downrange_plot._margin_left = 10
+        self.downrange_plot._margin_left = 7
         yield self.downrange_plot
 
         with Center(), Horizontal():

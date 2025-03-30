@@ -21,9 +21,11 @@ class FlightInformation(Static):
         self.flight_telemetry.border_title = "SIMULATED TELEMETRY"
         yield self.flight_telemetry
         self.flight_graph = FlightGraph(id="flight-graph-panel")
+        self.flight_graph.border_title = "FLIGHT GRAPHS"
         yield self.flight_graph
         yield Placeholder("2d rocket vis")
         self.downrange_map = DownrangeMap(id="downrange-map-panel")
+        self.downrange_map.border_title = "DOWNRANGE MAP"
         yield self.downrange_map
         yield Placeholder("2d rocket vis")
 

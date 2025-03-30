@@ -69,6 +69,8 @@ class MockIMU(BaseIMU):
 
         msgpack_encoder = msgspec.msgpack.Encoder()
         msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
+        # We don't specify a really big number for the maxsize, because we want to be able to
+        # control the sim speed by throttling the packets in the queue.
         queued_imu_packets: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_FETCHED_PACKETS,
             dumps=msgpack_encoder.encode,
@@ -140,6 +142,7 @@ class MockIMU(BaseIMU):
             **kwargs,
         )
 
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
@@ -245,10 +248,11 @@ class MockIMU(BaseIMU):
 
         # Read the file, and check when the "state" field shows "M", or when the magnitude of the
         # estimated linear acceleration is greater than 3 m/s^2:
-        if "state" in self._headers.columns:
-            df = self._read_csv(usecols=["timestamp", "state"])
+        state_name = "state" if "state" in self._headers.columns else "state_letter"
+        with contextlib.suppress(Exception):
+            df = self._read_csv(usecols=["timestamp", state_name])
             # Check for the "M" state
-            launch_time = df.loc[df["state"] == "M", "timestamp"]
+            launch_time = df.loc[df[state_name] == "M", "timestamp"]
             if not launch_time.empty:
                 return convert_to_nanoseconds(launch_time.iloc[0])
             return 0

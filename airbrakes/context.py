@@ -134,7 +134,8 @@ class Context:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This should not happen, since we wait for IMU packets.
+        # This should not happen, since we wait for IMU packets. Only happens when the mock replay
+        # is paused.
         if not self.imu_data_packets:
             return
 

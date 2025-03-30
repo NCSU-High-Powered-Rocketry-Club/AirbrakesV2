@@ -103,14 +103,6 @@ class DataProcessor:
         return float(self._max_vertical_velocity)
 
     @property
-    def average_vertical_acceleration(self) -> float:
-        """
-        The average vertical acceleration of the rocket in m/s^2.
-        :return: The average vertical acceleration of the rocket.
-        """
-        return float(np.mean(self._rotated_accelerations[2]))
-
-    @property
     def average_pitch(self) -> float:
         """The average pitch of the rocket in degrees"""
         if self._current_orientation_quaternions is not None:
@@ -352,3 +344,10 @@ class DataProcessor:
                 for data_packet in [self._last_data_packet, *self._data_packets]
             ]
         )
+
+    def _calculate_average_vertical_acceleration(self) -> np.float64:
+        """
+        The average vertical acceleration of the rocket in m/s^2.
+        :return: The average vertical acceleration of the rocket.
+        """
+        return self._rotated_accelerations[2].mean()

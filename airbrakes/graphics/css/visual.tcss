@@ -106,17 +106,74 @@
     # background: maroon;
 
     #flight-data-panel {
-        border: solid;
+        border: round;
+        border-title-align: center;
         overflow-y: auto;
         row-span: 2;
+        height: 100%;
+
+        #flight-telemetry-grid{
+            grid-size: 5;  /* 5 columns */
+            grid-columns: auto 10 auto auto auto;
+            grid-rows: auto;
+            grid-gutter: 0 1;
+            height: auto;
+
+            /* make the numbers in the telemetry grid yellow */
+            Label {
+                color: yellow;
+            }
+        }
 
         #debug-telemetry {
             overflow: auto;
-            border: solid;
+            border-top: round;
+            border-title-align: center;
+
+            #debug-telemetry-grid{
+                grid-size: 3;  /* 3 columns */
+                grid-columns: auto auto 1fr;
+                grid-rows: auto;
+                grid-gutter: 0 1;
+                height: auto;
+
+                #invalid-fields-label{
+                    column-span: 2;
+                }
+
+                /* make the numbers in the debug telemetry grid yellow */
+                Label {
+                    color: yellow;
+                }
+            }
+
+            #packet-grid {
+                align: center middle;
+                text-align: center;
+                grid-size: 4;  /* 3 columns */
+                grid-columns: 1fr;
+                border-top: solid;
+                border-bottom: solid;
+                grid-rows: auto;
+                grid-gutter: 0 1;
+                height: auto;
+
+                /* aligning the text in the center of the grid */
+                Label {
+                    text-align: center;
+                    width: 100%;
+                }
+
+                Static {
+                    text-align: center;
+                    width: 100%;
+                }
+            }
+
 
             #cpu_usage_widget {
                 layout: grid;
-                border: solid;
+                border-top: round;
                 /* 4 Processes = 4 columns */
                 grid-size: 4 3;
                 overflow: auto;
@@ -161,6 +218,10 @@
     #flight-graph-panel {
         # height: 100;
         # background: orange;
+        border-top: round;
+        border-left: round;
+        border-right: round;
+        border-title-align: center;
 
         PlotWidget {
             # background: yellow;
@@ -183,9 +244,15 @@
     }
 
     #downrange-map-panel {
+        border-bottom: round;
+        border-left: round;
+        border-right: round;
+        border-top: solid;
+        border-title-align: center;
+
         #downrange-map-widget {
-            height: 88%;
-            width: 90%;
+            height: 96%;
+            width: 96%;
         }
 
         #x-distance-label {

@@ -39,7 +39,7 @@ LaunchSelector {
     layout: grid;
     grid-size: 3 3; /* 3 columns, 3 rows */
     grid-gutter: 1;
-    # grid-rows: auto;
+    # grid-rows: 100%;
     grid-columns: 1.7fr 1fr 1.2fr;
 }
 
