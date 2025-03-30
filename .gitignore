@@ -43,3 +43,6 @@ test_logs/
 
 # pytest cache
 .pytest_cache/
+
+# Repomix (Code for AI)
+repomix-output.xml
