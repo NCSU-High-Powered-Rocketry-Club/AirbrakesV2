@@ -6,6 +6,7 @@
             "air_pressure_mb": 1031.49,
             "wind_speed_kmh": 12.87,
             "wind_direction": "ESE",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -35,6 +36,7 @@
             "air_pressure_mb": 1012.19,
             "wind_speed_kmh": 22.53,
             "wind_direction": "SSW",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -65,6 +67,7 @@
             "air_pressure_mb": 1016.18,
             "wind_speed_kmh": 16.01,
             "wind_direction": "S",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -96,6 +99,7 @@
             "air_pressure_mb": 1015.53,
             "wind_speed_kmh": 8.01,
             "wind_direction": "S",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -126,6 +130,7 @@
             "air_pressure_mb": 1029.3,
             "wind_speed_kmh": 4.82,
             "wind_direction": "N",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1757368,
                 "longitude": -76.8282710
@@ -156,6 +161,7 @@
             "air_pressure_mb": 1028.4,
             "wind_speed_kmh": 7.91,
             "wind_direction": "N",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -186,6 +192,7 @@
             "air_pressure_mb": 1026.4,
             "wind_speed_kmh": 12.81,
             "wind_direction": "ENE",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -216,6 +223,7 @@
             "air_pressure_mb": 999.45,
             "wind_speed_kmh": 24.05,
             "wind_direction": "E",
+            "location": "Dalzell, SC",
             "launch_coordinates": {
                 "latitiude": 34.050934,
                 "longitude": -80.421280
