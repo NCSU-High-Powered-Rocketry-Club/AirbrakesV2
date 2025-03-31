@@ -1,13 +1,13 @@
 #launch-selector-grid {
     grid-size: 3; /* 3 columns */
     grid-gutter: 1;
-    grid-rows: 0.5fr 2fr 1fr;
+    grid-rows: 0.7fr 2fr 0.9fr;
     grid-columns: 2.1fr 1.2fr 1fr;
 
     #title {
         content-align: center middle;
         column-span: 3;
-        color: orange;
+        color: $secondary;
     }
 
     #launch-image-widget {
@@ -43,19 +43,20 @@
                 content-align: center middle;
             }
 
-            &:hover {
-                border: round $border;
-            }
         }
 
     #launch-metadata-container {
         content-align: right middle;
         border-title-align: center;
-        border: round $border 60%;
-        # height: auto;
 
-        &:hover, &:focus {
-            border: round $border;
+        DataTable {
+            scrollbar-size: 0 1;
+            background: $background;
+            border: round $border 60%;
+            border-title-align: center;
+            &:hover, &:focus {
+                border: round $border;
+            }
         }
     }
 
@@ -81,7 +82,7 @@
                 }
             }
 
-            &:focus {
+            &:focus, &:hover {
                 border: round $border;
             }
 

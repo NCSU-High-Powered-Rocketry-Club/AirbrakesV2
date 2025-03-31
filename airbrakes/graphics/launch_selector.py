@@ -60,7 +60,7 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
     def compose(self) -> ComposeResult:
         with Grid(id="launch-selector-grid"):
             # The title takes 3 columns:
-            yield FigletWidget("AirbrakesV2", id="title", markup=False, font="standard")
+            yield FigletWidget("AirbrakesV2", id="title", markup=False, font="dos_rebel")
 
             # TODO: Legacy launch 2 and purple launch are missing pictures
             self.launch_image = LaunchImage(id="launch-image-widget").data_bind(
@@ -75,7 +75,6 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
             self.launch_metadata = LaunchMetadataDisplay(id="launch-metadata-container").data_bind(
                 LaunchSelector.selected_file
             )
-            self.launch_metadata.border_title = "Launch Metadata"
             yield self.launch_metadata
             with Vertical(id="button-container"), Center():
                 yield Button("Run Mock Simulation", id="run-mock-sim-button")
@@ -149,9 +148,11 @@ class LaunchMetadataDisplay(Widget):
     fetched_metadata = MockIMU.read_file_metadata()
 
     def compose(self) -> ComposeResult:
-        yield DataTable(
+        self.data_table = DataTable(
             show_header=False, zebra_stripes=True, id="launch-metadata", cursor_type="none"
         )
+        self.data_table.border_title = "Launch Metadata"
+        yield self.data_table
 
     def update_metadata(self, launch_metadata: dict, table: DataTable, update: bool) -> None:
         # Add time and description fields to the table:
@@ -178,7 +179,7 @@ class LaunchMetadataDisplay(Widget):
 
     def watch_selected_file(self, new_path: Path) -> None:
         launch_metadata = self.fetched_metadata[new_path.name]
-        table = self.query_one(DataTable)
+        table = self.data_table
         if not table.row_count:  # We are still before on_mount
             table.add_column("Value", key="value")
             self.update_metadata(launch_metadata, table, update=False)

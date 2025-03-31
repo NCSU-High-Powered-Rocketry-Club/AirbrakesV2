@@ -39,11 +39,14 @@ class SimulationSpeed(Static, can_focus=True):
             super().__init__()
 
     def compose(self) -> ComposeResult:
+        RIGHT_TRIANGLE = "▶"
+        LEFT_TRIANGLE = "◀"
+
         with Horizontal():
-            yield Button("<", id="speed_decrease_button")
+            yield Button(LEFT_TRIANGLE, id="speed_decrease_button")
             self.sim_speed_label = Label("1.0x", id="simulation_speed")
             yield self.sim_speed_label
-            yield Button(">", id="speed_increase_button")
+            yield Button(RIGHT_TRIANGLE, id="speed_increase_button")
 
     def validate_sim_speed(self, sim_speed: float) -> float:
         if sim_speed < 0.0:

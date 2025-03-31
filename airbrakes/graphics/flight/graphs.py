@@ -2,6 +2,7 @@
 
 from textual import on
 from textual.app import ComposeResult
+from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import TabbedContent, TabPane
 from textual_hires_canvas import HiResMode
@@ -9,6 +10,7 @@ from textual_plot import PlotWidget
 
 from airbrakes.constants import GRAPH_DATA_STORE_INTERVAL_SECONDS
 from airbrakes.context import Context
+from airbrakes.graphics.flight.downrange import DownrangeMap
 from airbrakes.graphics.utils import InformationStore
 from airbrakes.utils import convert_ns_to_s
 
@@ -24,27 +26,34 @@ class FlightGraph(Widget):
     def compose(self) -> ComposeResult:
         """Compose the main layout, consisting of 3 tabs."""
         self.tabbed_content = TabbedContent(id="tabbed-content", initial="accel-tab", disabled=True)
-        with self.tabbed_content:
-            with TabPane("Acceleration", id="accel-tab"):
-                self.accel_plot = PlotWidget(allow_pan_and_zoom=False)
-                self.accel_plot._margin_left = 5
-                yield self.accel_plot
-            with TabPane("Velocity", id="vel-tab"):
-                self.vel_plot = PlotWidget(allow_pan_and_zoom=False)
-                self.vel_plot._margin_left = 5
-                yield self.vel_plot
-            with TabPane("Altitude", id="alt-tab"):
-                self.alt_plot = PlotWidget(allow_pan_and_zoom=False)
-                self.alt_plot._margin_left = 5
-                yield self.alt_plot
-            with TabPane("Predicted Apogee", id="pred-apogee-tab"):
-                self.apogee_plot = PlotWidget(allow_pan_and_zoom=False)
-                self.apogee_plot._margin_left = 5
-                yield self.apogee_plot
+        with VerticalScroll(id="vertical-graph-panels"):
+            with self.tabbed_content:
+                with TabPane("Acceleration", id="accel-tab"):
+                    self.accel_plot = PlotWidget(allow_pan_and_zoom=False)
+                    self.accel_plot._margin_left = 5
+                    yield self.accel_plot
+                with TabPane("Velocity", id="vel-tab"):
+                    self.vel_plot = PlotWidget(allow_pan_and_zoom=False)
+                    self.vel_plot._margin_left = 5
+                    yield self.vel_plot
+                with TabPane("Altitude", id="alt-tab"):
+                    self.alt_plot = PlotWidget(allow_pan_and_zoom=False)
+                    self.alt_plot._margin_left = 5
+                    yield self.alt_plot
+                with TabPane("Predicted Apogee", id="pred-apogee-tab"):
+                    self.apogee_plot = PlotWidget(allow_pan_and_zoom=False)
+                    self.apogee_plot._margin_left = 5
+                    yield self.apogee_plot
+
+            self.downrange_map = DownrangeMap(id="downrange-map-panel")
+            self.downrange_map.border_title = "DOWNRANGE MAP"
+            yield self.downrange_map
 
     def initialize_widgets(self, context: Context) -> None:
         """Initializes the widgets with the context."""
         self.context = context
+        self.downrange_map.initialize_widgets(self.context)
+
         self.information_store = InformationStore(
             time_to_store_for=GRAPH_DATA_STORE_INTERVAL_SECONDS,
         )
@@ -58,6 +67,7 @@ class FlightGraph(Widget):
     def update_data(self, current_flight_time_ns: int) -> None:
         """Update the graphs (i.e. add data) when the time since launch changes."""
         current_flight_time_s: float = convert_ns_to_s(current_flight_time_ns)
+        self.downrange_map.update_plot()  # Also update the downrange map
 
         with self.information_store.resize_data() as store:
             store.add_data_point("time", current_flight_time_s)

@@ -236,7 +236,7 @@ dependencies = [
     { name = "textual-image" },
     { name = "textual-plot" },
     { name = "textual-plotext" },
-    { name = "textual-pyfiglet" },
+    { name = "textual-pyfiglet", extra = ["fonts"] },
 ]
 
 [package.dev-dependencies]
@@ -270,7 +270,7 @@ requires-dist = [
     { name = "textual-image", specifier = ">=0.8.1" },
     { name = "textual-plot", specifier = ">=0.4.0.post1" },
     { name = "textual-plotext", specifier = ">=1.0.1" },
-    { name = "textual-pyfiglet", specifier = ">=0.5.5" },
+    { name = "textual-pyfiglet", extras = ["fonts"], specifier = ">=0.5.5" },
 ]
 
 [package.metadata.requires-dev]
@@ -1198,6 +1198,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f3/06/7b9aad121af1ea25581deb7dbe77f2244ff25e06674f626bfcabbaf66369/textual_pyfiglet-0.5.5.tar.gz", hash = "sha256:970a941afc8e54e5319b66516a80b2883c3611a28208ccb505f0c3b8b36bb934", size = 64174 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cd/5d/8275bf13a1e838e9206b0fea96f34d759f0c3020a2064fc7252eaaabb3fd/textual_pyfiglet-0.5.5-py3-none-any.whl", hash = "sha256:5b947c243af08c01345ea3c9a235e08e0669dd2d9eae0fa14cd1043a9fa483bd", size = 71311 },
+]
+
+[package.optional-dependencies]
+fonts = [
+    { name = "textual-pyfiglet-fonts" },
+]
+
+[[package]]
+name = "textual-pyfiglet-fonts"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1f/fc/e1f24d4fb49834dd6d55c81ab09f901bb4e36645b0fa164f35653421f0a4/textual_pyfiglet_fonts-0.2.1.tar.gz", hash = "sha256:d00c4545fef0fdae1f7a6973aad1c3da47e68ba7aa985dfc9f6cbef65b5ef80e", size = 1400466 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d9/e0/a6ecd5216dddc7692a1b31f9d3dae36c512ddf12236dc846eaa2bb41d4c8/textual_pyfiglet_fonts-0.2.1-py3-none-any.whl", hash = "sha256:d3e7864177520943c0a841ace1fb02c7c2764cb12dff299dba255dce2b177b7d", size = 1608244 },
 ]
 
 [[package]]

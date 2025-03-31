@@ -28,6 +28,9 @@
     Button {
         min-width: 0;
         border: none;
+        background: $surface 50%;
+        margin-left: 1;
+        margin-right: 1;
     }
 
     #launch-clock {
@@ -118,7 +121,6 @@
         border-title-align: center;
         border-title-style: bold;
         overflow-y: auto;
-        row-span: 2;
         background: $surface 30%;
         height: 100%;
 
@@ -241,9 +243,10 @@
     #flight-graph-panel {
         # height: 100;
         # background: orange;
-        border-top: round $border 80%;
-        border-left: round $border 80%;
-        border-right: round $border 80%;
+        border: round $border 80%;
+        # border-top: round $border 80%;
+        # border-left: round $border 80%;
+        # border-right: round $border 80%;
         border-title-style: bold;
         border-title-align: center;
 
@@ -253,7 +256,9 @@
         
     
         PlotWidget {
-            height: auto;
+            height: 35vh;
+            # background: blue;
+            # max-height: 25%;
             margin-top: -1;
             margin-right: 3;
         }
@@ -271,38 +276,41 @@
             color: purple;
         }
 
+        #downrange-map-panel {
+            border-top: solid $border 80%;
+            border-title-style: bold;
+            border-title-align: center;
+            height: 50h;
+
+            #downrange-map-widget {
+                # height: auto;
+            }
+
+            #x-distance-label {
+                margin-left: 4;
+                color: orange;
+            }
+
+            #y-distance-label {
+                color: orange;
+                margin-left: 4;
+                margin-right: 4;
+            }
+
+            #horizontal-range-label {
+                color: green;
+            }
+        }
     }
 
-    #downrange-map-panel {
-        border-bottom: round $border 80%;
-        border-left: round $border 80%;
-        border-right: round $border 80%;
-        border-top: solid $border 80%;
+    #rocket-visualization-panel {
+        border: round $border 80%;
         border-title-style: bold;
         border-title-align: center;
-
-        #downrange-map-widget {
-            height: auto;
-            margin-top: -1;
-            margin-right: 3;
-        }
-
-        #x-distance-label {
-            margin-left: 4;
-            color: orange;
-        }
-
-        #y-distance-label {
-            color: orange;
-            margin-left: 4;
-            margin-right: 4;
-        }
-
-        #horizontal-range-label {
-            color: green;
-        }
+        height: 100%;
     }
 }
+
 
 Placeholder {
     width: auto;
