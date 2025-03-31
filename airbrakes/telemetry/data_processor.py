@@ -28,6 +28,7 @@ class DataProcessor:
         "_initial_altitude",
         "_integrating_for_altitude",
         "_last_data_packet",
+        "_longitudinal_axis",
         "_max_altitude",
         "_max_vertical_velocity",
         "_previous_altitude",
@@ -59,6 +60,8 @@ class DataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
         self._retraction_timestamp: float | None = None
+        # The axis the IMU is on:
+        self._longitudinal_axis: npt.NDArray[np.float64] = np.zeros((3,), dtype=np.float64)
 
     @property
     def max_altitude(self) -> float:
@@ -104,9 +107,12 @@ class DataProcessor:
 
     @property
     def average_pitch(self) -> float:
-        """The average pitch of the rocket in degrees"""
+        """The average pitch of the rocket in degrees. 0 degrees is nose up, 90 degrees is
+        horizontal, and 180 degrees is nose down."""
         if self._current_orientation_quaternions is not None:
-            current_orientation = self._current_orientation_quaternions.apply([0, 0, 1])
+            current_orientation = self._current_orientation_quaternions.apply(
+                self._longitudinal_axis
+            )
             dot_product = np.clip(np.dot(current_orientation, [0, 0, 1]), -1.0, 1.0)
             return np.degrees(np.arccos(dot_product))
         return 0.0
@@ -216,6 +222,22 @@ class DataProcessor:
             ),
             scalar_first=True,  # This means the order is w, x, y, z.
         )
+
+        # Get the longitudinal axis the IMU is on:
+        gravity_vector = np.array(
+            [
+                self._last_data_packet.estGravityVectorX,
+                self._last_data_packet.estGravityVectorY,
+                self._last_data_packet.estGravityVectorZ,
+            ]
+        )
+        # Find the dominant axis (largest absolute component)
+        abs_gravity = np.abs(gravity_vector)
+        dominant_axis_idx = np.argmax(abs_gravity)
+
+        # Set longitudinal axis as the unit vector where gravity is dominant
+        self._longitudinal_axis = np.zeros(3)
+        self._longitudinal_axis[dominant_axis_idx] = np.sign(gravity_vector[dominant_axis_idx])
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
