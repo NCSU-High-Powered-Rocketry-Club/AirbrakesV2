@@ -56,21 +56,20 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacke
         chunksize=n_packets * 3,
     )
 
-    for chunk in df:
-        for row in chunk.itertuples(index=False):
-            # Convert the named tuple to a dictionary and remove any NaN values:
-            row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
-            # Create an EstimatedDataPacket instance from the dictionary
-            if row_dict.get("estPressureAlt"):
-                packet = EstimatedDataPacket(**row_dict)
-            else:
-                continue
-            data_packets.append(packet)
+    with df:
+        for chunk in df:
+            for row in chunk.itertuples(index=False):
+                # Convert the named tuple to a dictionary and remove any NaN values:
+                row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
+                # Create an EstimatedDataPacket instance from the dictionary
+                if row_dict.get("estPressureAlt"):
+                    packet = EstimatedDataPacket(**row_dict)
+                else:
+                    continue
+                data_packets.append(packet)
 
-            if len(data_packets) >= n_packets:
-                # For some reason pandas doesn't close the file when we return from the loop:
-                df.close()
-                return data_packets
+                if len(data_packets) >= n_packets:
+                    return data_packets
 
     raise ValueError(f"Could not read {n_packets} packets from {csv_path}")
 
