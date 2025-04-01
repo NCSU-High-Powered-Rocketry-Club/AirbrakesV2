@@ -102,7 +102,7 @@ class FlightDisplay:
         """
         self._running = True
         self._processes = self.prepare_process_dict()
-        self._cpu_usages = {name: 0.0 for name in self._processes}
+        self._cpu_usages = dict.fromkeys(self._processes, 0.0)
         self._cpu_thread.start()
         self._thread_target.start()
 

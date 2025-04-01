@@ -10,7 +10,6 @@ from pathlib import Path
 import msgspec
 import pandas as pd
 from faster_fifo import Queue
-from pandas.io.parsers.readers import TextFileReader
 
 from airbrakes.constants import (
     CHUNK_SIZE,
@@ -25,6 +24,9 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
+
+if typing.TYPE_CHECKING:
+    from pandas.io.parsers.readers import TextFileReader
 
 
 class MockIMU(BaseIMU):
@@ -78,7 +80,7 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
-        self._log_file_path: Path = typing.cast(Path, log_file_path)
+        self._log_file_path: Path = typing.cast("Path", log_file_path)
 
         self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
         # Get the columns that are common between the data packet and the log file, since we only
@@ -170,7 +172,7 @@ class MockIMU(BaseIMU):
 
         # and chunk read the file because it's faster and memory efficient
         reader: TextFileReader = typing.cast(
-            TextFileReader,
+            "TextFileReader",
             self._read_csv(
                 start_index=start_index,
                 chunksize=CHUNK_SIZE,
