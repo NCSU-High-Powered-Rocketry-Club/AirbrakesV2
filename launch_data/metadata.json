@@ -6,6 +6,7 @@
             "air_pressure_mb": 1031.49,
             "wind_speed_kmh": 12.87,
             "wind_direction": "ESE",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -35,6 +36,7 @@
             "air_pressure_mb": 1012.19,
             "wind_speed_kmh": 22.53,
             "wind_direction": "SSW",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -59,12 +61,13 @@
         "flight_description": "First flight of AirbrakesV2. Airbrakes were coded to deploy automatically after roughly 1 second in CoastState. However they did not deploy due a mechanical issue. LandedState was triggered too early and did not capture touchdown. Generated Data packets were added to file to mimmick a touchdown. We missed logging some quaternions because they were reported invalid by the IMU, and were added in during post-processing later."
     },
     "genesis_launch_1.csv": {
-        "date": "2024-11-16T13:45:58.732-05:00",
+        "date": "2024-11-16T13:54:22.792-05:00",
         "launch_site": {
             "air_temperature_celsius": 16.0,
             "air_pressure_mb": 1016.18,
             "wind_speed_kmh": 16.01,
             "wind_direction": "S",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -83,19 +86,20 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 53.34,
+            "flight_length_seconds": 42.69,
             "target_apogee_meters": 10.0
         },
         "flight_description": "First flight of apogee prediction code. Apogee prediction worked well. However, the physical airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
 
     },
     "genesis_launch_2.csv": {
-        "date": "2024-11-16T16:45:13.844-05:00",
+        "date": "2024-11-16T16:55:20.731-05:00",
         "launch_site": {
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
             "wind_speed_kmh": 8.01,
             "wind_direction": "S",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -114,7 +118,7 @@
                 "latitude": 35.1751266,
                 "longitude": -76.826902
             },
-            "flight_length_seconds": 54.15,
+            "flight_length_seconds": 45.54,
             "target_apogee_meters": 10.0
         },
         "flight_description": "Second flight of apogee prediction code. This was very similar to first flight and airbrakes most likely failed to deploy at the intended time. See https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/issues/91 for more details."
@@ -126,6 +130,7 @@
             "air_pressure_mb": 1029.3,
             "wind_speed_kmh": 4.82,
             "wind_direction": "N",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1757368,
                 "longitude": -76.8282710
@@ -156,6 +161,7 @@
             "air_pressure_mb": 1028.4,
             "wind_speed_kmh": 7.91,
             "wind_direction": "N",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -171,10 +177,10 @@
             "log_buffer_index": 5000,
             "apogee_meters": null,
             "landed_coordinates:": {
-                "latitude": null,
-                "longitude": null
+                "latitude": 35.17482376,
+                "longitude": -76.82660675
             },
-            "flight_length_seconds": null,
+            "flight_length_seconds": 0.0,
             "target_apogee_meters": 1
         },
         "flight_description": "Complete waste of a flight since the velocity was negative at standby state due to excessive gyro drift. No data past standby state."
@@ -186,6 +192,7 @@
             "air_pressure_mb": 1026.4,
             "wind_speed_kmh": 12.81,
             "wind_direction": "ENE",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1758000,
                 "longitude": -76.8283400
@@ -204,7 +211,7 @@
                 "latitude": 35.17778228496852,
                 "longitude": -76.8299311341451
             },
-            "flight_length_seconds": null,
+            "flight_length_seconds": 36.36,
             "target_apogee_meters": 1218.2
         },
         "flight_description": "First flight of the Pelicanator. This was the first flight with the Raspberry Pi 5, and the first flight in which airbrakes 100% worked. However the flight itself was a failed VDF launch, crash landing and thus the data was cutoff before landing. The camera was in the payload for this flight."
@@ -216,6 +223,7 @@
             "air_pressure_mb": 999.45,
             "wind_speed_kmh": 24.05,
             "wind_direction": "E",
+            "location": "Dalzell, SC",
             "launch_coordinates": {
                 "latitiude": 34.050934,
                 "longitude": -80.421280

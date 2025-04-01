@@ -19,13 +19,47 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def convert_ns_to_s(nanoseconds: float) -> float:
+def convert_to_nanoseconds(timestamp_str: str) -> int | None:
+    """Converts seconds to nanoseconds, if it isn't already in nanoseconds."""
+    try:
+        # check if value is already in nanoseconds:
+        return int(timestamp_str)
+    except ValueError:
+        try:
+            timestamp_float = float(timestamp_str)
+            return int(timestamp_float * 1e9)  # return the value in nanoseconds
+        except ValueError:
+            return None
+
+
+def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.
     :param nanoseconds: The time in nanoseconds.
     :return: The time in seconds.
     """
     return nanoseconds * 1e-9
+
+
+def convert_seconds_to_packets(
+    seconds: float, raw_packet_freq: float, est_packet_freq: float
+) -> int:
+    """Returns the number of packets which are expected to be received, given the time in seconds,
+    the raw packet rate, and the estimated packet rate.
+
+    :param seconds: The time in seconds.
+    :param raw_packet_freq: The raw packet rate, in Hz.
+    :param est_packet_freq: The estimated packet rate, in Hz.
+
+    :return: The number of packets expected to be received.
+    """
+    # Formula for converting number of packets to seconds and vice versa:
+    # If N = total number of packets, T = total time in seconds:
+    # f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
+    # T = N/f => N = T * 1000
+
+    # Calculate the number of packets expected to be received:
+    return int(seconds * (raw_packet_freq + est_packet_freq))
 
 
 def convert_s_to_ns(seconds: float) -> float:

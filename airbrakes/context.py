@@ -62,7 +62,7 @@ class Context:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
+        Initializes Context with the specified hardware objects, Logger, IMUDataProcessor,
         and ApogeePredictor. The state machine starts in StandbyState, which is the initial
         state of the air brakes system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
@@ -134,7 +134,8 @@ class Context:
         # behind on processing
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
-        # This should not happen, since we wait for IMU packets.
+        # This should not happen, since we wait for IMU packets. Only happens when the mock replay
+        # is paused.
         if not self.imu_data_packets:
             return
 
@@ -146,12 +147,11 @@ class Context:
             if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
         ]
 
-        # Update the data processor with the new data packets.
-        self.data_processor.update(self.est_data_packets)
-
         # Get the Processor Data Packets from the data processor, this will have the same length
         # as the number of EstimatedDataPackets in data_packets
         if self.est_data_packets:
+            # Update the data processor with the new data packets.
+            self.data_processor.update(self.est_data_packets)
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
         # Gets the Apogee Predictor Data Packets
