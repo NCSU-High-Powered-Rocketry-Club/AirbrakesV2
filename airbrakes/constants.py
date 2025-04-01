@@ -94,7 +94,7 @@ ENCODER_PIN_B = 24
 # -------------------------------------------------------
 
 # TODO: This should be in the launch selector screen:
-MOCK_DISPLAY_UPDATE_RATE = 1 / 20
+MOCK_DISPLAY_UPDATE_RATE = 1 / 15
 """The frequency at which the display updates in replay or sim mode. Increasing this value will
 negatively affect the performance when running with a "fast" simulation."""
 
@@ -278,7 +278,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 128
+TARGET_APOGEE_METERS = 1218
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.

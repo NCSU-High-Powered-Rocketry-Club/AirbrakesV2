@@ -76,11 +76,3 @@ class DownrangeMap(Widget):
             line_style="yellow",
             hires_mode=HiResMode.BRAILLE,
         )
-
-        # Plot another line from origin to the current position:
-        self.downrange_plot.plot(
-            [0, self.x_distance],
-            [0, self.y_distance],
-            line_style="green",
-            hires_mode=HiResMode.BRAILLE,
-        )

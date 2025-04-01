@@ -36,3 +36,4 @@ class FlightInformation(Static):
 
     def update_flight_information(self) -> None:
         self.flight_telemetry.update_flight_telemetry()
+        self.rocket_visualization.update_visualization()

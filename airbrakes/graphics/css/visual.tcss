@@ -205,6 +205,7 @@
                 grid-gutter: 1;
                 grid-columns: 1fr;
                 grid-rows: auto;
+                padding-top: 1;
 
                 CPUBars {
                     max-height: 10;
