@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743268361094,
+  "lastUpdate": 1743545596396,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -884,6 +884,58 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0005264441083627312",
             "extra": "mean: 1.8385698761885723 msec\nrounds: 630"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "37377066+harshil21@users.noreply.github.com",
+            "name": "Harshil",
+            "username": "harshil21"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "557c1fc556717bdac946a980082c27ce219ace85",
+          "message": "Merge pull request #185 from NCSU-High-Powered-Rocketry-Club/fix-pitch\n\nFix pitch calculations",
+          "timestamp": "2025-04-01T18:12:03-04:00",
+          "tree_id": "6061a3168e22438673c89baade5106fa70d7c768",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/commit/557c1fc556717bdac946a980082c27ce219ace85"
+        },
+        "date": 1743545581543,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_components/test_data_processor.py::TestDataProcessor::test_benchmark_data_processor_update",
+            "value": 3206.6823868482584,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001384755782707403",
+            "extra": "mean: 311.8487830604473 usec\nrounds: 1157"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 127345.17918716281,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007168515441635904",
+            "extra": "mean: 7.85267260514253 usec\nrounds: 6454"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 506855.1478405296,
+            "unit": "iter/sec",
+            "range": "stddev: 3.9913689195184196e-7",
+            "extra": "mean: 1.9729502684554505 usec\nrounds: 52522"
+          },
+          {
+            "name": "tests/test_context.py::TestContext::test_benchmark_airbrakes_update",
+            "value": 922.8860827482837,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0009452744021099054",
+            "extra": "mean: 1.0835573519779138 msec\nrounds: 429"
           }
         ]
       }
