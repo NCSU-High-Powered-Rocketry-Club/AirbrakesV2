@@ -2,6 +2,7 @@
 
 import numpy as np
 from textual import on
+from textual._box_drawing import combine_quads
 from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widget import Widget
@@ -22,10 +23,11 @@ FLAME_OFFSETS = [0.5, 1, 1.5, 2, 2.5, 3]  # Distances in cells where "X" flames 
 AIRBRAKE_LENGTH = 2  # Length of airbrakes in cells
 
 # Constants for altitude axis
-NUM_TICKS = 7
-TICK_INTERVAL = 0.5  # meters per tick  (NOT TO SCALE)
-TICK_SPACING = 5  # cells between ticks
+# NUM_TICKS = 5
+TICK_INTERVAL = 1.7  # meters per tick  (NOT TO SCALE)
+# TICK_SPACING = 10  # cells between ticks
 AXIS_X = 0  # x-position of the axis
+METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 
 
 class Visualization(Widget):
@@ -142,57 +144,54 @@ class Visualization(Widget):
 
     def watch_altitude(self) -> None:
         """Redraw altitude axis when altitude changes by more than 2m."""
-        if abs(self.altitude_at_last_draw - self.altitude) > 2:
-            self.draw_altitude_axis()
-            self.altitude_at_last_draw = self.altitude
+        if abs(self.altitude_at_last_draw - self.altitude) > 1:
+            self.draw_rocket()
 
     def draw_altitude_axis(self) -> None:
-        """Draw the altitude axis with moving ticks and labels, varying tick sizes."""
-        # Current altitude and canvas dimensions
-        current_altitude = self.altitude
+        """Draw the altitude axis with ticks that scroll based on altitude changes."""
         canvas_height = self.canvas.size.height
-        middle_y = canvas_height // 2  # Middle of the canvas
+        middle_y = canvas_height // 2
+        current_altitude = self.altitude
 
-        # Calculate altitudes for each tick
-        tick_altitudes = [
-            current_altitude - (NUM_TICKS // 2 - i) * TICK_INTERVAL for i in range(NUM_TICKS)
+        # Define the visible altitude range centered on current_altitude
+        alt_range = (canvas_height / 2) * METERS_PER_CELL
+        alt_min = current_altitude - alt_range
+        alt_max = current_altitude + alt_range
+
+        # Generate tick altitudes within the visible range
+        first_tick = np.ceil(alt_min / TICK_INTERVAL) * TICK_INTERVAL
+        last_tick = np.floor(alt_max / TICK_INTERVAL) * TICK_INTERVAL
+        tick_altitudes = np.arange(first_tick, last_tick + TICK_INTERVAL, TICK_INTERVAL)
+
+        # Map tick altitudes to canvas y-positions
+        # Since y increases downward, higher altitudes map to lower y
+        tick_ys = [
+            round(middle_y - (alt - current_altitude) / METERS_PER_CELL) for alt in tick_altitudes
+        ]
+        # Filter ticks to ensure they're within canvas bounds
+        visible_ticks = [
+            (alt, y)
+            for alt, y in zip(tick_altitudes, tick_ys, strict=False)
+            if 0 <= y < canvas_height
         ]
 
-        # Calculate y-positions for ticks
-        tick_ys = [middle_y - (i - NUM_TICKS // 2) * TICK_SPACING for i in range(NUM_TICKS)]
+        # Draw the vertical axis line with integrated ticks
+        vertical_quad = (2, 0, 2, 0)  # ┃
+        tick_quad = (0, 1, 0, 0)  # ─ (tick to the right)
+        tick_positions = {y for _, y in visible_ticks}
 
-        # Define tick characters (larger below, smaller above)
-        tick_chars = [
-            "≡",
-            "=",
-            "-",
-            "-",
-            "-",
-            "=",
-            "≡",
-        ]  # Middle is '-', grows below, shrinks above
+        for y in range(canvas_height):
+            if y in tick_positions:
+                combined_quad = combine_quads(vertical_quad, tick_quad)
+                char = get_box(combined_quad)  # e.g., ├
+            else:
+                char = get_box(vertical_quad)  # ┃
+            self.canvas.set_pixel(AXIS_X, y, char, style="#ffffff")
 
-        # Get the box character for a vertical line:
-        vertical_line_char = get_box((2, 0, 2, 0))
-        # Draw the axis line
-        self.canvas.draw_line(
-            AXIS_X, 0, AXIS_X, canvas_height - 1, char=vertical_line_char, style="#ffffff"
-        )
-
-        # Draw ticks and labels
-        for i, (altitude, y) in enumerate(zip(tick_altitudes, tick_ys, strict=False)):
-            if 0 <= y < canvas_height:  # Ensure tick is within canvas bounds
-                # Draw tick with varying size
-                tick_char = tick_chars[i]
-                self.canvas.set_pixel(AXIS_X, y, tick_char, style="#ffffff")
-
-                # Draw altitude label
-                label = f"{altitude:.1f}"
-                self.canvas.write_text(
-                    AXIS_X + 2,  # Slightly to the right of the axis
-                    y,
-                    label,
-                )
+        # Draw labels for visible ticks
+        for alt, y in visible_ticks:
+            label = f"{alt:.1f}"
+            self.canvas.write_text(AXIS_X + 2, y, label)
 
     def draw_rocket(self) -> None:
         """Draw the rocket with the current pitch."""
