@@ -254,7 +254,7 @@
         },
         "imu_details": {
             "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
+            "raw_packet_frequency": 1000.0,
             "est_packet_frequency": 500.0
         },
         "flight_data": {
