@@ -58,20 +58,20 @@ class BaseServo(ABC):
         # self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     @abstractmethod
-    def _set_max_extension(self, extension: ServoExtension) -> None:
+    def _set_max_extension(self) -> None:
         """
         Sets the extension of the servo.
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
-        self.current_extension = extension
+        self.current_extension = ServoExtension.MAX_EXTENSION
 
     @abstractmethod
-    def _set_min_extension(self, extension: ServoExtension) -> None:
+    def _set_min_extension(self) -> None:
         """
         Sets the extension of the servo.
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
-        self.current_extension = extension
+        self.current_extension = ServoExtension.MIN_EXTENSION
 
     def set_extended(self) -> None:
         """
@@ -82,8 +82,9 @@ class BaseServo(ABC):
         # extending the servo.
         # self._go_to_min_no_buzz.cancel()
 
+        # print("setting extended")
         start_extending = threading.Thread(
-            target=self._set_max_extension(ServoExtension.MAX_EXTENSION)
+            target=self._set_max_extension,
         )
         start_extending.start()
 
@@ -100,8 +101,9 @@ class BaseServo(ABC):
         # retracting the servo.
         # self._go_to_max_no_buzz.cancel()
 
+        # print("setting retracted")
         start_retracting = threading.Thread(
-            target=self._set_min_extension(ServoExtension.MIN_EXTENSION)
+            target=self._set_min_extension,
         )
         start_retracting.start()
 
