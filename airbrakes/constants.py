@@ -334,7 +334,7 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_MIN_PACKETS = 10
 """The minimum number of processor data packets required to update the predicted apogee."""
 
-UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
+UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.1, 0.75]
 """
 The uncertainty from the curve fit, below which we will say that our apogee has converged. This
 uncertainty corresponds to being off by +/- 5m.
