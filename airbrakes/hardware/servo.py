@@ -2,6 +2,7 @@
 the airbrakes, along with a rotary encoder to measure the servo's position."""
 
 import contextlib
+import time
 
 import gpiozero
 
@@ -69,11 +70,28 @@ class Servo(BaseServo):
 
         super().__init__(servo_1, servo_2, encoder)
 
-    def _set_extension(self, extension: ServoExtension) -> None:
+    def _set_max_extension(self) -> None:
         """
         Sets the servo to the specified extension.
         :param extension: The extension to set the servo to.
         """
-        super()._set_extension(extension)
-        self.first_servo.angle = extension.value
-        self.second_servo.angle = extension.value
+        super()._set_max_extension()
+
+        for angle in range(
+            ServoExtension.MIN_EXTENSION.value, ServoExtension.MAX_EXTENSION.value, -1
+        ):
+            self.first_servo.angle = angle
+            self.second_servo.angle = angle
+            time.sleep(0.005)
+
+    def _set_min_extension(self) -> None:
+        """
+        Sets the servo to the specified extension.
+        :param extension: The extension to set the servo to.
+        """
+        super()._set_min_extension()
+
+        for angle in range(ServoExtension.MAX_EXTENSION.value, ServoExtension.MIN_EXTENSION.value):
+            self.first_servo.angle = angle
+            self.second_servo.angle = angle
+            time.sleep(0.005)
