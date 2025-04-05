@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1743813486333,
+  "lastUpdate": 1743814798549,
   "repoUrl": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2",
   "entries": {
     "Benchmark": [
@@ -144,6 +144,54 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.0009467817823520693",
             "extra": "mean: 1.2130612328545527 msec\nrounds: 627"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "committer": {
+            "name": "NCSU-High-Powered-Rocketry-Club",
+            "username": "NCSU-High-Powered-Rocketry-Club"
+          },
+          "id": "a0ac9879efbba053681366bda85ebbd5e82e4eda",
+          "message": "Switch to Pelicanator Launch 3 config",
+          "timestamp": "2025-04-01T22:12:07Z",
+          "url": "https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/pull/186/commits/a0ac9879efbba053681366bda85ebbd5e82e4eda"
+        },
+        "date": 1743814785995,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/test_components/test_data_processor.py::TestDataProcessor::test_benchmark_data_processor_update",
+            "value": 6269.384142714965,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000011539650499050104",
+            "extra": "mean: 159.50530023941855 usec\nrounds: 1682"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_log_method",
+            "value": 265291.8768567268,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000035937206756921192",
+            "extra": "mean: 3.769433168660715 usec\nrounds: 9539"
+          },
+          {
+            "name": "tests/test_components/test_logger.py::TestLogger::test_benchmark_prepare_logger_packets",
+            "value": 796716.5888346443,
+            "unit": "iter/sec",
+            "range": "stddev: 2.175452949515574e-7",
+            "extra": "mean: 1.2551514729506235 usec\nrounds: 115849"
+          },
+          {
+            "name": "tests/test_context.py::TestContext::test_benchmark_airbrakes_update",
+            "value": 571.3838986310209,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006415292839611281",
+            "extra": "mean: 1.7501368211388189 msec\nrounds: 615"
           }
         ]
       }
