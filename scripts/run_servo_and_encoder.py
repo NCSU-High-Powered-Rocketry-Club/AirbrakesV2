@@ -91,13 +91,13 @@ class ServoControllerApp(App):
                 self.servo.set_retracted()
                 # self.encoder.value = 0.0  # Simulate encoder change
             case "min_btn":
-                self.servo.set_retracted()
+                self.servo._set_extension(ServoExtension.MIN_EXTENSION)
                 # self.encoder.value = 0.0
             case "min_no_buzz_btn":
                 self.servo._set_extension(ServoExtension.MIN_NO_BUZZ)
                 # self.encoder.value = 0.1
             case "max_btn":
-                self.servo.set_extended()
+                self.servo._set_extension(ServoExtension.MAX_EXTENSION)
                 # self.encoder.value = 1.0
             case "max_no_buzz_btn":
                 self.servo._set_extension(ServoExtension.MAX_NO_BUZZ)

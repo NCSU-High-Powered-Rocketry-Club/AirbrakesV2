@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import gpiozero
 
-from airbrakes.constants import ServoExtension
+from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
 
 if TYPE_CHECKING:
     from adafruit_motor.servo import Servo as AdafruitServo
@@ -54,24 +54,16 @@ class BaseServo(ABC):
         # We have to use threading to avoid blocking the main thread because our extension methods
         # need to run at a specific time. Yes this is bad practice but we had a mechanical issue and
         # we had to fix it in code.
-        # self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
-        # self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     @abstractmethod
-    def _set_max_extension(self) -> None:
+    def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the extension of the servo.
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
-        self.current_extension = ServoExtension.MAX_EXTENSION
-
-    @abstractmethod
-    def _set_min_extension(self) -> None:
-        """
-        Sets the extension of the servo.
-        :param extension: The extension of the servo, there are 4 possible values, see constants.
-        """
-        self.current_extension = ServoExtension.MIN_EXTENSION
+        self.current_extension = extension
 
     def set_extended(self) -> None:
         """
@@ -80,17 +72,13 @@ class BaseServo(ABC):
         """
         # If we are already going to the minimum extension, we cancel that operation before
         # extending the servo.
-        # self._go_to_min_no_buzz.cancel()
+        self._go_to_min_no_buzz.cancel()
 
-        # print("setting extended")
-        start_extending = threading.Thread(
-            target=self._set_max_extension,
-        )
-        start_extending.start()
+        self._set_extension(ServoExtension.MAX_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the maximum extension.
-        # self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
-        # self._go_to_max_no_buzz.start()
+        self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
+        self._go_to_max_no_buzz.start()
 
     def set_retracted(self) -> None:
         """
@@ -99,17 +87,13 @@ class BaseServo(ABC):
         """
         # If we are already going to the maximum extension, we cancel that operation before
         # retracting the servo.
-        # self._go_to_max_no_buzz.cancel()
+        self._go_to_max_no_buzz.cancel()
 
-        # print("setting retracted")
-        start_retracting = threading.Thread(
-            target=self._set_min_extension,
-        )
-        start_retracting.start()
+        self._set_extension(ServoExtension.MIN_EXTENSION)
 
         # Creates a timer to stop the buzzing after the servo reaches the minimum extension
-        # self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
-        # self._go_to_min_no_buzz.start()
+        self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
+        self._go_to_min_no_buzz.start()
 
     def get_encoder_reading(self) -> int:
         """
@@ -118,16 +102,16 @@ class BaseServo(ABC):
         """
         return self.encoder.steps
 
-    # def _set_max_no_buzz(self) -> None:
-    #     """
-    #     Extends the servo to the stop buzz position. After the servo is extended to its maximum
-    #     extension, this sets its extension to its actual extension.
-    #     """
-    #     self._set_extension(ServoExtension.MAX_NO_BUZZ)
+    def _set_max_no_buzz(self) -> None:
+        """
+        Extends the servo to the stop buzz position. After the servo is extended to its maximum
+        extension, this sets its extension to its actual extension.
+        """
+        self._set_extension(ServoExtension.MAX_NO_BUZZ)
 
-    # def _set_min_no_buzz(self) -> None:
-    #     """
-    #     Retracts the servo to the stop buzz position. After the servo is retracted to its minimum
-    #     extension, this sets its extension to its actual extension.
-    #     """
-    #     self._set_extension(ServoExtension.MIN_NO_BUZZ)
+    def _set_min_no_buzz(self) -> None:
+        """
+        Retracts the servo to the stop buzz position. After the servo is retracted to its minimum
+        extension, this sets its extension to its actual extension.
+        """
+        self._set_extension(ServoExtension.MIN_NO_BUZZ)
