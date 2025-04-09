@@ -33,6 +33,13 @@ https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
 _A video of our air brakes extending and retracting_
 
+<video controls>
+  <source src="https://raw.githubusercontent.com/NCSU-High-Powered-Rocketry-Club/Payload-2024-2025/main/launch_data/videos/pelicanator_launch_3.mp4#t=0,25" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+_Video of the Pelicanator Launch 3 which deployed airbrakes_
+
 ### Design
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
 
