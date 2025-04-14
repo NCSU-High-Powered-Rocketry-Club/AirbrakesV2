@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pandas as pd
 import pytest
-import scipy.spatial
+import quaternion
 
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.telemetry.data_processor import DataProcessor
@@ -117,7 +117,7 @@ class TestDataProcessor:
         inst = DataProcessor()
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
-            if isinstance(val, np.ndarray):
+            if isinstance(val, np.ndarray | quaternion.quaternion):
                 continue
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
@@ -300,7 +300,7 @@ class TestDataProcessor:
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(1.971628)
+        assert d._previous_vertical_velocity == pytest.approx(1.9757983)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -339,8 +339,8 @@ class TestDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(-138.0245)
-        assert d.vertical_velocity == pytest.approx(-138.0245)
+        assert d._previous_vertical_velocity == pytest.approx(-138.151733)
+        assert d.vertical_velocity == pytest.approx(-138.151733)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
@@ -375,8 +375,8 @@ class TestDataProcessor:
                 ],
                 20.0,
                 0.0,
-                np.array([0.5, 0.5, 0.5, 0.5]),
-                np.array([0, 0, 1]),
+                np.array([1.123457, 1.123457, 1.123457, 1.123457]),
+                quaternion.quaternion(0, 0, 0, 1),
             ),
             (
                 [
@@ -394,8 +394,8 @@ class TestDataProcessor:
                 ],
                 25.0,
                 5.0,
-                np.array([-0.434374, 0.520038, 0.520038, 0.520038]),
-                np.array([1, 0, 0]),
+                np.array([-0.976001, 1.168481, 1.168481, 1.168481]),
+                quaternion.quaternion(0, 1, 0, 0),
             ),
             (
                 [
@@ -417,8 +417,8 @@ class TestDataProcessor:
                 ],
                 30.0,
                 10.0,
-                np.array([-0.988993, 0.085428, 0.085428, 0.085428]),
-                np.array([0, -1, 0]),
+                np.array([-2.222181, 0.191949, 0.191949, 0.191949]),
+                quaternion.quaternion(0, 0, -1, 0),
             ),
         ],
         ids=["one_data_packet", "two_data_packets", "three_data_packets"],
@@ -455,9 +455,9 @@ class TestDataProcessor:
         assert d._vertical_velocities[0] == 0.0
 
         assert d._initial_altitude == init_alt
-        assert isinstance(d._current_orientation_quaternions, scipy.spatial.transform.Rotation)
+        assert isinstance(d._current_orientation_quaternions, quaternion.quaternion)
         npt.assert_allclose(
-            d._current_orientation_quaternions.as_quat(scalar_first=True),
+            quaternion.as_float_array(d._current_orientation_quaternions),
             rotation_quat,
             rtol=1e-5,
         )
@@ -475,7 +475,7 @@ class TestDataProcessor:
             assert data.time_since_last_data_packet == d._time_differences[idx]
 
         assert d.average_vertical_acceleration == np.mean(d._rotated_accelerations)
-        assert d._longitudinal_axis.all() == expected_longitudinal_axis.all()
+        assert quaternion.allclose(d._longitudinal_axis, expected_longitudinal_axis)
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
@@ -500,9 +500,7 @@ class TestDataProcessor:
             estPressureAlt=altitude_reading[0],
         )
         d._initial_altitude = 20.0
-        d._current_orientation_quaternions = scipy.spatial.transform.Rotation.from_quat(
-            [0.1, 0.1, 0.1, 0.1]
-        )
+        d._current_orientation_quaternions = quaternion.from_float_array([0.1, 0.1, 0.1, 0.1])
 
         new_packets = [
             make_est_data_packet(
