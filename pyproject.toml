@@ -19,6 +19,7 @@ dependencies = [
     # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
     "rpi-gpio>=0.7.1",
     "adafruit-circuitpython-servokit>=1.3.19",
+    "numpy-quaternion>=2024.0.8",
 ]
 
 [dependency-groups]
@@ -28,6 +29,11 @@ dev = [
     "ruff",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
+]
+
+profiling = [
+    "pyinstrument>=5.0.1",
+    "line-profiler>=4.2.0",
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.

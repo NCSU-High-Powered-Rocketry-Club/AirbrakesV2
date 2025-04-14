@@ -1,6 +1,5 @@
 """Module for predicting apogee"""
 
-import contextlib
 import multiprocessing
 import signal
 from collections import deque
@@ -72,14 +71,21 @@ class ApogeePredictor:
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
         msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
-        msgpack_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        msgpack_apg_data_packet_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        msgpack_processor_data_packet_decoder = msgspec.msgpack.Decoder(
+            type=ProcessorDataPacket | str
+        )
         self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
-            Queue(max_size_bytes=BUFFER_SIZE_IN_BYTES)
+            Queue(
+                max_size_bytes=BUFFER_SIZE_IN_BYTES,
+                dumps=msgpack_encoder.encode,
+                loads=msgpack_processor_data_packet_decoder.decode,
+            )
         )
         self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
             dumps=msgpack_encoder.encode,
-            loads=msgpack_decoder.decode,
+            loads=msgpack_apg_data_packet_decoder.decode,
         )
 
         self._prediction_process = multiprocessing.Process(
@@ -146,10 +152,9 @@ class ApogeePredictor:
         total_packets = []
         # get_many doesn't actually get all of the packets, so we need to keep checking until
         # there are no more packets left
-        with contextlib.suppress(Empty):
-            while True:
-                new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
-                total_packets.extend(new_packets)
+        while self._apogee_predictor_packet_queue.qsize() > 0:
+            new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
+            total_packets.extend(new_packets)
         return total_packets
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
