@@ -240,33 +240,33 @@
         "flight_description": "Second flight of the Pelicanator. Airbrakes didn't deploy because it was very windy and we significantly undershot our apogee. No other problems were there with airbrakes for this flight."
     },
     "pelicanator_launch_3.csv": {
-        "date": "2025-04-05T12:27:30.411-05:00",
+        "date": "2025-04-05T14:38:37.408-04:00",
         "launch_site": {
-            "air_temperature_celsius": 28.6,  
-            "air_pressure_mb": 1024.45,
-            "wind_speed_kmh": 25.05,
+            "air_temperature_celsius": 31.0,  
+            "air_pressure_mb": 1019.10,
+            "wind_speed_kmh": 22.5,
             "wind_direction": "SW",
             "launch_coordinates": {
-                "latitiude": 34.050934,
-                "longitude": -80.421280
+                "latitiude": 35.1762107,
+                "longitude": -76.8293647
             },
             "launch_rod_angle": 5.0
         },
         "imu_details": {
             "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
+            "raw_packet_frequency": 500.0,
             "est_packet_frequency": 500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 1290.16,
+            "apogee_meters": 1160.6,
             "landed_coordinates:": {
-                "latitude": 34.04811560103679,
-                "longitude": -80.42347345289595
+                "latitude": 35.17917331104583,
+                "longitude": -76.8303236958196
             },
-            "flight_length_seconds": 69.24,
-            "target_apogee_meters": 1290.76
+            "flight_length_seconds": 82.53,
+            "target_apogee_meters": 1219.2
         },
-        "flight_description": "Final flight before Hunstville."
+        "flight_description": "Final flight before Hunstville. For this flight, the servo died right before launch, requiring a rewrite of the servo logic to work with only one servo. We had on board footage from the payload for the first time, which showed airbrakes deploying correctly in coast. However they were unable to retract mechanically. The rocket was also dragged through the mud by the wind for a long time after landing, which broke the fins, and also corrupting the SD card, and thus we don't have data for this flight. The final coordinates from where the rocket was recovered was 35.18224,-76.83000"
     }
 }

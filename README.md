@@ -12,14 +12,12 @@
   - [1. Clone the repository](#1-clone-the-repository)
   - [2. Install the project](#2-install-the-project)
   - [3. Install the pre-commit hook](#3-install-the-pre-commit-hook)
-  - [4. Make your changes and commit](#4-make-your-changes-and-commit)
 - [Advanced Local Usage](#advanced-local-usage)
   - [Running Mock Launches](#running-mock-launches)
   - [Running Tests](#running-tests)
   - [Running the Linter](#running-the-linter)
 - [Pi Usage](#pi-usage)
   - [Connecting to the Pi (SSH)](#connecting-to-the-pi-ssh)
-  - [Install and start the pigpio daemon on the Raspberry Pi](#install-and-start-the-pigpio-daemon-on-the-raspberry-pi)
   - [Run a real flight with real hardware](#run-a-real-flight-with-real-hardware)
   - [Running Test Scripts](#running-test-scripts)
 - [Contributing](#contributing)
@@ -32,6 +30,10 @@ This project is for controlling our air brakes system with the goal of making ou
 https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
 
 _A video of our air brakes extending and retracting_
+
+![airbrakes](https://github.com/user-attachments/assets/d9818acc-3099-4c42-96bb-6189898dd92f)
+
+_Video of the Pelicanator Launch 3 which deployed airbrakes_
 
 ### Design
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
