@@ -115,7 +115,7 @@ class Context:
         """
         if self.shutdown_requested:
             return
-        # self.retract_airbrakes()
+        self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()

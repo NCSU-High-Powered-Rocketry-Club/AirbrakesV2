@@ -43,7 +43,7 @@ class State(ABC):
         """
         self.context = context
         # At the very beginning of each state, we retract the air brakes
-        # self.context.retract_airbrakes()
+        self.context.retract_airbrakes()
         self.start_time_ns = context.data_processor.current_timestamp
 
     @property
@@ -176,7 +176,6 @@ class FreeFallState(State):
 
     def __init__(self, context: "Context"):
         super().__init__(context)
-        self.context.retract_airbrakes()
         self.context.switch_altitude_back_to_pressure()
 
     def update(self):
