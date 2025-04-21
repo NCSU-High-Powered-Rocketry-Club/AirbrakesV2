@@ -17,8 +17,9 @@ with suppress(ImportError):
 # !!! Currently, we are not actually using a camera on our air brakes pi
 class Camera:
     """
-    This is the class used to interact with the camera on our rocket. It records on a separate
-    process.
+    This is the class used to interact with the camera on our rocket.
+
+    It records on a separate process.
     """
 
     __slots__ = ("camera_control_process", "motor_burn_started", "stop_context_event")
@@ -34,13 +35,16 @@ class Camera:
     def is_running(self) -> bool:
         """
         Returns whether the camera is currently recording.
+
         :return: True if the process is running, False otherwise.
         """
         return self.camera_control_process.is_alive()
 
     def start(self) -> None:
         """
-        Start the video recording, with a buffer. This starts recording in a different process.
+        Start the video recording, with a buffer.
+
+        This starts recording in a different process.
         """
         self.camera_control_process.start()
 
@@ -56,9 +60,7 @@ class Camera:
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self) -> None:  # pragma: no cover
-        """
-        Controls the camera recording process.
-        """
+        """Controls the camera recording process."""
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
 

@@ -19,7 +19,7 @@ from tests.auxil.utils import make_est_data_packet
 
 
 class TestIMU:
-    """Class to test the IMU class in imu.py"""
+    """Class to test the IMU class in imu.py."""
 
     def test_slots(self, imu):
         inst = imu
@@ -104,7 +104,7 @@ class TestIMU:
         assert imu.queued_imu_packets == 1
 
     def test_imu_stop_signal(self, monkeypatch, mock_imu):
-        """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
+        """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL."""
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""

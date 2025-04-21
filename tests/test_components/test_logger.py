@@ -44,8 +44,10 @@ def patched_stop(self):
 
 
 def remove_state_letter(debug_packet_dict: dict[str, str]) -> dict[str, str]:
-    """Helper method which removes the state letter from the dictionary and returns the modified
-    dictionary."""
+    """
+    Helper method which removes the state letter from the dictionary and returns the modified
+    dictionary.
+    """
     debug_packet_dict.pop("state_letter")
     return debug_packet_dict
 
@@ -57,8 +59,11 @@ def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
 
 
 def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> dict[str, str]:
-    """Converts all values in the dictionary to strings. Applies truncation for floats by default.
-    Drops None values."""
+    """
+    Converts all values in the dictionary to strings.
+
+    Applies truncation for floats by default. Drops None values.
+    """
     new_d = {}
     for k, v in d.items():
         if isinstance(v, int):
@@ -90,7 +95,7 @@ def threaded_logger(monkeypatch):
 
 
 class TestLogger:
-    """Tests the Logger() class in logger.py"""
+    """Tests the Logger() class in logger.py."""
 
     sample_ldp = LoggerDataPacket(
         state_letter="S",
@@ -449,7 +454,6 @@ class TestLogger:
         logger,
     ):
         """Tests whether the log buffer works correctly for the Standby and Landed state."""
-
         monkeypatch.setattr(logger.__class__, "stop", patched_stop)
         # Test if the buffer works correctly
         logger.start()
@@ -516,7 +520,6 @@ class TestLogger:
         logger,
     ):
         """Tests that the buffer keeps building up on subsequent calls to log()."""
-
         # Test if the buffer works correctly
         logger.start()
         # Log more than IDLE_LOG_CAPACITY packets to test if packets go to the buffer.
@@ -592,8 +595,10 @@ class TestLogger:
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: ApogeePredictorDataPacket,
     ):
-        """Tests if the buffer is logged when switching from standby to motor burn and that the
-        counter is reset."""
+        """
+        Tests if the buffer is logged when switching from standby to motor burn and that the counter
+        is reset.
+        """
         # Note: We are not monkeypatching the stop method here, because we want to test if the
         # entire buffer is logged when we switch from Standby to MotorBurn.
         logger.start()
@@ -680,9 +685,7 @@ class TestLogger:
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: ApogeePredictorDataPacket,
     ):
-        """Tests if we've hit the idle log capacity when are in LandedState and that it is
-        logged."""
-
+        """Tests if we've hit the idle log capacity when are in LandedState and that it is logged."""
         # Note: We are not monkeypatching the stop method here, because we want to test if the
         # entire buffer is logged when we are in LandedState and when stop() is called.
         logger.start()
@@ -811,7 +814,6 @@ class TestLogger:
         expected_outputs,
     ):
         """Tests whether the _prepare_logger_packets method creates correct LoggerDataPackets."""
-
         # set some invalid fields to test if they stay as a list
         invalid_field = ["something", "hey"]
         for imu_packet in imu_data_packets:
@@ -871,8 +873,8 @@ class TestLogger:
         monkeypatch,
     ):
         """
-        Tests that the logger calls flush() every x lines by monkeypatching the file object's
-        flush method.
+        Tests that the logger calls flush() every x lines by monkeypatching the file object's flush
+        method.
         """
         # Prepare sample data packets
         context_packet = make_context_data_packet(state_letter="M")  # Avoid buffering

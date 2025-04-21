@@ -1,5 +1,7 @@
-"""File which contains utility functions which can be reused in the project, along with handling
-command line arguments"""
+"""
+File which contains utility functions which can be reused in the project, along with handling
+command line arguments.
+"""
 
 import argparse
 import sys
@@ -12,7 +14,9 @@ import psutil
 
 def convert_unknown_type_to_float(obj_type: Any) -> float:
     """
-    Converts the object to a float. Used by msgspec to convert numpy float64 to a float.
+    Converts the object to a float.
+
+    Used by msgspec to convert numpy float64 to a float.
     :param obj_type: The object to convert.
     :return: The converted object.
     """
@@ -22,6 +26,7 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
 def convert_ns_to_s(nanoseconds: float) -> float:
     """
     Converts nanoseconds to seconds.
+
     :param nanoseconds: The time in nanoseconds.
     :return: The time in seconds.
     """
@@ -31,6 +36,7 @@ def convert_ns_to_s(nanoseconds: float) -> float:
 def convert_s_to_ns(seconds: float) -> float:
     """
     Converts seconds to nanoseconds.
+
     :param seconds: The time in seconds.
     :return: The time in nanoseconds.
     """
@@ -39,9 +45,11 @@ def convert_s_to_ns(seconds: float) -> float:
 
 def set_process_priority(priority: int) -> None:
     """
-    Sets the priority of the calling process to the specified nice value. Only works on Linux.
+    Sets the priority of the calling process to the specified nice value.
+
+    Only works on Linux.
     :param priority: The nice value to set the process to. This ranges from -20 to 19, with -20
-    being the highest priority and 19 being the lowest.
+        being the highest priority and 19 being the lowest.
     """
     if sys.platform != "win32":
         p = psutil.Process()
@@ -57,8 +65,9 @@ def set_process_priority(priority: int) -> None:
 
 def deadband(input_value: float, threshold: float) -> float:
     """
-    Returns 0.0 if input_value is within the deadband threshold. Otherwise, returns input_value
-    adjusted by the threshold.
+    Returns 0.0 if input_value is within the deadband threshold.
+
+    Otherwise, returns input_value adjusted by the threshold.
     :param input_value: The value to apply the deadband to.
     :param threshold: The deadband threshold.
     :return: Adjusted input_value or 0.0 if within the deadband.
@@ -71,6 +80,7 @@ def deadband(input_value: float, threshold: float) -> float:
 def arg_parser() -> argparse.Namespace:
     """
     Handles the command line arguments for the main Airbrakes program.
+
     :return: The parsed arguments as a class with attributes.
     """
     # We require ONE and only one of the 3 positional arguments to be passed:
@@ -168,10 +178,10 @@ def arg_parser() -> argparse.Namespace:
 def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
     """
     Adds the arguments common to the mock replay and the sim to the parser.
+
     :param parser: the mock replay or sim subparser.
     :param is_mock: Whether running in mock replay mode.
     """
-
     _type = "mock replay" if is_mock else "sim"
 
     parser.add_argument(

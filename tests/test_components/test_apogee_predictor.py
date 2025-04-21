@@ -34,7 +34,7 @@ def threaded_apogee_predictor(monkeypatch):
 
 
 class TestApogeePredictor:
-    """Tests the IMUDataProcessor class"""
+    """Tests the IMUDataProcessor class."""
 
     def test_slots(self):
         inst = ApogeePredictor()
@@ -45,7 +45,7 @@ class TestApogeePredictor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, apogee_predictor):
-        """Tests whether the IMUDataProcessor is correctly initialized"""
+        """Tests whether the IMUDataProcessor is correctly initialized."""
         ap = apogee_predictor
         # Test attributes on init
         assert isinstance(ap._processor_data_packet_queue, faster_fifo.Queue)
@@ -75,7 +75,7 @@ class TestApogeePredictor:
         assert apogee_predictor._prediction_process.exitcode == 0
 
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
-        """Tests that the predictor adds to the queue when update is called"""
+        """Tests that the predictor adds to the queue when update is called."""
         packet = [make_processor_data_packet()]
         # important to not .start() the process, as we don't want it to run as it will fetch
         # it from the queue and we want to check if it's added to the queue.
@@ -148,11 +148,13 @@ class TestApogeePredictor:
     def test_prediction_loop_no_mock(
         self, threaded_apogee_predictor, processor_data_packets, expected_value
     ):
-        """Tests that our predicted apogee works in general, by passing in a few hundred data
-        packets. This does not really represent a real flight, but given that case, it should
-        predict it correctly. Also tests that we have sent the Apogee Predictor Data Packet
-        to the main process."""
+        """
+        Tests that our predicted apogee works in general, by passing in a few hundred data packets.
 
+        This does not really represent a real flight, but given that case, it should predict it
+        correctly. Also tests that we have sent the Apogee Predictor Data Packet to the main
+        process.
+        """
         assert not threaded_apogee_predictor._apogee_predictor_packet_queue.qsize()
         threaded_apogee_predictor.update(processor_data_packets)
 
@@ -173,8 +175,7 @@ class TestApogeePredictor:
         assert packet.uncertainty_threshold_2 < UNCERTAINTY_THRESHOLD[1]
 
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
-        """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
-
+        """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets."""
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
             packets = [
@@ -226,9 +227,7 @@ class TestApogeePredictor:
         accelerations,
         expected_convergence,
     ):
-        """
-        Test _has_apogee_converged with different lists of predicted apogees and expected results.
-        """
+        """Test _has_apogee_converged with different lists of predicted apogees and expected results."""
         # Set up the apogee predictor with the test data
         ap = apogee_predictor
         ap._cumulative_time_differences = cumulative_time_differences

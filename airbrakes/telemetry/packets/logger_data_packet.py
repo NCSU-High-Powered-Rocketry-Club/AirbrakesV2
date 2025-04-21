@@ -1,13 +1,14 @@
-"""Module for describing the data packet for the logger to log"""
+"""Module for describing the data packet for the logger to log."""
 
 import msgspec
 
 
 class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     """
-    Represents a collection of all data that the logger can log in a line. Not every field will be
-    filled in every packet. The order in which the fields are defined determines the order in which
-    they will be logged.
+    Represents a collection of all data that the logger can log in a line.
+
+    Not every field will be filled in every packet. The order in which the fields are defined
+    determines the order in which they will be logged.
     """
 
     # Field in ContextDataPacket

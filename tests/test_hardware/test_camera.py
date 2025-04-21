@@ -10,8 +10,11 @@ def both_cameras(request):
 
 
 class TestCamera:
-    """Tests the Camera class. This tests the base methods, which are common between the Camera and
-    MockCamera classes."""
+    """
+    Tests the Camera class.
+
+    This tests the base methods, which are common between the Camera and MockCamera classes.
+    """
 
     @pytest.mark.parametrize("both_cameras", ["camera", "mock_camera"], indirect=True)
     def test_slots(self, both_cameras):

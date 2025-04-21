@@ -10,9 +10,9 @@ from airbrakes.interfaces.base_servo import BaseServo
 class MockServo(BaseServo):
     """
     A custom class that represents a servo motor and the accompanying rotary encoder. The servo
-    controls the extension of the airbrakes while the encoder measures the servo's position.
-    the encoder is controlled using the gpiozero library, which provides a simple
-    interface for controlling GPIO pins on the Raspberry Pi.
+    controls the extension of the airbrakes while the encoder measures the servo's position. the
+    encoder is controlled using the gpiozero library, which provides a simple interface for
+    controlling GPIO pins on the Raspberry Pi.
 
     The servo we use is the DS3235, which is a coreless digital servo.
     """
@@ -26,10 +26,11 @@ class MockServo(BaseServo):
     ) -> None:
         """
         Initializes the servo object with the specified GPIO pin.
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is
-            connected to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
-            connected to.
+
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
+            to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
+            to.
         """
         # Setup the PCA9685 PWM servo driver. This contains the servos that control the airbrakes.
 
@@ -51,6 +52,7 @@ class MockServo(BaseServo):
     def _scale_min_max(extension: float) -> float:
         """
         Scales the extension value to the range [0, 1] to set the servo value.
+
         :param extension: The extension to set the servo to.
         :return: The scaled extension value.
         """
@@ -59,6 +61,7 @@ class MockServo(BaseServo):
     def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the servo to the specified extension.
+
         :param extension: The extension to set the servo to.
         """
         super()._set_extension(extension)

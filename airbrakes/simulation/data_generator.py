@@ -1,4 +1,4 @@
-"""Module that creates randomly generated data to sent to the simulation IMU"""
+"""Module that creates randomly generated data to sent to the simulation IMU."""
 
 import csv
 from pathlib import Path
@@ -23,8 +23,9 @@ from airbrakes.utils import deadband
 
 class DataGenerator:
     """
-    Uses config settings to generate realistic flight trajectories. Returns raw and
-    estimated data points for the sim IMU to combine into data packets
+    Uses config settings to generate realistic flight trajectories.
+
+    Returns raw and estimated data points for the sim IMU to combine into data packets
     """
 
     __slots__ = (
@@ -42,10 +43,9 @@ class DataGenerator:
 
     def __init__(self, config: SimulationConfig):
         """
-        Initializes the data generator object with the provided configuration
-        :param config: the configuration object for the simulation
+        Initializes the data generator object with the provided configuration :param config: the
+        configuration object for the simulation.
         """
-
         self._config: SimulationConfig = config
 
         self._last_est_packet: EstimatedDataPacket | None = None
@@ -66,12 +66,13 @@ class DataGenerator:
 
     @property
     def velocity_vector(self) -> npt.NDArray:
-        """Returns the last calculated velocity vectors of the rocket"""
+        """Returns the last calculated velocity vectors of the rocket."""
         return self._last_velocities
 
     def _load_thrust_curve(self) -> npt.NDArray:
         """
         Loads the thrust curve from the motor specified in the configs.
+
         :return: numpy array containing lists with the time, and thrust at that time.
         """
         # gets the path of the csv based on the config file
@@ -118,7 +119,7 @@ class DataGenerator:
         related math, and methods for the raw and estimated data.
 
         :return: a 2 element array containing the raw rotation manager and the estimated rotation
-        manager, respectively.
+            manager, respectively.
         """
         launch_rod_pitch = self._config.launch_rod_pitch
         launch_rod_azimuth = self._config.launch_rod_azimuth
@@ -138,15 +139,13 @@ class DataGenerator:
         self, packet_type: RawDataPacket | EstimatedDataPacket
     ) -> RawDataPacket | EstimatedDataPacket:
         """
-        Sets up the initial values for the estimated and raw data packets. This should
-        only be called once, and all values will be approximate launch pad conditions.
+        Sets up the initial values for the estimated and raw data packets. This should only be
+        called once, and all values will be approximate launch pad conditions.
 
-        :param packet_type: either RawDataPacket or EstimatedDataPacket class objects.
-            used as identifier.
-
+        :param packet_type: either RawDataPacket or EstimatedDataPacket class objects. used as
+            identifier.
         :return: data packet of the specified type with launch pad conditions.
         """
-
         packet = None
         if packet_type == RawDataPacket:
             scaled_accel = (
@@ -198,7 +197,7 @@ class DataGenerator:
 
     def generate_raw_data_packet(self) -> RawDataPacket:
         """
-        Generates a raw data packet containing randomly generated data points
+        Generates a raw data packet containing randomly generated data points.
 
         :return: RawDataPacket
         """
@@ -267,7 +266,7 @@ class DataGenerator:
 
     def generate_estimated_data_packet(self) -> EstimatedDataPacket:
         """
-        Generates an estimated data packet containing randomly generated data points
+        Generates an estimated data packet containing randomly generated data points.
 
         :return: EstimatedDataPacket
         """
@@ -365,7 +364,6 @@ class DataGenerator:
         Integrates that acceleration vector to get the velocity vector.
 
         :param: numpy array containing the compensated acceleration vector
-
         :return: the velocity vector of the rocket
         """
         # gets the rotated acceleration vector
@@ -389,13 +387,12 @@ class DataGenerator:
 
     def _calculate_forces(self, timestamp, velocity_vector) -> npt.NDArray:
         """
-        Calculates the thrust force and drag force, and returns them in an array
+        Calculates the thrust force and drag force, and returns them in an array.
 
         :param timestamp: the timestamp of the rocket to calcuate the net forces at
         :param velocity_vector: numpy array containing velocity vector
-
         :return: a 2 element numpy array containing thrust force and drag force, respectively.
-        Thrust is positive, drag is negative.
+            Thrust is positive, drag is negative.
         """
         gradient = -6.5e-3  # troposphere gradient
         gas_constant = 287  # J/kg*K
@@ -455,8 +452,9 @@ class DataGenerator:
 
     def _calculate_mass(self, timestamp: np.float64) -> np.float64:
         """
-        Calculates the mass of the rocket at any given timestamp. The mass loss is found
-        by calculating the mass flow rate using effective exhaust velocity.
+        Calculates the mass of the rocket at any given timestamp.
+
+        The mass loss is found by calculating the mass flow rate using effective exhaust velocity.
         :param timestamp: current timestamp of the rocket, in seconds
         :return: the current mass of the rocket, in kilograms
         """

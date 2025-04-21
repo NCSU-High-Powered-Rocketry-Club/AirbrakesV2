@@ -1,6 +1,10 @@
-"""Tests the full integration of the airbrakes system. This is done by reading data from a previous
+"""
+Tests the full integration of the airbrakes system.
+
+This is done by reading data from a previous
 launch and manually verifying the data output by the code. This test will run at full speed in the
-CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
+CI. To run it in real time, see `main.py` or instructions in the `README.md`.
+"""
 
 import threading
 import time
@@ -244,8 +248,10 @@ class TestIntegration:
 
     @pytest.mark.imu_benchmark
     def test_fetched_imu_packets_integration(self, context):
-        """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
-        $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
+        """
+        Test that the fetched IMU packets are a reasonable size.
+
+        Run with sudo. E.g. $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
         ab = context
 

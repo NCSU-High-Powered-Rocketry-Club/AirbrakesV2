@@ -1,5 +1,8 @@
-"""This module contains the test cases for the launch data. The test cases are used in
-test_integration.py to test the launch data."""
+"""
+This module contains the test cases for the launch data.
+
+The test cases are used in test_integration.py to test the launch data.
+"""
 
 import statistics
 import types
@@ -29,9 +32,12 @@ class StateInformation(msgspec.Struct):
 
 
 class LaunchCase:
-    """The general test cases for the launch data. This is the ideal case. Other launch
-    data classes can inherit from this class and override the methods to test the specific
-    launch data (e.g. failed chute deploy, data cutoffs, etc)."""
+    """
+    The general test cases for the launch data.
+
+    This is the ideal case. Other launch data classes can inherit from this class and override the
+    methods to test the specific launch data (e.g. failed chute deploy, data cutoffs, etc).
+    """
 
     def __init__(self, states_dict: dict[str, StateInformation], target_apogee: float) -> None:
         self.states_dict: dict[str, StateInformation] = states_dict
@@ -286,11 +292,19 @@ class PelicanatorLaunchCase1(LaunchCase):
         return test_cases
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
-        """Tests the number of lines in the log file. Data got cutoff ~22 seconds before landing."""
+        """
+        Tests the number of lines in the log file.
+
+        Data got cutoff ~22 seconds before landing.
+        """
         return lines_in_log_file > 35_000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
-        """Tests if all states were logged. Data got cutoff ~22 seconds before landing."""
+        """
+        Tests if all states were logged.
+
+        Data got cutoff ~22 seconds before landing.
+        """
         return state_letter_list == ["S", "M", "C", "F"]
 
 

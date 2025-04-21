@@ -60,7 +60,6 @@ def _clear_directory():
 @pytest.fixture
 def parsed_args(request, monkeypatch):
     """Fixture to return the parsed arguments."""
-
     # modify the sys.argv to the arguments passed in the request, so arg_parser can parse them
     # correctly
     monkeypatch.setattr(sys, "argv", request.param)
@@ -100,12 +99,15 @@ def parsed_args(request, monkeypatch):
 )
 def test_create_components(parsed_args, monkeypatch):
     """Tests whether we create the correct components, given the arguments."""
-
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
     def mock_servo__init__(self, *args, **kwargs):
-        """Mock the __init__ of the airbrakes Servo class. Because the import of LGPIOFactory
-        fails on non-raspberry pi devices, we need to mock the Servo class."""
+        """
+        Mock the __init__ of the airbrakes Servo class.
+
+        Because the import of LGPIOFactory fails on non-raspberry pi devices, we need to mock the
+        Servo class.
+        """
 
     monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)

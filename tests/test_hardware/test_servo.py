@@ -8,12 +8,13 @@ from airbrakes.constants import SERVO_DELAY_SECONDS, SERVO_MAX_ANGLE, ServoExten
 from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx
-"""Shortcut for pytest.approx, which is used to compare floating point numbers."""
+"""
+Shortcut for pytest.approx, which is used to compare floating point numbers.
+"""
 
 
 class TestBaseServo:
-    """Tests the BaseServo class, which controls the servo that extends and retracts the
-    airbrakes."""
+    """Tests the BaseServo class, which controls the servo that extends and retracts the airbrakes."""
 
     def test_slots(self, servo):
         inst = servo
@@ -54,8 +55,10 @@ class TestBaseServo:
         )
 
     def test_set_extended(self, servo):
-        """Tests that the servo extends to the maximum extension, and that threading is handled
-        correctly."""
+        """
+        Tests that the servo extends to the maximum extension, and that threading is handled
+        correctly.
+        """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         servo.set_extended()
         assert servo.current_extension == ServoExtension.MAX_EXTENSION
@@ -75,8 +78,10 @@ class TestBaseServo:
         )
 
     def test_set_retracted(self, servo):
-        """Tests that the servo retracts to the minimum extension, and that threading is handled
-        correctly."""
+        """
+        Tests that the servo retracts to the minimum extension, and that threading is handled
+        correctly.
+        """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         servo.set_retracted()
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
@@ -96,9 +101,10 @@ class TestBaseServo:
         )
 
     def test_repeated_extension_retraction(self, servo):
-        """Tests that repeatedly extending and retracting the servo works as expected, and has
-        no race conditions with threads."""
-
+        """
+        Tests that repeatedly extending and retracting the servo works as expected, and has no race
+        conditions with threads.
+        """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
         servo.set_extended()

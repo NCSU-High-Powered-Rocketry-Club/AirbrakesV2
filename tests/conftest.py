@@ -91,8 +91,11 @@ def context(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
 
 @pytest.fixture
 def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
-    """Fixture that returns an Context object with a mock IMU. This will run for
-    all the launch data files (see the mock_imu fixture)"""
+    """
+    Fixture that returns an Context object with a mock IMU.
+
+    This will run for all the launch data files (see the mock_imu fixture)
+    """
     ab = Context(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:

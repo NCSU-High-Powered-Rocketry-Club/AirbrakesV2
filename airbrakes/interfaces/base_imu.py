@@ -1,5 +1,7 @@
-"""Module defining the base class (BaseIMU) for interacting with
-the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module defining the base class (BaseIMU) for interacting with the IMU (Inertial measurement unit) on
+the rocket.
+"""
 
 import contextlib
 from multiprocessing import Process, TimeoutError, Value
@@ -13,9 +15,7 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 
 
 class BaseIMU:
-    """
-    Base class for the IMU, MockIMU, and SimIMU classes.
-    """
+    """Base class for the IMU, MockIMU, and SimIMU classes."""
 
     __slots__ = (
         "_data_fetch_process",
@@ -27,6 +27,7 @@ class BaseIMU:
     def __init__(self, data_fetch_process: Process, queued_imu_packets: Queue) -> None:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
+
         :param data_fetch_process: the multiprocessing process for the IMU.
         :param queued_imu_packets: the queue that the IMUDataPackets will be put into and taken
             from.
@@ -48,8 +49,8 @@ class BaseIMU:
     @property
     def queued_imu_packets(self) -> int:
         """
-        Gets the amount of IMU data packets in the multiprocessing queue
-        :return: The number of IMUDataPackets in the queue.
+        Gets the amount of IMU data packets in the multiprocessing queue :return: The number of
+        IMUDataPackets in the queue.
         """
         return self._queued_imu_packets.qsize()
 
@@ -57,14 +58,13 @@ class BaseIMU:
     def is_running(self) -> bool:
         """
         Returns whether the process fetching data from the IMU is running.
+
         :return: True if the process is running, False otherwise.
         """
         return self._running.value
 
     def stop(self) -> None:
-        """
-        Stops the process separate from the main process for fetching data from the IMU.
-        """
+        """Stops the process separate from the main process for fetching data from the IMU."""
         self._running.value = False
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
@@ -75,23 +75,23 @@ class BaseIMU:
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
     def start(self) -> None:
-        """
-        Starts the process separate from the main process for fetching data from the IMU.
-        """
+        """Starts the process separate from the main process for fetching data from the IMU."""
         self._running.value = True
         self._data_fetch_process.start()
 
     def get_imu_data_packet(self) -> IMUDataPacket | None:
         """
         Gets the last available IMU data packet from the imu packet queue.
+
         :return: an IMUDataPacket object containing the latest data from the imu packet queue. If a
-        value is not available, it will be None.
+            value is not available, it will be None.
         """
         return self._queued_imu_packets.get(timeout=IMU_TIMEOUT_SECONDS)
 
     def get_imu_data_packets(self, block: bool = True) -> list[IMUDataPacket]:
         """
         Returns all available IMU data packets from the queued imu packets.
+
         :param block: Whether to wait until a IMU data packet is available or not.
         :return: A deque containing the latest IMU data packets from the imu packet queue.
         """

@@ -27,7 +27,7 @@ from tests.auxil.utils import (
 
 
 class TestContext:
-    """Tests the Context class"""
+    """Tests the Context class."""
 
     def test_slots(self, context):
         inst = context
@@ -99,7 +99,6 @@ class TestContext:
 
     def test_airbrakes_ctrl_c_exception(self, context):
         """Tests whether the AirbrakesContext handles unknown exceptions."""
-
         context.start()
         try:
             raise ValueError("some error in main loop")
@@ -120,7 +119,8 @@ class TestContext:
         random_data_mock_imu,
         context,
     ):
-        """Tests whether the Airbrakes update method works correctly by calling the relevant methods
+        """
+        Tests whether the Airbrakes update method works correctly by calling the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the data processor gets only estimated data packets
@@ -219,8 +219,9 @@ class TestContext:
         mocked_airbrakes.stop()
 
     def test_stop_with_random_data_imu_and_update(self, context: Context, random_data_mock_imu):
-        """Tests stopping of the airbrakes system while we are using the IMU and
-        calling airbrakes.update().
+        """
+        Tests stopping of the airbrakes system while we are using the IMU and calling
+        airbrakes.update().
         """
         context.imu = random_data_mock_imu
         has_airbrakes_stopped = threading.Event()
@@ -264,8 +265,9 @@ class TestContext:
     def test_stop_with_display_and_update_loop(
         self, context: Context, random_data_mock_imu, mocked_args_parser, capsys
     ):
-        """Tests stopping of the airbrakes system while we are using the IMU, the flight display,
-        and calling airbrakes.update().
+        """
+        Tests stopping of the airbrakes system while we are using the IMU, the flight display, and
+        calling airbrakes.update().
         """
         context.imu = random_data_mock_imu
         fd = FlightDisplay(context=context, start_time=time.time(), args=mocked_args_parser)
@@ -325,8 +327,9 @@ class TestContext:
         logger,
         context,
     ):
-        """Tests whether the airbrakes predict_apogee method works correctly by calling the
-        relevant methods.
+        """
+        Tests whether the airbrakes predict_apogee method works correctly by calling the relevant
+        methods.
 
         1. Mock fetching of data packets
         2. Test whether the apogee predictor gets only estimated data packets and not duplicated
@@ -426,9 +429,10 @@ class TestContext:
     def test_airbrakes_receives_apogee_predictor_packets(
         self, context: Context, monkeypatch, random_data_mock_imu
     ):
-        """Tests whether the airbrakes receives packets from the apogee predictor and that the
-        attribute `predicted_apogee` is updated correctly."""
-
+        """
+        Tests whether the airbrakes receives packets from the apogee predictor and that the
+        attribute `predicted_apogee` is updated correctly.
+        """
         monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
