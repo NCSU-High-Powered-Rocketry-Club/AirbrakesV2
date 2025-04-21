@@ -14,7 +14,9 @@ Shortcut for pytest.approx, which is used to compare floating point numbers.
 
 
 class TestBaseServo:
-    """Tests the BaseServo class, which controls the servo that extends and retracts the airbrakes."""
+    """
+    Tests the BaseServo class, which controls the servo that extends and retracts the airbrakes.
+    """
 
     def test_slots(self, servo):
         inst = servo
@@ -158,7 +160,9 @@ class TestBaseServo:
         )
 
     def test_encoder_get_position(self, servo):
-        """Tests that the encoder reading is correct."""
+        """
+        Tests that the encoder reading is correct.
+        """
         assert servo.get_encoder_reading() == 0
         servo.encoder.steps = 10
         assert servo.get_encoder_reading() == 10

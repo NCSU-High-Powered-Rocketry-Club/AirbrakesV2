@@ -1,4 +1,6 @@
-"""Utility functions used throughout the test suite."""
+"""
+Utility functions used throughout the test suite.
+"""
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket

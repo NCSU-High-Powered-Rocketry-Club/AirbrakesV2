@@ -1,4 +1,6 @@
-"""Module for simulating the IMU on the rocket using generated data."""
+"""
+Module for simulating the IMU on the rocket using generated data.
+"""
 
 import contextlib
 import multiprocessing
@@ -66,7 +68,9 @@ class SimIMU(BaseIMU):
         )
 
     def _fetch_data_loop(self, config: SimulationConfig, real_time_replay: bool) -> None:
-        """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated data."""
+        """
+        A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated data.
+        """
         data_generator = DataGenerator(config)
         timestamp: np.float64 = np.float64(0.0)
 

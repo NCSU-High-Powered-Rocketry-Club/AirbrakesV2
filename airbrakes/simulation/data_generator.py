@@ -1,4 +1,6 @@
-"""Module that creates randomly generated data to sent to the simulation IMU."""
+"""
+Module that creates randomly generated data to sent to the simulation IMU.
+"""
 
 import csv
 from pathlib import Path
@@ -66,7 +68,9 @@ class DataGenerator:
 
     @property
     def velocity_vector(self) -> npt.NDArray:
-        """Returns the last calculated velocity vectors of the rocket."""
+        """
+        Returns the last calculated velocity vectors of the rocket.
+        """
         return self._last_velocities
 
     def _load_thrust_curve(self) -> npt.NDArray:

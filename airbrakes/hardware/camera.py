@@ -1,4 +1,6 @@
-"""Module to handle recording the air brakes with a camera."""
+"""
+Module to handle recording the air brakes with a camera.
+"""
 
 import os
 import signal
@@ -49,18 +51,24 @@ class Camera:
         self.camera_control_process.start()
 
     def stop(self) -> None:
-        """Stop the video recording."""
+        """
+        Stop the video recording.
+        """
         self.motor_burn_started.set()  # in case we stop before motor burn
         self.stop_context_event.set()
         self.camera_control_process.join()
 
     def start_recording(self) -> None:
-        """Start recording when motor burn has started."""
+        """
+        Start recording when motor burn has started.
+        """
         self.motor_burn_started.set()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _camera_control_loop(self) -> None:  # pragma: no cover
-        """Controls the camera recording process."""
+        """
+        Controls the camera recording process.
+        """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
 

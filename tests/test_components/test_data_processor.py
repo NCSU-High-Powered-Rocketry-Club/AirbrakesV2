@@ -82,7 +82,9 @@ def data_processor():
 
 
 class TestDataProcessor:
-    """Tests the DataProcessor class."""
+    """
+    Tests the DataProcessor class.
+    """
 
     packets = [
         EstimatedDataPacket(
@@ -124,7 +126,9 @@ class TestDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        """Tests whether the DataProcessor is correctly initialized."""
+        """
+        Tests whether the DataProcessor is correctly initialized.
+        """
         d = data_processor
         # Test attributes on init
         assert d._max_altitude == 0.0
@@ -253,7 +257,9 @@ class TestDataProcessor:
             assert computed == pytest.approx(expected)
 
     def test_calculate_vertical_velocity(self, data_processor):
-        """Tests whether the vertical velocity is correctly calculated."""
+        """
+        Tests whether the vertical velocity is correctly calculated.
+        """
         d = data_processor
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
@@ -348,7 +354,9 @@ class TestDataProcessor:
         assert d._max_vertical_velocity > d.vertical_velocity
 
     def test_first_update_no_data_packets(self, data_processor):
-        """Tests whether the update() method works correctly, when no data packets are passed."""
+        """
+        Tests whether the update() method works correctly, when no data packets are passed.
+        """
         d = data_processor
         d.update([])
         assert d._last_data_packet is None
@@ -494,7 +502,9 @@ class TestDataProcessor:
     def test_altitude_zeroing(
         self, data_processor, altitude_reading, current_altitude, max_altitude
     ):
-        """Tests whether the altitude is correctly zeroed."""
+        """
+        Tests whether the altitude is correctly zeroed.
+        """
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
         d._last_data_packet = make_est_data_packet(
@@ -522,7 +532,9 @@ class TestDataProcessor:
         assert d._max_altitude == max_altitude
 
     def test_max_altitude(self, data_processor):
-        """Tests whether the max altitude is correctly calculated even when altitude decreases."""
+        """
+        Tests whether the max altitude is correctly calculated even when altitude decreases.
+        """
         d = data_processor
         altitudes = generate_altitude_sine_wave(n_points=1000)
         # run update_data every 10 packets, to mimmick actual data processing in real time:
@@ -583,7 +595,9 @@ class TestDataProcessor:
         assert rotations[-1] == pytest.approx(expected_value)
 
     def test_benchmark_data_processor_update(self, data_processor, benchmark):
-        """Tests the performance of the update method."""
+        """
+        Tests the performance of the update method.
+        """
         data_packets = [
             make_est_data_packet(
                 timestamp=idx,
@@ -618,7 +632,9 @@ class TestDataProcessor:
         ],
     )
     def test_pitch_calculation(self, data_processor, launch_data):
-        """Tests that the pitch calculation is correct."""
+        """
+        Tests that the pitch calculation is correct.
+        """
         # Load a single est data packet from the CSV file
         d = data_processor
         est_data_packets = load_data_packets(launch_data, 1)

@@ -1,4 +1,6 @@
-"""Module containing static config settings for simulation."""
+"""
+Module containing static config settings for simulation.
+"""
 
 import numpy as np
 import numpy.typing as npt

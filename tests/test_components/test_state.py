@@ -25,7 +25,9 @@ from tests.auxil.utils import make_apogee_predictor_data_packet
 
 @pytest.fixture
 def state(context):
-    """Dummy state class to test the base State class."""
+    """
+    Dummy state class to test the base State class.
+    """
 
     class StateImpl(State):
         __slots__ = ()
@@ -73,7 +75,9 @@ def landed_state(context):
 
 
 class TestState:
-    """Tests the base State class."""
+    """
+    Tests the base State class.
+    """
 
     def test_slots(self, state):
         inst = state
@@ -90,7 +94,9 @@ class TestState:
 
 
 class TestStandbyState:
-    """Tests the StandbyState class."""
+    """
+    Tests the StandbyState class.
+    """
 
     def test_slots(self, standby_state):
         inst = standby_state
@@ -124,7 +130,9 @@ class TestStandbyState:
 
 
 class TestMotorBurnState:
-    """Tests the MotorBurnState class."""
+    """
+    Tests the MotorBurnState class.
+    """
 
     def test_slots(self, motor_burn_state):
         inst = motor_burn_state
@@ -137,7 +145,9 @@ class TestMotorBurnState:
         assert motor_burn_state.start_time_ns == 0
 
     def test_camera_recording_started(self, context):
-        """Tests that the camera recording is started when the motor burn starts."""
+        """
+        Tests that the camera recording is started when the motor burn starts.
+        """
         assert context.camera.motor_burn_started.is_set() is False
 
         m = MotorBurnState(context)
@@ -181,7 +191,9 @@ class TestMotorBurnState:
 
 
 class TestCoastState:
-    """Tests the CoastState class."""
+    """
+    Tests the CoastState class.
+    """
 
     def test_slots(self, coast_state):
         inst = coast_state
@@ -292,7 +304,9 @@ class TestCoastState:
         assert coast_state.context.servo.current_extension == expected_airbrakes
 
     def test_update_control_only_once(self, coast_state, monkeypatch):
-        """Check that we only tell the airbrakes to extend once, and not send the command repeatedly."""
+        """
+        Check that we only tell the airbrakes to extend once, and not send the command repeatedly.
+        """
         calls = 0
 
         def extend_airbrakes(_):
@@ -313,7 +327,9 @@ class TestCoastState:
         assert calls == 1
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
-        """Check that if we don't have an apogee prediction, we don't extend the airbrakes."""
+        """
+        Check that if we don't have an apogee prediction, we don't extend the airbrakes.
+        """
         assert not coast_state.context.last_apogee_predictor_packet.predicted_apogee
         coast_state.update()
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
@@ -355,7 +371,9 @@ class TestCoastState:
 
 
 class TestFreeFallState:
-    """Tests the FreeFallState class."""
+    """
+    Tests the FreeFallState class.
+    """
 
     def test_slots(self, free_fall_state):
         inst = free_fall_state
@@ -439,7 +457,9 @@ class TestFreeFallState:
 
 
 class TestLandedState:
-    """Tests the LandedState class."""
+    """
+    Tests the LandedState class.
+    """
 
     def test_slots(self, landed_state):
         inst = landed_state

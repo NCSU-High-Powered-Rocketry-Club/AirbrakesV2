@@ -1,4 +1,6 @@
-"""Module for predicting apogee."""
+"""
+Module for predicting apogee.
+"""
 
 import contextlib
 import multiprocessing
@@ -55,7 +57,9 @@ class CurveCoefficients(msgspec.Struct):
 
 
 class ApogeePredictor:
-    """Class that performs the calculations to predict the apogee of the rocket during flight."""
+    """
+    Class that performs the calculations to predict the apogee of the rocket during flight.
+    """
 
     __slots__ = (
         "_accelerations",
@@ -127,7 +131,9 @@ class ApogeePredictor:
         self._prediction_process.start()
 
     def stop(self) -> None:
-        """Stops the prediction process."""
+        """
+        Stops the prediction process.
+        """
         # Waits for the process to finish before stopping it
         self._processor_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()

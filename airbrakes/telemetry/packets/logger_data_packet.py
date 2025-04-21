@@ -1,4 +1,6 @@
-"""Module for describing the data packet for the logger to log."""
+"""
+Module for describing the data packet for the logger to log.
+"""
 
 import msgspec
 

@@ -1,4 +1,6 @@
-"""Module containing config settings for randomness in the simulation."""
+"""
+Module containing config settings for randomness in the simulation.
+"""
 
 from copy import deepcopy
 from enum import Enum
@@ -8,7 +10,9 @@ import numpy.typing as npt
 
 
 class RandomType(Enum):
-    """Enum that designates the type of randomness to apply."""
+    """
+    Enum that designates the type of randomness to apply.
+    """
 
     CONSTANT = "constant"
     """
@@ -31,7 +35,9 @@ class RandomType(Enum):
 
 
 class RandomAttribute:
-    """Randomness settings for an individual attribute."""
+    """
+    Randomness settings for an individual attribute.
+    """
 
     def __init__(
         self,
@@ -51,7 +57,9 @@ class RandomAttribute:
 
 
 class RandomConfig:
-    """Configuration settings for the randomness in the simulation."""
+    """
+    Configuration settings for the randomness in the simulation.
+    """
 
     def __init__(
         self,

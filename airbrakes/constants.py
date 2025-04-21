@@ -1,4 +1,6 @@
-"""Contains the constants used in the Airbrakes module."""
+"""
+Contains the constants used in the Airbrakes module.
+"""
 
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -111,7 +113,9 @@ The GPIO pin that the encoder's B pin is connected to.
 
 
 class DisplayEndingType(StrEnum):
-    """Enum that represents the different ways the display can end."""
+    """
+    Enum that represents the different ways the display can end.
+    """
 
     NATURAL = "natural"
     """

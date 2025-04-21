@@ -1,4 +1,6 @@
-"""Module which contains the MockServo class and doesn't use the adafruit circuitpython library."""
+"""
+Module which contains the MockServo class and doesn't use the adafruit circuitpython library.
+"""
 
 from gpiozero import RotaryEncoder, Servo
 from gpiozero.pins.mock import MockFactory, MockPWMPin

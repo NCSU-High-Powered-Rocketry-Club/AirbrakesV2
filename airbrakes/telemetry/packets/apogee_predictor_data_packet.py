@@ -1,4 +1,6 @@
-"""Module for describing the data packet for the apogee predictor."""
+"""
+Module for describing the data packet for the apogee predictor.
+"""
 
 import msgspec
 

@@ -1,4 +1,6 @@
-"""File which contains utility functions which can be reused in the simulation."""
+"""
+File which contains utility functions which can be reused in the simulation.
+"""
 
 import random
 

@@ -1,4 +1,6 @@
-"""Module which provides a high level interface to the air brakes system on the rocket."""
+"""
+Module which provides a high level interface to the air brakes system on the rocket.
+"""
 
 import time
 from typing import TYPE_CHECKING
@@ -183,16 +185,22 @@ class Context:
         )
 
     def extend_airbrakes(self) -> None:
-        """Extends the air brakes to the maximum extension."""
+        """
+        Extends the air brakes to the maximum extension.
+        """
         self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
-        """Retracts the air brakes to the minimum extension."""
+        """
+        Retracts the air brakes to the minimum extension.
+        """
         self.servo.set_retracted()
 
     def switch_altitude_back_to_pressure(self) -> None:
-        """Switches the altitude back to pressure, after airbrakes have been retracted."""
+        """
+        Switches the altitude back to pressure, after airbrakes have been retracted.
+        """
         # This isn't in retract_airbrakes because we only want to call this after the airbrakes
         # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
         # want this to be called every time.
@@ -210,7 +218,9 @@ class Context:
             self.apogee_predictor.update(self.processor_data_packets)
 
     def generate_data_packets(self) -> None:
-        """Generates the Context Data Packet and Servo Data Packet to be logged."""
+        """
+        Generates the Context Data Packet and Servo Data Packet to be logged.
+        """
         # Create a Context Data Packet to log the current state and queue information of the
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(

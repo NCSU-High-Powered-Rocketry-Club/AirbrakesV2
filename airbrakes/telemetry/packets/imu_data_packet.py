@@ -1,4 +1,6 @@
-"""Module for describing the data packets from the IMU."""
+"""
+Module for describing the data packets from the IMU.
+"""
 
 import msgspec
 

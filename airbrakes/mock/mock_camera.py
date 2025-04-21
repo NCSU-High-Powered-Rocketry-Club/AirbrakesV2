@@ -1,4 +1,6 @@
-"""Module which uses a mock camera, since the original camera needs many libraries and actual hardware."""
+"""
+Module which uses a mock camera, since the original camera needs many libraries and actual hardware.
+"""
 
 import signal
 from time import sleep
@@ -28,7 +30,9 @@ class MockCamera(Camera):
         self._buffer = bytearray()
 
     def _camera_control_loop(self) -> None:
-        """Starts the mock camera process."""
+        """
+        Starts the mock camera process.
+        """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 

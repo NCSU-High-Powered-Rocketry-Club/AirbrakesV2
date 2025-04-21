@@ -33,7 +33,9 @@ class MockLogger(Logger):
         self._log_process.name = "Mock Logger Process"
 
     def stop(self) -> None:
-        """Stops the logger and deletes the log file if the _delete_log_file attribute is True."""
+        """
+        Stops the logger and deletes the log file if the _delete_log_file attribute is True.
+        """
         super().stop()
         if self._delete_log_file:
             self.log_path.unlink()

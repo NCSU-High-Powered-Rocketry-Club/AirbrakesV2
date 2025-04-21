@@ -1,4 +1,6 @@
-"""Module for the finite state machine that represents which state of flight the rocket is in."""
+"""
+Module for the finite state machine that represents which state of flight the rocket is in.
+"""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
@@ -67,12 +69,16 @@ class State(ABC):
 
 
 class StandbyState(State):
-    """When the rocket is on the launch rail on the ground."""
+    """
+    When the rocket is on the launch rail on the ground.
+    """
 
     __slots__ = ()
 
     def update(self):
-        """Checks if the rocket has launched, based on our velocity."""
+        """
+        Checks if the rocket has launched, based on our velocity.
+        """
         data = self.context.data_processor
         # If the velocity of the rocket is above a threshold, the rocket has launched.
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
@@ -84,7 +90,9 @@ class StandbyState(State):
 
 
 class MotorBurnState(State):
-    """When the motor is burning and the rocket is accelerating."""
+    """
+    When the motor is burning and the rocket is accelerating.
+    """
 
     __slots__ = ()
 
@@ -125,7 +133,9 @@ class CoastState(State):
         self.airbrakes_extended = False
 
     def update(self):
-        """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
+        """
+        Checks to see if the rocket has reached apogee, indicating the start of free fall.
+        """
         # In Coast State we start predicting the apogee
         self.context.predict_apogee()
 
@@ -160,7 +170,9 @@ class CoastState(State):
 
 
 class FreeFallState(State):
-    """When the rocket is falling back to the ground after apogee."""
+    """
+    When the rocket is falling back to the ground after apogee.
+    """
 
     __slots__ = ()
 
@@ -169,7 +181,9 @@ class FreeFallState(State):
         self.context.switch_altitude_back_to_pressure()
 
     def update(self):
-        """Check if the rocket has landed, based on our altitude and a spike in acceleration."""
+        """
+        Check if the rocket has landed, based on our altitude and a spike in acceleration.
+        """
         data = self.context.data_processor
 
         # If our altitude is around 0, and we have an acceleration spike, we have landed
@@ -189,12 +203,16 @@ class FreeFallState(State):
 
 
 class LandedState(State):
-    """When the rocket has landed."""
+    """
+    When the rocket has landed.
+    """
 
     __slots__ = ()
 
     def update(self):
-        """We use this method to stop the air brakes system after we have hit our log buffer."""
+        """
+        We use this method to stop the air brakes system after we have hit our log buffer.
+        """
         if self.context.logger.is_log_buffer_full:
             self.context.stop()
 

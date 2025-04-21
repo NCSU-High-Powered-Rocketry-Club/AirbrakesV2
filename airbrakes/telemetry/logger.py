@@ -1,4 +1,6 @@
-"""Module for logging data to a CSV file in real time."""
+"""
+Module for logging data to a CSV file in real time.
+"""
 
 import csv
 import multiprocessing
@@ -107,12 +109,16 @@ class Logger:
 
     @property
     def is_running(self) -> bool:
-        """Returns whether the logging process is running."""
+        """
+        Returns whether the logging process is running.
+        """
         return self._log_process.is_alive()
 
     @property
     def is_log_buffer_full(self) -> bool:
-        """Returns whether the log buffer is full."""
+        """
+        Returns whether the log buffer is full.
+        """
         return len(self._log_buffer) == LOG_BUFFER_SIZE
 
     @staticmethod
@@ -245,7 +251,9 @@ class Logger:
         return logger_data_packets
 
     def _log_the_buffer(self):
-        """Enqueues all the packets in the log buffer to the log queue, so they will be logged."""
+        """
+        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
+        """
         self._log_queue.put_many(list(self._log_buffer))
         self._log_buffer.clear()
 

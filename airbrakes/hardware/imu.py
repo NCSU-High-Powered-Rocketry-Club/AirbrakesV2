@@ -1,4 +1,6 @@
-"""Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module for interacting with the IMU (Inertial measurement unit) on the rocket.
+"""
 
 import contextlib
 import multiprocessing

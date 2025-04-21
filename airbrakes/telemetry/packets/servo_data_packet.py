@@ -1,4 +1,6 @@
-"""Module for the ServoDataPacket class."""
+"""
+Module for the ServoDataPacket class.
+"""
 
 import msgspec
 

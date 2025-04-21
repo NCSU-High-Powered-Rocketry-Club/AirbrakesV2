@@ -15,7 +15,9 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 
 
 class BaseIMU:
-    """Base class for the IMU, MockIMU, and SimIMU classes."""
+    """
+    Base class for the IMU, MockIMU, and SimIMU classes.
+    """
 
     __slots__ = (
         "_data_fetch_process",
@@ -64,7 +66,9 @@ class BaseIMU:
         return self._running.value
 
     def stop(self) -> None:
-        """Stops the process separate from the main process for fetching data from the IMU."""
+        """
+        Stops the process separate from the main process for fetching data from the IMU.
+        """
         self._running.value = False
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
@@ -75,7 +79,9 @@ class BaseIMU:
             self._data_fetch_process.join(timeout=IMU_TIMEOUT_SECONDS)
 
     def start(self) -> None:
-        """Starts the process separate from the main process for fetching data from the IMU."""
+        """
+        Starts the process separate from the main process for fetching data from the IMU.
+        """
         self._running.value = True
         self._data_fetch_process.start()
 

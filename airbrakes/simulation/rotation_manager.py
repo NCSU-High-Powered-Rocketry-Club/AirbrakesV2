@@ -1,4 +1,6 @@
-"""Module that contains methods for rotation operations."""
+"""
+Module that contains methods for rotation operations.
+"""
 
 import numpy as np
 import numpy.typing as npt

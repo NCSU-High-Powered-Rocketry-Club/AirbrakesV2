@@ -15,14 +15,18 @@ def logger_data_packet():
 
 
 class TestLoggerDataPacket:
-    """Tests for the LoggerDataPacket class."""
+    """
+    Tests for the LoggerDataPacket class.
+    """
 
     def test_init(self, logger_data_packet):
         packet = logger_data_packet
         assert isinstance(packet, LoggerDataPacket)
 
     def test_logger_data_packet_has_all_fields_of_data_packets(self):
-        """Tests whether the LoggerDataPacket class has all the fields of the data packet classes."""
+        """
+        Tests whether the LoggerDataPacket class has all the fields of the data packet classes.
+        """
         log_dp_fields = set(LoggerDataPacket.__struct_fields__)
 
         context_dp_fields = set(ContextDataPacket.__struct_fields__)
@@ -66,7 +70,9 @@ class TestLoggerDataPacket:
         )
 
     def test_logger_data_packet_field_order(self):
-        """Tests whether the LoggerDataPacket class has the correct field order."""
+        """
+        Tests whether the LoggerDataPacket class has the correct field order.
+        """
         # Only Context Data Packet has a different order - one field - "state_letter" is in the
         # beginning, the rest at the end.
 

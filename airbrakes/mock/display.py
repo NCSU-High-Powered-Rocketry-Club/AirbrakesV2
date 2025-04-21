@@ -1,4 +1,6 @@
-"""File to handle the display of real-time flight data in the terminal."""
+"""
+File to handle the display of real-time flight data in the terminal.
+"""
 
 import argparse
 import multiprocessing

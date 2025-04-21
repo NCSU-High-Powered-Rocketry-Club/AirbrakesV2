@@ -37,7 +37,9 @@ from tests.conftest import LOG_PATH
 
 
 def patched_stop(self):
-    """Monkeypatched stop method which does not log the buffer."""
+    """
+    Monkeypatched stop method which does not log the buffer.
+    """
     # Make sure the rest of the code is the same as the original method!
     self._log_queue.put(STOP_SIGNAL)
     self._log_process.join()
@@ -53,7 +55,9 @@ def remove_state_letter(debug_packet_dict: dict[str, str]) -> dict[str, str]:
 
 
 def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
-    """Returns a dictionary with only the fields that are logged in the ProcessorDataPacket."""
+    """
+    Returns a dictionary with only the fields that are logged in the ProcessorDataPacket.
+    """
     pdp_dict.pop("time_since_last_data_packet")
     return pdp_dict
 
@@ -84,7 +88,9 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
 
 @pytest.fixture
 def threaded_logger(monkeypatch):
-    """Modifies the Logger to run in a separate thread instead of a process."""
+    """
+    Modifies the Logger to run in a separate thread instead of a process.
+    """
     logger = Logger(LOG_PATH)
     # Cannot use signals from child threads, so we need to monkeypatch it:
     monkeypatch.setattr("signal.signal", lambda _, __: None)
@@ -95,7 +101,9 @@ def threaded_logger(monkeypatch):
 
 
 class TestLogger:
-    """Tests the Logger() class in logger.py."""
+    """
+    Tests the Logger() class in logger.py.
+    """
 
     sample_ldp = LoggerDataPacket(
         state_letter="S",
@@ -112,7 +120,9 @@ class TestLogger:
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def _clear_directory(self):
-        """Clear the tests/logs directory after running each test."""
+        """
+        Clear the tests/logs directory after running each test.
+        """
         yield  # This is where the test runs
         # Test run is over, now clean up
         for log in LOG_PATH.glob("log_*.csv"):
@@ -158,7 +168,9 @@ class TestLogger:
             assert list(keys) == list(LoggerDataPacket.__struct_fields__)
 
     def test_log_buffer_is_full_property(self, logger):
-        """Tests whether the property is_log_buffer_full works correctly."""
+        """
+        Tests whether the property is_log_buffer_full works correctly.
+        """
         assert not logger.is_log_buffer_full
         logger._log_buffer.extend([1] * (LOG_BUFFER_SIZE - 1))
         assert not logger.is_log_buffer_full
@@ -168,7 +180,9 @@ class TestLogger:
         assert logger.is_log_buffer_full
 
     def test_logger_stops_on_stop_signal(self, logger):
-        """Tests whether the logger stops when it receives a stop signal."""
+        """
+        Tests whether the logger stops when it receives a stop signal.
+        """
         logger.start()
         logger._log_queue.put(STOP_SIGNAL)
         time.sleep(0.01)
@@ -201,12 +215,16 @@ class TestLogger:
         assert len(logger._log_buffer) == 0
 
     def test_logger_ctrl_c_handling(self, monkeypatch):
-        """Tests whether the Logger handles Ctrl+C events from main loop correctly."""
+        """
+        Tests whether the Logger handles Ctrl+C events from main loop correctly.
+        """
         values = faster_fifo.Queue()
         org_method = Logger._logging_loop
 
         def _logging_loop_patched(self):
-            """Monkeypatched method for testing."""
+            """
+            Monkeypatched method for testing.
+            """
             org_method(self)
             values.put("clean exit")
 
@@ -243,7 +261,9 @@ class TestLogger:
             assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), truncation=False)
 
     def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
-        """Tests whether the logger continues to log after a timeout."""
+        """
+        Tests whether the logger continues to log after a timeout.
+        """
         monkeypatch.setattr("airbrakes.telemetry.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
         logger.start()
         time.sleep(0.05)
@@ -384,7 +404,9 @@ class TestLogger:
         file_lines,
         expected_output: list[dict],
     ):
-        """Tests whether the log method logs the data correctly to the CSV file."""
+        """
+        Tests whether the log method logs the data correctly to the CSV file.
+        """
         logger.start()
 
         logger.log(
@@ -453,7 +475,9 @@ class TestLogger:
         monkeypatch,
         logger,
     ):
-        """Tests whether the log buffer works correctly for the Standby and Landed state."""
+        """
+        Tests whether the log buffer works correctly for the Standby and Landed state.
+        """
         monkeypatch.setattr(logger.__class__, "stop", patched_stop)
         # Test if the buffer works correctly
         logger.start()
@@ -519,7 +543,9 @@ class TestLogger:
         apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
         logger,
     ):
-        """Tests that the buffer keeps building up on subsequent calls to log()."""
+        """
+        Tests that the buffer keeps building up on subsequent calls to log().
+        """
         # Test if the buffer works correctly
         logger.start()
         # Log more than IDLE_LOG_CAPACITY packets to test if packets go to the buffer.
@@ -685,7 +711,9 @@ class TestLogger:
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packets: ApogeePredictorDataPacket,
     ):
-        """Tests if we've hit the idle log capacity when are in LandedState and that it is logged."""
+        """
+        Tests if we've hit the idle log capacity when are in LandedState and that it is logged.
+        """
         # Note: We are not monkeypatching the stop method here, because we want to test if the
         # entire buffer is logged when we are in LandedState and when stop() is called.
         logger.start()
@@ -813,7 +841,9 @@ class TestLogger:
         apogee_predictor_data_packet,
         expected_outputs,
     ):
-        """Tests whether the _prepare_logger_packets method creates correct LoggerDataPackets."""
+        """
+        Tests whether the _prepare_logger_packets method creates correct LoggerDataPackets.
+        """
         # set some invalid fields to test if they stay as a list
         invalid_field = ["something", "hey"]
         for imu_packet in imu_data_packets:
@@ -953,7 +983,9 @@ class TestLogger:
             )
 
     def test_benchmark_log_method(self, benchmark, logger):
-        """Tests the performance of the _prepare_logger_packets method."""
+        """
+        Tests the performance of the _prepare_logger_packets method.
+        """
         context_packet = make_context_data_packet(state_letter="S")
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
@@ -970,7 +1002,9 @@ class TestLogger:
         )
 
     def test_benchmark_prepare_logger_packets(self, benchmark, logger):
-        """Tests the performance of the _prepare_logger_packets method."""
+        """
+        Tests the performance of the _prepare_logger_packets method.
+        """
         context_packet = make_context_data_packet(state_letter="S")
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])

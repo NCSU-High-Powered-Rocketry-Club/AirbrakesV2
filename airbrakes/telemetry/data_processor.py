@@ -1,4 +1,6 @@
-"""Module for processing IMU data on a higher level."""
+"""
+Module for processing IMU data on a higher level.
+"""
 
 import numpy as np
 import numpy.typing as npt

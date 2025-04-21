@@ -4,7 +4,9 @@ from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, Raw
 
 
 class TestEstimatedDataPacket:
-    """Tests the EstimatedDataPacket class."""
+    """
+    Tests the EstimatedDataPacket class.
+    """
 
     def test_estimated_data_packet_initialization(self):
         packet = EstimatedDataPacket(
@@ -84,7 +86,9 @@ class TestEstimatedDataPacket:
 
 
 class TestRawDataPacket:
-    """Tests the RawDataPacket class."""
+    """
+    Tests the RawDataPacket class.
+    """
 
     def test_raw_data_packet_initialization(self):
         packet = RawDataPacket(

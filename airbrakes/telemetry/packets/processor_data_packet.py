@@ -1,4 +1,6 @@
-"""Module for describing the data packet for the processed IMU data."""
+"""
+Module for describing the data packet for the processed IMU data.
+"""
 
 import msgspec
 import numpy as np

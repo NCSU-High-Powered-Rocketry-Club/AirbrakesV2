@@ -1,4 +1,6 @@
-"""Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket.
+"""
 
 import ast
 import contextlib
@@ -99,7 +101,9 @@ class MockIMU(BaseIMU):
 
     @staticmethod
     def read_file_metadata() -> dict:
-        """Reads the metadata from the log file and returns it as a dictionary."""
+        """
+        Reads the metadata from the log file and returns it as a dictionary.
+        """
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
 

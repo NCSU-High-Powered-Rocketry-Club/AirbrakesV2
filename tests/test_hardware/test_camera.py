@@ -1,11 +1,15 @@
-"""Tests the camera module."""
+"""
+Tests the camera module.
+"""
 
 import pytest
 
 
 @pytest.fixture
 def both_cameras(request):
-    """Fixture that returns both the Camera and MockCamera classes (if you specify them)."""
+    """
+    Fixture that returns both the Camera and MockCamera classes (if you specify them).
+    """
     return request.getfixturevalue(request.param)
 
 
