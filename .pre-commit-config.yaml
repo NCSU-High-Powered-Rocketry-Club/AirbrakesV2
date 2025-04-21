@@ -1,14 +1,18 @@
 # Make sure that the additional_dependencies here match pyproject.toml
 
 ci:
-    autofix_prs: false
-    autoupdate_schedule: "monthly"
+  autofix_prs: false
+  autoupdate_schedule: "monthly"
 
 repos:
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 'v0.11.4'
+  - repo: https://github.com/PyCQA/docformatter
+    rev: eb1df347edd128b30cd3368dddc3aa65edcfac38  # Docformatter is broken for pre-commit, but this works
     hooks:
-    - id: ruff  # Runs the Ruff linter
-      name: ruff linter
-    - id: ruff-format
-      name: ruff formatter
+      - id: docformatter
+        args: [ --in-place, --recursive ]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.6
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
