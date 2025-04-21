@@ -8,11 +8,10 @@ import typing
 from pathlib import Path
 
 import msgspec
-import pandas as pd
+import polars as pl
 from faster_fifo import Queue
 
 from airbrakes.constants import (
-    CHUNK_SIZE,
     DEFAULT,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
@@ -24,9 +23,6 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-
-if typing.TYPE_CHECKING:
-    from pandas.io.parsers.readers import TextFileReader
 
 
 class MockIMU(BaseIMU):
@@ -81,14 +77,9 @@ class MockIMU(BaseIMU):
         )
 
         self._log_file_path: Path = typing.cast("Path", log_file_path)
+        self._headers: list[str] | None = None  # The headers of the csv file being read.
+        self._needed_fields: list[str] | None = None  # The fields we need to read from the csv
 
-        self._headers: pd.DataFrame = self._read_csv(nrows=0, usecols=None)
-        # Get the columns that are common between the data packet and the log file, since we only
-        # care about those (it's also faster to read few columns rather than all)
-        self._needed_fields = list(
-            (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
-            & set(self._headers.columns)
-        )
         file_metadata: dict = MockIMU.read_file_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
 
@@ -117,23 +108,37 @@ class MockIMU(BaseIMU):
         start_index: int = 0,
         usecols: list[str] | object = DEFAULT,
         **kwargs,
-    ) -> "pd.DataFrame | TextFileReader":
-        """Reads the csv file and returns it as a pandas DataFrame.
+    ) -> pl.DataFrame:
+        """Reads the csv file and returns it as a polars DataFrame.
 
         :param start_index: The index to start reading the file from. Must be a keyword argument.
         :param usecols: The columns to read from the file. Must be a keyword argument.
-        :param kwargs: Additional keyword arguments to pass to pd.read_csv.
+        :param kwargs: Additional keyword arguments to pass to pl.read_csv.
 
         :return: The DataFrame or TextFileReader object.
         """
+        # This is here because of issues with using "fork" multiprocessing on Linux. We should
+        # be using "spawn", and that will be the default in Python 3.14.
+        self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
+        # Get the columns that are common between the data packet and the log file, since we only
+        # care about those (it's also faster to read few columns rather than all). This needs to
+        # be in the same order as the source definition:
+        # Get all field names from both packet types
+        raw_fields = list(RawDataPacket.__struct_fields__)
+        estimated_fields = list(EstimatedDataPacket.__struct_fields__)
+
+        # Combine fields in the desired order (raw first, then estimated)
+        all_fields_ordered = raw_fields + [f for f in estimated_fields if f not in raw_fields]
+
+        # Filter to only include fields that exist in the CSV headers
+        self._needed_fields = [field for field in all_fields_ordered if field in self._headers]
+
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
-        return pd.read_csv(
+        return pl.read_csv(
             self._log_file_path,
-            engine="c",
-            usecols=self._needed_fields if usecols is DEFAULT else usecols,
-            converters={"invalid_fields": MockIMU._convert_invalid_fields},
-            skiprows=range(1, start_index + 1),
-            memory_map=True,
+            columns=self._needed_fields if usecols is DEFAULT else usecols,
+            skip_rows_after_header=start_index,
+            infer_schema_length=10,
             **kwargs,
         )
 
@@ -147,16 +152,15 @@ class MockIMU(BaseIMU):
         if metadata_buffer_index:
             return metadata_buffer_index
 
-        # We read the file in small chunks because it is faster than reading the whole file at once
-        for chunk in self._read_csv(
-            chunksize=CHUNK_SIZE,
-            usecols=["timestamp"],
-        ):
-            chunk["time_diff"] = chunk["timestamp"].diff()
-            buffer_end_index = chunk[chunk["time_diff"] > 1e9].index
-            if not buffer_end_index.empty:
-                return buffer_end_index[0]
-        return 0
+        result = (
+            pl.scan_csv(self._log_file_path)
+            .with_row_index("index")  # Add an index column to the DataFrame
+            .with_columns(pl.col("timestamp").diff().alias("time_diff"))  # Calculate time diff
+            .filter(pl.col("time_diff") > 1e9)  # Filter rows with time diff > 1 second
+            .select("index")  # Select the index of the first row with time diff > 1 second
+            .collect()
+        )
+        return result["index"][0] if not result.is_empty() else 0  # Default to 0 if no index found
 
     def _read_file(self, real_time_replay: bool, start_after_log_buffer: bool = False) -> None:
         """
@@ -170,44 +174,42 @@ class MockIMU(BaseIMU):
 
         launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
 
-        # and chunk read the file because it's faster and memory efficient
-        reader: TextFileReader = typing.cast(
-            "TextFileReader",
-            self._read_csv(
-                start_index=start_index,
-                chunksize=CHUNK_SIZE,
-            ),
-        )
+        reader: pl.DataFrame = self._read_csv(start_index=start_index)
+
         # Iterate over the rows of the dataframe and put the data packets in the queue
-        for chunk in reader:
-            for row in chunk.itertuples(index=False):
-                start_time = time.time()
-                # Convert the named tuple to a dictionary and remove any NaN values:
-                row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
+        for row in reader.iter_rows(named=True):
+            start_time = time.time()
+            row_dict = {k: v for k, v in row.items() if v is not None}
 
-                # Check if the process should stop:
-                if not self.is_running:
-                    break
+            # TODO: Modify csv file to have invalid fields as strings:
+            if row_dict.get("invalid_fields"):
+                row_dict["invalid_fields"] = self._convert_invalid_fields(
+                    row_dict["invalid_fields"]
+                )
 
-                # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is
-                # an estimated data packet
-                if row_dict.get("scaledAccelX"):
-                    imu_data_packet = RawDataPacket(**row_dict)
-                elif row_dict.get("estPressureAlt"):
-                    imu_data_packet = EstimatedDataPacket(**row_dict)
-                else:
-                    continue
+            # Check if the process should stop:
+            if not self.is_running:
+                break
 
-                # Put the packet in the queue
-                self._queued_imu_packets.put(imu_data_packet)
+            # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is
+            # an estimated data packet
+            if row_dict.get("scaledAccelX"):
+                imu_data_packet = RawDataPacket(**row_dict)
+            elif row_dict.get("estPressureAlt"):  # checking for estPressureAlt
+                imu_data_packet = EstimatedDataPacket(**row_dict)
+            else:
+                continue
 
-                # Sleep only if we are running a real-time replay
-                # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 ms
-                # between each packet to pretend to be real-time
-                if real_time_replay and type(imu_data_packet) is RawDataPacket:
-                    # Mimic the polling interval so it "runs in real time"
-                    end_time = time.time()
-                    time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
+            # Put the packet in the queue
+            self._queued_imu_packets.put(imu_data_packet)
+
+            # Sleep only if we are running a real-time replay
+            # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 or 2 ms
+            # between each packet to pretend to be real-time
+            if real_time_replay and type(imu_data_packet) is RawDataPacket:
+                # Mimic the polling interval so it "runs in real time"
+                end_time = time.time()
+                time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
 
     def _fetch_data_loop(
         self, real_time_replay: bool, start_after_log_buffer: bool = False
@@ -226,4 +228,6 @@ class MockIMU(BaseIMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.value = False
+        # If we don't put the STOP_SIGNAL in the queue, the main process will wait till IMU_TIMEOUT
+        # seconds before exiting, which is not what we want.
         self._queued_imu_packets.put(STOP_SIGNAL)

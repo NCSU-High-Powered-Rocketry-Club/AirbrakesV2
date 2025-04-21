@@ -103,5 +103,5 @@ class BaseIMU:
             return []
         else:
             if STOP_SIGNAL in packets:  # only used by the MockIMU
-                return []
+                return []  # Makes the main update() loop exit early.
             return packets

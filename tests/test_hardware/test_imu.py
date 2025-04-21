@@ -103,22 +103,22 @@ class TestIMU:
         # There is still one packet, since the process is stopped after the put()
         assert imu.queued_imu_packets == 1
 
-    def test_imu_stop_signal(self, monkeypatch, mock_imu):
+    def test_imu_stop_signal(self, monkeypatch):
         """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
 
         def _fetch_data_loop(self, port: str):
             """Monkeypatched method for testing."""
             # The stop_signal is typically put at the end of the mock sim.
-            while self._running.value:
-                self._queued_imu_packets.put(EstimatedDataPacket(timestamp=0))
+            self._queued_imu_packets.put(EstimatedDataPacket(timestamp=0))
 
-        monkeypatch.setattr(mock_imu.__class__, "_fetch_data_loop", _fetch_data_loop)
-        mock_imu.start()
-        time.sleep(0.001)  # Give the process time to start and put the values
-        packets = mock_imu.get_imu_data_packets()
-        assert packets
-        mock_imu.stop()  # puts STOP_SIGNAL in the queue
-        packets = mock_imu.get_imu_data_packets()
+        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
+        imu = IMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.01)  # Give the process time to start and put the values
+        packets = imu.get_imu_data_packets()
+        assert len(packets) == 1, f"Expected 1 packet, got {len(packets)} packets"
+        imu.stop()  # puts STOP_SIGNAL in the queue
+        packets = imu.get_imu_data_packets(block=False)
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
     def test_imu_ctrl_c_handling(self, monkeypatch):
