@@ -1,6 +1,5 @@
 """Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
 
-import ast
 import contextlib
 import multiprocessing
 import time
@@ -93,15 +92,6 @@ class MockIMU(BaseIMU):
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
 
-    @staticmethod
-    def _convert_invalid_fields(value) -> list | None:
-        """
-        Convert invalid fields to Python objects or None.
-        :param value: The value to convert.
-        :return: The converted value.
-        """
-        return None if not value else ast.literal_eval(value)  # Convert string to list
-
     def _read_csv(
         self,
         *,
@@ -117,8 +107,8 @@ class MockIMU(BaseIMU):
 
         :return: The DataFrame or TextFileReader object.
         """
-        # This is here because of issues with using "fork" multiprocessing on Linux. We should
-        # be using "spawn", and that will be the default in Python 3.14.
+        # This is here because of issues with using "fork" multiprocessing on Linux with polars.
+        # We should be using "spawn", and that will be the default in Python 3.14.
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those (it's also faster to read few columns rather than all). This needs to
@@ -180,12 +170,6 @@ class MockIMU(BaseIMU):
         for row in reader.iter_rows(named=True):
             start_time = time.time()
             row_dict = {k: v for k, v in row.items() if v is not None}
-
-            # TODO: Modify csv file to have invalid fields as strings:
-            if row_dict.get("invalid_fields"):
-                row_dict["invalid_fields"] = self._convert_invalid_fields(
-                    row_dict["invalid_fields"]
-                )
 
             # Check if the process should stop:
             if not self.is_running:

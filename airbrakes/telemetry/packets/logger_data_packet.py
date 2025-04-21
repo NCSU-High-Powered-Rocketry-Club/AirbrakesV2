@@ -19,7 +19,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # IMU Data Packet Fields
     timestamp: int
-    invalid_fields: list[str] | None
+    invalid_fields: str | None
 
     # Raw Data Packet Fields
     scaledAccelX: float | None = None

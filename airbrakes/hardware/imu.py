@@ -242,9 +242,11 @@ class IMU(BaseIMU):
 
                         # Check if the data point is invalid and update the invalid fields list.
                         if not data_point.valid():
-                            if imu_data_packet.invalid_fields is None:
-                                imu_data_packet.invalid_fields = []
-                            imu_data_packet.invalid_fields.append(data_point.channelName())
+                            if imu_data_packet.invalid_fields:  # append the string:
+                                imu_data_packet.invalid_fields = (
+                                    f"{imu_data_packet.invalid_fields},{data_point.channelName()}"
+                                )
+                            imu_data_packet.invalid_fields = data_point.channelName()
                 else:
                     continue  # We never actually reach here, but keeping it just in case
 
