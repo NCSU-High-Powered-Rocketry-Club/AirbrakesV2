@@ -28,8 +28,8 @@ class Servo(BaseServo):
     controlling GPIO pins on the Raspberry Pi 5.
 
     The servo we use is the DS3235, which is a coreless digital servo. There are two of these on the
-    Servo Bonnet (
-    https://www.adafruit.com/product/3416),
+    Servo Bonnets
+    https://www.adafruit.com/product/3416,
     which is connected to the Pi 5.
     """
 
@@ -43,12 +43,14 @@ class Servo(BaseServo):
         encoder_pin_number_b: int,
     ) -> None:
         """
+        Initializes the Servo class.
+
         :param first_servo_channel: The channel where the first servo is connected to on the board
         :param second_servo_channel: The channel where the second servo is connected to on the board
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is
-        connected to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
-        connected to.
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
+            to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
+            to.
         """
         # Set up the Bonnet servo kit. This contains the servos that control the airbrakes.
         pca_9685 = ServoKit(channels=16)

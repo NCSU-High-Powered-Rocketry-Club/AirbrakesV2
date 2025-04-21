@@ -44,6 +44,8 @@ class BaseServo(ABC):
         encoder: gpiozero.RotaryEncoder,
     ) -> None:
         """
+        Initializes the servo and the encoder.
+
         :param first_servo: The first servo object. Can be a real servo or a mock servo.
         :param second_servo: The second servo object. Can be a real servo or a mock servo.
         :param encoder: The rotary encoder object.
