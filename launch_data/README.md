@@ -16,6 +16,7 @@ the IMU.
 7. `pelicanator_launch_1.csv`: This was the first flight of the Pelicanator rocket. The airbrakes deployed during coast for roughly 4 seconds, and then retracted, successfully lowering our apogee by about 60 meters. However, the recovery system of the rocket failed, causing the rocket to crash land. Our Raspberry Pi 5 switched off, resulting in the loss of about 22 seconds of data. The camera was in the payload, which didn't work, so there's no footage of the airbrakes.
 8. `pelicanator_launch_2.csv`: This was the second flight of the Pelicanator rocket. The airbrakes
 didn't deploy since we significantly undershot our apogee. Everything was else was perfect though.
+9. `pelicanator_launch_3.csv`: Final flight before Hunstville. For this flight, the servo died right before launch, requiring a rewrite of the servo logic to work with only one servo. We had on board footage from the payload for the first time, which showed airbrakes deploying correctly in coast. However they were unable to retract mechanically. The rocket was also dragged through the mud by the wind for a long time after landing, which broke the fins, and also corrupting the SD card, and thus we don't have data for this flight.
 
 ## Videos
 
