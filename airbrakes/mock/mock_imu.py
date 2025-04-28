@@ -189,11 +189,12 @@ class MockIMU(BaseIMU):
             # TODO: While faster under -f, this method has a drawback of artifically increasing the
             # convergence time, and negatively affecting the "real-time" experience when not running
             # under -f. A way to fix this would be to add another code path if running under -f.
-            if len(packets) < MAX_FETCHED_PACKETS:
-                packets.append(imu_data_packet)
-            else:
-                self._queued_imu_packets.put_many(packets)
-                packets = []
+            # if len(packets) < MAX_FETCHED_PACKETS:
+            #     packets.append(imu_data_packet)
+            # else:
+            #     self._queued_imu_packets.put_many(packets)
+            #     packets = []
+            self._queued_imu_packets.put(imu_data_packet)
 
             # Sleep only if we are running a real-time replay
             # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 or 2 ms
