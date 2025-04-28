@@ -186,7 +186,7 @@ class TestContext:
         )  # Set to coast state to test apogee update
         mocked_airbrakes.start()
 
-        time.sleep(0.6)  # Sleep a bit so that the IMU queue is being filled
+        time.sleep(0.7)  # Sleep a bit so that the IMU queue is being filled
 
         assert mocked_airbrakes.imu._queued_imu_packets.qsize() > 0
         assert mocked_airbrakes.state.name == "CoastState"
