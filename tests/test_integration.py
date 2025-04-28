@@ -5,15 +5,14 @@ CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
 import threading
 import time
 
+import polars as pl
 import pytest
 
-# from airbrakes.constants import (
-#     ServoExtension,
-# )
-# from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.constants import (
+    ServoExtension,
+)
 from airbrakes.state import MotorBurnState
-
-# from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
     InterestLaunchCase,
@@ -177,74 +176,85 @@ class TestIntegration:
         # Now let's check if everything was logged correctly using polars
 
         # Read the log file into a polars DataFrame
-        # df = pl.read_csv(ab.logger.log_path, n_threads=1)
+        df = pl.read_csv(ab.logger.log_path)
 
-        # # Check if all headers were logged
-        # assert list(df.columns) == list(LoggerDataPacket.__struct_fields__)
+        # Check if all headers were logged
+        assert list(df.columns) == list(LoggerDataPacket.__struct_fields__)
 
-        # # Test the first row for specific validations
-        # first_row = df.row(0, named=True)
+        # Test the first row for specific validations
+        first_row = df.row(0, named=True)
 
-        # # Check if values are rounded to 8 decimal places
-        # accel = (
-        #     first_row["estLinearAccelX"]
-        #     if first_row["estLinearAccelX"] is not None
-        #     else first_row["scaledAccelX"]
-        # )
-        # accel_str = str(accel)
-        # assert accel_str.count(".") == 1
-        # assert len(accel_str.split(".")[1]) == 8
+        # Check if values are rounded to 8 decimal places
+        accel = (
+            first_row["estLinearAccelX"]
+            if first_row["estLinearAccelX"] is not None
+            else first_row["scaledAccelX"]
+        )
+        accel_str = str(accel)
+        assert accel_str.count(".") == 1
+        assert len(accel_str.split(".")[1]) == 8
 
-        # # Check if the timestamp is valid and in nanoseconds
-        # timestamp = str(first_row["timestamp"])
-        # assert timestamp.isdigit()
-        # assert int(timestamp) > 1e9
+        # Check if the timestamp is valid and in nanoseconds
+        timestamp = str(first_row["timestamp"])
+        assert timestamp.isdigit()
+        assert int(timestamp) > 1e9
 
-        # # Check if the state field has only a single letter
-        # state = first_row["state_letter"]
-        # assert len(state) == 1
+        # Check if the state field has only a single letter
+        state = first_row["state_letter"]
+        assert len(state) == 1
 
-        # # Get counts and perform other validations without looping
-        # line_number = df.height
-        # state_list = (df.group_by("state_letter", maintain_order=True)
-        #              .agg()
-        #              .get_column("state_letter")
-        #              .to_list())
-        # print(state_list)
+        # Get counts and perform other validations without looping
+        line_number = df.height
+        state_list = (
+            df.group_by("state_letter", maintain_order=True)
+            .agg()
+            .get_column("state_letter")
+            .to_list()
+        )
 
-        # # Filter for coast state data
-        # coast_df = df.filter(pl.col("state_letter") == "C")
-        # pred_apogees_in_coast = coast_df.filter(pl.col("predicted_apogee").is_not_null()).get_column("predicted_apogee").to_list()  # noqa: E501
-        # uncertainities_in_coast = coast_df.filter(pl.col("uncertainty_threshold_1").is_not_null()).get_column("uncertainty_threshold_1").to_list()  # noqa: E501
+        # Filter for coast state data
+        coast_df = df.filter(pl.col("state_letter") == "C")
+        pred_apogees_in_coast = (
+            coast_df.filter(pl.col("predicted_apogee").is_not_null())
+            .get_column("predicted_apogee")
+            .to_list()
+        )
+        uncertainities_in_coast = (
+            coast_df.filter(pl.col("uncertainty_threshold_1").is_not_null())
+            .get_column("uncertainty_threshold_1")
+            .to_list()
+        )
 
-        # # Check estimated data packet validations
-        # est_data_df = df.filter(pl.col("estLinearAccelX").is_not_null())
-        # assert est_data_df.select(pl.col("vertical_velocity").is_not_null()).to_series().all()
-        # assert est_data_df.select(pl.col("current_altitude").is_not_null()).to_series().all()
-        # assert est_data_df.select(pl.col("vertical_acceleration").is_not_null()).to_series().all()
+        # Check estimated data packet validations
+        est_data_df = df.filter(pl.col("estLinearAccelX").is_not_null())
+        assert est_data_df.select(pl.col("vertical_velocity").is_not_null()).to_series().all()
+        assert est_data_df.select(pl.col("current_altitude").is_not_null()).to_series().all()
+        assert est_data_df.select(pl.col("vertical_acceleration").is_not_null()).to_series().all()
 
-        # # Check if extensions are valid floats
-        # valid_extensions = [
-        #     ServoExtension.MIN_EXTENSION.value,
-        #     ServoExtension.MAX_EXTENSION.value,
-        #     ServoExtension.MIN_NO_BUZZ.value,
-        #     ServoExtension.MAX_NO_BUZZ.value,
-        # ]
-        # all_extensions_valid = df.select(
-        #     pl.col("set_extension").cast(pl.Float64).is_in(valid_extensions)
-        # ).to_series().all()
-        # assert all_extensions_valid
+        # Check if extensions are valid floats
+        valid_extensions = [
+            ServoExtension.MIN_EXTENSION.value,
+            ServoExtension.MAX_EXTENSION.value,
+            ServoExtension.MIN_NO_BUZZ.value,
+            ServoExtension.MAX_NO_BUZZ.value,
+        ]
+        all_extensions_valid = (
+            df.select(pl.col("set_extension").cast(pl.Float64).is_in(valid_extensions))
+            .to_series()
+            .all()
+        )
+        assert all_extensions_valid
 
-        # # Check if we have a lot of lines in the log file
-        # assert launch_case_init.log_file_lines_test(line_number)
+        # Check if we have a lot of lines in the log file
+        assert launch_case_init.log_file_lines_test(line_number)
 
-        # # Predicted apogees and uncertainties should be logged in CoastState
-        # assert len(pred_apogees_in_coast) > 0
-        # assert len(uncertainities_in_coast) > 0
-        # assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
+        # Predicted apogees and uncertainties should be logged in CoastState
+        assert len(pred_apogees_in_coast) > 0
+        assert len(uncertainities_in_coast) > 0
+        assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
 
-        # # Check if all states were logged
-        # assert launch_case_init.log_file_states_logged(state_list)
+        # Check if all states were logged
+        assert launch_case_init.log_file_states_logged(state_list)
 
     @pytest.mark.imu_benchmark
     def test_fetched_imu_packets_integration(self, context):

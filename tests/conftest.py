@@ -186,6 +186,8 @@ def target_altitude(request):
 class RandomDataIMU(IMU):
     """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
 
+    __slots__ = ()
+
     def _fetch_data_loop(self, _: str) -> None:
         """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
         # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns

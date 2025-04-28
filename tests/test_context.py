@@ -186,7 +186,7 @@ class TestContext:
         )  # Set to coast state to test apogee update
         mocked_airbrakes.start()
 
-        time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
+        time.sleep(0.6)  # Sleep a bit so that the IMU queue is being filled
 
         assert mocked_airbrakes.imu._queued_imu_packets.qsize() > 0
         assert mocked_airbrakes.state.name == "CoastState"
@@ -268,7 +268,7 @@ class TestContext:
         and calling airbrakes.update().
         """
         context.imu = random_data_mock_imu
-        fd = FlightDisplay(context=context, start_time=time.time(), args=mocked_args_parser)
+        fd = FlightDisplay(context=context, args=mocked_args_parser)
         has_airbrakes_stopped = threading.Event()
         started_thread = False
 
@@ -286,7 +286,7 @@ class TestContext:
 
             if not started_thread:
                 started_thread = True
-                stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
+                stop_airbrakes_thread = threading.Timer(0.75, stop_airbrakes)
                 stop_airbrakes_thread.start()
 
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
@@ -433,7 +433,7 @@ class TestContext:
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
         context.start()
-        time.sleep(0.01)
+        time.sleep(0.7)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
         assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
 

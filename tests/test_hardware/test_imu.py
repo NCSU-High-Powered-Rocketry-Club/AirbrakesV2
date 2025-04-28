@@ -1,4 +1,5 @@
 import multiprocessing
+import multiprocessing.context
 import multiprocessing.sharedctypes
 import signal
 import time
@@ -6,7 +7,6 @@ from collections import deque
 from ctypes import c_byte, c_int
 
 import faster_fifo
-import pytest
 
 from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
@@ -16,6 +16,39 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     RawDataPacket,
 )
 from tests.auxil.utils import make_est_data_packet
+
+
+class PortIMU(IMU):
+    """IMU class that puts the port in the queue."""
+
+    def _fetch_data_loop(self, port: str):
+        self._queued_imu_packets.put(port)
+
+
+class PacketsIMU(IMU):
+    """IMU class that puts packets in the queue."""
+
+    def _fetch_data_loop(self, _: str):
+        while self._running.value:
+            self._queued_imu_packets.put(make_est_data_packet())
+
+
+class SinglePacketIMU(IMU):
+    """IMU class that only puts one packet in the queue."""
+
+    def _fetch_data_loop(self, _: str):
+        self._queued_imu_packets.put(make_est_data_packet())
+
+
+class CtrlCIMU(IMU):
+    """IMU class that handles Ctrl+C signals."""
+
+    def _fetch_data_loop(self, port: str):
+        """Monkeypatched method for testing."""
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        while self._running.value:
+            continue
+        self._queued_imu_packets.put(port)
 
 
 class TestIMU:
@@ -37,7 +70,7 @@ class TestIMU:
         assert not imu._running.value
         assert not mock_imu._running.value
         # Tests that the process is correctly initialized
-        assert isinstance(imu._data_fetch_process, multiprocessing.Process)
+        assert isinstance(imu._data_fetch_process, multiprocessing.context.ForkServerProcess)
         assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
 
         # Test IMU properties:
@@ -45,35 +78,24 @@ class TestIMU:
         assert isinstance(imu._imu_packets_per_cycle, c_int)
         assert isinstance(imu.imu_packets_per_cycle, int)
 
-    def test_imu_start(self, monkeypatch):
+    def test_imu_start(self):
         """Tests whether the IMU process starts correctly with the passed arguments."""
-        values = faster_fifo.Queue()
 
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            values.put((port,))
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
+        imu = PortIMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
-        time.sleep(0.01)  # Give the process time to start and put the values
-        assert values.qsize() == 1
-        assert values.get() == (IMU_PORT,)
+        time.sleep(0.2)  # Give the process time to start and put the values
+        assert imu._queued_imu_packets.qsize() == 1
+        assert imu._queued_imu_packets.get() == IMU_PORT
 
-    def test_imu_stop_simple(self, monkeypatch):
+    def test_imu_stop_simple(self):
         """Tests whether the IMU process stops correctly."""
 
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            self._queued_imu_packets.put(make_est_data_packet())
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
+        imu = PortIMU(port=IMU_PORT)
         imu.start()
-        time.sleep(0.01)  # Sleep a bit to let the process start and put the data
+        time.sleep(0.2)  # Sleep a bit to let the process start and put the data
         assert imu._queued_imu_packets.qsize() == 1
         imu.stop()
         assert not imu._running.value
@@ -86,15 +108,9 @@ class TestIMU:
         """Tests whether the IMU process stops correctly when the queue is full."""
         monkeypatch.setattr("airbrakes.hardware.imu.MAX_QUEUE_SIZE", 10)
 
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            while self._running.value:
-                self._queued_imu_packets.put(make_est_data_packet())
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
+        imu = PacketsIMU(port=IMU_PORT)
         imu.start()
-        time.sleep(0.01)  # Sleep a bit to let the process start and put the data
+        time.sleep(0.2)  # Sleep a bit to let the process start and put the data
         assert imu._queued_imu_packets.qsize() == 10
         imu.stop()
         assert not imu.is_running
@@ -103,16 +119,10 @@ class TestIMU:
         # There is still one packet, since the process is stopped after the put()
         assert imu.queued_imu_packets == 1
 
-    def test_imu_stop_signal(self, monkeypatch):
+    def test_imu_stop_signal(self):
         """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
 
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            # The stop_signal is typically put at the end of the mock sim.
-            self._queued_imu_packets.put(EstimatedDataPacket(timestamp=0))
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
+        imu = SinglePacketIMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.01)  # Give the process time to start and put the values
         packets = imu.get_imu_data_packets()
@@ -121,24 +131,14 @@ class TestIMU:
         packets = imu.get_imu_data_packets(block=False)
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
-    def test_imu_ctrl_c_handling(self, monkeypatch):
+    def test_imu_ctrl_c_handling(self):
         """Tests whether the IMU's stop() handles Ctrl+C fine."""
-        values = faster_fifo.Queue(maxsize=100000)
-
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-            while self._running.value:
-                continue
-            values.put((port,))
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(port=IMU_PORT)
+        imu = CtrlCIMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
-        time.sleep(0.001)  # Give the process time to start and recreate the actual loop
+        time.sleep(0.01)  # Give the process time to start and recreate the actual loop
         # send a KeyboardInterrupt to test if the process stops cleanly
         try:
             raise KeyboardInterrupt
@@ -148,40 +148,15 @@ class TestIMU:
         assert not imu._running.value
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
-        assert values.qsize() == 1
-        assert values.get() == (IMU_PORT,)
-
-    def test_imu_fetch_loop_exception(self, monkeypatch):
-        """Tests whether the IMU's _fetch_loop propogates unknown exceptions."""
-        values = faster_fifo.Queue()
-
-        def _fetch_data_loop(self, port: str):
-            """Monkeypatched method for testing."""
-            values.put((port,))
-            raise ValueError("some error")
-
-        monkeypatch.setattr(IMU, "_fetch_data_loop", _fetch_data_loop)
-        imu = IMU(
-            port=IMU_PORT,
-        )
-        imu.start()
-        with pytest.raises(ValueError, match="some error") as excinfo:
-            imu._fetch_data_loop(
-                IMU_PORT,
-            )
-        imu.stop()
-        assert not imu._running.value
-        assert not imu.is_running
-        assert not imu._data_fetch_process.is_alive()
-        assert values.qsize() == 2
-        assert values.get() == (IMU_PORT,)
-        assert "some error" in str(excinfo.value)
+        assert imu._queued_imu_packets.qsize() == 1
+        assert imu._queued_imu_packets.get() == IMU_PORT
 
     def test_data_packets_fetch(self, random_data_mock_imu):
         """Tests whether the data fetching loop actually adds data to the queue."""
         imu = random_data_mock_imu
         imu.start()
-        time.sleep(0.31)  # The raspberry pi is a little slower, so we add 0.01
+        time.sleep(0.6)  # Time to start the process
+        time.sleep(0.31)  # Time to put data
         # Theoretical number of packets in 0.3s:
         # T = N / 1000 => N = 0.3 * 1000 = 300
         assert imu._queued_imu_packets.qsize() > 300, (

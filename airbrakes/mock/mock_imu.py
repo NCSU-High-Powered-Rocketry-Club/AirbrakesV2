@@ -11,6 +11,7 @@ import polars as pl
 from faster_fifo import Queue
 
 from airbrakes.constants import (
+    BUFFER_SIZE_IN_BYTES,
     DEFAULT,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
@@ -30,7 +31,12 @@ class MockIMU(BaseIMU):
     and returns data read from a previous log file.
     """
 
-    __slots__ = ("_headers", "_log_file_path", "_needed_fields", "file_metadata")
+    __slots__ = (
+        "_headers",
+        "_log_file_path",
+        "_needed_fields",
+        "file_metadata",
+    )
 
     def __init__(
         self,
@@ -61,15 +67,13 @@ class MockIMU(BaseIMU):
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        msgpack_encoder = msgspec.msgpack.Encoder()
-        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket | str)
         queued_imu_packets: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS,
-            dumps=msgpack_encoder.encode,
-            loads=msgpack_decoder.decode,
+            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS * 10,
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
         )
         # Starts the process that fetches data from the log file
-        data_fetch_process = multiprocessing.Process(
+        context = multiprocessing.get_context("forkserver")
+        data_fetch_process = context.Process(
             target=self._fetch_data_loop,
             args=(real_time_replay, start_after_log_buffer),
             name="Mock IMU Process",
@@ -167,13 +171,10 @@ class MockIMU(BaseIMU):
         reader: pl.DataFrame = self._read_csv(start_index=start_index)
 
         # Iterate over the rows of the dataframe and put the data packets in the queue
+        packets = []
         for row in reader.iter_rows(named=True):
-            start_time = time.time()
+            start_time = time.perf_counter()
             row_dict = {k: v for k, v in row.items() if v is not None}
-
-            # Check if the process should stop:
-            if not self.is_running:
-                break
 
             # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is
             # an estimated data packet
@@ -184,19 +185,32 @@ class MockIMU(BaseIMU):
             else:
                 continue
 
-            # Put the packet in the queue
-            self._queued_imu_packets.put(imu_data_packet)
+            # Put the packet in the queue in a batch, to reduce the cost of acquiring locks.
+            # TODO: While faster under -f, this method has a drawback of artifically increasing the
+            # convergence time, and negatively affecting the "real-time" experience when not running
+            # under -f. A way to fix this would be to add another code path if running under -f.
+            if len(packets) < MAX_FETCHED_PACKETS:
+                packets.append(imu_data_packet)
+            else:
+                self._queued_imu_packets.put_many(packets)
+                packets = []
 
             # Sleep only if we are running a real-time replay
             # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 or 2 ms
             # between each packet to pretend to be real-time
             if real_time_replay and type(imu_data_packet) is RawDataPacket:
                 # Mimic the polling interval so it "runs in real time"
-                end_time = time.time()
+                end_time = time.perf_counter()
                 time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
 
+        # Put the remaining packets in the queue
+        if packets:
+            self._queued_imu_packets.put_many(packets)
+
     def _fetch_data_loop(
-        self, real_time_replay: bool, start_after_log_buffer: bool = False
+        self,
+        real_time_replay: bool,
+        start_after_log_buffer: bool = False,
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
@@ -205,6 +219,7 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
         was filled for Standby state.
         """
+        self._setup_queue_serialization_method()
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):
