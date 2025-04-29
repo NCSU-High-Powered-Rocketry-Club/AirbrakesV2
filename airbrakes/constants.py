@@ -49,7 +49,7 @@ SERVO_MAX_ANGLE = 180
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_DELAY_SECONDS = 0.5
+SERVO_DELAY_SECONDS = 1.0
 """
 This is how long the servo approximately takes to move from one extreme to the other. This is
 used for the no buzz code, to make sure the servo has enough time to move to the desired
@@ -71,7 +71,7 @@ class ServoExtension(Enum):
     # in degrees:
     MIN_EXTENSION = 125
     MAX_EXTENSION = 15
-    MIN_NO_BUZZ = 116
+    MIN_NO_BUZZ = 119
     MAX_NO_BUZZ = 25
 
 
