@@ -18,7 +18,7 @@ make sure the IMU process is always running and getting data."""
 # Servo Configuration
 # -------------------------------------------------------
 
-SERVO_1_CHANNEL = 0
+SERVO_1_CHANNEL = 7
 """
 The channel on the PCA9685 that the first servo is connected to. The PCA9685 is a PWM driver that
 allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
