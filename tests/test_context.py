@@ -435,7 +435,7 @@ class TestContext:
         context.start()
         time.sleep(0.01)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
-        assert context.imu.queued_imu_packets > APOGEE_PREDICTION_MIN_PACKETS
+        assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
 
         # We have to do this convoluted manual way of updating instead of airbrakes.update() because
         # 1) faster-fifo does not guarantee that all packets will be fetched in a single get_many()

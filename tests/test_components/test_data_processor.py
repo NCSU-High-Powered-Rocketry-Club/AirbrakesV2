@@ -1,13 +1,14 @@
-import csv
 import math
 import random
 from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
+import pandas as pd
 import pytest
 import scipy.spatial
 
+from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
@@ -38,38 +39,39 @@ def generate_altitude_sine_wave(
     return altitudes
 
 
-def load_data_packets(csv_path, n_packets):
+def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacket]:
     """Reads csv log files containing data packets to use for testing. Will read the first
     n_packets amount of estimated data packets.
 
     :param csv_path: The relative path of the csv file to read
-    :param n_packest: Amount of estimated data packets to retrieve
+    :param n_packets: Amount of estimated data packets to retrieve
     :return: list containing n_packets amount of estimated data packets
     """
     data_packets = []
-    filepath = Path(csv_path)
-    with filepath.open(newline="") as csvfile:
-        reader = csv.DictReader(csvfile)
+    needed_columns = list(set(EstimatedDataPacket.__struct_fields__) - {"invalid_fields"})
+    df = pd.read_csv(
+        csv_path,
+        usecols=needed_columns,
+        converters={"invalid_fields": MockIMU._convert_invalid_fields},
+        chunksize=n_packets * 3,
+    )
 
-        row: tuple[int, dict[str, str]]
-        for row in enumerate(reader):
-            if len(data_packets) >= n_packets:
-                break
+    with df:
+        for chunk in df:
+            for row in chunk.itertuples(index=False):
+                # Convert the named tuple to a dictionary and remove any NaN values:
+                row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
+                # Create an EstimatedDataPacket instance from the dictionary
+                if row_dict.get("estPressureAlt"):
+                    packet = EstimatedDataPacket(**row_dict)
+                else:
+                    continue
+                data_packets.append(packet)
 
-            rowdata = row[-1]
-            est_data_packet = None
-            fields_dict = {}
+                if len(data_packets) >= n_packets:
+                    return data_packets
 
-            scaled_accel_x = rowdata.get("scaledAccelX")
-            if scaled_accel_x:
-                continue
-            for key in EstimatedDataPacket.__struct_fields__:
-                val = rowdata.get(key, None)
-                if val:
-                    fields_dict[key] = float(val)
-            est_data_packet = EstimatedDataPacket(**fields_dict)
-            data_packets.append(est_data_packet)
-    return data_packets
+    raise ValueError(f"Could not read {n_packets} packets from {csv_path}")
 
 
 @pytest.fixture
@@ -189,7 +191,7 @@ class TestDataProcessor:
 
         # Perform a dummy update to establish initial conditions.
         # This avoids calling _first_update() during our test.
-        dummy_packet = EstimatedDataPacket(
+        dummy_packet = make_est_data_packet(
             timestamp=1e9,  # 1 second in ns
             estCompensatedAccelX=0,
             estCompensatedAccelY=0,
@@ -218,7 +220,7 @@ class TestDataProcessor:
         new_packets = []
         for ts, accel_z, pressure_alt in packets:
             new_packets.append(
-                EstimatedDataPacket(
+                make_est_data_packet(
                     timestamp=ts,
                     estCompensatedAccelX=0,
                     estCompensatedAccelY=0,
@@ -359,29 +361,31 @@ class TestDataProcessor:
         assert d.current_timestamp == 0
 
     @pytest.mark.parametrize(
-        (
-            "data_packets",
-            "init_alt",
-            "max_alt",
-            "rotation_quat",
-        ),
+        ("data_packets", "init_alt", "max_alt", "rotation_quat", "expected_longitudinal_axis"),
         [
             (
                 [
                     make_est_data_packet(
                         timestamp=0 * 1e9,
                         estPressureAlt=20,
+                        estGravityVectorX=0.1,
+                        estGravityVectorY=0.2,
+                        estGravityVectorZ=9.79,
                     )
                 ],
                 20.0,
                 0.0,
                 np.array([0.5, 0.5, 0.5, 0.5]),
+                np.array([0, 0, 1]),
             ),
             (
                 [
                     make_est_data_packet(
                         timestamp=1 * 1e9,
                         estPressureAlt=20,
+                        estGravityVectorX=9.79,
+                        estGravityVectorY=0.1,
+                        estGravityVectorZ=0.2,
                     ),
                     make_est_data_packet(
                         timestamp=2 * 1e9,
@@ -391,12 +395,16 @@ class TestDataProcessor:
                 25.0,
                 5.0,
                 np.array([-0.434374, 0.520038, 0.520038, 0.520038]),
+                np.array([1, 0, 0]),
             ),
             (
                 [
                     make_est_data_packet(
                         timestamp=1 * 1e9,
                         estPressureAlt=20,
+                        estGravityVectorX=0.1,
+                        estGravityVectorY=-9.79,
+                        estGravityVectorZ=0.2,
                     ),
                     make_est_data_packet(
                         timestamp=2 * 1e9,
@@ -410,11 +418,20 @@ class TestDataProcessor:
                 30.0,
                 10.0,
                 np.array([-0.988993, 0.085428, 0.085428, 0.085428]),
+                np.array([0, -1, 0]),
             ),
         ],
         ids=["one_data_packet", "two_data_packets", "three_data_packets"],
     )
-    def test_first_update(self, data_processor, data_packets, init_alt, max_alt, rotation_quat):
+    def test_first_update(
+        self,
+        data_processor,
+        data_packets,
+        init_alt,
+        max_alt,
+        rotation_quat,
+        expected_longitudinal_axis,
+    ):
         """
         Tests whether the update() method works correctly, for the first update() call,
         along with get_processor_data_packets()
@@ -458,6 +475,7 @@ class TestDataProcessor:
             assert data.time_since_last_data_packet == d._time_differences[idx]
 
         assert d.average_vertical_acceleration == np.mean(d._rotated_accelerations)
+        assert d._longitudinal_axis.all() == expected_longitudinal_axis.all()
 
     @pytest.mark.parametrize(
         # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
@@ -522,38 +540,38 @@ class TestDataProcessor:
         ("csv_path", "expected_value", "n_packets"),
         [
             (
-                "tests/imu_data/xminus.csv",
+                Path("tests/imu_data/xminus.csv"),
                 9.85116094,
                 2,
             ),
             (
-                "tests/imu_data/yminus.csv",
+                Path("tests/imu_data/yminus.csv"),
                 9.83891064,
                 2,
             ),
             (
-                "tests/imu_data/zminus.csv",
+                Path("tests/imu_data/zminus.csv"),
                 9.82264007,
                 2,
             ),
             (
-                "tests/imu_data/xplus.csv",
+                Path("tests/imu_data/xplus.csv"),
                 9.75015129,
                 2,
             ),
             (
-                "tests/imu_data/yplus.csv",
+                Path("tests/imu_data/yplus.csv"),
                 9.61564675,
                 2,
             ),
             (
-                "tests/imu_data/zplus.csv",
+                Path("tests/imu_data/zplus.csv"),
                 9.81399729,
                 2,
             ),
         ],
     )
-    def test_calculate_rotations(self, csv_path, expected_value, n_packets):
+    def test_calculate_rotations(self, csv_path: Path, expected_value, n_packets: int):
         data_packets = load_data_packets(csv_path, n_packets)
         d = DataProcessor()
         d.update(data_packets)
@@ -587,3 +605,21 @@ class TestDataProcessor:
         d.prepare_for_retracting_airbrakes()
         assert d._retraction_timestamp is not None
         assert not d._integrating_for_altitude
+
+    @pytest.mark.parametrize(
+        "launch_data",
+        [
+            *list(Path("launch_data/").glob("*.csv")),
+        ],
+        ids=[
+            *[p.name for p in Path("launch_data/").glob("*.csv")],
+        ],
+    )
+    def test_pitch_calculation(self, data_processor, launch_data):
+        """Tests that the pitch calculation is correct"""
+        # Load a single est data packet from the CSV file
+        d = data_processor
+        est_data_packets = load_data_packets(launch_data, 1)
+        # Call first update with the loaded packet
+        d.update(est_data_packets)
+        assert 0.0 <= d.average_pitch <= 5.0, f"Wrong pitch: {d.average_pitch}"

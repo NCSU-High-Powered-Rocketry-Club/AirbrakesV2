@@ -49,7 +49,7 @@ SERVO_MAX_ANGLE = 180
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_DELAY_SECONDS = 0.3
+SERVO_DELAY_SECONDS = 0.5
 """
 This is how long the servo approximately takes to move from one extreme to the other. This is
 used for the no buzz code, to make sure the servo has enough time to move to the desired
@@ -69,10 +69,10 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 120
-    MAX_EXTENSION = 10
-    MIN_NO_BUZZ = 115
-    MAX_NO_BUZZ = 20
+    MIN_EXTENSION = 128
+    MAX_EXTENSION = 15
+    MIN_NO_BUZZ = 120
+    MAX_NO_BUZZ = 25
 
 
 # -------------------------------------------------------
@@ -278,7 +278,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 128
+TARGET_APOGEE_METERS = 1280.16
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.
@@ -337,7 +337,7 @@ CURVE_FIT_INITIAL = [-10.5, 0.03]
 APOGEE_PREDICTION_MIN_PACKETS = 10
 """The minimum number of processor data packets required to update the predicted apogee."""
 
-UNCERTAINTY_THRESHOLD = [0.0359, 0.00075]  # For near quick convergence times, use: [0.1, 0.75]
+UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.1, 0.75]
 """
 The uncertainty from the curve fit, below which we will say that our apogee has converged. This
 uncertainty corresponds to being off by +/- 5m.

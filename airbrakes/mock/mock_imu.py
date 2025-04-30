@@ -28,6 +28,9 @@ from airbrakes.utils import convert_to_nanoseconds
 if typing.TYPE_CHECKING:
     from pandas.io.parsers.readers import TextFileReader
 
+if typing.TYPE_CHECKING:
+    from pandas.io.parsers.readers import TextFileReader
+
 
 class MockIMU(BaseIMU):
     """
