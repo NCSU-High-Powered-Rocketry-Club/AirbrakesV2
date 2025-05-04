@@ -11,10 +11,12 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Button, Header, Footer, Static
 from textual.reactive import reactive
 from time import sleep
+from airbrakes.constants import BUZZER_PIN
+from gpiozero.pins.lgpio import LGPIOFactory
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 
-gpiozero.Device.pin_factory = gpiozero.pins.pigpio.PiGPIOFactory()
+gpiozero.Device.pin_factory = LGPIOFactory()
 
 MARY_HAD_A_LITTLE_LAMB_MELODY = [
     ("E4", 0.4), ("D4", 0.4), ("C4", 0.4), ("D4", 0.4),
@@ -24,6 +26,17 @@ MARY_HAD_A_LITTLE_LAMB_MELODY = [
     ("D4", 0.4), ("E4", 0.4), ("E4", 0.4), ("E4", 0.4),
     ("E4", 0.4), ("D4", 0.4), ("D4", 0.4), ("E4", 0.4),
     ("D4", 0.4), ("C4", 0.8)
+]
+
+SHORT_HAPPY_MELODY = [
+    (523, 0.125),  # C5: Bright start
+    (587, 0.125),  # D5: Step up
+    (659, 0.0625), # E5: Quick bounce
+    (784, 0.0625), # G5: Playful skip
+    (659, 0.25),   # E5: Hold
+    (523, 0.125),  # C5: Descend
+    (587, 0.125),  # D5: Step up
+    (523, 0.5),    # C5: Happy resolution
 ]
 
 
@@ -43,7 +56,7 @@ class BuzzerControllerApp(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.bz = Buzzer(8)
+        self.bz = TonalBuzzer(BUZZER_PIN)
         # self.tonal_bz = TonalBuzzer(8)
 
     def compose(self) -> ComposeResult:
@@ -59,8 +72,11 @@ class BuzzerControllerApp(App):
                 ),
                 Static("**Tonal Buzzer Control Modes**"),
                 Horizontal(
-                    Button("Play mary had a little lamb", id="on_tonal_buzzer_btn", variant="success"),
+                    Button("Play mary had a little lamb", id="lamb_button", variant="success"),
                     # Button("Off", id="off_tonal_buzzer_btn", variant="error"),
+                ),
+                Horizontal(
+                    Button("Happy button", id="happy_button", variant="success"),
                 ),
                 classes="control_section"
             ),
@@ -77,24 +93,30 @@ class BuzzerControllerApp(App):
         if note == "REST":
             return 
         else:
-            self.tonal_bz.play(Tone(note))
+            self.bz.play(Tone(note))
             sleep(duration)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Catch button press events and handle them."""
         match event.button.id:
             case "on_buzzer_btn":
-                self.bz.on()
+                # self.bz.()
                 self.buzzer_label.update(str(self.bz.value))
                 # self.encoder.value = 1.0  # Simulate encoder change
             case "off_buzzer_btn":
-                self.bz.off()
+                self.bz.stop()
                 self.buzzer_label.update(str(self.bz.value))
                 # self.encoder.value = 0.0  # Simulate encoder change
-            case "on_tonal_buzzer_btn":
+            case "lamb_button":
                 for note, duration in MARY_HAD_A_LITTLE_LAMB_MELODY:
                     self.play_note(note, duration)
                     sleep(0.1)  # Short pause between notes
+                self.bz.stop()
+            case "happy_button":
+                for note, duration in SHORT_HAPPY_MELODY:
+                    self.play_note(note, duration)
+                    sleep(0.1)
+                # self.bz.stop()
             case _:
                 pass  # Handle unknown buttons if necessary
 

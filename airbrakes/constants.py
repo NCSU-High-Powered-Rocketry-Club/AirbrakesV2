@@ -18,14 +18,14 @@ make sure the IMU process is always running and getting data."""
 # Servo Configuration
 # -------------------------------------------------------
 
-SERVO_1_CHANNEL = 1
+SERVO_1_CHANNEL = 7
 """
 The channel on the PCA9685 that the first servo is connected to. The PCA9685 is a PWM driver that
 allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
 are numbered from 0 to 15.
 """
 
-SERVO_2_CHANNEL = 3
+SERVO_2_CHANNEL = 4
 """
 The channel on the PCA9685 that the second servo is connected to. The PCA9685 is a PWM driver that
 allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
@@ -49,7 +49,7 @@ SERVO_MAX_ANGLE = 180
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_DELAY_SECONDS = 0.5
+SERVO_DELAY_SECONDS = 1.0
 """
 This is how long the servo approximately takes to move from one extreme to the other. This is
 used for the no buzz code, to make sure the servo has enough time to move to the desired
@@ -69,9 +69,9 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 128
+    MIN_EXTENSION = 125
     MAX_EXTENSION = 15
-    MIN_NO_BUZZ = 120
+    MIN_NO_BUZZ = 116
     MAX_NO_BUZZ = 25
 
 
@@ -87,6 +87,15 @@ ENCODER_PIN_A = 23
 
 ENCODER_PIN_B = 24
 """The GPIO pin that the encoder's B pin is connected to."""
+
+# -------------------------------------------------------
+# Buzzer Configuration
+# -------------------------------------------------------
+
+BUZZER_PIN = 7
+"""
+The GPIO pin the buzzer is connected to.
+"""
 
 
 # -------------------------------------------------------
@@ -275,7 +284,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1280.16
+TARGET_APOGEE_METERS = 1402.08
 """
 The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
 controller to determine when to extend and retract the air brakes.
