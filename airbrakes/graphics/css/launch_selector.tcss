@@ -27,7 +27,7 @@
         #launch-configuration-grid {
             grid-size: 2;  /* 2 columns */
             grid-gutter: 1;
-            grid-columns: 60% auto;
+            grid-columns: auto auto;
             grid-rows: auto;
             align: center middle;
             # background: lightgray;
@@ -35,12 +35,18 @@
 
             Switch {
                 border: none;
+                width: 100%;
                 padding: 0;
                 content-align: center middle;
             }
 
             Label {
                 content-align: center middle;
+            }
+
+            #input-target-apogee {
+                width: 100%;
+                # height: 1;
             }
 
         }

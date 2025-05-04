@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import msgspec
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Center, Grid, Vertical
 from textual.reactive import reactive
@@ -12,6 +13,7 @@ from textual.widgets import (
     Button,
     DataTable,
     Footer,
+    Input,
     Label,
     RadioButton,
     RadioSet,
@@ -32,12 +34,22 @@ AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 
 
 class LaunchOptions(msgspec.Struct):
-    """The options for the launch simulation."""
+    """The options for the launch simulation.
+
+    Args:
+        real_servo (bool): Whether to use the real servo.
+        keep_log_file (bool): Whether to keep the log file.
+        fast_simulation (bool): Whether to use fast simulation.
+        real_camera (bool): Whether to use the real camera.
+        target_apogee (float | None): The target apogee in meters. If None, the target from the
+            metadata is used.
+    """
 
     real_servo: bool
     keep_log_file: bool
     fast_simulation: bool
     real_camera: bool
+    target_apogee: float | None = None
 
 
 class SelectedLaunchConfiguration(msgspec.Struct):
@@ -45,6 +57,7 @@ class SelectedLaunchConfiguration(msgspec.Struct):
 
     selected_button: Path | None
     launch_options: LaunchOptions | None
+    desired_target_apogee: float | None = None
 
 
 class LaunchSelector(Screen[SelectedLaunchConfiguration]):
@@ -56,6 +69,8 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
     launch_options: LaunchOptions = LaunchOptions(
         real_servo=False, keep_log_file=False, fast_simulation=False, real_camera=False
     )
+    all_metadata = MockIMU.read_file_metadata()
+    file_metadata = reactive(all_metadata[AVAILABLE_FILES[0].name])
 
     def compose(self) -> ComposeResult:
         with Grid(id="launch-selector-grid"):
@@ -69,11 +84,13 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
             yield self.launch_image
             self.launch_files = LaunchFilesButtons(id="launch-files-container")
             yield self.launch_files
-            self.launch_config = LaunchConfiguration(id="launch-configuration-container")
+            self.launch_config = LaunchConfiguration(id="launch-configuration-container").data_bind(
+                LaunchSelector.file_metadata,
+            )
             self.launch_config.border_title = "Launch Configuration"
             yield self.launch_config
             self.launch_metadata = LaunchMetadataDisplay(id="launch-metadata-container").data_bind(
-                LaunchSelector.selected_file
+                LaunchSelector.file_metadata,
             )
             yield self.launch_metadata
             with Vertical(id="button-container"), Center():
@@ -85,8 +102,9 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
         """Handle the radio set change events."""
         # This event is triggered when a radio button is selected
-        selection = AVAILABLE_FILES[event.index]
+        selection: Path = AVAILABLE_FILES[event.index]
         self.selected_file = selection
+        self.file_metadata = self.all_metadata[selection.name]
 
     def on_switch_changed(self, event: Switch.Changed) -> None:
         """Handle the switch change events."""
@@ -103,17 +121,21 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle the button press events."""
+        # Get the target apogee field from the input as a value:
+        target_apogee_input = self.launch_config.target_apogee
         # Pop the launch selector screen and push the flight display screen:
         if event.button.id == "run-mock-sim-button":
             config = SelectedLaunchConfiguration(
                 selected_button=self.selected_file,
                 launch_options=self.launch_options,
+                desired_target_apogee=float(target_apogee_input),
             )
             self.dismiss(config)
         elif event.button.id == "run-benchmark-button":
             config = SelectedLaunchConfiguration(
                 selected_button=None,
                 launch_options=None,
+                desired_target_apogee=float(target_apogee_input),
             )
             self.dismiss(config)
 
@@ -144,8 +166,7 @@ class LaunchImage(Static):
 class LaunchMetadataDisplay(Widget):
     """The display for the metadata of the selected launch file."""
 
-    selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
-    fetched_metadata = MockIMU.read_file_metadata()
+    file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
 
     def compose(self) -> ComposeResult:
         self.data_table = DataTable(
@@ -177,8 +198,8 @@ class LaunchMetadataDisplay(Widget):
             else:
                 table.add_row(value, height=None, label=key, key=key)
 
-    def watch_selected_file(self, new_path: Path) -> None:
-        launch_metadata = self.fetched_metadata[new_path.name]
+    def watch_file_metadata(self, new_metadata: dict) -> None:
+        launch_metadata = new_metadata
         table = self.data_table
         if not table.row_count:  # We are still before on_mount
             table.add_column("Value", key="value")
@@ -190,6 +211,9 @@ class LaunchMetadataDisplay(Widget):
 class LaunchConfiguration(Widget):
     """The configuration widget consisting of the options for the launch simulation."""
 
+    target_apogee: float
+    file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
+
     def compose(self) -> ComposeResult:
         with Grid(id="launch-configuration-grid"):
             yield Label("Real Servo", id="label-real-servo")
@@ -200,6 +224,25 @@ class LaunchConfiguration(Widget):
             yield Switch(id="fast-sim-switch")
             yield Label("Real Camera", id="label-real-camera")
             yield Switch(id="real-camera-switch")
+            yield Label("Target Apogee", id="label-target-apogee")
+            self.target_apogee_input = Input(
+                placeholder="", type="number", valid_empty=True, id="input-target-apogee"
+            )
+            yield self.target_apogee_input
+
+    @on(Input.Changed)
+    def target_apogee_changed(self, event: Input.Changed) -> None:
+        """Handle the target apogee input change events."""
+        # This event is triggered when the target apogee input changes
+        self.target_apogee = float(event.value)
+
+    def watch_file_metadata(self, new_metadata: dict) -> None:
+        """Update the placeholder in the Input field when the selected file changes."""
+        launch_metadata = new_metadata
+        self.target_apogee_input.placeholder = str(
+            launch_metadata["flight_data"]["target_apogee_meters"]
+        )
+        self.target_apogee = float(launch_metadata["flight_data"]["target_apogee_meters"])
 
 
 class LaunchFilesButtons(Widget):

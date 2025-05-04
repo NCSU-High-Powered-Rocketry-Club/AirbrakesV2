@@ -25,7 +25,8 @@
                 "latitude": null,
                 "longitude": null
             },
-            "flight_length_seconds": 99.9
+            "flight_length_seconds": 99.9,
+            "target_apogee_meters": 1.0
         },
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log."
     },

@@ -8,6 +8,7 @@ from textual.containers import Grid
 from textual.widgets import Footer
 from textual.worker import Worker, WorkerState
 
+import airbrakes.constants
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -70,6 +71,7 @@ class AirbrakesApplication(App):
     def receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
         """Receives the launch configuration from the launch selector screen."""
         self.create_components(launch_config)
+        self.assign_target_apogee(launch_config.desired_target_apogee)
         self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
         self.watch(self.flight_header, "t_zero_time_ns", self.monitor_flight_time, init=False)
@@ -143,6 +145,10 @@ class AirbrakesApplication(App):
         """Updates all the reactive variables with the latest telemetry data."""
         self.flight_header.update_header()
         self.flight_information.update_flight_information()
+
+    def assign_target_apogee(self, target_apogee: float) -> None:
+        """Assigns the target apogee to the airbrakes system."""
+        airbrakes.constants.TARGET_APOGEE_METERS = target_apogee
 
     def monitor_flight_time(self, flight_time_ns: int) -> None:
         """Updates the graphs when the time changes."""

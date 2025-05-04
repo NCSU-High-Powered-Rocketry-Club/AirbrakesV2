@@ -11,7 +11,8 @@ from textual.reactive import reactive
 from textual.widgets import Button, Label, ProgressBar, Static
 from textual_pyfiglet import FigletWidget
 
-from airbrakes.constants import TARGET_APOGEE_METERS
+import airbrakes
+import airbrakes.constants
 from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.utils import set_only_class
@@ -168,7 +169,11 @@ class FlightHeader(Static):
 
         # Set the target apogee label:
         target_apogee_label = self.query_one("#target-apogee-label", Label)
-        target_apogee_label.update(f"Target Apogee: [b]{TARGET_APOGEE_METERS} m[/]")
+        # We must use the variable like this because the constant is updated in the mock, and
+        # doing it like this will reflect the change:
+        target_apogee_label.update(
+            f"Target Apogee: [b]{airbrakes.constants.TARGET_APOGEE_METERS} m[/]"
+        )
 
         if not self._pre_calculated_motor_burn_time_ns:
             self._pre_calculated_motor_burn_time_ns = self.context.imu.get_launch_time()
