@@ -143,7 +143,7 @@ class FlightHeader(Static):
         self.sim_time_label = Label("00:00.00", id="normal-sim-time")
         yield self.sim_time_label
         yield Static()
-        yield FigletWidget("", id="state", markup=False, font="smblock")
+        yield FigletWidget("", id="state", font="smblock")
         self.time_display = TimeDisplay("T+00:00", id="launch-clock")
         yield self.time_display
         yield Static()

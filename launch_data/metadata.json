@@ -284,6 +284,7 @@
             "air_temperature_celsius": 27.6,  
             "air_pressure_mb": 1024.45,
             "wind_speed_kmh": 25.05,
+            "location": "Dalzell, SC",
             "wind_direction": "SW",
             "launch_coordinates": {
                 "latitiude": 34.9017853316884, 

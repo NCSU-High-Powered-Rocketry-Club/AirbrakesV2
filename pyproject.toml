@@ -23,7 +23,7 @@ dependencies = [
     "textual-plot>=0.4.0.post1",
     "textual-hires-canvas>=0.5.0.post2",
     "textual-image>=0.8.1",
-    "textual-pyfiglet[fonts]>=0.5.5",
+    "textual-pyfiglet",
 ]
 
 [dependency-groups]
