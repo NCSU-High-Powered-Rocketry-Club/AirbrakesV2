@@ -11,6 +11,7 @@ from airbrakes.utils import convert_ns_to_s
 
 
 imu = IMU(IMU_PORT)
+imu.start()
 
 try:
     prev_raw_timestamp = 0.0
@@ -28,6 +29,7 @@ try:
             dt_in_seconds = convert_ns_to_s(dt)
             if dt_in_seconds > 0.01:
                 print("dt spike", dt_in_seconds)
+            prev_est_timestamp = packet.timestamp
 except KeyboardInterrupt:  # Stop running IMU if the user presses Ctrl+C
     pass
 finally:
