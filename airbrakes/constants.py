@@ -24,7 +24,7 @@ and getting data.
 # Servo Configuration
 # -------------------------------------------------------
 
-SERVO_1_CHANNEL = 1
+SERVO_1_CHANNEL = 7
 """
 The channel on the PCA9685 that the first servo is connected to.
 
@@ -32,7 +32,7 @@ The PCA9685 is a PWM driver that allows us to control the servo with the Raspber
 has 16 channels, so the channels are numbered from 0 to 15.
 """
 
-SERVO_2_CHANNEL = 3
+SERVO_2_CHANNEL = 4
 """
 The channel on the PCA9685 that the second servo is connected to.
 
@@ -59,7 +59,7 @@ SERVO_MAX_ANGLE = 180
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_DELAY_SECONDS = 0.5
+SERVO_DELAY_SECONDS = 1.0
 """
 This is how long the servo approximately takes to move from one extreme to the other.
 
@@ -81,9 +81,9 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 128
+    MIN_EXTENSION = 125
     MAX_EXTENSION = 15
-    MIN_NO_BUZZ = 120
+    MIN_NO_BUZZ = 116
     MAX_NO_BUZZ = 25
 
 
@@ -104,6 +104,15 @@ The GPIO pin that the encoder's A pin is connected to.
 ENCODER_PIN_B = 24
 """
 The GPIO pin that the encoder's B pin is connected to.
+"""
+
+# -------------------------------------------------------
+# Buzzer Configuration
+# -------------------------------------------------------
+
+BUZZER_PIN = 7
+"""
+The GPIO pin the buzzer is connected to.
 """
 
 
@@ -344,7 +353,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1280.16
+TARGET_APOGEE_METERS = 1402.08
 """
 The target apogee in meters that we want the rocket to reach.
 
