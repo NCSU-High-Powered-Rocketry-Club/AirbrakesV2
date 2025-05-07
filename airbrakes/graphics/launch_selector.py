@@ -50,7 +50,7 @@ class LaunchOptions(msgspec.Struct):
 
     real_servo: bool
     keep_log_file: bool
-    fast_simulation: bool
+    fast_replay: bool
     real_camera: bool
     target_apogee: float | None = None
 
@@ -60,7 +60,7 @@ class SelectedLaunchConfiguration(msgspec.Struct):
     The selected launch configuration, which is sent to the main sim screen.
     """
 
-    selected_button: Path | None
+    selected_launch: Path | None
     launch_options: LaunchOptions | None
     desired_target_apogee: float | None = None
 
@@ -74,9 +74,9 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
     launch_options: LaunchOptions = LaunchOptions(
-        real_servo=False, keep_log_file=False, fast_simulation=False, real_camera=False
+        real_servo=False, keep_log_file=False, fast_replay=False, real_camera=False
     )
-    all_metadata = MockIMU.read_file_metadata()
+    all_metadata = MockIMU.read_all_metadata()
     file_metadata = reactive(all_metadata[AVAILABLE_FILES[0].name])
 
     def compose(self) -> ComposeResult:
@@ -126,7 +126,7 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
             case "keep-log-file-switch":
                 self.launch_options.keep_log_file = event.value
             case "fast-sim-switch":
-                self.launch_options.fast_simulation = event.value
+                self.launch_options.fast_replay = event.value
             case "real-camera-switch":
                 self.launch_options.real_camera = event.value
 
@@ -139,14 +139,14 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
         # Pop the launch selector screen and push the flight display screen:
         if event.button.id == "run-mock-sim-button":
             config = SelectedLaunchConfiguration(
-                selected_button=self.selected_file,
+                selected_launch=self.selected_file,
                 launch_options=self.launch_options,
                 desired_target_apogee=float(target_apogee_input),
             )
             self.dismiss(config)
         elif event.button.id == "run-benchmark-button":
             config = SelectedLaunchConfiguration(
-                selected_button=None,
+                selected_launch=None,
                 launch_options=None,
                 desired_target_apogee=float(target_apogee_input),
             )

@@ -7,6 +7,7 @@ It will create the Context object and run the main loop.
 import sys
 
 from airbrakes.graphics.application import AirbrakesApplication
+from airbrakes.utils import arg_parser
 
 
 def run_real_flight() -> None:
@@ -31,7 +32,8 @@ def run_mock_flight() -> None:
     """
     # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
-    app = AirbrakesApplication()
+    args = arg_parser()
+    app = AirbrakesApplication(is_mock=True, cmd_args=args)
     app.run()
 
 

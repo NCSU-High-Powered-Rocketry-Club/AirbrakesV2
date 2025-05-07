@@ -3,7 +3,8 @@ Module to show the terminal GUI for the airbrakes system.
 """
 
 import time
-from typing import TYPE_CHECKING, ClassVar
+from argparse import Namespace
+from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.containers import Grid
@@ -25,7 +26,11 @@ from airbrakes.context import Context
 from airbrakes.graphics.flight.header import FlightHeader
 from airbrakes.graphics.flight.panel import FlightInformation
 from airbrakes.graphics.flight.telemetry import CPUUsage
-from airbrakes.graphics.launch_selector import LaunchSelector, SelectedLaunchConfiguration
+from airbrakes.graphics.launch_selector import (
+    LaunchOptions,
+    LaunchSelector,
+    SelectedLaunchConfiguration,
+)
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -37,10 +42,6 @@ from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
-from airbrakes.utils import arg_parser
-
-if TYPE_CHECKING:
-    from textual.timer import Timer
 
 
 class AirbrakesApplication(App):
@@ -53,22 +54,29 @@ class AirbrakesApplication(App):
     SCREENS: ClassVar[dict] = {"launch_selector": LaunchSelector}
     CSS_PATH = "css/visual.tcss"
 
-    def __init__(self) -> None:
+    def __init__(self, is_mock: bool, cmd_args: Namespace) -> None:
         super().__init__()
         self.theme = "catppuccin-mocha"  # Set the default (dark mode) application theme
         self.context: Context = None
-        self.is_mock: bool = False
-        self._args = arg_parser()
+        self.is_mock: bool = is_mock
+        self._args = cmd_args
         self._pre_calculated_motor_burn_time: int = None
         self.flight_information: FlightInformation = None
         self.flight_header: FlightHeader = None
-        self.timer: Timer = None
 
     def on_mount(self) -> None:
         """
-        Mount the launch selector screen to get the launch configuration.
+        Mount the launch selector screen to get the launch configuration, if the path is not
+        specified.
         """
-        self.push_screen("launch_selector", self.receive_launch_configuration)
+        # If the path isn't specified, don't skip the launch selector screen.
+        if not self._args.path:
+            self.push_screen("launch_selector", self._receive_launch_configuration)
+        else:
+            # If the path is specified, skip the launch selector screen.
+            self.create_components()
+            self._assign_target_apogee()
+            self._setup_application()
 
     def on_unmount(self) -> None:
         """
@@ -76,26 +84,6 @@ class AirbrakesApplication(App):
         """
         if self.context:
             self.context.stop()
-
-    def receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
-        """
-        Receives the launch configuration from the launch selector screen.
-        """
-        self.create_components(launch_config)
-        self.assign_target_apogee(launch_config.desired_target_apogee)
-        self.initialize_widgets()
-        self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self.change_sim_speed)
-        self.watch(self.flight_header, "t_zero_time_ns", self.monitor_flight_time, init=False)
-        self.start()
-
-    def initialize_widgets(self) -> None:
-        """
-        Supplies the airbrakes context and related objects to the widgets for proper operation.
-        """
-        self.flight_header = self.query_one(FlightHeader)
-        self.flight_information = self.query_one(FlightInformation)
-        self.flight_header.initialize_widgets(self.context, self.is_mock)
-        self.flight_information.initialize_widgets(self.context)
 
     def start(self) -> None:
         """
@@ -113,17 +101,31 @@ class AirbrakesApplication(App):
         self.context.stop()
         self.query_one(CPUUsage).stop()
 
-    def change_sim_speed(self, sim_speed: float) -> None:
-        self.context.imu._sim_speed_factor.value = sim_speed
+    def create_components(self, launch_config: SelectedLaunchConfiguration | None = None) -> None:
+        """
+        Create the system components needed for the airbrakes system. There are 4 possible paths.
 
-    def create_components(self, launch_config: SelectedLaunchConfiguration) -> None:
+        1. Mock replay mode with launch selector screen - used when the path isn't specified.
+        2. Mock replay mode without launch selector screen - used when the path is
+            specified. Purely uses command line arguments.
+        3. Real flight mode - There is no launch selector screen.
+        4. Sim mode - WIP, will take a long time to implement, since it is barely used.
         """
-        Create the system components needed for the airbrakes system.
-        """
-        if launch_config.launch_options is not None:
+        if self.is_mock:
+            if launch_config is None:  # This is the case when the path is specified.
+                launch_config = SelectedLaunchConfiguration(
+                    selected_launch=self._args.path,
+                    launch_options=LaunchOptions(
+                        real_servo=self._args.real_servo,
+                        real_camera=self._args.real_camera,
+                        fast_replay=self._args.fast_replay,
+                        keep_log_file=self._args.keep_log_file,
+                    ),
+                )
+
             imu = MockIMU(
-                real_time_replay=2.0 if launch_config.launch_options.fast_simulation else 1.0,
-                log_file_path=launch_config.selected_button,
+                real_time_replay=2.0 if launch_config.launch_options.fast_replay else 1.0,
+                log_file_path=launch_config.selected_launch,
             )
             logger = MockLogger(
                 LOGS_PATH, delete_log_file=not launch_config.launch_options.keep_log_file
@@ -139,8 +141,8 @@ class AirbrakesApplication(App):
             )
             camera = MockCamera() if not launch_config.launch_options.real_camera else Camera()
             data_processor = ExtendedDataProcessor()
-            self.is_mock = True
-        else:
+
+        else:  # uv run real interface
             # Maybe use mock components as specified by the command line arguments:
             if self._args.mock_servo:
                 servo = MockServo(
@@ -165,22 +167,6 @@ class AirbrakesApplication(App):
         """
         self.flight_header.update_header()
         self.flight_information.update_flight_information()
-
-    def assign_target_apogee(self, target_apogee: float) -> None:
-        """
-        Assigns the target apogee to the airbrakes system.
-        """
-        airbrakes.constants.TARGET_APOGEE_METERS = target_apogee
-        # This updates the target apogee in the state machine, so you don't have to use
-        # constants.TARGET_APOGEE_METERS directly in state.py.
-        state.__dict__["TARGET_APOGEE_METERS"] = target_apogee
-
-    def monitor_flight_time(self, flight_time_ns: int) -> None:
-        """
-        Updates the graphs when the time changes.
-        """
-        # TODO: Refactor everything to update when the time changes.
-        self.flight_information.flight_graph.update_data(flight_time_ns)
 
     def run_flight_loop(self) -> None:
         """
@@ -225,3 +211,52 @@ class AirbrakesApplication(App):
             yield FlightHeader(id="flight-header")
             yield FlightInformation(id="flight-information-panel")
         yield Footer()
+
+    def _change_sim_speed(self, sim_speed: float) -> None:
+        self.context.imu._sim_speed_factor.value = sim_speed
+
+    def _monitor_flight_time(self, flight_time_ns: int) -> None:
+        """
+        Updates the graphs when the time changes.
+        """
+        self.flight_information.flight_graph.update_data(flight_time_ns)
+
+    def _assign_target_apogee(self, target_apogee: float | None = None) -> None:
+        """
+        Assigns the target apogee to the airbrakes system.
+        """
+        if target_apogee is None:
+            # If no target apogee is specified, e.g. when bypassing the launch selector screen,
+            # get the target apogee from the metadata:
+            target_apogee = self.context.imu.file_metadata["flight_data"]["target_apogee_meters"]
+
+        airbrakes.constants.TARGET_APOGEE_METERS = target_apogee
+        # This updates the target apogee in the state machine, so you don't have to use
+        # constants.TARGET_APOGEE_METERS directly in state.py.
+        state.__dict__["TARGET_APOGEE_METERS"] = target_apogee
+
+    def _receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
+        """
+        Receives the launch configuration from the launch selector screen.
+        """
+        self.create_components(launch_config)
+        self._assign_target_apogee(launch_config.desired_target_apogee)
+        self._setup_application()
+
+    def _setup_application(self) -> None:
+        """
+        Common setup code for initializing widgets and starting the application.
+        """
+        self._initialize_widgets()
+        self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self._change_sim_speed)
+        self.watch(self.flight_header, "t_zero_time_ns", self._monitor_flight_time, init=False)
+        self.start()
+
+    def _initialize_widgets(self) -> None:
+        """
+        Supplies the airbrakes context and related objects to the widgets for proper operation.
+        """
+        self.flight_header = self.query_one(FlightHeader)
+        self.flight_information = self.query_one(FlightInformation)
+        self.flight_header.initialize_widgets(self.context, self.is_mock)
+        self.flight_information.initialize_widgets(self.context)

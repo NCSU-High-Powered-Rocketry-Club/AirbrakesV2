@@ -100,15 +100,15 @@ class MockIMU(BaseIMU):
             (set(EstimatedDataPacket.__struct_fields__) | set(RawDataPacket.__struct_fields__))
             & set(self._headers.columns)
         )
-        file_metadata: dict = MockIMU.read_file_metadata()
-        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
+        all_metadata: dict = MockIMU.read_all_metadata()
+        self.file_metadata = all_metadata.get(self._log_file_path.name, {})
 
         super().__init__(data_fetch_process, queued_imu_packets)
 
         self._sim_speed_factor = multiprocessing.Value("d", real_time_replay)
 
     @staticmethod
-    def read_file_metadata() -> dict:
+    def read_all_metadata() -> dict:
         """
         Reads the metadata from the log file and returns it as a dictionary.
         """
