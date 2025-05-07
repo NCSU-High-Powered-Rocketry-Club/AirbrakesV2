@@ -1,4 +1,6 @@
-"""Module for interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module for interacting with the IMU (Inertial measurement unit) on the rocket.
+"""
 
 import contextlib
 import multiprocessing
@@ -56,6 +58,7 @@ class IMU(BaseIMU):
     def __init__(self, port: str) -> None:
         """
         Initializes the object that interacts with the physical IMU connected to the pi.
+
         :param port: the port that the IMU is connected to
         """
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
@@ -81,6 +84,7 @@ class IMU(BaseIMU):
     def _fetch_data_loop(self, port: str) -> None:  # pragma: no cover
         """
         Continuously fetch data packets from the IMU and process them.
+
         :param port: The serial port to connect to the IMU.
         """
         # Set the process priority really high, as we want to get the data from the IMU as fast as
@@ -259,7 +263,9 @@ class IMU(BaseIMU):
 
     def _query_imu_for_data_packets(self, port: str) -> None:
         """
-        The loop that fetches data from the IMU. It runs in parallel with the main loop.
+        The loop that fetches data from the IMU.
+
+        It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         """
         with contextlib.suppress(KeyboardInterrupt):

@@ -1,4 +1,6 @@
-"""Module for simulating the IMU on the rocket using generated data."""
+"""
+Module for simulating the IMU on the rocket using generated data.
+"""
 
 import contextlib
 import multiprocessing
@@ -21,16 +23,18 @@ from airbrakes.simulation.data_generator import DataGenerator
 
 class SimIMU(BaseIMU):
     """
-    A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
-    and returns randomly generated data.
+    A mock implementation of the IMU for testing purposes.
+
+    It doesn't interact with any hardware and returns randomly generated data.
     """
 
     def __init__(self, sim_type: str, real_time_replay: bool) -> None:
         """
-        Initializes the object that pretends to be an IMU for testing purposes by returning
-        randomly generated data.
-        :param sim_type: The type of simulation to run. This can be either "full-scale" or
-          "sub-scale".
+        Initializes the object that pretends to be an IMU for testing purposes by returning randomly
+        generated data.
+
+        :param sim_type: The type of simulation to run. This can be either "full-scale" or "sub-
+            scale".
         """
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
@@ -54,6 +58,7 @@ class SimIMU(BaseIMU):
     def set_airbrakes_status(self, servo_extension: ServoExtension) -> None:
         """
         Sets the value of the shared boolean that indicates whether the airbrakes are extended.
+
         :param servo_extension: The extension of the airbrakes servo.
         """
         # Sets the shared boolean to True if the servo extension is at max extension or max no buzz
@@ -63,9 +68,9 @@ class SimIMU(BaseIMU):
         )
 
     def _fetch_data_loop(self, config: SimulationConfig, real_time_replay: bool) -> None:
-        """A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated
-        data."""
-
+        """
+        A wrapper function to suppress KeyboardInterrupt exceptions when obtaining generated data.
+        """
         data_generator = DataGenerator(config)
         timestamp: np.float64 = np.float64(0.0)
 

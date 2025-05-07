@@ -16,7 +16,9 @@ def context_packet():
 
 
 class TestContextDataPacket:
-    """Tests for the ContextDataPacket class."""
+    """
+    Tests for the ContextDataPacket class.
+    """
 
     retrieved_imu_packets = 0
     state_letter = "S"

@@ -1,4 +1,6 @@
-"""Module which provides a high level interface to the air brakes system on the rocket."""
+"""
+Module which provides a high level interface to the air brakes system on the rocket.
+"""
 
 import time
 from typing import TYPE_CHECKING
@@ -63,18 +65,20 @@ class Context:
     ) -> None:
         """
         Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
-        and ApogeePredictor. The state machine starts in StandbyState, which is the initial
-        state of the air brakes system.
+        and ApogeePredictor.
+
+        The state machine starts in StandbyState, which is the initial state of the air brakes
+        system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
-        real servo or a mocked servo.
+            real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU,
-        mock IMU, or simulation IMU.
+            mock IMU, or simulation IMU.
         :param camera: The camera object that records video from the rocket. This can be a real
-        camera or a mock camera.
+            camera or a mock camera.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
-        a mock logger.
+            a mock logger.
         :param data_processor: The IMUDataProcessor object that processes IMU data on a higher
-        level.
+            level.
         :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
         """
         self.servo: BaseServo = servo
@@ -97,8 +101,9 @@ class Context:
 
     def start(self) -> None:
         """
-        Starts the processes for the IMU, Logger, ApogeePredictor, and Camera. This is called
-        before the main loop starts.
+        Starts the processes for the IMU, Logger, ApogeePredictor, and Camera.
+
+        This is called before the main loop starts.
         """
         set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
@@ -110,8 +115,10 @@ class Context:
 
     def stop(self) -> None:
         """
-        Handles shutting down the air brakes system. This will cause the main loop to break. It
-        retracts the air brakes and stops the processes for IMU, Logger, ApogeePredictor and Camera.
+        Handles shutting down the air brakes system.
+
+        This will cause the main loop to break. It retracts the air brakes and stops the processes
+        for IMU, Logger, ApogeePredictor and Camera.
         """
         if self.shutdown_requested:
             return
@@ -124,9 +131,10 @@ class Context:
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main process. Depending on the current state, it will
-        do different things. It is what controls the air brakes and chooses when to move to the next
-        state.
+        Called every loop iteration from the main process.
+
+        Depending on the current state, it will do different things. It is what controls the air
+        brakes and chooses when to move to the next state.
         """
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continuous data for state, apogee,
@@ -200,8 +208,9 @@ class Context:
 
     def predict_apogee(self) -> None:
         """
-        Predicts the apogee of the rocket based on the current processed data. This
-        should only be called in the coast state, before we start controlling the air brakes.
+        Predicts the apogee of the rocket based on the current processed data.
+
+        This should only be called in the coast state, before we start controlling the air brakes.
         """
         # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.

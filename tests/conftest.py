@@ -1,4 +1,6 @@
-"""Module where fixtures are shared between all test files."""
+"""
+Module where fixtures are shared between all test files.
+"""
 
 import time
 from pathlib import Path
@@ -48,7 +50,9 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture
 def logger():
-    """Clear the tests/logs directory before making a new Logger."""
+    """
+    Clear the tests/logs directory before making a new Logger.
+    """
     for log in LOG_PATH.glob("log_*.csv"):
         log.unlink()
     logger = Logger(LOG_PATH)
@@ -91,8 +95,11 @@ def context(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
 
 @pytest.fixture
 def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
-    """Fixture that returns an Context object with a mock IMU. This will run for
-    all the launch data files (see the mock_imu fixture)"""
+    """
+    Fixture that returns an Context object with a mock IMU.
+
+    This will run for all the launch data files (see the mock_imu fixture)
+    """
     ab = Context(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
@@ -120,7 +127,9 @@ def idle_mock_imu():
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):
-    """Fixture that returns a MockIMU object with the specified log file."""
+    """
+    Fixture that returns a MockIMU object with the specified log file.
+    """
     return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
 
 
@@ -139,7 +148,9 @@ def mock_camera():
 
 @pytest.fixture
 def mocked_args_parser():
-    """Fixture that returns a mocked argument parser."""
+    """
+    Fixture that returns a mocked argument parser.
+    """
 
     class MockArgs:
         mode = "mock"
@@ -158,7 +169,9 @@ def mocked_args_parser():
 
 @pytest.fixture
 def target_altitude(request):
-    """Fixture to return the target altitude based on the mock IMU log file name."""
+    """
+    Fixture to return the target altitude based on the mock IMU log file name.
+    """
     # This will be used to set the constants for the test, since they change for different flights:
     # request.node.name is the name of the test function, e.g. test_update[interest_launch]
     launch_name = request.node.name.split("[")[-1].strip("]")
@@ -187,10 +200,14 @@ def target_altitude(request):
 
 
 class RandomDataIMU(IMU):
-    """Mocks the data fetch loop, since we don't have the actual IMU to use locally."""
+    """
+    Mocks the data fetch loop, since we don't have the actual IMU to use locally.
+    """
 
     def _fetch_data_loop(self, _: str) -> None:
-        """Output Est and Raw Data packets at the sampling rate we use for the IMU."""
+        """
+        Output Est and Raw Data packets at the sampling rate we use for the IMU.
+        """
         # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
         EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
         RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
@@ -222,7 +239,9 @@ class RandomDataIMU(IMU):
 
 
 class IdleIMU(IMU):
-    """Mocks the IMU data fetch loop, but doesn't output any data packets."""
+    """
+    Mocks the IMU data fetch loop, but doesn't output any data packets.
+    """
 
     def _fetch_data_loop(self, _: str) -> None:
         while self.is_running:

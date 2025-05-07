@@ -27,7 +27,9 @@ from tests.auxil.utils import (
 
 
 class TestContext:
-    """Tests the Context class"""
+    """
+    Tests the Context class.
+    """
 
     def test_slots(self, context):
         inst = context
@@ -83,7 +85,9 @@ class TestContext:
         context.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, context):
-        """Tests whether the AirbrakesContext handles ctrl+c events correctly."""
+        """
+        Tests whether the AirbrakesContext handles ctrl+c events correctly.
+        """
         context.start()
 
         try:
@@ -98,8 +102,9 @@ class TestContext:
         assert context.shutdown_requested
 
     def test_airbrakes_ctrl_c_exception(self, context):
-        """Tests whether the AirbrakesContext handles unknown exceptions."""
-
+        """
+        Tests whether the AirbrakesContext handles unknown exceptions.
+        """
         context.start()
         try:
             raise ValueError("some error in main loop")
@@ -120,7 +125,8 @@ class TestContext:
         random_data_mock_imu,
         context,
     ):
-        """Tests whether the Airbrakes update method works correctly by calling the relevant methods
+        """
+        Tests whether the Airbrakes update method works correctly by calling the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the data processor gets only estimated data packets
@@ -219,8 +225,9 @@ class TestContext:
         mocked_airbrakes.stop()
 
     def test_stop_with_random_data_imu_and_update(self, context: Context, random_data_mock_imu):
-        """Tests stopping of the airbrakes system while we are using the IMU and
-        calling airbrakes.update().
+        """
+        Tests stopping of the airbrakes system while we are using the IMU and calling
+        airbrakes.update().
         """
         context.imu = random_data_mock_imu
         has_airbrakes_stopped = threading.Event()
@@ -264,8 +271,9 @@ class TestContext:
     def test_stop_with_display_and_update_loop(
         self, context: Context, random_data_mock_imu, mocked_args_parser, capsys
     ):
-        """Tests stopping of the airbrakes system while we are using the IMU, the flight display,
-        and calling airbrakes.update().
+        """
+        Tests stopping of the airbrakes system while we are using the IMU, the flight display, and
+        calling airbrakes.update().
         """
         context.imu = random_data_mock_imu
         fd = FlightDisplay(context=context, start_time=time.time(), args=mocked_args_parser)
@@ -325,8 +333,9 @@ class TestContext:
         logger,
         context,
     ):
-        """Tests whether the airbrakes predict_apogee method works correctly by calling the
-        relevant methods.
+        """
+        Tests whether the airbrakes predict_apogee method works correctly by calling the relevant
+        methods.
 
         1. Mock fetching of data packets
         2. Test whether the apogee predictor gets only estimated data packets and not duplicated
@@ -426,9 +435,10 @@ class TestContext:
     def test_airbrakes_receives_apogee_predictor_packets(
         self, context: Context, monkeypatch, random_data_mock_imu
     ):
-        """Tests whether the airbrakes receives packets from the apogee predictor and that the
-        attribute `predicted_apogee` is updated correctly."""
-
+        """
+        Tests whether the airbrakes receives packets from the apogee predictor and that the
+        attribute `predicted_apogee` is updated correctly.
+        """
         monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
@@ -481,7 +491,9 @@ class TestContext:
         assert context.last_apogee_predictor_packet.predicted_apogee is not None
 
     def test_generate_data_packets(self, context):
-        """Tests whether the airbrakes generates the correct data packets for logging."""
+        """
+        Tests whether the airbrakes generates the correct data packets for logging.
+        """
         context.generate_data_packets()
         assert context.context_data_packet.state_letter == "S"
         assert context.context_data_packet.retrieved_imu_packets == 0
@@ -494,7 +506,9 @@ class TestContext:
         assert context.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_imu):
-        """Benchmark the update method of the airbrakes system."""
+        """
+        Benchmark the update method of the airbrakes system.
+        """
         # uv managed arm64 python is still not built with JIT, thus this is commented out.
         # if _testinternalcapi.get_optimizer() is None:
         #     pytest.fail("Please run benchmarks with PYTHON_JIT=1!")
@@ -506,7 +520,9 @@ class TestContext:
         ab.stop()
 
     def test_switch_altitude_back_to_pressure(self, context):
-        """Tests whether the switch_altitude_back_to_pressure method works correctly."""
+        """
+        Tests whether the switch_altitude_back_to_pressure method works correctly.
+        """
         # When this method is called, we know it's been integrating for altitude
         context.data_processor._integrating_for_altitude = True
 
