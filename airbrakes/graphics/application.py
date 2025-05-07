@@ -11,6 +11,7 @@ from textual.widgets import Footer
 from textual.worker import Worker, WorkerState
 
 import airbrakes.constants
+from airbrakes import state
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
@@ -170,6 +171,9 @@ class AirbrakesApplication(App):
         Assigns the target apogee to the airbrakes system.
         """
         airbrakes.constants.TARGET_APOGEE_METERS = target_apogee
+        # This updates the target apogee in the state machine, so you don't have to use
+        # constants.TARGET_APOGEE_METERS directly in state.py.
+        state.__dict__["TARGET_APOGEE_METERS"] = target_apogee
 
     def monitor_flight_time(self, flight_time_ns: int) -> None:
         """
