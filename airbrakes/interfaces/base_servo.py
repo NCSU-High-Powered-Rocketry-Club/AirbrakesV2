@@ -1,4 +1,8 @@
-"""Base class for the Servo. This will serve as the base for real servo and the mock servo."""
+"""
+Base class for the Servo.
+
+This will serve as the base for real servo and the mock servo.
+"""
 
 import threading
 from abc import ABC, abstractmethod
@@ -40,6 +44,8 @@ class BaseServo(ABC):
         encoder: gpiozero.RotaryEncoder,
     ) -> None:
         """
+        Initializes the servo and the encoder.
+
         :param first_servo: The first servo object. Can be a real servo or a mock servo.
         :param second_servo: The second servo object. Can be a real servo or a mock servo.
         :param encoder: The rotary encoder object.
@@ -61,14 +67,16 @@ class BaseServo(ABC):
     def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the extension of the servo.
+
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
         self.current_extension = extension
 
     def set_extended(self) -> None:
         """
-        Extends the servo to the maximum extension. Starts a timer to stop the buzzing after the
-        servo reaches the maximum extension.
+        Extends the servo to the maximum extension.
+
+        Starts a timer to stop the buzzing after the servo reaches the maximum extension.
         """
         # If we are already going to the minimum extension, we cancel that operation before
         # extending the servo.
@@ -82,8 +90,9 @@ class BaseServo(ABC):
 
     def set_retracted(self) -> None:
         """
-        Retracts the servo to the minimum extension. Starts a timer to stop the buzzing after the
-        servo reaches the minimum extension.
+        Retracts the servo to the minimum extension.
+
+        Starts a timer to stop the buzzing after the servo reaches the minimum extension.
         """
         # If we are already going to the maximum extension, we cancel that operation before
         # retracting the servo.
@@ -98,20 +107,25 @@ class BaseServo(ABC):
     def get_encoder_reading(self) -> int:
         """
         Gets the current reading (in steps) of the rotary encoder.
+
         :return: The current reading of the rotary encoder
         """
         return self.encoder.steps
 
     def _set_max_no_buzz(self) -> None:
         """
-        Extends the servo to the stop buzz position. After the servo is extended to its maximum
-        extension, this sets its extension to its actual extension.
+        Extends the servo to the stop buzz position.
+
+        After the servo is extended to its maximum extension, this sets its extension to its actual
+        extension.
         """
         self._set_extension(ServoExtension.MAX_NO_BUZZ)
 
     def _set_min_no_buzz(self) -> None:
         """
-        Retracts the servo to the stop buzz position. After the servo is retracted to its minimum
-        extension, this sets its extension to its actual extension.
+        Retracts the servo to the stop buzz position.
+
+        After the servo is retracted to its minimum extension, this sets its extension to its actual
+        extension.
         """
         self._set_extension(ServoExtension.MIN_NO_BUZZ)

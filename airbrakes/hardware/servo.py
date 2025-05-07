@@ -1,5 +1,7 @@
-"""Module which contains the Servo class, representing a servo motor that controls the extension of
-the airbrakes, along with a rotary encoder to measure the servo's position."""
+"""
+Module which contains the Servo class, representing a servo motor that controls the extension of the
+airbrakes, along with a rotary encoder to measure the servo's position.
+"""
 
 import contextlib
 
@@ -21,12 +23,14 @@ from airbrakes.interfaces.base_servo import BaseServo
 class Servo(BaseServo):
     """
     A custom class that represents a servo motor and the accompanying rotary encoder. The servo
-    controls the extension of the airbrakes while the encoder measures the servo's position.
-    the encoder is controlled using the gpiozero library, which provides a simple
-    interface for controlling GPIO pins on the Raspberry Pi 5.
+    controls the extension of the airbrakes while the encoder measures the servo's position. the
+    encoder is controlled using the gpiozero library, which provides a simple interface for
+    controlling GPIO pins on the Raspberry Pi 5.
 
-    The servo we use is the DS3235, which is a coreless digital servo. There are two of these on
-    the Servo Bonnet (https://www.adafruit.com/product/3416), which is connected to the Pi 5.
+    The servo we use is the DS3235, which is a coreless digital servo. There are two of these on the
+    Servo Bonnets
+    https://www.adafruit.com/product/3416,
+    which is connected to the Pi 5.
     """
 
     __slots__ = ()
@@ -39,14 +43,15 @@ class Servo(BaseServo):
         encoder_pin_number_b: int,
     ) -> None:
         """
+        Initializes the Servo class.
+
         :param first_servo_channel: The channel where the first servo is connected to on the board
         :param second_servo_channel: The channel where the second servo is connected to on the board
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is
-        connected to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is
-        connected to.
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
+            to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
+            to.
         """
-
         # Set up the Bonnet servo kit. This contains the servos that control the airbrakes.
         pca_9685 = ServoKit(channels=16)
         # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
@@ -72,6 +77,7 @@ class Servo(BaseServo):
     def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the servo to the specified extension.
+
         :param extension: The extension to set the servo to.
         """
         super()._set_extension(extension)

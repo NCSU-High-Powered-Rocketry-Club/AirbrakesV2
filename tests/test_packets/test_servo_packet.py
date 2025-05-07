@@ -12,7 +12,9 @@ def servo_packet():
 
 
 class TestServoDataPacket:
-    """Tests for the ServoDataPacket class."""
+    """
+    Tests for the ServoDataPacket class.
+    """
 
     set_extension = "0.2"
     encoder_position = "1"

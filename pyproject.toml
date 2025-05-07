@@ -24,6 +24,7 @@ dependencies = [
     "textual-hires-canvas>=0.5.0.post2",
     "textual-image>=0.8.1",
     "textual-pyfiglet",
+    "numpy-quaternion>=2024.0.8",
 ]
 
 [dependency-groups]
@@ -33,13 +34,19 @@ dev = [
     "ruff>=0.8.4",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
+    "docformatter",
+]
+
+profiling = [
+    "pyinstrument>=5.0.1",
+    "line-profiler>=4.2.0",
 ]
 # Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
 # `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
 #camera = [
-    #"picamera2>=0.3.24",
-    #"rpi-libcamera>=0.1a7",
-    #"rpi-kms>=0.1a1",
+#"picamera2>=0.3.24",
+#"rpi-libcamera>=0.1a7",
+#"rpi-kms>=0.1a1",
 #]
 
 # Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
@@ -77,11 +84,13 @@ show-fixes = true
 exclude = ["scripts"]
 
 [tool.ruff.lint]
-ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PERF203", "ISC001", "S311"]
+# Some of the ones prefixed with a d should probably not be ignored, but that can be fixed later.
+ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PERF203", "ISC001", "S311",
+    "D102", "D103", "D104", "D107", "D205", "D401", "D200"]
 select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET", "RSE",
-          "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "Q", "INP", 
-          "W", "YTT", "DTZ", "ARG", "T20", "FURB", "D100", "D101", "D300", "D418",
-          "D419", "S", "NPY"]
+    "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "Q", "INP",
+    "W", "YTT", "DTZ", "ARG", "T20", "FURB", "D100", "D101", "D300", "D418",
+    "D419", "S", "NPY", "D", "D213"]
 
 [tool.ruff.lint.per-file-ignores]
 "main.py" = ["T201"]
@@ -90,11 +99,11 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error",  # treat warnings as errors
-    "ignore:Could not import LGPIOFactory",  # ignore warning about LGPIO
-    "ignore:This process:DeprecationWarning",  # ignore warning about fork()
-    "ignore:To reduce servo jitter",  # ignore warning about pigpio
-    "ignore:Covariance of the parameters",  # ignore warning about scipt curve_fit
+    "error", # treat warnings as errors
+    "ignore:Could not import LGPIOFactory", # ignore warning about LGPIO
+    "ignore:This process:DeprecationWarning", # ignore warning about fork()
+    "ignore:To reduce servo jitter", # ignore warning about pigpio
+    "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
     "ignore:Could not set process priority"  # ignore warning about process priority
 ]
 addopts = "--benchmark-skip"  # skip benchmarks by default:
@@ -136,3 +145,14 @@ exclude_also = [
 ]
 show_missing = true
 fail_under = 88
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.docformatter]
+wrap-summaries = 100
+wrap-descriptions = 100
+pre-summary-newline = true
+make-summary-multi-line = true
+recursive = true
+in-place = true

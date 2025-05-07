@@ -1,4 +1,6 @@
-"""Module for the ExtendedDataProcessor class."""
+"""
+Module for the ExtendedDataProcessor class.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -8,8 +10,11 @@ from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 
 
 class ExtendedDataProcessor(DataProcessor):
-    """This class processes extra information in addition to the regular data processor. This
-    data is only used in the mock replay and sims, and not in the real flight."""
+    """
+    This class processes extra information in addition to the regular data processor.
+
+    This data is only used in the mock replay and sims, and not in the real flight.
+    """
 
     __slots__ = (
         "_average_vertical_acceleration",
@@ -36,39 +41,52 @@ class ExtendedDataProcessor(DataProcessor):
 
     @property
     def x_distance(self) -> float:
-        """The horizontal distance the rocket has traveled in the x direction"""
+        """
+        The horizontal distance the rocket has traveled in the x direction.
+        """
         return float(self._horizontal_distances[0, -1])
 
     @property
     def y_distance(self) -> float:
-        """The horizontal distance the rocket has traveled in the y direction"""
+        """
+        The horizontal distance the rocket has traveled in the y direction.
+        """
         return float(self._horizontal_distances[1, -1])
 
     @property
     def total_velocity(self) -> float:
-        """The total velocity of the rocket, i.e the magnitude of the horizontal and vertical
-        velocities."""
+        """
+        The total velocity of the rocket, i.e the magnitude of the horizontal and vertical
+        velocities.
+        """
         return float(self._total_velocity)
 
     @property
     def max_total_velocity(self) -> float:
-        """The maximum total velocity of the rocket."""
+        """
+        The maximum total velocity of the rocket.
+        """
         return float(self._max_total_velocity)
 
     @property
     def average_vertical_acceleration(self) -> float:
-        """The average vertical acceleration of the rocket."""
+        """
+        The average vertical acceleration of the rocket.
+        """
         return float(self._average_vertical_acceleration)
 
     @property
     def max_vertical_acceleration(self) -> float:
-        """The maximum vertical acceleration of the rocket."""
+        """
+        The maximum vertical acceleration of the rocket.
+        """
         return float(self._max_vertical_acceleration)
 
     @property
     def current_pressure_altitude(self) -> float:
         """
         The current pressure altitude of the rocket based on the last estimated data packet.
+
         :return: The current pressure altitude of the rocket
         """
         return float(self._current_pressure_altitudes[-1])
@@ -77,6 +95,7 @@ class ExtendedDataProcessor(DataProcessor):
     def max_pressure_altitude(self) -> float:
         """
         The maximum pressure altitude of the rocket based on the last estimated data packet.
+
         :return: The maximum pressure altitude of the rocket
         """
         return float(self._max_pressure_altitude)
@@ -85,6 +104,7 @@ class ExtendedDataProcessor(DataProcessor):
     def horizontal_range(self) -> float:
         """
         The horizontal range of the rocket based on the horizontal distance.
+
         :return: The horizontal range of the rocket at the last data packet
         """
         return float(np.linalg.norm(self._horizontal_distances[:, -1]))
@@ -109,7 +129,9 @@ class ExtendedDataProcessor(DataProcessor):
         )
 
     def _calculate_pressure_altitudes(self) -> npt.NDArray[np.float64]:
-        """Purely only calculates the pressure altitude, by zeroing the initial altitude.
+        """
+        Purely only calculates the pressure altitude, by zeroing the initial altitude.
+
         This is used to compare the difference from current_altitude when airbrakes are deployed.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
@@ -121,16 +143,18 @@ class ExtendedDataProcessor(DataProcessor):
         )
 
     def _calculate_total_velocity(self) -> np.float64:
-        """Calculates the total velocity of the rocket based on the horizontal and vertical
-        velocities."""
+        """
+        Calculates the total velocity of the rocket based on the horizontal and vertical velocities.
+        """
         return np.linalg.norm(
             np.hstack((self._horizontal_velocities[:, -1], self._vertical_velocities[-1]))
         )
 
     def _calculate_horizontal_velocity(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the velocity of the rocket based on the rotated acceleration. Integrates that
-        acceleration to get the velocity.
+        Calculates the velocity of the rocket based on the rotated acceleration.
+
+        Integrates that acceleration to get the velocity.
         :return: A numpy array of the horizontal velocity of the rocket at each data packet
         """
         # Initialize horizontal velocities array with the previous value
@@ -139,15 +163,16 @@ class ExtendedDataProcessor(DataProcessor):
         # Integrate the accelerations to get the velocities
         for i in range(2):  # For both x and y components
             horizontal_velocities[i] = self._horizontal_velocities[i, -1] + np.cumsum(
-                self._rotated_accelerations[i] * self._time_differences
+                self._rotated_accelerations[:, i] * self._time_differences
             )
 
         return horizontal_velocities
 
     def _calculate_horizontal_distance(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the distance of the rocket based on the horizontal velocity. Integrates that
-        velocity to get the distance.
+        Calculates the distance of the rocket based on the horizontal velocity.
+
+        Integrates that velocity to get the distance.
         :return: A numpy array of the horizontal distance of the rocket at each data packet
         """
         horizontal_distances = np.zeros((2, len(self._data_packets)))

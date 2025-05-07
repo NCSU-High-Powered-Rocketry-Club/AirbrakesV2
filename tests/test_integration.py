@@ -1,6 +1,10 @@
-"""Tests the full integration of the airbrakes system. This is done by reading data from a previous
+"""
+Tests the full integration of the airbrakes system.
+
+This is done by reading data from a previous
 launch and manually verifying the data output by the code. This test will run at full speed in the
-CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
+CI. To run it in real time, see `main.py` or instructions in the `README.md`.
+"""
 
 import threading
 import time
@@ -28,7 +32,9 @@ SNAPSHOT_INTERVAL = 0.001  # seconds
 
 
 class TestIntegration:
-    """Tests the full integration of the airbrakes system by using previous launch data."""
+    """
+    Tests the full integration of the airbrakes system by using previous launch data.
+    """
 
     # general method of testing this is capturing the state of the system at different points in
     # time and verifying that the state is as expected at each point in time.
@@ -39,7 +45,9 @@ class TestIntegration:
         mock_imu_airbrakes,
         monkeypatch,
     ):
-        """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
+        """
+        Tests whether the whole system works, i.e. state changes, correct logged data, etc.
+        """
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
         # values being StateInformation, which will note information about that state.
@@ -244,8 +252,10 @@ class TestIntegration:
 
     @pytest.mark.imu_benchmark
     def test_fetched_imu_packets_integration(self, context):
-        """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
-        $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
+        """
+        Test that the fetched IMU packets are a reasonable size.
+
+        Run with sudo. E.g. $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
         ab = context
 
@@ -258,7 +268,9 @@ class TestIntegration:
         has_airbrakes_stopped = threading.Event()
 
         def stop_thread():
-            """Stops airbrakes after a set amount of time."""
+            """
+            Stops airbrakes after a set amount of time.
+            """
             ab.stop()
             has_airbrakes_stopped.set()
 

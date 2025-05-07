@@ -255,6 +255,7 @@
             "air_pressure_mb": 1019.10,
             "wind_speed_kmh": 22.5,
             "wind_direction": "SW",
+            "location": "Bayboro, NC",
             "launch_coordinates": {
                 "latitiude": 35.1762107,
                 "longitude": -76.8293647
@@ -279,34 +280,34 @@
         "flight_description": "Final flight before Hunstville. For this flight, the servo died right before launch, requiring a rewrite of the servo logic to work with only one servo. We had on board footage from the payload for the first time, which showed airbrakes deploying correctly in coast. However they were unable to retract mechanically. The rocket was also dragged through the mud by the wind for a long time after landing, which broke the fins, and also corrupting the SD card, and thus we don't have data for this flight. The final coordinates from where the rocket was recovered was 35.18224,-76.83000"
     },
     "pelicanator_launch_4.csv": {
-        "date": "2025-05-03T09:33:32.411-06:00",
+        "date": "2025-05-04T09:45:10.931-06:00",
         "launch_site": {
-            "air_temperature_celsius": 27.6,  
-            "air_pressure_mb": 1024.45,
-            "wind_speed_kmh": 25.05,
-            "location": "Dalzell, SC",
-            "wind_direction": "SW",
+            "air_temperature_celsius": 16.7,
+            "air_pressure_mb": 983.2,
+            "wind_speed_kmh": 12.875,
+            "wind_direction": "NW",
+            "location": "Bragg Farms, AL",
             "launch_coordinates": {
-                "latitiude": 34.9017853316884, 
-                "longitude": -86.57468053637594
+                "latitiude": 34.894610,
+                "longitude": -86.616470
             },
             "launch_rod_angle": 5.0
         },
         "imu_details": {
             "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
+            "raw_packet_frequency": 500.0,
             "est_packet_frequency": 500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 1290.16,
+            "apogee_meters": 1281.25,
             "landed_coordinates:": {
-                "latitude": 34.04811560103679,
-                "longitude": -86.57468053637594
+                "latitude": 34.88886,
+                "longitude": -86.61492
             },
-            "flight_length_seconds": 69.24,
-            "target_apogee_meters": 1290.76
+            "flight_length_seconds": 93.28,
+            "target_apogee_meters": 1402.08
         },
-        "flight_description": "Huntsville Flight!"
+        "flight_description": "This was the 2024-2025 Huntsville flight. The flight was relatively normal with except for some weather cocking, though this wasn't too crazy. The motor took a while to fully ignite and build up pressure, so a lot of it was spewed out before fulling launching which resulted in a lower apogee. For this flight, predicted apogee was significantly lower than actual apogee, for reasons currently unknown. The camera was attached to the payload which worked fine. The landed coordinates correspond to where the rocket was recovered from. The wind moved the rocket probably about 20 meters from the recovery photos."
     }
 }

@@ -1,4 +1,6 @@
-"""Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket.
+"""
 
 import ast
 import contextlib
@@ -34,8 +36,9 @@ if typing.TYPE_CHECKING:
 
 class MockIMU(BaseIMU):
     """
-    A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
-    and returns data read from a previous log file.
+    A mock implementation of the IMU for testing purposes.
+
+    It doesn't interact with any hardware and returns data read from a previous log file.
     """
 
     __slots__ = (
@@ -53,9 +56,11 @@ class MockIMU(BaseIMU):
         start_after_log_buffer: bool = True,
     ):
         """
-        Initializes the object that pretends to be an IMU for testing purposes by reading from a
-            log file. We don't call the parent constructor as the IMU class has different
-            parameters, so we manually start the process that fetches data from the log file.
+        Initializes the object that pretends to be an IMU for testing purposes by reading from a log
+        file.
+
+        We don't call the parent constructor as the IMU class has different     parameters, so we
+        manually start the process that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
@@ -114,6 +119,7 @@ class MockIMU(BaseIMU):
     def _convert_invalid_fields(value) -> list | None:
         """
         Convert invalid fields to Python objects or None.
+
         :param value: The value to convert.
         :return: The converted value.
         """
@@ -126,12 +132,12 @@ class MockIMU(BaseIMU):
         usecols: list[str] | object = DEFAULT,
         **kwargs,
     ) -> "pd.DataFrame | TextFileReader":
-        """Reads the csv file and returns it as a pandas DataFrame.
+        """
+        Reads the csv file and returns it as a pandas DataFrame.
 
         :param start_index: The index to start reading the file from. Must be a keyword argument.
         :param usecols: The columns to read from the file. Must be a keyword argument.
         :param kwargs: Additional keyword arguments to pass to pd.read_csv.
-
         :return: The DataFrame or TextFileReader object.
         """
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
@@ -149,6 +155,7 @@ class MockIMU(BaseIMU):
     def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
+
         :return: The index where the log buffer ends.
         """
         metadata_buffer_index: int | None = self.file_metadata["flight_data"]["log_buffer_index"]
@@ -170,8 +177,9 @@ class MockIMU(BaseIMU):
     def _read_file(self, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
+
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
@@ -231,8 +239,9 @@ class MockIMU(BaseIMU):
     def _fetch_data_loop(self, start_after_log_buffer: bool = False) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
+
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
@@ -243,12 +252,12 @@ class MockIMU(BaseIMU):
         self._queued_imu_packets.put(STOP_SIGNAL)
 
     def get_launch_time(self) -> int:
-        """Gets the launch time, from reading the csv file.
+        """
+        Gets the launch time, from reading the csv file.
 
         :return int: The corresponding launch time in nanoseconds. Returns 0 if the launch time
             could not be found.
         """
-
         # Read the file, and check when the "state" field shows "M", or when the magnitude of the
         # estimated linear acceleration is greater than 3 m/s^2:
         state_name = "state" if "state" in self._headers.columns else "state_letter"

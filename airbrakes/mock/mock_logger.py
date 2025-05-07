@@ -1,4 +1,8 @@
-"""Mock Logger class for testing purposes. Currently only used to delete the log file."""
+"""
+Mock Logger class for testing purposes.
+
+Currently only used to delete the log file.
+"""
 
 from pathlib import Path
 
@@ -8,17 +12,19 @@ from airbrakes.telemetry.logger import Logger
 class MockLogger(Logger):
     """
     This class has the same functionality as the Logger class, but simply removes the log file it
-    generates after the logger has stopped. We use this class in the tests to avoid cluttering the
-    filesystem with log files. Additionally, this helps mimic the behavior of the real logger, which
-    can be computationally expensive.
+    generates after the logger has stopped.
+
+    We use this class in the tests to avoid cluttering the filesystem with log files. Additionally,
+    this helps mimic the behavior of the real logger, which can be computationally expensive.
     """
 
     __slots__ = ("_delete_log_file",)
 
     def __init__(self, log_file_path: Path, delete_log_file: bool = True) -> None:
         """
-        Initializes the mock logger object. Behaves the same as the Logger class, but deletes the
-        log file after stopping the logger.
+        Initializes the mock logger object.
+
+        Behaves the same as the Logger class, but deletes the log file after stopping the logger.
         :param log_file_path: The path to the log file to.
         :param delete_log_file: True if the log file should be deleted after the logger stops.
         """

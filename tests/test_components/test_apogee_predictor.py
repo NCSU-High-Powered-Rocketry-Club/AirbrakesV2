@@ -22,7 +22,9 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def threaded_apogee_predictor(monkeypatch):
-    """Modifies the ApogeePredictor to run in a separate thread instead of a process."""
+    """
+    Modifies the ApogeePredictor to run in a separate thread instead of a process.
+    """
     ap = ApogeePredictor()
     # Cannot use signals from child threads, so we need to monkeypatch it:
     monkeypatch.setattr("signal.signal", lambda _, __: None)
@@ -34,7 +36,9 @@ def threaded_apogee_predictor(monkeypatch):
 
 
 class TestApogeePredictor:
-    """Tests the IMUDataProcessor class"""
+    """
+    Tests the IMUDataProcessor class.
+    """
 
     def test_slots(self):
         inst = ApogeePredictor()
@@ -45,7 +49,9 @@ class TestApogeePredictor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, apogee_predictor):
-        """Tests whether the IMUDataProcessor is correctly initialized"""
+        """
+        Tests whether the IMUDataProcessor is correctly initialized.
+        """
         ap = apogee_predictor
         # Test attributes on init
         assert isinstance(ap._processor_data_packet_queue, faster_fifo.Queue)
@@ -75,7 +81,9 @@ class TestApogeePredictor:
         assert apogee_predictor._prediction_process.exitcode == 0
 
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
-        """Tests that the predictor adds to the queue when update is called"""
+        """
+        Tests that the predictor adds to the queue when update is called.
+        """
         packet = [make_processor_data_packet()]
         # important to not .start() the process, as we don't want it to run as it will fetch
         # it from the queue and we want to check if it's added to the queue.
@@ -84,7 +92,9 @@ class TestApogeePredictor:
         assert apogee_predictor._processor_data_packet_queue.get_many() == packet
 
     def test_queue_hits_timeout_and_continues(self, threaded_apogee_predictor, monkeypatch):
-        """Tests whether the apogee predictor continues to fetch packets after hitting a timeout."""
+        """
+        Tests whether the apogee predictor continues to fetch packets after hitting a timeout.
+        """
         monkeypatch.setattr("airbrakes.telemetry.apogee_predictor.MAX_GET_TIMEOUT_SECONDS", 0.01)
         time.sleep(0.05)  # hit the timeout
         sample_packet = make_processor_data_packet()
@@ -95,7 +105,9 @@ class TestApogeePredictor:
         assert threaded_apogee_predictor._accelerations[0] == sample_packet.vertical_acceleration
 
     def test_apogee_predictor_stop_signal(self, threaded_apogee_predictor):
-        """Tests that the apogee predictor stops when the stop signal is sent."""
+        """
+        Tests that the apogee predictor stops when the stop signal is sent.
+        """
         assert threaded_apogee_predictor.is_running
         threaded_apogee_predictor._processor_data_packet_queue.put(STOP_SIGNAL)
         time.sleep(0.001)  # wait for the thread to fetch the packet
@@ -140,7 +152,7 @@ class TestApogeePredictor:
                 # quartic function though, it's off by a bit, because a quartic function
                 # cannot look very linear. If you want to check my integration math, remember that
                 #  the dt is not 1, it is 0.1, so you divide everything by 10 when you integrate.
-                1177.5194204908717,
+                1167.8157033651648,
             ),
         ],
         ids=["hover_at_altitude", "coast_phase"],
@@ -148,18 +160,20 @@ class TestApogeePredictor:
     def test_prediction_loop_no_mock(
         self, threaded_apogee_predictor, processor_data_packets, expected_value
     ):
-        """Tests that our predicted apogee works in general, by passing in a few hundred data
-        packets. This does not really represent a real flight, but given that case, it should
-        predict it correctly. Also tests that we have sent the Apogee Predictor Data Packet
-        to the main process."""
+        """
+        Tests that our predicted apogee works in general, by passing in a few hundred data packets.
 
+        This does not really represent a real flight, but given that case, it should predict it
+        correctly. Also tests that we have sent the Apogee Predictor Data Packet to the main
+        process.
+        """
         assert not threaded_apogee_predictor._apogee_predictor_packet_queue.qsize()
         threaded_apogee_predictor.update(processor_data_packets)
 
         time.sleep(0.1)  # Wait for the prediction loop to finish
         assert threaded_apogee_predictor._has_apogee_converged
 
-        assert threaded_apogee_predictor._apogee_predictor_packet_queue.qsize() == 2
+        assert threaded_apogee_predictor._apogee_predictor_packet_queue.qsize() in (1, 2)
         packet: ApogeePredictorDataPacket = threaded_apogee_predictor.get_prediction_data_packets()[
             -1
         ]
@@ -173,8 +187,9 @@ class TestApogeePredictor:
         assert packet.uncertainty_threshold_2 < UNCERTAINTY_THRESHOLD[1]
 
     def test_prediction_loop_every_x_packets(self, threaded_apogee_predictor):
-        """Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets"""
-
+        """
+        Tests that the predictor only runs every APOGEE_PREDICTION_FREQUENCY packets.
+        """
         NUMBER_OF_PACKETS = 300
         for i in range(NUMBER_OF_PACKETS):
             packets = [

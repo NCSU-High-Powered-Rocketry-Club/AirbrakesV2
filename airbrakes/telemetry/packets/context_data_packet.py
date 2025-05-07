@@ -1,4 +1,6 @@
-"""Module for the ContextDataPacket class."""
+"""
+Module for the ContextDataPacket class.
+"""
 
 from typing import Literal
 
@@ -11,30 +13,43 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
 
     state_letter: Literal["S", "M", "C", "F", "L"]
-    """Represents the stage of flight we are in. Will only be a single letter."""
+    """
+    Represents the stage of flight we are in.
+
+    Will only be a single letter.
+    """
 
     retrieved_imu_packets: int
     """
-    This is the number of packets we got from the IMU process, in the main process. This number
-    will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high end,
-    it indicates some performance issues with the main process.
+    This is the number of packets we got from the IMU process, in the main process.
+
+    This number will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high
+    end, it indicates some performance issues with the main process.
     """
 
     queued_imu_packets: int
-    """The number of IMU data packets in the IMU multiprocessing queue, waiting to be fetched,
-    by the main process."""
+    """
+    The number of IMU data packets in the IMU multiprocessing queue, waiting to be fetched, by the
+    main process.
+    """
 
     apogee_predictor_queue_size: int
     """
-    The number of apogee predictor data packets in the apogee predictor queue,
-    waiting to be fetched by the main process.
+    The number of apogee predictor data packets in the apogee predictor queue, waiting to be fetched
+    by the main process.
     """
 
     imu_packets_per_cycle: int
-    """The number of packets we directly fetch from the LORD IMU in the IMU process. This is
-    before we put the packets in the multiprocessing queue to the main process."""
+    """
+    The number of packets we directly fetch from the LORD IMU in the IMU process.
+
+    This is before we put the packets in the multiprocessing queue to the main process.
+    """
 
     update_timestamp_ns: int
-    """The timestamp reported by the local computer at which we processed
-    and logged this data packet. This is used to compare the time difference between
-    what is reported by the IMU, and when we finished processing the data packet."""
+    """
+    The timestamp reported by the local computer at which we processed and logged this data packet.
+
+    This is used to compare the time difference between what is reported by the IMU, and when we
+    finished processing the data packet.
+    """

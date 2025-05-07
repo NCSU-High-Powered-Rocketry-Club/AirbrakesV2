@@ -1,5 +1,8 @@
-"""The main file which will be run on the Raspberry Pi. It will create the Context object
-and run the main loop."""
+"""
+The main file which will be run on the Raspberry Pi.
+
+It will create the Context object and run the main loop.
+"""
 
 import sys
 
@@ -7,8 +10,12 @@ from airbrakes.graphics.application import AirbrakesApplication
 
 
 def run_real_flight() -> None:
-    """Entry point for the application to run the real flight. Entered when run with
-    `uv run real` or `uvx --from git+... real`."""
+    """
+    Entry point for the application to run the real flight.
+
+    Entered when run with
+    `uv run real` or `uvx --from git+... real`.
+    """
     # Modify sys.argv to include real as the first argument:
     sys.argv.insert(1, "real")
     # args = arg_parser()
@@ -16,8 +23,12 @@ def run_real_flight() -> None:
 
 
 def run_mock_flight() -> None:
-    """Entry point for the application to run the mock flight. Entered when run with
-    `uvx --from git+... mock` or `uv run mock`."""
+    """
+    Entry point for the application to run the mock flight.
+
+    Entered when run with
+    `uvx --from git+... mock` or `uv run mock`.
+    """
     # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
     app = AirbrakesApplication()

@@ -1,4 +1,6 @@
-"""Contains the constants used in the Airbrakes module."""
+"""
+Contains the constants used in the Airbrakes module.
+"""
 
 from enum import Enum
 from pathlib import Path
@@ -8,10 +10,14 @@ from pathlib import Path
 # -------------------------------------------------------
 
 MAIN_PROCESS_PRIORITY = -11
-"""The priority of the Main process. This is a really high priority so the OS knows to give it
-priority over other processes. This is because we want to make sure we don't want to stay behind
-on processing the packets from the IMU. It's a bit lower than the IMU process because we want to
-make sure the IMU process is always running and getting data."""
+"""
+The priority of the Main process.
+
+This is a really high priority so the OS knows to give it priority over other processes. This is
+because we want to make sure we don't want to stay behind on processing the packets from the IMU.
+It's a bit lower than the IMU process because we want to make sure the IMU process is always running
+and getting data.
+"""
 
 
 # -------------------------------------------------------
@@ -20,28 +26,32 @@ make sure the IMU process is always running and getting data."""
 
 SERVO_1_CHANNEL = 7
 """
-The channel on the PCA9685 that the first servo is connected to. The PCA9685 is a PWM driver that
-allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
-are numbered from 0 to 15.
+The channel on the PCA9685 that the first servo is connected to.
+
+The PCA9685 is a PWM driver that allows us to control the servo with the Raspberry Pi. The PCA9685
+has 16 channels, so the channels are numbered from 0 to 15.
 """
 
 SERVO_2_CHANNEL = 4
 """
-The channel on the PCA9685 that the second servo is connected to. The PCA9685 is a PWM driver that
-allows us to control the servo with the Raspberry Pi. The PCA9685 has 16 channels, so the channels
-are numbered from 0 to 15.
+The channel on the PCA9685 that the second servo is connected to.
+
+The PCA9685 is a PWM driver that allows us to control the servo with the Raspberry Pi. The PCA9685
+has 16 channels, so the channels are numbered from 0 to 15.
 """
 
 SERVO_MIN_PULSE_WIDTH = 500
 """
-The minimum pulse width in microseconds that the servo will accept. This is the pulse width that
-corresponds to the minimum rotation of the servo.
+The minimum pulse width in microseconds that the servo will accept.
+
+This is the pulse width that corresponds to the minimum rotation of the servo.
 """
 
 SERVO_MAX_PULSE_WIDTH = 2500
 """
-The maximum pulse width in microseconds that the servo will accept. This is the pulse width that
-corresponds to the maximum rotation of the servo.
+The maximum pulse width in microseconds that the servo will accept.
+
+This is the pulse width that corresponds to the maximum rotation of the servo.
 """
 
 SERVO_MAX_ANGLE = 180
@@ -51,21 +61,23 @@ The maximum angle that the servo can rotate to.
 
 SERVO_DELAY_SECONDS = 1.0
 """
-This is how long the servo approximately takes to move from one extreme to the other. This is
-used for the no buzz code, to make sure the servo has enough time to move to the desired
+This is how long the servo approximately takes to move from one extreme to the other.
+
+This is used for the no buzz code, to make sure the servo has enough time to move to the desired
 position.
 """
 
 
 class ServoExtension(Enum):
     """
-    Enum that represents the extension of the servo motor. First we set it to an extreme, then to
-    the actual position. This is to ensure that the servo will move fast enough and with enough
-    power to actually make it to the position, but then once it's there, we don't want it to keep
-    straining past the physical bounds of the air brakes.
-    The range of the servo is from 0 to 180 degrees, but we only use a portion of that range to
-    prevent the servo from straining too much. We obtained the below values through guess and
-    check, and they differ depending on the design.
+    Enum that represents the extension of the servo motor.
+
+    First we set it to an extreme, then to the actual position. This is to ensure that the servo
+    will move fast enough and with enough power to actually make it to the position, but then once
+    it's there, we don't want it to keep straining past the physical bounds of the air brakes. The
+    range of the servo is from 0 to 180 degrees, but we only use a portion of that range to prevent
+    the servo from straining too much. We obtained the below values through guess and check, and
+    they differ depending on the design.
     """
 
     # in degrees:
@@ -80,13 +92,19 @@ class ServoExtension(Enum):
 # -------------------------------------------------------
 
 ENCODER_RESOLUTION = 20
-"""The points per revolution of the encoder."""
+"""
+The points per revolution of the encoder.
+"""
 
 ENCODER_PIN_A = 23
-"""The GPIO pin that the encoder's A pin is connected to."""
+"""
+The GPIO pin that the encoder's A pin is connected to.
+"""
 
 ENCODER_PIN_B = 24
-"""The GPIO pin that the encoder's B pin is connected to."""
+"""
+The GPIO pin that the encoder's B pin is connected to.
+"""
 
 # -------------------------------------------------------
 # Buzzer Configuration
@@ -104,17 +122,27 @@ The GPIO pin the buzzer is connected to.
 
 # TODO: This should be in the launch selector screen:
 MOCK_DISPLAY_UPDATE_RATE = 1 / 15
-"""The frequency at which the display updates in replay or sim mode. Increasing this value will
-negatively affect the performance when running with a "fast" simulation."""
+"""
+The frequency at which the display updates in replay or sim mode.
+
+Increasing this value will negatively affect the performance when running with a "fast" simulation.
+"""
 
 REAL_TIME_DISPLAY_UPDATE_RATE = 1 / 10  # 10 Hz
-"""The frequency at which the display updates in real mode. Decreasing this value will not show
-major performance improvements, but increasing it will negatively affect the performance."""
+"""
+The frequency at which the display updates in real mode.
+
+Decreasing this value will not show major performance improvements, but increasing it will
+negatively affect the performance.
+"""
 
 
 GRAPH_DATA_STORE_INTERVAL_SECONDS = 4
-"""The interval in seconds at which the graph data is stored. This is used so that it is easy
-to look at the changing data in real time."""
+"""
+The interval in seconds at which the graph data is stored.
+
+This is used so that it is easy to look at the changing data in real time.
+"""
 
 
 # -------------------------------------------------------
@@ -123,8 +151,9 @@ to look at the changing data in real time."""
 
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """
-After airbrakes retract, it takes some time for the pressure to stabilize. DataProcessor will wait
-this amount of time before switching back to using pressure altitude.
+After airbrakes retract, it takes some time for the pressure to stabilize.
+
+DataProcessor will wait this amount of time before switching back to using pressure altitude.
 """
 
 # -------------------------------------------------------
@@ -132,17 +161,23 @@ this amount of time before switching back to using pressure altitude.
 # -------------------------------------------------------
 
 LOGS_PATH = Path("logs")
-"""The path of the folder to hold the log files in."""
+"""
+The path of the folder to hold the log files in.
+"""
 TEST_LOGS_PATH = Path("test_logs")
-"""The path of the folder to hold the test log files in."""
+"""
+The path of the folder to hold the test log files in.
+"""
 NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 1000  # 1 second of data
-"""The number of lines we log before manually flushing the buffer and forcing the OS to write
-to the file."""
+"""
+The number of lines we log before manually flushing the buffer and forcing the OS to write to the
+file.
+"""
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue
-to stop the processes.
+The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue to
+stop the processes.
 """
 
 # Formula for converting number of packets to seconds and vice versa:
@@ -152,13 +187,16 @@ to stop the processes.
 
 IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 5 seconds of data
 """
-The maximum number of data packets to log in the StandbyState and LandedState. This is to prevent
-log file sizes from growing too large. Some of our 2023-2024 launches were >300 mb.
+The maximum number of data packets to log in the StandbyState and LandedState.
+
+This is to prevent log file sizes from growing too large. Some of our 2023-2024 launches were >300
+mb.
 """
 LOG_BUFFER_SIZE = 5000
 """
-Buffer size if CAPACITY is reached. Once the state changes, this buffer will be logged to make
-sure we don't lose data.
+Buffer size if CAPACITY is reached.
+
+Once the state changes, this buffer will be logged to make sure we don't lose data.
 """
 
 
@@ -168,61 +206,87 @@ sure we don't lose data.
 
 IMU_PORT = "/dev/ttyACM0"
 """
-The port that the IMU is connected to. This is typically the default port where the IMU connects
-to the Raspberry Pi. "/dev/ttyACM0" corresponds to the first USB-serial device recognized by the
-system in Linux.
+The port that the IMU is connected to.
+
+This is typically the default port where the IMU connects to the Raspberry Pi. "/dev/ttyACM0"
+corresponds to the first USB-serial device recognized by the system in Linux.
 """
 
 IMU_PROCESS_PRIORITY = -15
-"""The priority of the IMU process. This is a really high priority so the OS knows to give it
-priority over other processes. This is because we want to make sure we don't miss any data packets
-from the IMU."""
+"""
+The priority of the IMU process.
+
+This is a really high priority so the OS knows to give it priority over other processes. This is
+because we want to make sure we don't miss any data packets from the IMU.
+"""
 
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
-"""The period at which the IMU sends raw data packets. This is the reciprocal of the frequency."""
+"""
+The period at which the IMU sends raw data packets.
+
+This is the reciprocal of the frequency.
+"""
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
-The period at which the IMU sends estimated data packets. This is the reciprocal of the frequency.
+The period at which the IMU sends estimated data packets.
+
+This is the reciprocal of the frequency.
 """
 
 ESTIMATED_DESCRIPTOR_SET = 130
-"""The ID of the estimated data packet that the IMU sends."""
+"""
+The ID of the estimated data packet that the IMU sends.
+"""
 RAW_DESCRIPTOR_SET = 128
-"""The ID of the raw data packet that the IMU sends."""
+"""
+The ID of the raw data packet that the IMU sends.
+"""
 
 MAX_FETCHED_PACKETS = 15
-"""This is used to limit how many packets we fetch from the packet queue at once."""
+"""
+This is used to limit how many packets we fetch from the packet queue at once.
+"""
 
 MAX_GET_TIMEOUT_SECONDS = 100
-"""The maximum amount of time in seconds to wait for a get operation on the queue."""
+"""
+The maximum amount of time in seconds to wait for a get operation on the queue.
+"""
 
 BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
 """
-The maximum number of bytes to put or get from the queue at once. This is an increase from the
-default value of 1Mb, which is too small sometimes for our data packets, e.g. when logging the
-entire buffer, which is 5000 packets.
+The maximum number of bytes to put or get from the queue at once.
+
+This is an increase from the default value of 1Mb, which is too small sometimes for our data
+packets, e.g. when logging the entire buffer, which is 5000 packets.
 """
 
 MAX_QUEUE_SIZE = 100_000
 """
-The maximum size of the queue that holds the data packets. This is to prevent the queue from"
-growing too large and taking up too much memory. This is a very large number, so it should not be
-reached in normal operation.
+The maximum size of the queue that holds the data packets.
+
+This is to prevent the queue from" growing too large and taking up too much memory. This is a very
+large number, so it should not be reached in normal operation.
 """
 
 IMU_TIMEOUT_SECONDS = 3.0
 """
 The maximum amount of time in seconds the IMU process is allowed to do something (e.g. read a
-packet) before it is considered to have timed out. This is used to prevent the program from
-deadlocking if the IMU stops sending data.
+packet) before it is considered to have timed out.
+
+This is used to prevent the program from deadlocking if the IMU stops sending data.
 """
 
 CHUNK_SIZE = LOG_BUFFER_SIZE + 1
-"""The size of the chunk to read from the log file at a time. This has 2 benefits. Less memory
-usage and faster initial read of the file."""
+"""
+The size of the chunk to read from the log file at a time.
+
+This has 2 benefits. Less memory usage and faster initial read of the file.
+"""
 
 DEFAULT = object()
-"""Default sentinel value for usecols in the read_csv method."""
+"""
+Default sentinel value for usecols in the read_csv method.
+"""
 
 # Constants for IMU field names and quantifiers
 DELTA_THETA_FIELD = 32775
@@ -250,11 +314,17 @@ AMBIENT_PRESSURE_QUALIFIER = 58
 # -------------------------------------------------------
 
 CAMERA_SAVE_PATH = Path("logs/video.h264")
-"""The path that the output of the camera will save to."""
+"""
+The path that the output of the camera will save to.
+"""
 BYTES_PER_30_SECONDS = 9 * 1024 * 1024
-"""The number of bytes that the camera will write in 30 seconds."""
+"""
+The number of bytes that the camera will write in 30 seconds.
+"""
 BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300
-"""The number of bytes that the camera will write in 0.1 seconds."""
+"""
+The number of bytes that the camera will write in 0.1 seconds.
+"""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -265,9 +335,9 @@ BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300
 # ----------------- Standby to MotorBurn ----------------
 ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
 """
-We integrate our acceleration to get velocity, but because IMU has some noise, and other things
-like wind or being small bumps can cause this to accumulate even while the rocket is stationary, so
-we deadband the acceleration to zero to prevent this.
+We integrate our acceleration to get velocity, but because IMU has some noise, and other things like
+wind or being small bumps can cause this to accumulate even while the rocket is stationary, so we
+deadband the acceleration to zero to prevent this.
 """
 
 
@@ -282,6 +352,7 @@ MAX_VELOCITY_THRESHOLD = 0.96
 """
 Because the acceleration noise right after the motor burn is very noisy, we will only say that the
 motor has stopped burning if the current velocity is less than a percentage of the max velocity.
+
 This helps us predict apogee sooner, because the data used at the beginning of coast phase will be
 less noisy.
 """
@@ -289,24 +360,28 @@ less noisy.
 # ----------------- Coasting to Freefall -----------------
 TARGET_APOGEE_METERS = 1402.08
 """
-The target apogee in meters that we want the rocket to reach. This is used with our bang-bang
-controller to determine when to extend and retract the air brakes.
+The target apogee in meters that we want the rocket to reach.
+
+This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
 MAX_ALTITUDE_THRESHOLD = 0.95
 """
 We don't care too much about accurately changing to the freefall state, so we just check if the
-rocket is less than 90% of the max altitude it reached. We do this because it would be catastrophic
-if we detected freefall too early.
+rocket is less than 90% of the max altitude it reached.
+
+We do this because it would be catastrophic if we detected freefall too early.
 """
 
 # ----------------- Freefall to Landing -----------------
 MAX_FREE_FALL_SECONDS = 300.0
 """
 The maximum amount of time in seconds that the rocket can be in freefall before we consider it to
-have landed. This is to prevent the program from running indefinitely if our code never detects the
-landing of the rocket. This value accounts for the worst case scenario of the main parachute
-deploying at apogee.
+have landed.
+
+This is to prevent the program from running indefinitely if our code never detects the landing of
+the rocket. This value accounts for the worst case scenario of the main parachute deploying at
+apogee.
 """
 
 GROUND_ALTITUDE_METERS = 10.0
@@ -316,8 +391,9 @@ under before we consider it to have landed.
 """
 LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 50.0
 """
-The acceleration in m/s^2 that the rocket must be above before we consider it to have landed. Upon
-landing, the rocket has a large spike in acceleration that is used to detect landing.
+The acceleration in m/s^2 that the rocket must be above before we consider it to have landed.
+
+Upon landing, the rocket has a large spike in acceleration that is used to detect landing.
 """
 
 # -------------------------------------------------------
@@ -328,26 +404,37 @@ landing, the rocket has a large spike in acceleration that is used to detect lan
 FLIGHT_LENGTH_SECONDS = 22.0
 """
 When we do apogee prediction, we do stepwise integration of our fitted curve to predict the
-acceleration, velocity, and altitude curve of the rocket versus time. This is the total time in
-seconds that we will integrate over. This is a rough estimate of the time from coast state to
-freefall with some extra room for error.
+acceleration, velocity, and altitude curve of the rocket versus time.
+
+This is the total time in seconds that we will integrate over. This is a rough estimate of the time
+from coast state to freefall with some extra room for error.
 """
 
 INTEGRATION_TIME_STEP_SECONDS = 1.0 / 500.0
-"""This is the delta time that we use for the stepwise integration of our fitted curve. It could
-be any value and just corresponds to the precision of our prediction."""
+"""
+This is the delta time that we use for the stepwise integration of our fitted curve.
+
+It could be any value and just corresponds to the precision of our prediction.
+"""
 
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
-"""This is the standard gravity on Earth for the launch location of the rocket."""
+"""
+This is the standard gravity on Earth for the launch location of the rocket.
+"""
 
 CURVE_FIT_INITIAL = [-10.5, 0.03]
-"""The initial guess for the coefficients for curve fit of the acceleration curve."""
+"""
+The initial guess for the coefficients for curve fit of the acceleration curve.
+"""
 
 APOGEE_PREDICTION_MIN_PACKETS = 10
-"""The minimum number of processor data packets required to update the predicted apogee."""
+"""
+The minimum number of processor data packets required to update the predicted apogee.
+"""
 
 UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.1, 0.75]
 """
-The uncertainty from the curve fit, below which we will say that our apogee has converged. This
-uncertainty corresponds to being off by +/- 5m.
+The uncertainty from the curve fit, below which we will say that our apogee has converged.
+
+This uncertainty corresponds to being off by +/- 5m.
 """

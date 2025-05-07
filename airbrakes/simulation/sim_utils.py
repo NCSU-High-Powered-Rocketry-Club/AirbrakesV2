@@ -1,4 +1,6 @@
-"""File which contains utility functions which can be reused in the simulation."""
+"""
+File which contains utility functions which can be reused in the simulation.
+"""
 
 import random
 
@@ -11,11 +13,11 @@ from airbrakes.simulation.sim_config import SimulationConfig
 def update_timestamp(current_timestamp: np.float64, config: SimulationConfig) -> np.float64:
     """
     Updates the current timestamp of the data generator, based off time step defined in config.
+
     Will also determine if the next timestamp will be a raw packet, estimated packet, or both.
     :param current_timestamp: the current timestamp of the simulation
     :return: the updated current timestamp, rounded to 3 decimals
     """
-
     # finding whether the raw or estimated data packets have a lower time_step
     lowest_dt = min(config.raw_time_step, config.est_time_step)
     highest_dt = max(config.raw_time_step, config.est_time_step)
@@ -49,9 +51,8 @@ def get_random_value(
     value_configs: RandomAttribute, reference_value: np.float64 | None = None
 ) -> np.float64:
     """
-    Gets a random value for the selected identifier, using the standard deviation if given.
-    If a reference value is given, assumes a regression model for the RMS of the
-    identifier
+    Gets a random value for the selected identifier, using the standard deviation if given. If a
+    reference value is given, assumes a regression model for the RMS of the identifier.
 
     :param value_configs: the RandomAttribute class containing the randomness properties
     :param reference_value: reference value used if a regression model is used
