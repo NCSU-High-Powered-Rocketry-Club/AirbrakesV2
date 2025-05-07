@@ -55,6 +55,7 @@ class AirbrakesApplication(App):
 
     def __init__(self) -> None:
         super().__init__()
+        self.theme = "catppuccin-mocha"  # Set the default (dark mode) application theme
         self.context: Context = None
         self.is_mock: bool = False
         self._args = arg_parser()
@@ -67,7 +68,6 @@ class AirbrakesApplication(App):
         """
         Mount the launch selector screen to get the launch configuration.
         """
-        self.theme = "catppuccin-mocha"
         self.push_screen("launch_selector", self.receive_launch_configuration)
 
     def on_unmount(self) -> None:

@@ -11,25 +11,21 @@ from textual.widget import Widget
 from textual_hires_canvas import Canvas
 from textual_hires_canvas.canvas import get_box
 
-from airbrakes.constants import ServoExtension
+from airbrakes.constants import (
+    AIRBRAKE_LENGTH,
+    ASPECT_RATIO,
+    AXIS_X,
+    FLAME_OFFSETS,
+    METERS_PER_CELL,
+    NOSECONE_HEIGHT,
+    NOZZLE_HEIGHT,
+    NOZZLE_WIDTH,
+    ROCKET_HEIGHT,
+    ROCKET_WIDTH,
+    TICK_INTERVAL,
+    ServoExtension,
+)
 from airbrakes.context import Context
-
-# Constants for rocket dimensions (in canvas cells)
-ROCKET_WIDTH = 6
-ROCKET_HEIGHT = 15
-NOSECONE_HEIGHT = 5
-ASPECT_RATIO = 0.5  # Terminal cell width-to-height ratio (roughly)
-NOZZLE_HEIGHT = 2  # Height of the nozzle in cells
-NOZZLE_WIDTH = ROCKET_WIDTH / 2.0  # Width of the nozzle in cells
-FLAME_OFFSETS = [0.5, 1, 1.5, 2, 2.5, 3]  # Distances in cells where "X" flames will appear
-AIRBRAKE_LENGTH = 2  # Length of airbrakes in cells
-
-# Constants for altitude axis
-# NUM_TICKS = 5
-TICK_INTERVAL = 1.7  # meters per tick  (NOT TO SCALE)
-# TICK_SPACING = 10  # cells between ticks
-AXIS_X = 0  # x-position of the axis
-METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 
 
 class Visualization(Widget):

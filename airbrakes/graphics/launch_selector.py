@@ -259,17 +259,20 @@ class LaunchConfiguration(Widget):
         Handle the target apogee input change events.
         """
         # This event is triggered when the target apogee input changes
-        self.target_apogee = float(event.value)
+        self.target_apogee = float(
+            event.value
+            if event.value
+            else self.file_metadata["flight_data"]["target_apogee_meters"]
+        )
 
-    def watch_file_metadata(self, new_metadata: dict) -> None:
+    def watch_file_metadata(self) -> None:
         """
         Update the placeholder in the Input field when the selected file changes.
         """
-        launch_metadata = new_metadata
         self.target_apogee_input.placeholder = str(
-            launch_metadata["flight_data"]["target_apogee_meters"]
+            self.file_metadata["flight_data"]["target_apogee_meters"]
         )
-        self.target_apogee = float(launch_metadata["flight_data"]["target_apogee_meters"])
+        self.target_apogee = float(self.file_metadata["flight_data"]["target_apogee_meters"])
 
 
 class LaunchFilesButtons(Widget):
