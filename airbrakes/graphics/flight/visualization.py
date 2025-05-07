@@ -1,4 +1,6 @@
-"""Module to handle the 2D rocket visualization."""
+"""
+Module to handle the 2D rocket visualization.
+"""
 
 import numpy as np
 from textual import on
@@ -31,7 +33,9 @@ METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 
 
 class Visualization(Widget):
-    """Class to display the 2D rocket visualization."""
+    """
+    Class to display the 2D rocket visualization.
+    """
 
     context: Context | None = None
     pitch: reactive[float] = reactive(0.0, init=False)
@@ -50,12 +54,16 @@ class Visualization(Widget):
         self.is_airbrakes_deployed: bool = False
 
     def compose(self) -> ComposeResult:
-        """Compose the main layout with an initialized canvas."""
+        """
+        Compose the main layout with an initialized canvas.
+        """
         self.canvas = Canvas(50, 100, id="rocket-visualization-canvas")
         yield self.canvas
 
     def initialize_canvas(self, width: int, height: int) -> None:
-        """Initialize the rocket geometry."""
+        """
+        Initialize the rocket geometry.
+        """
         self.cx = width / 2.0
         self.cy = height / 2.0
         scaling_factor = 1 / ASPECT_RATIO  # e.g., 1 / 0.5 = 2
@@ -115,40 +123,57 @@ class Visualization(Widget):
         ]
 
     def initialize_widgets(self, context: Context) -> None:
-        """Initialize widgets with context."""
+        """
+        Initialize widgets with context.
+        """
         self.context = context
 
     @on(Canvas.Resize)
     def resize(self, event: Canvas.Resize) -> None:
-        """Handle canvas resize."""
+        """
+        Handle canvas resize.
+        """
         self.canvas.reset(size=event.size)
         self.initialize_canvas(event.size.width, event.size.height)
         self.draw_rocket()
         self.pitch_at_last_draw = self.pitch
 
     def watch_pitch(self) -> None:
-        """Redraw rocket when pitch change is greater than 2 degrees."""
+        """
+        Redraw rocket when pitch change is greater than 2 degrees.
+        """
         if abs(self.pitch_at_last_draw - self.pitch) > 2:
             self.draw_rocket()
             self.pitch_at_last_draw = self.pitch
 
     def watch_state(self) -> None:
-        """Redraw rocket when state changes."""
+        """
+        Redraw rocket when state changes.
+        """
         self.is_motor_burning = self.state == "MotorBurnState"
         self.draw_rocket()
 
     def watch_extension(self) -> None:
-        """Redraw rocket when the airbrakes extension changes."""
-        self.is_airbrakes_deployed = self.extension == ServoExtension.MAX_NO_BUZZ.value
+        """
+        Redraw rocket when the airbrakes extension changes.
+        """
+        self.is_airbrakes_deployed = self.extension in (
+            ServoExtension.MAX_NO_BUZZ.value,
+            ServoExtension.MAX_EXTENSION.value,
+        )
         self.draw_rocket()
 
     def watch_altitude(self) -> None:
-        """Redraw altitude axis when altitude changes by more than 2m."""
+        """
+        Redraw altitude axis when altitude changes by more than 2m.
+        """
         if abs(self.altitude_at_last_draw - self.altitude) > 1:
             self.draw_rocket()
 
     def draw_altitude_axis(self) -> None:
-        """Draw the altitude axis with ticks that scroll based on altitude changes."""
+        """
+        Draw the altitude axis with ticks that scroll based on altitude changes.
+        """
         canvas_height = self.canvas.size.height
         middle_y = canvas_height // 2
         current_altitude = self.altitude
@@ -194,7 +219,9 @@ class Visualization(Widget):
             self.canvas.write_text(AXIS_X + 2, y, label)
 
     def draw_rocket(self) -> None:
-        """Draw the rocket with the current pitch."""
+        """
+        Draw the rocket with the current pitch.
+        """
         self.canvas.reset()
         theta = np.radians(self.pitch)
         rotated_points = []
@@ -345,7 +372,9 @@ class Visualization(Widget):
                 self.canvas.set_pixels(flame_positions, "X", style="#ff0000")
 
     def update_visualization(self) -> None:
-        """Update the visualization with the current context."""
+        """
+        Update the visualization with the current context.
+        """
         # print("in update_visualization")
         self.pitch = self.context.data_processor.average_pitch
         self.state = self.context.state.name
