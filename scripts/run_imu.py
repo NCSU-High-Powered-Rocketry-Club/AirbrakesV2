@@ -1,7 +1,6 @@
 """
-Make sure you are in the root directory of the project, not inside scripts, and run the following command:
-`python -m scripts.run_imu`
-For the pi, you will have to use python3
+Make sure you are in the root directory of the project, not inside scripts, and run the following
+command: `python -m scripts.run_imu` For the pi, you will have to use python3.
 """
 
 from airbrakes.constants import IMU_PORT

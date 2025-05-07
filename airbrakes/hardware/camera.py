@@ -1,4 +1,6 @@
-"""Module to handle recording the air brakes with a camera."""
+"""
+Module to handle recording the air brakes with a camera.
+"""
 
 import os
 import signal
@@ -17,8 +19,9 @@ with suppress(ImportError):
 # !!! Currently, we are not actually using a camera on our air brakes pi
 class Camera:
     """
-    This is the class used to interact with the camera on our rocket. It records on a separate
-    process.
+    This is the class used to interact with the camera on our rocket.
+
+    It records on a separate process.
     """
 
     __slots__ = ("camera_control_process", "motor_burn_started", "stop_context_event")
@@ -34,24 +37,31 @@ class Camera:
     def is_running(self) -> bool:
         """
         Returns whether the camera is currently recording.
+
         :return: True if the process is running, False otherwise.
         """
         return self.camera_control_process.is_alive()
 
     def start(self) -> None:
         """
-        Start the video recording, with a buffer. This starts recording in a different process.
+        Start the video recording, with a buffer.
+
+        This starts recording in a different process.
         """
         self.camera_control_process.start()
 
     def stop(self) -> None:
-        """Stop the video recording."""
+        """
+        Stop the video recording.
+        """
         self.motor_burn_started.set()  # in case we stop before motor burn
         self.stop_context_event.set()
         self.camera_control_process.join()
 
     def start_recording(self) -> None:
-        """Start recording when motor burn has started."""
+        """
+        Start recording when motor burn has started.
+        """
         self.motor_burn_started.set()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------

@@ -1,4 +1,6 @@
-"""Module that contains methods for rotation operations"""
+"""
+Module that contains methods for rotation operations.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -9,9 +11,10 @@ from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED, MAX_VELOCITY_
 
 class RotationManager:
     """
-    Manages rotation calculations for rocket orientation. This class provides
-    methods to compute and apply various rotation operations, for the purpose
-    of generating accurate 6DOF data points for the simulation IMU
+    Manages rotation calculations for rocket orientation.
+
+    This class provides methods to compute and apply various rotation operations, for the purpose of
+    generating accurate 6DOF data points for the simulation IMU
     """
 
     __slots__ = (
@@ -49,8 +52,7 @@ class RotationManager:
 
     def update_orientation(self, velocity_ratio: np.float64) -> None:
         """
-        Updates the baseline vehicle-frame orientation, and all of the vehicle-frame
-        orientations
+        Updates the baseline vehicle-frame orientation, and all of the vehicle-frame orientations.
 
         :param velocity_ratio: current vertical velocity of the rocket divided by max velocity
         """
@@ -94,12 +96,11 @@ class RotationManager:
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
     ) -> npt.NDArray:
         """
-        Uses the acceleration due to drag and thrust in Earth frame to find the
-        compensated acceleration
+        Uses the acceleration due to drag and thrust in Earth frame to find the compensated
+        acceleration.
 
         :param drag_acceleration: scalar value of acceleration due to drag
         :param thrust_acceleration: scalar value of acceleration due to thrust
-
         :return: the compensated acceleration in the vehicle frame.
         """
         thrust_drag_accel = thrust_acceleration - drag_acceleration
@@ -122,12 +123,10 @@ class RotationManager:
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
     ) -> npt.NDArray:
         """
-        Uses the acceleration due to drag and thrust in Earth frame to find the
-        linear acceleration
+        Uses the acceleration due to drag and thrust in Earth frame to find the linear acceleration.
 
         :param drag_acceleration: scalar value of acceleration due to drag
         :param thrust_acceleration: scalar value of acceleration due to thrust
-
         :return: the linear acceleration in vehicle frame
         """
         # gets compensated acceleration
@@ -160,7 +159,6 @@ class RotationManager:
         vehicle frame to Earth frame.
 
         :param compensated_acceleration: compensated acceleration in the vehicle frame.
-
         :return: numpy array containing the acceleration vector in Earth frame.
         """
         # inverts the rotation, so it rotates from vehicle frame to Earth frame.
@@ -171,6 +169,7 @@ class RotationManager:
     def calculate_imu_quaternions(self) -> npt.NDArray:
         """
         Calculates the quaternion orientation of the rocket.
+
         :return: numpy array containing the quaternion, in [w, x, y, z] format.
         """
         # flips and inverts the rotation, so that the quaternions are represented
@@ -183,11 +182,10 @@ class RotationManager:
 
     def _scalar_to_vector(self, scalar: np.float64) -> npt.NDArray:
         """
-        Converts a scalar value to a vector, where it will align with the designated
-        wgs vertical vector.
+        Converts a scalar value to a vector, where it will align with the designated wgs vertical
+        vector.
 
         :param scalar: a float representing the scalar to be converted
-
         :return: a 3-element numpy array containing the converted vector.
         """
         vector = np.zeros(3)

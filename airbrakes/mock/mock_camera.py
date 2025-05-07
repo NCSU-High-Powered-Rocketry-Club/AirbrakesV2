@@ -1,5 +1,6 @@
-"""Module which uses a mock camera, since the original camera needs many libraries and actual
-hardware."""
+"""
+Module which uses a mock camera, since the original camera needs many libraries and actual hardware.
+"""
 
 import signal
 from time import sleep
@@ -10,7 +11,9 @@ from airbrakes.hardware.camera import Camera
 
 class MockCamera(Camera):
     """
-    Mocks the camera class. This class fills an internal buffer with random bytes
+    Mocks the camera class.
+
+    This class fills an internal buffer with random bytes
     to simulate a real flight. The number of bytes written correspond to a ~24 fps recording.
     Even though this is detached from the actual camera implementation, using a buffer serves
     some purposes:
@@ -27,7 +30,9 @@ class MockCamera(Camera):
         self._buffer = bytearray()
 
     def _camera_control_loop(self) -> None:
-        """Starts the mock camera process."""
+        """
+        Starts the mock camera process.
+        """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 

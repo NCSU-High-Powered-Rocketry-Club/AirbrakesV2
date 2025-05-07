@@ -281,22 +281,16 @@ which is critical for accurate benchmarking.
 
 If you make a change to the code, please make sure to update or add the necessary tests.
 
-### Running the Linter
+### Running the Linter/Formatter
 
 Our CI also tries to maintain code quality by running a linter. We use [Ruff](https://docs.astral.sh/ruff/).
 
-To run the linter, and fix any issues it finds, run:
+To lint and format your code, run:
 ```bash
-ruff check . --fix --unsafe-fixes
+uv run pre-commit run --all-files
 ```
-To format the code, run:
-```bash
-ruff format .
-```
-You can also run the linter with `uv`:
-```bash
-uv run ruff format .
-```
+
+This will run both ruff and doc-formatter.
 
 ## Pi Usage
 

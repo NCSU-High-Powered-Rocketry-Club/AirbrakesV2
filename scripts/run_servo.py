@@ -1,7 +1,8 @@
 """
-Make sure you are in the root directory of the project, not inside scripts, and run the following command:
-`python -m scripts.run_servo`
-For the pi, you will have to use python3
+Make sure you are in the root directory of the project, not inside scripts, and run the following
+command:
+
+`python -m scripts.run_servo` For the pi, you will have to use python3
 """
 
 from airbrakes.constants import ServoExtension, SERVO_1_CHANNEL, SERVO_2_CHANNEL , ENCODER_PIN_A, ENCODER_PIN_B

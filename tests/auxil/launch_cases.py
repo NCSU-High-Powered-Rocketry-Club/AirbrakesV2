@@ -1,5 +1,8 @@
-"""This module contains the test cases for the launch data. The test cases are used in
-test_integration.py to test the launch data."""
+"""
+This module contains the test cases for the launch data.
+
+The test cases are used in test_integration.py to test the launch data.
+"""
 
 import statistics
 import types
@@ -16,7 +19,9 @@ from airbrakes.constants import (
 
 
 class StateInformation(msgspec.Struct):
-    """Records the values achieved by the airbrakes system in a particular state."""
+    """
+    Records the values achieved by the airbrakes system in a particular state.
+    """
 
     min_velocity: float | None = None
     max_velocity: float | None = None
@@ -29,9 +34,12 @@ class StateInformation(msgspec.Struct):
 
 
 class LaunchCase:
-    """The general test cases for the launch data. This is the ideal case. Other launch
-    data classes can inherit from this class and override the methods to test the specific
-    launch data (e.g. failed chute deploy, data cutoffs, etc)."""
+    """
+    The general test cases for the launch data.
+
+    This is the ideal case. Other launch data classes can inherit from this class and override the
+    methods to test the specific launch data (e.g. failed chute deploy, data cutoffs, etc).
+    """
 
     def __init__(self, states_dict: dict[str, StateInformation], target_apogee: float) -> None:
         self.states_dict: dict[str, StateInformation] = states_dict
@@ -44,7 +52,9 @@ class LaunchCase:
         self.target_apogee: float = target_apogee
 
     def test_all_states_present(self) -> dict[str, bool]:
-        """Tests whether all states are present in the states_dict."""
+        """
+        Tests whether all states are present in the states_dict.
+        """
         # Check we have all the states:
         test_cases = {
             "length_states_dict": False,
@@ -62,7 +72,9 @@ class LaunchCase:
         return test_cases
 
     def standby_case_test(self) -> dict[str, bool]:
-        """Tests the standby case."""
+        """
+        Tests the standby case.
+        """
         test_cases: dict[str, bool] = {
             "min_velocity": False,
             "max_velocity": False,
@@ -89,7 +101,9 @@ class LaunchCase:
         return test_cases
 
     def motor_burn_case_test(self) -> dict[str, bool]:
-        """Test the motor burn case."""
+        """
+        Test the motor burn case.
+        """
         test_cases: dict[str, bool] = {
             "max_velocity": False,
             "max_avg_vertical_acceleration": False,
@@ -118,7 +132,9 @@ class LaunchCase:
         return test_cases
 
     def coast_case_test(self) -> dict[str, bool]:
-        """Tests the coast case."""
+        """
+        Tests the coast case.
+        """
         test_cases: dict[str, bool] = {
             "max_velocity": False,
             "min_velocity": False,
@@ -161,7 +177,9 @@ class LaunchCase:
         return test_cases
 
     def free_fall_case_test(self) -> dict[str, bool]:
-        """Tests the free fall case."""
+        """
+        Tests the free fall case.
+        """
         test_cases: dict[str, bool] = {
             "min_velocity": False,
             "max_velocity": False,
@@ -188,7 +206,9 @@ class LaunchCase:
         return test_cases
 
     def landed_case_test(self) -> dict[str, bool]:
-        """Tests the landed case."""
+        """
+        Tests the landed case.
+        """
         test_cases: dict[str, bool] = {
             "max_avg_vertical_acceleration": False,
             "max_velocity": False,
@@ -212,16 +232,22 @@ class LaunchCase:
         return test_cases
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
-        """Tests the number of lines in the log file."""
+        """
+        Tests the number of lines in the log file.
+        """
         return lines_in_log_file > 80_000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
-        """Tests if all states were logged."""
+        """
+        Tests if all states were logged.
+        """
         return state_letter_list == ["S", "M", "C", "F", "L"]
 
 
 class PurpleLaunchCase(LaunchCase):
-    """The test case for the purple launch data."""
+    """
+    The test case for the purple launch data.
+    """
 
     def free_fall_case_test(self):
         test_cases = super().free_fall_case_test()
@@ -231,15 +257,21 @@ class PurpleLaunchCase(LaunchCase):
 
 
 class InterestLaunchCase(LaunchCase):
-    """The test case for the interest launch data."""
+    """
+    The test case for the interest launch data.
+    """
 
 
 class GenesisLaunchCase(LaunchCase):
-    """The test case for the genesis launch data."""
+    """
+    The test case for the genesis launch data.
+    """
 
 
 class LegacyLaunchCase(LaunchCase):
-    """The test case for the legacy launch data."""
+    """
+    The test case for the legacy launch data.
+    """
 
     def free_fall_case_test(self):
         test_cases = super().free_fall_case_test()
@@ -250,7 +282,9 @@ class LegacyLaunchCase(LaunchCase):
 
 
 class PelicanatorLaunchCase1(LaunchCase):
-    """The test case for the pelicanator launch data 1."""
+    """
+    The test case for the pelicanator launch data 1.
+    """
 
     def test_all_states_present(self):
         # Check we have all the states:
@@ -275,7 +309,9 @@ class PelicanatorLaunchCase1(LaunchCase):
         return test_cases
 
     def landed_case_test(self):
-        """No landed state, just return a dict with True values."""
+        """
+        No landed state, just return a dict with True values.
+        """
         test_cases: dict[str, bool] = {
             "max_avg_vertical_acceleration": True,
             "max_velocity": True,
@@ -286,16 +322,26 @@ class PelicanatorLaunchCase1(LaunchCase):
         return test_cases
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
-        """Tests the number of lines in the log file. Data got cutoff ~22 seconds before landing."""
+        """
+        Tests the number of lines in the log file.
+
+        Data got cutoff ~22 seconds before landing.
+        """
         return lines_in_log_file > 35_000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
-        """Tests if all states were logged. Data got cutoff ~22 seconds before landing."""
+        """
+        Tests if all states were logged.
+
+        Data got cutoff ~22 seconds before landing.
+        """
         return state_letter_list == ["S", "M", "C", "F"]
 
 
 class PelicanatorLaunchCase2(LaunchCase):
-    """The test case for the pelicanator launch data 2."""
+    """
+    The test case for the pelicanator launch data 2.
+    """
 
     def free_fall_case_test(self):
         test_cases = super().free_fall_case_test()

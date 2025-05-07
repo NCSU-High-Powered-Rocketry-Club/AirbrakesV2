@@ -17,8 +17,9 @@ from tests.auxil.utils import make_est_data_packet
 def generate_altitude_sine_wave(
     n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
 ):
-    """Generates a random distribution of altitudes that follow a sine wave pattern, with some
-    noise added to mimic variations in the readings.
+    """
+    Generates a random distribution of altitudes that follow a sine wave pattern, with some noise
+    added to mimic variations in the readings.
 
     :param n_points: The number of altitude points to generate.
     :param frequency: The frequency of the sine wave.
@@ -40,8 +41,9 @@ def generate_altitude_sine_wave(
 
 
 def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacket]:
-    """Reads csv log files containing data packets to use for testing. Will read the first
-    n_packets amount of estimated data packets.
+    """
+    Reads csv log files containing data packets to use for testing. Will read the first n_packets
+    amount of estimated data packets.
 
     :param csv_path: The relative path of the csv file to read
     :param n_packets: Amount of estimated data packets to retrieve
@@ -80,7 +82,9 @@ def data_processor():
 
 
 class TestDataProcessor:
-    """Tests the DataProcessor class"""
+    """
+    Tests the DataProcessor class.
+    """
 
     packets = [
         EstimatedDataPacket(
@@ -122,7 +126,9 @@ class TestDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        """Tests whether the DataProcessor is correctly initialized"""
+        """
+        Tests whether the DataProcessor is correctly initialized.
+        """
         d = data_processor
         # Test attributes on init
         assert d._max_altitude == 0.0
@@ -184,8 +190,8 @@ class TestDataProcessor:
         self, data_processor, packets, initial_altitude, initial_velocity, expected_altitudes
     ):
         """
-        Tests whether altitude integration (using a simple Riemann sum of vertical velocity * dt)
-        is computed correctly when integrating for altitude is enabled.
+        Tests whether altitude integration (using a simple Riemann sum of vertical velocity * dt) is
+        computed correctly when integrating for altitude is enabled.
         """
         d = data_processor
 
@@ -251,7 +257,9 @@ class TestDataProcessor:
             assert computed == pytest.approx(expected)
 
     def test_calculate_vertical_velocity(self, data_processor):
-        """Tests whether the vertical velocity is correctly calculated"""
+        """
+        Tests whether the vertical velocity is correctly calculated.
+        """
         d = data_processor
         assert d.vertical_velocity == 0.0
         assert d._max_vertical_velocity == d.vertical_velocity
@@ -346,7 +354,9 @@ class TestDataProcessor:
         assert d._max_vertical_velocity > d.vertical_velocity
 
     def test_first_update_no_data_packets(self, data_processor):
-        """Tests whether the update() method works correctly, when no data packets are passed."""
+        """
+        Tests whether the update() method works correctly, when no data packets are passed.
+        """
         d = data_processor
         d.update([])
         assert d._last_data_packet is None
@@ -433,8 +443,8 @@ class TestDataProcessor:
         expected_longitudinal_axis,
     ):
         """
-        Tests whether the update() method works correctly, for the first update() call,
-        along with get_processor_data_packets()
+        Tests whether the update() method works correctly, for the first update() call, along with
+        get_processor_data_packets().
         """
         d = data_processor
         d.update(data_packets.copy())
@@ -492,7 +502,9 @@ class TestDataProcessor:
     def test_altitude_zeroing(
         self, data_processor, altitude_reading, current_altitude, max_altitude
     ):
-        """Tests whether the altitude is correctly zeroed"""
+        """
+        Tests whether the altitude is correctly zeroed.
+        """
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
         d._last_data_packet = make_est_data_packet(
@@ -518,7 +530,9 @@ class TestDataProcessor:
         assert d._max_altitude == max_altitude
 
     def test_max_altitude(self, data_processor):
-        """Tests whether the max altitude is correctly calculated even when altitude decreases"""
+        """
+        Tests whether the max altitude is correctly calculated even when altitude decreases.
+        """
         d = data_processor
         altitudes = generate_altitude_sine_wave(n_points=1000)
         # run update_data every 10 packets, to mimmick actual data processing in real time:
@@ -579,7 +593,9 @@ class TestDataProcessor:
         assert rotations[-1] == pytest.approx(expected_value)
 
     def test_benchmark_data_processor_update(self, data_processor, benchmark):
-        """Tests the performance of the update method"""
+        """
+        Tests the performance of the update method.
+        """
         data_packets = [
             make_est_data_packet(
                 timestamp=idx,
@@ -592,7 +608,7 @@ class TestDataProcessor:
     def test_prepare_for_extending_then_retracting(self, data_processor):
         """
         Tests whether prepare_for_extending_airbrakes() and prepare_for_retracting_airbrakes() work
-        correctly
+        correctly.
         """
         d = data_processor
         assert d._retraction_timestamp is None
@@ -614,7 +630,9 @@ class TestDataProcessor:
         ],
     )
     def test_pitch_calculation(self, data_processor, launch_data):
-        """Tests that the pitch calculation is correct"""
+        """
+        Tests that the pitch calculation is correct.
+        """
         # Load a single est data packet from the CSV file
         d = data_processor
         est_data_packets = load_data_packets(launch_data, 1)

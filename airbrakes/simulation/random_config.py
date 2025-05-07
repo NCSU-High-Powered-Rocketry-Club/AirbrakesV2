@@ -1,4 +1,6 @@
-"""Module containing config settings for randomness in the simulation"""
+"""
+Module containing config settings for randomness in the simulation.
+"""
 
 from copy import deepcopy
 from enum import Enum
@@ -8,20 +10,33 @@ import numpy.typing as npt
 
 
 class RandomType(Enum):
-    """Enum that designates the type of randomness to apply"""
+    """
+    Enum that designates the type of randomness to apply.
+    """
 
     CONSTANT = "constant"
-    """a constant value, no randomness. Constructed with only type and value arguments"""
+    """
+    A constant value, no randomness.
+
+    Constructed with only type and value arguments
+    """
     UNIFORM = "uniform"
-    """uniform distribution. Construct with type and range, reg coeff's optional"""
+    """
+    Uniform distribution.
+
+    Construct with type and range, reg coeff's optional
+    """
     NORMAL = "normal"
-    """normal distribution. Construct with type and std_dev, mean, range, and regression
-    coefficients optional"""
+    """
+    Normal distribution.
+
+    Construct with type and std_dev, mean, range, and regression coefficients optional
+    """
 
 
 class RandomAttribute:
     """
-    Randomness settings for an individual attribute
+    Randomness settings for an individual attribute.
     """
 
     def __init__(
@@ -58,7 +73,7 @@ class RandomConfig:
 
 def create_modified_config(overrides: dict) -> RandomConfig:
     """
-    Modifies the default configuration settings by overriding with specified values
+    Modifies the default configuration settings by overriding with specified values.
 
     :param overrides: A dictionary of parameters to override.
     :return: A RandomConfig object containing modified configuration values
