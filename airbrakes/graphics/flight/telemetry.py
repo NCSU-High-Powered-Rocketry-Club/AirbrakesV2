@@ -1,4 +1,6 @@
-"""Module which has the 2 telemetry panels for the flight display."""
+"""
+Module which has the 2 telemetry panels for the flight display.
+"""
 
 import multiprocessing
 
@@ -14,7 +16,9 @@ from airbrakes.graphics.utils import set_only_class
 
 
 class FlightTelemetry(Static):
-    """Panel displaying real-time flight information."""
+    """
+    Panel displaying real-time flight information.
+    """
 
     context: Context
     vertical_acceleration = reactive(0.0)
@@ -155,7 +159,9 @@ class FlightTelemetry(Static):
 
 
 class DebugTelemetry(Static):
-    """Collapsible panel for displaying debug telemetry data."""
+    """
+    Collapsible panel for displaying debug telemetry data.
+    """
 
     context: Context
     queued_imu_packets = reactive(0)
@@ -273,7 +279,9 @@ class DebugTelemetry(Static):
 
 
 class CPUUsage(Static):
-    """Panel displaying the CPU usage."""
+    """
+    Panel displaying the CPU usage.
+    """
 
     context: Context = None
     cpu_usages = reactive({})
@@ -344,6 +352,7 @@ class CPUUsage(Static):
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
         Prepares a dictionary of processes to monitor CPU usage for.
+
         :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}
@@ -366,8 +375,11 @@ class CPUUsage(Static):
         return all_processes
 
     def update_cpu_usage(self) -> None:
-        """Update CPU usage for each monitored process every `interval` seconds. This is run in
-        another thread because polling for CPU usage is a blocking operation."""
+        """
+        Update CPU usage for each monitored process every `interval` seconds.
+
+        This is run in another thread because polling for CPU usage is a blocking operation.
+        """
         worker = get_current_worker()
         while not worker.is_cancelled:
             for name, process in self.processes.items():
@@ -381,7 +393,9 @@ class CPUUsage(Static):
 
 
 class CPUBars(Static):
-    """Represents a group of CPU bars."""
+    """
+    Represents a group of CPU bars.
+    """
 
     LIGHT_SHADE = "\u2591" * 5
     MEDIUM_SHADE = "\u2592" * 5
@@ -389,14 +403,18 @@ class CPUBars(Static):
     FULL_BLOCK = "\u2588" * 5
 
     def compose(self) -> ComposeResult:
-        """Show 10 CPUBars."""
+        """
+        Show 10 CPUBars.
+        """
         for _ in range(10):
             bar = CPUBar(CPUBars.LIGHT_SHADE)
             bar.set_class(True, "inactive")
             yield bar
 
     def update_bars(self, usage: float) -> None:
-        """Update the CPUBars with the new usage."""
+        """
+        Update the CPUBars with the new usage.
+        """
         # There are 10 bars, so a usage of 10.0 would mean that the first bar
         # is full, and should be changed to FULL_BLOCK.
         # 0 <= usage <= 3.33 -> Use LIGHT_SHADE
@@ -439,4 +457,6 @@ class CPUBars(Static):
 
 
 class CPUBar(Static):
-    """Represents a single CPU bar."""
+    """
+    Represents a single CPU bar.
+    """

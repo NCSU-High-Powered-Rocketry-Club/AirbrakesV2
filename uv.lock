@@ -277,7 +277,7 @@ requires-dist = [
     { name = "textual-image", specifier = ">=0.8.1" },
     { name = "textual-plot", specifier = ">=0.4.0.post1" },
     { name = "textual-plotext", specifier = ">=1.0.1" },
-    { name = "textual-pyfiglet" },
+    { name = "textual-pyfiglet", specifier = "<0.6.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1313,15 +1313,15 @@ wheels = [
 
 [[package]]
 name = "textual-pyfiglet"
-version = "0.6.0"
+version = "0.5.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "platformdirs" },
     { name = "textual" },
-    { name = "textual-slidecontainer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/af/de20617d6a2f1429b7c581c570dcae101ebc24d9298ff29e591541815ede/textual_pyfiglet-0.6.0.tar.gz", hash = "sha256:984f166e1ed7963437da9ae8202569dc8d473b3dca49d986e67d5371ab8547b5", size = 1482291, upload-time = "2025-04-22T07:36:24.753Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/06/7b9aad121af1ea25581deb7dbe77f2244ff25e06674f626bfcabbaf66369/textual_pyfiglet-0.5.5.tar.gz", hash = "sha256:970a941afc8e54e5319b66516a80b2883c3611a28208ccb505f0c3b8b36bb934", size = 64174, upload-time = "2024-11-16T22:35:12.129Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/e2/da3b39d0847ba729e864e5499bcb5abf7fb6f3a9daf3de53ff779e0f52c0/textual_pyfiglet-0.6.0-py3-none-any.whl", hash = "sha256:56211f2495b391cca302c1f2fe4fed07bbde7bd896ab966c84eb10e6383cb4c4", size = 1649138, upload-time = "2025-04-22T07:36:23.096Z" },
+    { url = "https://files.pythonhosted.org/packages/cd/5d/8275bf13a1e838e9206b0fea96f34d759f0c3020a2064fc7252eaaabb3fd/textual_pyfiglet-0.5.5-py3-none-any.whl", hash = "sha256:5b947c243af08c01345ea3c9a235e08e0669dd2d9eae0fa14cd1043a9fa483bd", size = 71311, upload-time = "2024-11-16T22:35:09.974Z" },
 ]
 
 [[package]]
@@ -1338,18 +1338,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/27/41/09d5695b050d592ff58422be2ca5c9915787f59ff576ca91d9541d315406/textual_serve-1.1.2.tar.gz", hash = "sha256:0ccaf9b9df9c08d4b2d7a0887cad3272243ba87f68192c364f4bed5b683e4bd4", size = 892959, upload-time = "2025-04-16T12:11:41.746Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/fb/0006f86960ab8a2f69c9f496db657992000547f94f53a2f483fd611b4bd2/textual_serve-1.1.2-py3-none-any.whl", hash = "sha256:147d56b165dccf2f387203fe58d43ce98ccad34003fe3d38e6d2bc8903861865", size = 447326, upload-time = "2025-04-16T12:11:43.176Z" },
-]
-
-[[package]]
-name = "textual-slidecontainer"
-version = "0.4.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "textual" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/00/0bff4f5839208d31c871ad9d045c46451071e4844b16c6d7f442db8fb60a/textual_slidecontainer-0.4.0.tar.gz", hash = "sha256:d572e1d700e44d24f0f82fcccf990540acc81f8c751f05c93f1f6354b2007e21", size = 147742, upload-time = "2025-05-05T07:20:39.35Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/91/e7/693f5068bec0f9c1dedb5fda18913e48987d9008dba1d0e28e822a76b27a/textual_slidecontainer-0.4.0-py3-none-any.whl", hash = "sha256:35f58ae680b760cb7bea0325d9c73ed73d76f66da5fc8479b56a34f4c0333adc", size = 10692, upload-time = "2025-05-05T07:20:37.918Z" },
 ]
 
 [[package]]

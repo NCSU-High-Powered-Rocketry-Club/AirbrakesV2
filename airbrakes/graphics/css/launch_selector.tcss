@@ -5,6 +5,8 @@
     grid-columns: 2.1fr 1.2fr 1fr;
 
     #title {
+        height: 100%;
+        width: 100%;
         content-align: center middle;
         column-span: 3;
         color: $secondary;

@@ -1,4 +1,6 @@
-"""Module which has the header panel for the flight display."""
+"""
+Module which has the header panel for the flight display.
+"""
 
 from time import monotonic_ns
 from typing import ClassVar, Literal
@@ -20,7 +22,9 @@ from airbrakes.utils import convert_ns_to_s
 
 
 class SimulationSpeed(Static, can_focus=True):
-    """Panel displaying the current simulation speed, with buttons to change it."""
+    """
+    Panel displaying the current simulation speed, with buttons to change it.
+    """
 
     BINDINGS: ClassVar[list] = [
         ("comma", "decrease_sim_speed", "Dec. speed"),
@@ -33,7 +37,9 @@ class SimulationSpeed(Static, can_focus=True):
     old_sim_speed: float = 1.0
 
     class State(Message):
-        """Sends a message to the parent widget when the sim is paused / unpaused."""
+        """
+        Sends a message to the parent widget when the sim is paused / unpaused.
+        """
 
         def __init__(self, paused: bool) -> None:
             self.paused = paused
@@ -95,8 +101,11 @@ class SimulationSpeed(Static, can_focus=True):
 
 
 class FlightProgressBar(Static):
-    """Panel displaying the flight progress bar. The color changes depending on the
-    current state of the rocket."""
+    """
+    Panel displaying the flight progress bar.
+
+    The color changes depending on the current state of the rocket.
+    """
 
     def compose(self) -> ComposeResult:
         self.progress_bar = ProgressBar(
@@ -107,23 +116,31 @@ class FlightProgressBar(Static):
         yield self.progress_bar
 
     def initialize_widgets(self, flight_length_seconds: int) -> None:
-        """Initializes the progress bar with the total flight length."""
+        """
+        Initializes the progress bar with the total flight length.
+        """
         self.progress_bar.update(total=flight_length_seconds)
 
     def set_progress(self, current_flight_time_sec: float) -> None:
-        """Updates the progress bar with the current flight time."""
+        """
+        Updates the progress bar with the current flight time.
+        """
         self.progress_bar.update(progress=current_flight_time_sec)
 
     def update_progress_bar_color(
         self, state: Literal["Standby", "MotorBurn", "Coast", "FreeFall", "Landed"]
     ) -> None:
-        """Updates the progress bar color based on the current flight state."""
+        """
+        Updates the progress bar color based on the current flight state.
+        """
         inner_bar = self.progress_bar.query_one("#bar")
         set_only_class(inner_bar, state.lower())
 
 
 class FlightHeader(Static):
-    """Panel displaying the launch file name, launch time, and simulation status."""
+    """
+    Panel displaying the launch file name, launch time, and simulation status.
+    """
 
     state: reactive[str] = reactive("Standby")
 
@@ -136,7 +153,9 @@ class FlightHeader(Static):
     _pre_calculated_motor_burn_time_ns: int | None = None
 
     def compose(self) -> ComposeResult:
-        """Composes the header panel."""
+        """
+        Composes the header panel.
+        """
         # Grid layout, 4 rows, 3 columns:
         with Center():
             yield Label("", id="launch-file-name", disabled=True)
@@ -155,7 +174,9 @@ class FlightHeader(Static):
         yield self.flight_progress_bar
 
     def initialize_widgets(self, context: Context, is_mock: bool) -> None:
-        """Initializes the widgets with the context and the mock flag."""
+        """
+        Initializes the widgets with the context and the mock flag.
+        """
         self.context = context
         self.is_mock = is_mock
         self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
@@ -187,7 +208,9 @@ class FlightHeader(Static):
         self.sim_start_time = monotonic_ns()
 
     def watch_t_zero_time_ns(self) -> None:
-        """Updates the launch time display, and the progress bar."""
+        """
+        Updates the launch time display, and the progress bar.
+        """
         # Update the launch time display:
         time_display = self.time_display
         after_launch = self.t_zero_time_ns > 0
@@ -213,7 +236,9 @@ class FlightHeader(Static):
         self.sim_time_label.update(TimeDisplay.format_ns_to_min_s_ms(self.current_sim_time))
 
     def on_simulation_speed_state(self, message: SimulationSpeed.State) -> None:
-        """Start a timer which add and removes a class to the launch clock to make it blink."""
+        """
+        Start a timer which add and removes a class to the launch clock to make it blink.
+        """
 
         def start_blinking() -> None:
             self.time_display.toggle_class("blink")
@@ -227,6 +252,7 @@ class FlightHeader(Static):
     def calculate_launch_time(self) -> int:
         """
         Calculates the launch time relative to the start of motor burn.
+
         :return: The launch time in nanoseconds relative to the start of motor burn.
         """
         # Just update our launch time, if it was set (see watch_state)

@@ -1,4 +1,6 @@
-"""The launch file selection screen displayed on startup."""
+"""
+The launch file selection screen displayed on startup.
+"""
 
 from pathlib import Path
 
@@ -34,7 +36,8 @@ AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 
 
 class LaunchOptions(msgspec.Struct):
-    """The options for the launch simulation.
+    """
+    The options for the launch simulation.
 
     Args:
         real_servo (bool): Whether to use the real servo.
@@ -53,7 +56,9 @@ class LaunchOptions(msgspec.Struct):
 
 
 class SelectedLaunchConfiguration(msgspec.Struct):
-    """The selected launch configuration, which is sent to the main sim screen."""
+    """
+    The selected launch configuration, which is sent to the main sim screen.
+    """
 
     selected_button: Path | None
     launch_options: LaunchOptions | None
@@ -61,7 +66,9 @@ class SelectedLaunchConfiguration(msgspec.Struct):
 
 
 class LaunchSelector(Screen[SelectedLaunchConfiguration]):
-    """The launch file selection screen displayed on startup."""
+    """
+    The launch file selection screen displayed on startup.
+    """
 
     CSS_PATH = "css/launch_selector.tcss"
 
@@ -100,14 +107,18 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
         yield Footer()
 
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        """Handle the radio set change events."""
+        """
+        Handle the radio set change events.
+        """
         # This event is triggered when a radio button is selected
         selection: Path = AVAILABLE_FILES[event.index]
         self.selected_file = selection
         self.file_metadata = self.all_metadata[selection.name]
 
     def on_switch_changed(self, event: Switch.Changed) -> None:
-        """Handle the switch change events."""
+        """
+        Handle the switch change events.
+        """
         # This event is triggered when a switch is toggled
         match event.switch.id:
             case "real-servo-switch":
@@ -120,7 +131,9 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
                 self.launch_options.real_camera = event.value
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle the button press events."""
+        """
+        Handle the button press events.
+        """
         # Get the target apogee field from the input as a value:
         target_apogee_input = self.launch_config.target_apogee
         # Pop the launch selector screen and push the flight display screen:
@@ -141,7 +154,9 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
 
 
 class LaunchImage(Static):
-    """The image widget for the launch file."""
+    """
+    The image widget for the launch file.
+    """
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0], init=False)
 
@@ -152,19 +167,25 @@ class LaunchImage(Static):
         yield self.image
 
     def convert_csv_path_to_image_path(self, path: Path) -> Path:
-        """Convert the CSV path to the image path."""
+        """
+        Convert the CSV path to the image path.
+        """
         # The image is in the launch_data/pictures folder:
         # The image name is the same as the CSV file name, but with a .jpg extension
         return Path("launch_data/pictures") / f"{path.stem}.jpg"
 
     def watch_selected_file(self, new_path: Path) -> None:
-        """Update the image when the selected file changes."""
+        """
+        Update the image when the selected file changes.
+        """
         # Find the image in the launch_data/pictures folder:
         self.image.image = self.convert_csv_path_to_image_path(new_path)
 
 
 class LaunchMetadataDisplay(Widget):
-    """The display for the metadata of the selected launch file."""
+    """
+    The display for the metadata of the selected launch file.
+    """
 
     file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
 
@@ -209,7 +230,9 @@ class LaunchMetadataDisplay(Widget):
 
 
 class LaunchConfiguration(Widget):
-    """The configuration widget consisting of the options for the launch simulation."""
+    """
+    The configuration widget consisting of the options for the launch simulation.
+    """
 
     target_apogee: float
     file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
@@ -232,12 +255,16 @@ class LaunchConfiguration(Widget):
 
     @on(Input.Changed)
     def target_apogee_changed(self, event: Input.Changed) -> None:
-        """Handle the target apogee input change events."""
+        """
+        Handle the target apogee input change events.
+        """
         # This event is triggered when the target apogee input changes
         self.target_apogee = float(event.value)
 
     def watch_file_metadata(self, new_metadata: dict) -> None:
-        """Update the placeholder in the Input field when the selected file changes."""
+        """
+        Update the placeholder in the Input field when the selected file changes.
+        """
         launch_metadata = new_metadata
         self.target_apogee_input.placeholder = str(
             launch_metadata["flight_data"]["target_apogee_meters"]
@@ -246,7 +273,9 @@ class LaunchConfiguration(Widget):
 
 
 class LaunchFilesButtons(Widget):
-    """The radio buttons for selecting the launch file to use."""
+    """
+    The radio buttons for selecting the launch file to use.
+    """
 
     def compose(self) -> ComposeResult:
         with RadioSet(id="launch-files-radio-set") as radio_set:

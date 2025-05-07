@@ -1,4 +1,6 @@
-"""File to handle the downrange distance graphics."""
+"""
+File to handle the downrange distance graphics.
+"""
 
 import numpy as np
 from textual.app import ComposeResult
@@ -14,7 +16,9 @@ from airbrakes.graphics.utils import InformationStore
 
 
 class DownrangeMap(Widget):
-    """Panel displaying the downrange map."""
+    """
+    Panel displaying the downrange map.
+    """
 
     context: Context | None = None
     x_distance: reactive[float] = reactive(0.0)
@@ -50,8 +54,9 @@ class DownrangeMap(Widget):
         self.information_store.initalize_new_data("y_distance")
 
     def update_plot(self):
-        """Updates the information store with the new data."""
-
+        """
+        Updates the information store with the new data.
+        """
         self.information_store.add_data_point("x_distance", self.context.data_processor.x_distance)
         self.information_store.add_data_point("y_distance", self.context.data_processor.y_distance)
         self.x_distance = self.context.data_processor.x_distance
@@ -61,7 +66,9 @@ class DownrangeMap(Widget):
         self.plot_downrange()
 
     def plot_downrange(self):
-        """Plots the downrange map."""
+        """
+        Plots the downrange map.
+        """
         self.downrange_plot.clear()
         x = np.array(self.information_store.get_data("x_distance"))
         y = np.array(self.information_store.get_data("y_distance"))

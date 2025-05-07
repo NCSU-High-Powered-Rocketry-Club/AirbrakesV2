@@ -1,4 +1,6 @@
-"""Module which contains custom widgets for the display."""
+"""
+Module which contains custom widgets for the display.
+"""
 
 import textual.renderables.digits
 from textual.renderables.digits import DIGITS
@@ -16,15 +18,19 @@ NANOS_PER_CENTISECOND = NANOS_PER_SECOND // 100  # 1 centisecond = 10,000,000 ns
 
 
 def add_unicode_T_to_digits():
-    """Hack to modify the textual library code to include a 3x3 version of the letter 'T', so we
-    can include it in the flight time display."""
+    """
+    Hack to modify the textual library code to include a 3x3 version of the letter 'T', so we can
+    include it in the flight time display.
+    """
     textual.renderables.digits.DIGITS = f"{DIGITS}T"
     textual.renderables.digits.DIGITS3X3.extend(UNICODE_T.splitlines())
     textual.renderables.digits.DIGITS3X3_BOLD.extend(UNICODE_T.splitlines())
 
 
 class TimeDisplay(Digits):
-    """A widget to display elapsed flight time"""
+    """
+    A widget to display elapsed flight time.
+    """
 
     add_unicode_T_to_digits()
 
@@ -36,7 +42,6 @@ class TimeDisplay(Digits):
         :param ns: The time in nanoseconds.
         :return: The formatted time string.
         """
-
         # Calculate minutes and the remaining nanoseconds
         minutes, remainder_ns = divmod(ns, NANOS_PER_MINUTE)
 

@@ -1,4 +1,6 @@
-"""Module to show the terminal GUI for the airbrakes system."""
+"""
+Module to show the terminal GUI for the airbrakes system.
+"""
 
 import time
 from typing import TYPE_CHECKING, ClassVar
@@ -41,7 +43,9 @@ if TYPE_CHECKING:
 
 
 class AirbrakesApplication(App):
-    """A terminal based GUI for displaying real-time flight data."""
+    """
+    A terminal based GUI for displaying real-time flight data.
+    """
 
     BINDINGS: ClassVar[list] = [("q", "quit", "Quit")]
     TITLE = "AirbrakesV2"
@@ -59,17 +63,23 @@ class AirbrakesApplication(App):
         self.timer: Timer = None
 
     def on_mount(self) -> None:
-        """Mount the launch selector screen to get the launch configuration."""
+        """
+        Mount the launch selector screen to get the launch configuration.
+        """
         self.theme = "catppuccin-mocha"
         self.push_screen("launch_selector", self.receive_launch_configuration)
 
     def on_unmount(self) -> None:
-        """Stop the airbrakes system when the app is unmounted."""
+        """
+        Stop the airbrakes system when the app is unmounted.
+        """
         if self.context:
             self.context.stop()
 
     def receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
-        """Receives the launch configuration from the launch selector screen."""
+        """
+        Receives the launch configuration from the launch selector screen.
+        """
         self.create_components(launch_config)
         self.assign_target_apogee(launch_config.desired_target_apogee)
         self.initialize_widgets()
@@ -78,22 +88,27 @@ class AirbrakesApplication(App):
         self.start()
 
     def initialize_widgets(self) -> None:
-        """Supplies the airbrakes context and related objects to the widgets for proper
-        operation."""
+        """
+        Supplies the airbrakes context and related objects to the widgets for proper operation.
+        """
         self.flight_header = self.query_one(FlightHeader)
         self.flight_information = self.query_one(FlightInformation)
         self.flight_header.initialize_widgets(self.context, self.is_mock)
         self.flight_information.initialize_widgets(self.context)
 
     def start(self) -> None:
-        """Starts the flight display."""
+        """
+        Starts the flight display.
+        """
         # Initialize the airbrakes context and display
         self.context.start()
         self.query_one(CPUUsage).start()
         self.run_worker(self.run_flight_loop, name="Flight Loop", exclusive=True, thread=True)
 
     def stop(self) -> None:
-        """Stops the flight display."""
+        """
+        Stops the flight display.
+        """
         self.context.stop()
         self.query_one(CPUUsage).stop()
 
@@ -101,7 +116,9 @@ class AirbrakesApplication(App):
         self.context.imu._sim_speed_factor.value = sim_speed
 
     def create_components(self, launch_config: SelectedLaunchConfiguration) -> None:
-        """Create the system components needed for the airbrakes system."""
+        """
+        Create the system components needed for the airbrakes system.
+        """
         if launch_config.launch_options is not None:
             imu = MockIMU(
                 real_time_replay=2.0 if launch_config.launch_options.fast_simulation else 1.0,
@@ -142,22 +159,29 @@ class AirbrakesApplication(App):
         self.context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
 
     def update_telemetry(self) -> None:
-        """Updates all the reactive variables with the latest telemetry data."""
+        """
+        Updates all the reactive variables with the latest telemetry data.
+        """
         self.flight_header.update_header()
         self.flight_information.update_flight_information()
 
     def assign_target_apogee(self, target_apogee: float) -> None:
-        """Assigns the target apogee to the airbrakes system."""
+        """
+        Assigns the target apogee to the airbrakes system.
+        """
         airbrakes.constants.TARGET_APOGEE_METERS = target_apogee
 
     def monitor_flight_time(self, flight_time_ns: int) -> None:
-        """Updates the graphs when the time changes."""
+        """
+        Updates the graphs when the time changes.
+        """
         # TODO: Refactor everything to update when the time changes.
         self.flight_information.flight_graph.update_data(flight_time_ns)
 
     def run_flight_loop(self) -> None:
-        """Main flight control loop that runs until shutdown is requested or interrupted."""
-
+        """
+        Main flight control loop that runs until shutdown is requested or interrupted.
+        """
         # TODO: Maybe make different loops for real, mock, and sim?
         # TODO: The below should be in the sim loop:
         # # This allows the simulation to know whether air brakes are deployed or not, and
@@ -183,12 +207,16 @@ class AirbrakesApplication(App):
         self.stop()
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
-        """Used to shut down the airbrakes system when the data is exhausted."""
+        """
+        Used to shut down the airbrakes system when the data is exhausted.
+        """
         if event.worker.name == "Flight Loop" and event.state == WorkerState.SUCCESS:
             self.stop()
 
     def compose(self) -> ComposeResult:
-        """Create the layout of the app."""
+        """
+        Create the layout of the app.
+        """
         with Grid(id="main-grid"):
             yield FlightHeader(id="flight-header")
             yield FlightInformation(id="flight-information-panel")

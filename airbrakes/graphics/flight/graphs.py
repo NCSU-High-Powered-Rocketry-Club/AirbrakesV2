@@ -1,4 +1,6 @@
-"""Module to show various graphs, e.g. altitude, velocity, acceleration, etc."""
+"""
+Module to show various graphs, e.g. altitude, velocity, acceleration, etc.
+"""
 
 from textual import on
 from textual.app import ComposeResult
@@ -16,15 +18,20 @@ from airbrakes.utils import convert_ns_to_s
 
 
 class FlightGraph(Widget):
-    """Class to display a graph of the data stored in the InformationStore. This is shown
-    on the main screen."""
+    """
+    Class to display a graph of the data stored in the InformationStore.
+
+    This is shown on the main screen.
+    """
 
     mode = HiResMode.BRAILLE
     context: Context | None = None
     information_store: InformationStore | None = None
 
     def compose(self) -> ComposeResult:
-        """Compose the main layout, consisting of 3 tabs."""
+        """
+        Compose the main layout, consisting of 3 tabs.
+        """
         self.tabbed_content = TabbedContent(id="tabbed-content", initial="accel-tab", disabled=True)
         with VerticalScroll(id="vertical-graph-panels"):
             with self.tabbed_content:
@@ -50,7 +57,9 @@ class FlightGraph(Widget):
             yield self.downrange_map
 
     def initialize_widgets(self, context: Context) -> None:
-        """Initializes the widgets with the context."""
+        """
+        Initializes the widgets with the context.
+        """
         self.context = context
         self.downrange_map.initialize_widgets(self.context)
 
@@ -65,7 +74,9 @@ class FlightGraph(Widget):
         self.tabbed_content.disabled = False
 
     def update_data(self, current_flight_time_ns: int) -> None:
-        """Update the graphs (i.e. add data) when the time since launch changes."""
+        """
+        Update the graphs (i.e. add data) when the time since launch changes.
+        """
         current_flight_time_s: float = convert_ns_to_s(current_flight_time_ns)
         self.downrange_map.update_plot()  # Also update the downrange map
 
@@ -92,30 +103,40 @@ class FlightGraph(Widget):
 
     @on(TabbedContent.TabActivated, pane="#accel-tab")
     def accel_tab_switch(self) -> None:
-        """Show the acceleration graph when the acceleration tab is activated."""
+        """
+        Show the acceleration graph when the acceleration tab is activated.
+        """
         if self.information_store is not None:
             self.plot_acceleration()
 
     @on(TabbedContent.TabActivated, pane="#vel-tab")
     def vel_tab_switch(self) -> None:
-        """Show the velocity graph when the velocity tab is activated."""
+        """
+        Show the velocity graph when the velocity tab is activated.
+        """
         if self.information_store is not None:
             self.plot_velocity()
 
     @on(TabbedContent.TabActivated, pane="#alt-tab")
     def alt_tab_switch(self) -> None:
-        """Show the altitude graph when the altitude tab is activated."""
+        """
+        Show the altitude graph when the altitude tab is activated.
+        """
         if self.information_store is not None:
             self.plot_altitude()
 
     @on(TabbedContent.TabActivated, pane="#pred-apogee-tab")
     def apogee_tab_switch(self) -> None:
-        """Show the predicted apogee graph when the predicted apogee tab is activated."""
+        """
+        Show the predicted apogee graph when the predicted apogee tab is activated.
+        """
         if self.information_store is not None:
             self.plot_predicted_apogee()
 
     def plot_acceleration(self) -> None:
-        """Plot the acceleration graph when the acceleration tab is activated."""
+        """
+        Plot the acceleration graph when the acceleration tab is activated.
+        """
         plot = self.accel_plot
         y = self.information_store.get_data("accel")
         line_color = "red"
@@ -124,7 +145,9 @@ class FlightGraph(Widget):
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
     def plot_velocity(self) -> None:
-        """Plot the velocity graph when the velocity tab is activated."""
+        """
+        Plot the velocity graph when the velocity tab is activated.
+        """
         plot = self.vel_plot
         y = self.information_store.get_data("vel")
         line_color = "blue"
@@ -133,7 +156,9 @@ class FlightGraph(Widget):
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
     def plot_altitude(self) -> None:
-        """Plot the altitude graph when the altitude tab is activated."""
+        """
+        Plot the altitude graph when the altitude tab is activated.
+        """
         plot = self.alt_plot
         y = self.information_store.get_data("alt")
         line_color = "green"
@@ -142,7 +167,9 @@ class FlightGraph(Widget):
         plot.plot(x, y, line_style=line_color, hires_mode=self.mode)
 
     def plot_predicted_apogee(self) -> None:
-        """Plot the predicted apogee graph when the predicted apogee tab is activated."""
+        """
+        Plot the predicted apogee graph when the predicted apogee tab is activated.
+        """
         plot = self.apogee_plot
         y = self.information_store.get_data("pred_apogee")
         line_color = "purple"
