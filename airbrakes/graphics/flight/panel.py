@@ -1,4 +1,6 @@
-"""Module which contains the 5 panels for the flight display."""
+"""
+Module which contains the 5 panels for the flight display.
+"""
 
 from textual.app import ComposeResult
 from textual.widgets import Static
@@ -10,7 +12,9 @@ from airbrakes.graphics.flight.visualization import Visualization
 
 
 class FlightInformation(Static):
-    """Panel displaying the real-time flight information."""
+    """
+    Panel displaying the real-time flight information.
+    """
 
     context: Context | None = None
     flight_telemetry: FlightTelemetry | None = None
@@ -33,6 +37,12 @@ class FlightInformation(Static):
         self.flight_telemetry.initialize_widgets(self.context)
         self.flight_graph.initialize_widgets(self.context)
         self.rocket_visualization.initialize_widgets(self.context)
+
+    def reset_widgets(self) -> None:
+        """
+        Reset the widgets to their initial state.
+        """
+        self.flight_telemetry.reset_widgets()
 
     def update_flight_information(self) -> None:
         self.flight_telemetry.update_flight_telemetry()

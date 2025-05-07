@@ -49,7 +49,7 @@ class AirbrakesApplication(App):
     A terminal based GUI for displaying real-time flight data.
     """
 
-    BINDINGS: ClassVar[list] = [("q", "quit", "Quit")]
+    BINDINGS: ClassVar[list] = [("q", "quit", "Quit"), ("m", "main_menu", "Main Menu")]
     TITLE = "AirbrakesV2"
     SCREENS: ClassVar[dict] = {"launch_selector": LaunchSelector}
     CSS_PATH = "css/visual.tcss"
@@ -98,8 +98,27 @@ class AirbrakesApplication(App):
         """
         Stops the flight display.
         """
-        self.context.stop()
-        self.query_one(CPUUsage).stop()
+        if self.context:
+            self.context.stop()
+            self.query_one(CPUUsage).stop()
+
+    def action_main_menu(self) -> None:
+        """
+        Returns to the main menu.
+        """
+        self.stop()
+        # Reset the widgets to their initial state.
+        self.reset_widgets()
+        self.push_screen("launch_selector", self._receive_launch_configuration)
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """
+        Currently used to check if the main menu button should be shown on the launch selector
+        screen.
+        """
+        if action == "main_menu" and type(self.screen) is LaunchSelector:
+            return False
+        return super().check_action(action, parameters)
 
     def create_components(self, launch_config: SelectedLaunchConfiguration | None = None) -> None:
         """
@@ -208,8 +227,10 @@ class AirbrakesApplication(App):
         Create the layout of the app.
         """
         with Grid(id="main-grid"):
-            yield FlightHeader(id="flight-header")
-            yield FlightInformation(id="flight-information-panel")
+            self.flight_header = FlightHeader(id="flight-header")
+            self.flight_information = FlightInformation(id="flight-information-panel")
+            yield self.flight_header
+            yield self.flight_information
         yield Footer()
 
     def _change_sim_speed(self, sim_speed: float) -> None:
@@ -247,16 +268,21 @@ class AirbrakesApplication(App):
         """
         Common setup code for initializing widgets and starting the application.
         """
-        self._initialize_widgets()
+        self.initialize_widgets()
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self._change_sim_speed)
         self.watch(self.flight_header, "t_zero_time_ns", self._monitor_flight_time, init=False)
         self.start()
 
-    def _initialize_widgets(self) -> None:
+    def initialize_widgets(self) -> None:
         """
         Supplies the airbrakes context and related objects to the widgets for proper operation.
         """
-        self.flight_header = self.query_one(FlightHeader)
-        self.flight_information = self.query_one(FlightInformation)
         self.flight_header.initialize_widgets(self.context, self.is_mock)
         self.flight_information.initialize_widgets(self.context)
+
+    def reset_widgets(self) -> None:
+        """
+        Resets the widgets to their initial state.
+        """
+        self.flight_header.reset_widgets()
+        self.flight_information.reset_widgets()

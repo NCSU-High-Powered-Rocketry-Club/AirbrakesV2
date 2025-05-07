@@ -158,7 +158,7 @@ class FlightHeader(Static):
         """
         # Grid layout, 4 rows, 3 columns:
         with Center():
-            yield Label("", id="launch-file-name", disabled=True)
+            yield Label("", id="launch-file-name")
         self.sim_time_label = Label("00:00.00", id="normal-sim-time")
         yield self.sim_time_label
         yield Static()
@@ -183,10 +183,8 @@ class FlightHeader(Static):
 
         file_name = self.query_one("#launch-file-name", Label)
 
-        if file_name.disabled:
-            launch_file_name = self.context.imu._log_file_path.stem.replace("_", " ").title()
-            file_name.update(launch_file_name)
-            file_name.disabled = False
+        launch_file_name = self.context.imu._log_file_path.stem.replace("_", " ").title()
+        file_name.update(launch_file_name)
 
         # Set the target apogee label:
         target_apogee_label = self.query_one("#target-apogee-label", Label)
@@ -196,8 +194,7 @@ class FlightHeader(Static):
             f"Target Apogee: [b]{airbrakes.constants.TARGET_APOGEE_METERS} m[/]"
         )
 
-        if not self._pre_calculated_motor_burn_time_ns:
-            self._pre_calculated_motor_burn_time_ns = self.context.imu.get_launch_time()
+        self._pre_calculated_motor_burn_time_ns = self.context.imu.get_launch_time()
 
         # Get the flight length from the metadata, so we can update the progress bar:
         file_metadata = self.context.imu.file_metadata
@@ -206,6 +203,12 @@ class FlightHeader(Static):
         self.flight_progress_bar.initialize_widgets(flight_length)
 
         self.sim_start_time = monotonic_ns()
+
+    def reset_widgets(self) -> None:
+        """
+        Resets the widgets to their initial state.
+        """
+        self.takeoff_time_ns = 0  # reinitialize the takeoff time in case we are restarting a flight
 
     def watch_t_zero_time_ns(self) -> None:
         """

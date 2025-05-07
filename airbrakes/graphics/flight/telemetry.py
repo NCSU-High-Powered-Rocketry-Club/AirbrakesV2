@@ -105,6 +105,12 @@ class FlightTelemetry(Static):
         self.context = context
         self.debug_telemetry.initialize_widgets(context)
 
+    def reset_widgets(self) -> None:
+        """
+        Resets the widgets to their initial state.
+        """
+        self.debug_telemetry.reset_widgets()
+
     def watch_vertical_acceleration(self) -> None:
         self.accel_label.update(f"{self.vertical_acceleration:.2f}")
 
@@ -185,8 +191,8 @@ class DebugTelemetry(Static):
 
             # Row 2:
             yield Static("First Apogee:", id="apogee-static-label")
-            self.apogee_label = Label("0.0", id="apogee-label")
-            yield self.apogee_label
+            self.first_apogee_label = Label("0.0", id="first-apogee-label")
+            yield self.first_apogee_label
             yield Static("m", id="apogee-units", classes="units")
 
             # Row 3:
@@ -234,6 +240,17 @@ class DebugTelemetry(Static):
         self.context = context
         self.query_one(CPUUsage).initialize_widgets(context)
 
+    def reset_widgets(self) -> None:
+        """
+        Resets the widgets to their initial state.
+        """
+        # Reinitialize class variables in case we are restarting a flight:
+        self.apogee_convergence_time = 0.0
+        self.convergence_time_label.update("0.0")
+        self.alt_convergence_label.update("0.0")
+        self.first_apogee_label.update("0.0")
+        self.coast_start_time = 0
+
     def watch_queued_imu_packets(self) -> None:
         self.queued_packets_label.update(f"{self.queued_imu_packets}")
 
@@ -248,7 +265,7 @@ class DebugTelemetry(Static):
             ) * 1e-9
             self.convergence_time_label.update(f"{self.apogee_convergence_time:.2f}")
             self.alt_convergence_label.update(f"{self.context.data_processor.current_altitude:.2f}")
-            self.apogee_label.update(f"{self.apogee:.2f}")
+            self.first_apogee_label.update(f"{self.apogee:.2f}")
 
     def watch_log_buffer_size(self) -> None:
         self.log_buffer_size_label.update(f"{self.log_buffer_size}")
