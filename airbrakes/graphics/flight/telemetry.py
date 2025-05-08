@@ -148,7 +148,7 @@ class FlightTelemetry(Static):
         self.airbrakes_label.update(f"{self.airbrakes_extension:.2f}")
 
     def update_flight_telemetry(self) -> None:
-        self.vertical_acceleration = self.context.data_processor.average_vertical_acceleration
+        self.vertical_acceleration = self.context.data_processor.vertical_acceleration
         self.max_vertical_acceleration = self.context.data_processor.max_vertical_acceleration
         self.vertical_velocity = self.context.data_processor.vertical_velocity
         self.max_vertical_velocity = self.context.data_processor.max_vertical_velocity

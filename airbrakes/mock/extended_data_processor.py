@@ -17,7 +17,6 @@ class ExtendedDataProcessor(DataProcessor):
     """
 
     __slots__ = (
-        "_average_vertical_acceleration",
         "_current_pressure_altitudes",
         "_horizontal_distances",
         "_horizontal_velocities",
@@ -36,7 +35,6 @@ class ExtendedDataProcessor(DataProcessor):
         self._max_pressure_altitude: np.float64 = np.float64(0.0)
         self._total_velocity: np.float64 = np.float64(0.0)
         self._max_total_velocity: np.float64 = np.float64(0.0)
-        self._average_vertical_acceleration: np.float64 = np.float64(0.0)
         self._max_vertical_acceleration: np.float64 = np.float64(0.0)
 
     @property
@@ -67,13 +65,6 @@ class ExtendedDataProcessor(DataProcessor):
         The maximum total velocity of the rocket.
         """
         return float(self._max_total_velocity)
-
-    @property
-    def average_vertical_acceleration(self) -> float:
-        """
-        The average vertical acceleration of the rocket.
-        """
-        return float(self._average_vertical_acceleration)
 
     @property
     def max_vertical_acceleration(self) -> float:
@@ -123,9 +114,8 @@ class ExtendedDataProcessor(DataProcessor):
         self._max_total_velocity = max(self._total_velocity, self._max_total_velocity)
 
         # Calculate the maximum vertical acceleration
-        self._average_vertical_acceleration = self._calculate_average_vertical_acceleration()
         self._max_vertical_acceleration = max(
-            self._max_vertical_acceleration, self._average_vertical_acceleration
+            self._max_vertical_acceleration, self._rotated_accelerations[:, 2][-1]
         )
 
     def _calculate_pressure_altitudes(self) -> npt.NDArray[np.float64]:

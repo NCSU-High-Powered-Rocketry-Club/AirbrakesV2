@@ -208,7 +208,12 @@ def arg_parser() -> argparse.Namespace:
     )
     add_common_arguments(sim_parser, is_mock=False)
 
-    return main_parser.parse_args()
+    parsed_args = main_parser.parse_args()
+
+    if parsed_args.bench:  # If benchmark mode is enabled, set fast replay to True
+        parsed_args.fast_replay = True
+
+    return parsed_args
 
 
 def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
@@ -250,6 +255,24 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         help=f"Run the {_type} with the real camera.",
         action="store_true",
         default=False,
+    )
+
+    parser.add_argument(
+        "-b",
+        "--bench",
+        help=f"Run the {_type} in benchmark mode. This disables the display and simply shows the "
+        "flight data after it has finished. Implies --fast-replay.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-t",
+        "--target-apogee",
+        help=f"Set the target apogee for the {_type}. Defaults to the value in the metadata for "
+        "mock replays.",
+        type=float,
+        default=None,
     )
 
     if is_mock:

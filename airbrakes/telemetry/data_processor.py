@@ -107,6 +107,13 @@ class DataProcessor:
         return float(self._rotated_accelerations[:, 2][-1])
 
     @property
+    def average_vertical_acceleration(self) -> float:
+        """
+        The average vertical acceleration of the rocket.
+        """
+        return self._rotated_accelerations[:, 2].mean()
+
+    @property
     def max_vertical_velocity(self) -> float:
         """
         The maximum vertical velocity the rocket has attained during the flight, in m/s.
@@ -401,11 +408,3 @@ class DataProcessor:
         )
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
-
-    def _calculate_average_vertical_acceleration(self) -> np.float64:
-        """
-        The average vertical acceleration of the rocket in m/s^2.
-
-        :return: The average vertical acceleration of the rocket.
-        """
-        return self._rotated_accelerations[:, 2].mean()
