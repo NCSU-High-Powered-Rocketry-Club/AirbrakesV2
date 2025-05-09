@@ -6,9 +6,7 @@ import time
 from argparse import Namespace
 from typing import ClassVar
 
-from textual.app import App, ComposeResult
-from textual.containers import Grid
-from textual.widgets import Footer
+from textual.app import App
 from textual.worker import Worker, WorkerState
 
 import airbrakes.constants
@@ -23,15 +21,13 @@ from airbrakes.constants import (
     SERVO_2_CHANNEL,
 )
 from airbrakes.context import Context
-from airbrakes.graphics.flight.header import FlightHeader
-from airbrakes.graphics.flight.panel import FlightInformation
-from airbrakes.graphics.flight.telemetry import CPUUsage
 from airbrakes.graphics.screens.benchmark import BenchmarkScreen
-from airbrakes.graphics.screens.launch_selector import (
+from airbrakes.graphics.screens.launcher import (
+    LauncherScreen,
     LaunchOptions,
-    LaunchSelector,
     SelectedLaunchConfiguration,
 )
+from airbrakes.graphics.screens.replay import ReplayScreen
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
@@ -52,8 +48,12 @@ class AirbrakesApplication(App):
 
     BINDINGS: ClassVar[list] = [("q", "quit", "Quit"), ("m", "main_menu", "Main Menu")]
     TITLE = "AirbrakesV2"
-    SCREENS: ClassVar[dict] = {"launch_selector": LaunchSelector}
-    CSS_PATH = "css/visual.tcss"
+    SCREENS: ClassVar[dict] = {
+        "launcher_screen": LauncherScreen,
+        "replay_screen": ReplayScreen,
+        "benchmark_screen": BenchmarkScreen,
+    }
+    # CSS_PATH = "css/visual.tcss"
 
     def __init__(self, is_mock: bool, cmd_args: Namespace) -> None:
         super().__init__()
@@ -63,20 +63,18 @@ class AirbrakesApplication(App):
         self._args = cmd_args
         self._profiled_time: float = 0.0  # Time taken to run the flight loop in benchmark mode
         self.launch_config: SelectedLaunchConfiguration = self._construct_launch_config_from_args()
-        self.flight_information: FlightInformation = None
-        self.flight_header: FlightHeader = None
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         """
         Mount the launch selector screen to get the launch configuration, if the path is not
         specified.
         """
         # If the path isn't specified, don't skip the launch selector screen.
         if not self._args.path:
-            self.push_screen("launch_selector", self._receive_launch_configuration)
+            self.push_screen("launcher_screen", self._receive_launch_configuration)
         else:
             # If the path is specified, skip the launch selector screen.
-            self._setup_application()
+            await self._setup_application()
 
     def on_unmount(self) -> None:
         """
@@ -89,21 +87,22 @@ class AirbrakesApplication(App):
         """
         Starts the flight display.
 
-        Starts a different kind of flight loop depending on the launch configuration.
+        Starts a different kind of flight loop depending on the launch configuration. This method is
+        blocking when running in benchmark mode and for real flights.
         """
         # Initialize the airbrakes context and display
         self.context.start()
 
         # Run normally, updating the display:
         if not self.launch_config.benchmark_mode:
-            self.query_one(CPUUsage).start()
+            self.get_screen("replay_screen").start()
+            # self.screen.query_one(CPUUsage).start()
             self.run_worker(
                 self.run_replay_flight_loop, name="Flight Loop", exclusive=True, thread=True
             )
         elif self.launch_config.benchmark_mode:
             # In benchmark mode, enforce blocking the entire display and run the flight only.
-            # The 0.1 second delay is to allow the button to update its text:
-            self.set_timer(0.1, self.run_benchmark_flight_loop)
+            self.run_benchmark_flight_loop()
         else:
             ...  # implement uv run real flight loop
 
@@ -116,15 +115,14 @@ class AirbrakesApplication(App):
 
         self.context.stop()
         if not self.launch_config.benchmark_mode:
-            self.query_one(CPUUsage).stop()
+            self.get_screen("replay_screen").stop()
 
     def show_benchmark_results(self) -> None:
         """
         Shows the benchmark results after the flight is finished.
         """
-        self.push_screen(
-            BenchmarkScreen(self.context, self._profiled_time, self.launch_config.selected_launch)
-        )
+        screen: BenchmarkScreen = self.screen
+        screen.update_stats(self._profiled_time)
 
     def action_main_menu(self) -> None:
         """
@@ -132,15 +130,16 @@ class AirbrakesApplication(App):
         """
         self.stop()
         # Reset the widgets to their initial state.
-        self.reset_widgets()
-        self.push_screen("launch_selector", self._receive_launch_configuration)
+        screen: ReplayScreen = self.screen
+        screen.reset_widgets()
+        self.push_screen("launcher_screen", self._receive_launch_configuration)
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
         """
         Currently used to check if the main menu button should be shown on the launch selector
         screen.
         """
-        if action == "main_menu" and type(self.screen) is LaunchSelector:
+        if action == "main_menu" and type(self.screen) is LauncherScreen:
             return False
         return super().check_action(action, parameters)
 
@@ -197,13 +196,6 @@ class AirbrakesApplication(App):
 
         self.context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
 
-    def update_telemetry(self) -> None:
-        """
-        Updates all the reactive variables with the latest telemetry data.
-        """
-        self.flight_header.update_header()
-        self.flight_information.update_flight_information()
-
     def run_replay_flight_loop(self) -> None:
         """
         Main flight control loop that runs until shutdown is requested or interrupted.
@@ -229,7 +221,7 @@ class AirbrakesApplication(App):
 
                 # Update the telemetry display at a fixed frequency:
                 if time.monotonic() - start_time >= MOCK_DISPLAY_UPDATE_RATE:
-                    self.call_from_thread(self.update_telemetry)
+                    self.call_from_thread(self.screen.update_telemetry)
                     start_time = time.monotonic()
 
     def run_benchmark_flight_loop(self) -> None:
@@ -260,26 +252,6 @@ class AirbrakesApplication(App):
         if event.worker.name == "Flight Loop" and event.state == WorkerState.SUCCESS:
             self.stop()
 
-    def compose(self) -> ComposeResult:
-        """
-        Create the layout of the app.
-        """
-        with Grid(id="main-grid"):
-            self.flight_header = FlightHeader(id="flight-header")
-            self.flight_information = FlightInformation(id="flight-information-panel")
-            yield self.flight_header
-            yield self.flight_information
-        yield Footer()
-
-    def _change_sim_speed(self, sim_speed: float) -> None:
-        self.context.imu._sim_speed_factor.value = sim_speed
-
-    def _monitor_flight_time(self, flight_time_ns: int) -> None:
-        """
-        Updates the graphs when the time changes.
-        """
-        self.flight_information.flight_graph.update_data(flight_time_ns)
-
     def _assign_target_apogee(self) -> None:
         """
         Assigns the target apogee to the airbrakes system.
@@ -296,19 +268,21 @@ class AirbrakesApplication(App):
         # constants.TARGET_APOGEE_METERS directly in state.py.
         state.__dict__["TARGET_APOGEE_METERS"] = self.launch_config.launch_options.target_apogee
 
-    def _receive_launch_configuration(self, launch_config: SelectedLaunchConfiguration) -> None:
+    async def _receive_launch_configuration(
+        self, launch_config: SelectedLaunchConfiguration
+    ) -> None:
         """
         Receives the launch configuration from the launch selector screen.
         """
         self.launch_config = launch_config
-        self._setup_application()
+        await self._setup_application()
 
-    def on_launch_selector_send_config(self, event: LaunchSelector.SendConfig) -> None:
+    async def on_launcher_screen_send_config(self, event: LauncherScreen.SendConfig) -> None:
         """
         Used when the benchmark mode button is pressed.
         """
         self.launch_config = event.launch_config
-        self._setup_application()
+        await self._setup_application()
 
     def _construct_launch_config_from_args(self) -> SelectedLaunchConfiguration:
         """
@@ -326,7 +300,7 @@ class AirbrakesApplication(App):
             benchmark_mode=self._args.bench,
         )
 
-    def _setup_application(self) -> None:
+    async def _setup_application(self) -> None:
         """
         Common setup code for initializing widgets and starting the application.
         """
@@ -334,22 +308,12 @@ class AirbrakesApplication(App):
         self._assign_target_apogee()
 
         if not self.launch_config.benchmark_mode:
-            self.initialize_widgets()
-            self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self._change_sim_speed)
-            self.watch(self.flight_header, "t_zero_time_ns", self._monitor_flight_time, init=False)
-
+            # wait for all widgets to be mounted before initializing them, hence the await
+            await self.push_screen("replay_screen")
+            screen: ReplayScreen = self.screen
+            screen.initialize_widgets(self.context, self.is_mock)
+        else:
+            await self.push_screen("benchmark_screen")
+            screen: BenchmarkScreen = self.screen
+            screen.initialize_widgets(self.context, self.launch_config.selected_launch)
         self.start()
-
-    def initialize_widgets(self) -> None:
-        """
-        Supplies the airbrakes context and related objects to the widgets for proper operation.
-        """
-        self.flight_header.initialize_widgets(self.context, self.is_mock)
-        self.flight_information.initialize_widgets(self.context)
-
-    def reset_widgets(self) -> None:
-        """
-        Resets the widgets to their initial state.
-        """
-        self.flight_header.reset_widgets()
-        self.flight_information.reset_widgets()

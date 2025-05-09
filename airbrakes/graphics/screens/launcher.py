@@ -66,7 +66,7 @@ class SelectedLaunchConfiguration(msgspec.Struct):
     benchmark_mode: bool = False
 
 
-class LaunchSelector(Screen[SelectedLaunchConfiguration]):
+class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     """
     The launch file selection screen displayed on startup.
     """
@@ -98,18 +98,18 @@ class LaunchSelector(Screen[SelectedLaunchConfiguration]):
 
             # TODO: Legacy launch 2 and purple launch are missing pictures
             self.launch_image = LaunchImage(id="launch-image-widget").data_bind(
-                LaunchSelector.selected_file
+                LauncherScreen.selected_file
             )
             yield self.launch_image
             self.launch_files = LaunchFilesButtons(id="launch-files-container")
             yield self.launch_files
             self.launch_config = LaunchConfiguration(id="launch-configuration-container").data_bind(
-                LaunchSelector.file_metadata,
+                LauncherScreen.file_metadata,
             )
             self.launch_config.border_title = "Launch Configuration"
             yield self.launch_config
             self.launch_metadata = LaunchMetadataDisplay(id="launch-metadata-container").data_bind(
-                LaunchSelector.file_metadata,
+                LauncherScreen.file_metadata,
             )
             yield self.launch_metadata
             with Vertical(id="button-container"), Center():
@@ -230,7 +230,7 @@ class LaunchMetadataDisplay(Widget):
     The display for the metadata of the selected launch file.
     """
 
-    file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
+    file_metadata: reactive[dict] = reactive(LauncherScreen.all_metadata[AVAILABLE_FILES[0].name])
 
     def compose(self) -> ComposeResult:
         self.data_table = DataTable(
@@ -277,7 +277,7 @@ class LaunchConfiguration(Widget):
     The configuration widget consisting of the options for the launch simulation.
     """
 
-    file_metadata: reactive[dict] = reactive(LaunchSelector.all_metadata[AVAILABLE_FILES[0].name])
+    file_metadata: reactive[dict] = reactive(LauncherScreen.all_metadata[AVAILABLE_FILES[0].name])
 
     def compose(self) -> ComposeResult:
         with Grid(id="launch-configuration-grid"):
