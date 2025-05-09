@@ -71,7 +71,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     The launch file selection screen displayed on startup.
     """
 
-    CSS_PATH = "../css/launch_selector.tcss"
+    CSS_PATH = "../css/launcher.tcss"
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
     launch_options: LaunchOptions = LaunchOptions(
@@ -80,7 +80,15 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     all_metadata = MockIMU.read_all_metadata()
     file_metadata = reactive(all_metadata[AVAILABLE_FILES[0].name])
 
-    class SendConfig(Message):
+    __slots__ = (
+        "benchmark_button",
+        "launch_config",
+        "launch_files",
+        "launch_image",
+        "launch_metadata",
+    )
+
+    class BenchmarkConfig(Message):
         """
         Used to send the selected launch configuration to the Application.
 
@@ -175,7 +183,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
             self.benchmark_button.label = "Running Benchmark..."
             self.benchmark_button.disabled = True
             self.benchmark_button.refresh()
-            self.post_message(self.SendConfig(config))
+            self.post_message(self.BenchmarkConfig(config))
         else:
             self.dismiss(result=config)
 
@@ -202,6 +210,8 @@ class LaunchImage(Static):
     """
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0], init=False)
+
+    __slots__ = ("image",)
 
     def compose(self) -> ComposeResult:
         self.image = Image(
@@ -231,6 +241,8 @@ class LaunchMetadataDisplay(Widget):
     """
 
     file_metadata: reactive[dict] = reactive(LauncherScreen.all_metadata[AVAILABLE_FILES[0].name])
+
+    __slots__ = ("data_table",)
 
     def compose(self) -> ComposeResult:
         self.data_table = DataTable(
@@ -279,6 +291,8 @@ class LaunchConfiguration(Widget):
 
     file_metadata: reactive[dict] = reactive(LauncherScreen.all_metadata[AVAILABLE_FILES[0].name])
 
+    __slots__ = ("target_apogee_input",)
+
     def compose(self) -> ComposeResult:
         with Grid(id="launch-configuration-grid"):
             yield Label("Real Servo", id="label-real-servo")
@@ -308,6 +322,8 @@ class LaunchFilesButtons(Widget):
     """
     The radio buttons for selecting the launch file to use.
     """
+
+    __slots__ = ()
 
     def compose(self) -> ComposeResult:
         with RadioSet(id="launch-files-radio-set") as radio_set:

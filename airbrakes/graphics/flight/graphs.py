@@ -25,8 +25,17 @@ class FlightGraph(Widget):
     """
 
     mode = HiResMode.BRAILLE
-    context: Context | None = None
     information_store: InformationStore | None = None
+
+    __slots__ = (
+        "accel_plot",
+        "alt_plot",
+        "apogee_plot",
+        "context",
+        "downrange_map",
+        "tabbed_content",
+        "vel_plot",
+    )
 
     def compose(self) -> ComposeResult:
         """

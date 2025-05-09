@@ -20,10 +20,18 @@ class DownrangeMap(Widget):
     Panel displaying the downrange map.
     """
 
-    context: Context | None = None
     x_distance: reactive[float] = reactive(0.0)
     y_distance: reactive[float] = reactive(0.0)
     horizontal_range: reactive[float] = reactive(0.0)
+
+    __slots__ = (
+        "context",
+        "downrange_plot",
+        "horizontal_range_label",
+        "information_store",
+        "x_distance_label",
+        "y_distance_label",
+    )
 
     def compose(self) -> ComposeResult:
         self.downrange_plot = PlotWidget(allow_pan_and_zoom=False, id="downrange-map-widget")

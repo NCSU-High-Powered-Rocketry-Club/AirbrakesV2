@@ -32,6 +32,8 @@ class TimeDisplay(Digits):
     A widget to display elapsed flight time.
     """
 
+    __slots__ = ()
+
     add_unicode_T_to_digits()
 
     @staticmethod

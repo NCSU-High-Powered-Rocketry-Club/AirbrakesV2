@@ -144,6 +144,13 @@ The interval in seconds at which the graph data is stored.
 This is used so that it is easy to look at the changing data in real time.
 """
 
+RIGHT_TRIANGLE = "▶"
+LEFT_TRIANGLE = "◀"
+"""
+The icons used to represent the simulation speed.
+"""
+
+
 # Constants for rocket dimensions (in canvas cells)
 ROCKET_WIDTH = 6
 ROCKET_HEIGHT = 15
@@ -151,7 +158,7 @@ NOSECONE_HEIGHT = 5
 ASPECT_RATIO = 0.5  # Terminal cell width-to-height ratio (roughly)
 NOZZLE_HEIGHT = 2  # Height of the nozzle in cells
 NOZZLE_WIDTH = ROCKET_WIDTH / 2.0  # Width of the nozzle in cells
-FLAME_OFFSETS = [0.5, 1, 1.5, 2, 2.5, 3]  # Distances in cells where "X" flames will appear
+FLAME_OFFSETS: list[float] = [0.5, 1, 1.5, 2, 2.5, 3]  # Distances in cells where "X" flames appears
 AIRBRAKE_LENGTH = 2  # Length of airbrakes in cells
 
 # Constants for altitude axis

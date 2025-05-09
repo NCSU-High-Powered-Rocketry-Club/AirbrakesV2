@@ -16,24 +16,21 @@ class FlightInformation(Static):
     Panel displaying the real-time flight information.
     """
 
-    context: Context | None = None
-    flight_telemetry: FlightTelemetry | None = None
-    flight_graph: FlightGraph | None = None
-    rocket_visualization: Visualization | None = None
+    __slots__ = ("context", "flight_graph", "flight_telemetry", "rocket_visualization")
 
     def compose(self) -> ComposeResult:
-        self.flight_telemetry = FlightTelemetry(id="flight-data-panel")
+        self.flight_telemetry: FlightTelemetry = FlightTelemetry(id="flight-data-panel")
         self.flight_telemetry.border_title = "SIMULATED TELEMETRY"
         yield self.flight_telemetry
-        self.flight_graph = FlightGraph(id="flight-graph-panel")
+        self.flight_graph: FlightGraph = FlightGraph(id="flight-graph-panel")
         self.flight_graph.border_title = "FLIGHT GRAPHS"
         yield self.flight_graph
-        self.rocket_visualization = Visualization(id="rocket-visualization-panel")
+        self.rocket_visualization: Visualization = Visualization(id="rocket-visualization-panel")
         self.rocket_visualization.border_title = "ROCKET VISUALIZATION"
         yield self.rocket_visualization
 
     def initialize_widgets(self, context: Context) -> None:
-        self.context = context
+        self.context: Context = context
         self.flight_telemetry.initialize_widgets(self.context)
         self.flight_graph.initialize_widgets(self.context)
         self.rocket_visualization.initialize_widgets(self.context)

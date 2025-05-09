@@ -15,6 +15,7 @@ from textual_pyfiglet import FigletWidget
 
 import airbrakes
 import airbrakes.constants
+from airbrakes.constants import LEFT_TRIANGLE, RIGHT_TRIANGLE
 from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.utils import set_only_class
@@ -36,6 +37,8 @@ class SimulationSpeed(Static, can_focus=True):
     sim_speed: reactive[float] = reactive(1.0, bindings=True)
     old_sim_speed: float = 1.0
 
+    __slots__ = ("sim_speed_label",)
+
     class State(Message):
         """
         Sends a message to the parent widget when the sim is paused / unpaused.
@@ -46,9 +49,6 @@ class SimulationSpeed(Static, can_focus=True):
             super().__init__()
 
     def compose(self) -> ComposeResult:
-        RIGHT_TRIANGLE = "▶"
-        LEFT_TRIANGLE = "◀"
-
         with Horizontal():
             yield Button(LEFT_TRIANGLE, id="speed_decrease_button")
             self.sim_speed_label = Label("1.0x", id="simulation_speed")
@@ -107,6 +107,8 @@ class FlightProgressBar(Static):
     The color changes depending on the current state of the rocket.
     """
 
+    __slots__ = ("progress_bar",)
+
     def compose(self) -> ComposeResult:
         self.progress_bar = ProgressBar(
             id="progress-bar-widget",
@@ -142,15 +144,20 @@ class FlightHeader(Static):
     Panel displaying the launch file name, launch time, and simulation status.
     """
 
-    state: reactive[str] = reactive("Standby")
-
-    context: Context | None = None
+    state: reactive[str] = reactive("Standby", init=False)
     t_zero_time_ns = reactive(0)
-    takeoff_time_ns = 0
-    sim_start_time: int = 0
     current_sim_time: reactive[int] = reactive(0)
-    is_mock: bool = True
-    _pre_calculated_motor_burn_time_ns: int | None = None
+
+    __slots__ = (
+        "_pre_calculated_motor_burn_time_ns",
+        "context",
+        "flight_progress_bar",
+        "is_mock",
+        "sim_start_time",
+        "sim_time_label",
+        "takeoff_time_ns",
+        "time_display",
+    )
 
     def compose(self) -> ComposeResult:
         """
@@ -180,6 +187,7 @@ class FlightHeader(Static):
         self.context = context
         self.is_mock = is_mock
         self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
+        self.takeoff_time_ns = 0
 
         file_name = self.query_one("#launch-file-name", Label)
 

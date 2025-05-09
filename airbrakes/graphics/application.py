@@ -6,6 +6,7 @@ import time
 from argparse import Namespace
 from typing import ClassVar
 
+from textual import on
 from textual.app import App
 from textual.worker import Worker, WorkerState
 
@@ -53,7 +54,14 @@ class AirbrakesApplication(App):
         "replay_screen": ReplayScreen,
         "benchmark_screen": BenchmarkScreen,
     }
-    # CSS_PATH = "css/visual.tcss"
+
+    __slots__ = (
+        "_args",
+        "_profiled_time",
+        "context",
+        "is_mock",
+        "launch_config",
+    )
 
     def __init__(self, is_mock: bool, cmd_args: Namespace) -> None:
         super().__init__()
@@ -63,6 +71,14 @@ class AirbrakesApplication(App):
         self._args = cmd_args
         self._profiled_time: float = 0.0  # Time taken to run the flight loop in benchmark mode
         self.launch_config: SelectedLaunchConfiguration = self._construct_launch_config_from_args()
+
+    @on(LauncherScreen.BenchmarkConfig)
+    async def get_benchmark_config(self, event: LauncherScreen.BenchmarkConfig) -> None:
+        """
+        Used when the benchmark mode button is pressed.
+        """
+        self.launch_config = event.launch_config
+        await self._setup_application()
 
     async def on_mount(self) -> None:
         """
@@ -275,13 +291,6 @@ class AirbrakesApplication(App):
         Receives the launch configuration from the launch selector screen.
         """
         self.launch_config = launch_config
-        await self._setup_application()
-
-    async def on_launcher_screen_send_config(self, event: LauncherScreen.SendConfig) -> None:
-        """
-        Used when the benchmark mode button is pressed.
-        """
-        self.launch_config = event.launch_config
         await self._setup_application()
 
     def _construct_launch_config_from_args(self) -> SelectedLaunchConfiguration:

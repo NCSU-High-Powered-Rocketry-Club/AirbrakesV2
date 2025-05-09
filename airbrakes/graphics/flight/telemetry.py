@@ -20,7 +20,6 @@ class FlightTelemetry(Static):
     Panel displaying real-time flight information.
     """
 
-    context: Context
     vertical_acceleration = reactive(0.0)
     max_vertical_acceleration = reactive(0.0)
     vertical_velocity = reactive(0.0)
@@ -33,6 +32,23 @@ class FlightTelemetry(Static):
     max_pressure_alt = reactive(0.0)
     apogee_prediction = reactive(0.0)
     airbrakes_extension = reactive(0.0)
+
+    __slots__ = (
+        "accel_label",
+        "airbrakes_label",
+        "altitude_label",
+        "apogee_label",
+        "context",
+        "debug_telemetry",
+        "max_accel_label",
+        "max_altitude_label",
+        "max_pressure_alt_label",
+        "max_total_velocity_label",
+        "max_velocity_label",
+        "pressure_alt_label",
+        "total_velocity_label",
+        "velocity_label",
+    )
 
     def compose(self) -> ComposeResult:
         with Grid(id="flight-telemetry-grid"):  # Declared with 5 colums in tcss file
@@ -169,17 +185,29 @@ class DebugTelemetry(Static):
     Collapsible panel for displaying debug telemetry data.
     """
 
-    context: Context
-    queued_imu_packets = reactive(0)
-    cpu_usage = reactive("")
-    state = var("Standby")
-    apogee = reactive(0.0)
-    apogee_convergence_time = 0.0
-    average_pitch = reactive(0.0)
-    log_buffer_size = reactive(0)
-    retrieved_packets = reactive(0)
-    invalid_fields = reactive("")
-    coast_start_time = 0
+    queued_imu_packets = reactive(0, init=False)
+    cpu_usage = reactive("", init=False)
+    state = var("Standby", init=False)
+    apogee = reactive(0.0, init=False)
+    average_pitch = reactive(0.0, init=False)
+    log_buffer_size = reactive(0, init=False)
+    retrieved_packets = reactive(0, init=False)
+    invalid_fields = reactive("", init=False)
+
+    __slots__ = (
+        "alt_convergence_label",
+        "apogee_convergence_time",
+        "coast_start_time",
+        "context",
+        "convergence_time_label",
+        "first_apogee_label",
+        "imu_packets_per_cycle_label",
+        "invalid_fields_label",
+        "log_buffer_size_label",
+        "pitch_label",
+        "queued_packets_label",
+        "retrieved_packets_label",
+    )
 
     def compose(self) -> ComposeResult:
         with Grid(id="debug-telemetry-grid"):  # Declared with 3 columns in tcss file
@@ -214,8 +242,8 @@ class DebugTelemetry(Static):
 
         with Grid(id="packet-grid") as grid:  # Declared with 4 columns in tcss file
             # Row 1:
-            self.imu_packets_per_cycle = Label("N/A", id="imu-packets-per-cycle-label")
-            yield self.imu_packets_per_cycle
+            self.imu_packets_per_cycle_label = Label("N/A", id="imu-packets-per-cycle-label")
+            yield self.imu_packets_per_cycle_label
             self.queued_packets_label = Label("0", id="queued-imu-packets-label")
             yield self.queued_packets_label
             self.retrieved_packets_label = Label("0", id="retrieved-packets-label")
@@ -238,6 +266,8 @@ class DebugTelemetry(Static):
 
     def initialize_widgets(self, context: Context) -> None:
         self.context = context
+        self.coast_start_time = 0
+        self.apogee_convergence_time = 0.0
         self.query_one(CPUUsage).initialize_widgets(context)
 
     def reset_widgets(self) -> None:
@@ -300,14 +330,16 @@ class CPUUsage(Static):
     Panel displaying the CPU usage.
     """
 
-    context: Context = None
     cpu_usages = reactive({})
+
+    __slots__ = ("context", "processes", "worker")
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.processes: dict[str, psutil.Process] = {}
         self.set_reactive(CPUUsage.cpu_usages, {})
-        self.cpu_worker: Worker = None
+        self.worker: Worker = None
+        self.context: Context | None = None
 
     def compose(self) -> ComposeResult:
         # 3x4 grid:
@@ -419,6 +451,8 @@ class CPUBars(Static):
     DARK_SHADE = "\u2593" * 5
     FULL_BLOCK = "\u2588" * 5
 
+    __slots__ = ()
+
     def compose(self) -> ComposeResult:
         """
         Show 10 CPUBars.
@@ -477,3 +511,5 @@ class CPUBar(Static):
     """
     Represents a single CPU bar.
     """
+
+    __slots__ = ()

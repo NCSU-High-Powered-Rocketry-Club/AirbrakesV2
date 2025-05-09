@@ -33,14 +33,26 @@ class Visualization(Widget):
     Class to display the 2D rocket visualization.
     """
 
-    context: Context | None = None
     pitch: reactive[float] = reactive(0.0, init=False)
     state: reactive[str] = reactive("StandbyState", init=False)
     extension: reactive[float] = reactive(ServoExtension.MIN_EXTENSION.value, init=False)
     altitude: reactive[float] = reactive(0.0, init=False)
 
+    __slots__ = (
+        "altitude_at_last_draw",
+        "canvas",
+        "context",
+        "cx",
+        "cy",
+        "is_airbrakes_deployed",
+        "is_motor_burning",
+        "original_points",
+        "pitch_at_last_draw",
+    )
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.canvas: Canvas | None = None
         self.original_points = []
         self.cx: float = 0.0
         self.cy: float = 0.0
@@ -48,6 +60,7 @@ class Visualization(Widget):
         self.altitude_at_last_draw: float = 0.0
         self.is_motor_burning: bool = False
         self.is_airbrakes_deployed: bool = False
+        self.context: Context | None = None
 
     def compose(self) -> ComposeResult:
         """
@@ -371,7 +384,6 @@ class Visualization(Widget):
         """
         Update the visualization with the current context.
         """
-        # print("in update_visualization")
         self.pitch = self.context.data_processor.average_pitch
         self.state = self.context.state.name
         self.extension = self.context.servo.current_extension.value
