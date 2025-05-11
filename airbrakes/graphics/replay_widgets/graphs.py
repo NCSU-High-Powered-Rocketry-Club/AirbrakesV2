@@ -12,7 +12,7 @@ from textual_plot import PlotWidget
 
 from airbrakes.constants import GRAPH_DATA_STORE_INTERVAL_SECONDS
 from airbrakes.context import Context
-from airbrakes.graphics.flight.downrange import DownrangeMap
+from airbrakes.graphics.replay_widgets.downrange import DownrangeMap
 from airbrakes.graphics.utils import InformationStore
 from airbrakes.utils import convert_ns_to_s
 

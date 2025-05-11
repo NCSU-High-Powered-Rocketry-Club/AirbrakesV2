@@ -19,8 +19,9 @@ def run_real_flight() -> None:
     """
     # Modify sys.argv to include real as the first argument:
     sys.argv.insert(1, "real")
-    # args = arg_parser()
-    # run_flight(args)
+    args = arg_parser()
+    app = AirbrakesApplication(flight_type="real", cmd_args=args)
+    app.run()
 
 
 def run_mock_flight() -> None:
@@ -33,7 +34,7 @@ def run_mock_flight() -> None:
     # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
     args = arg_parser()
-    app = AirbrakesApplication(is_mock=True, cmd_args=args)
+    app = AirbrakesApplication(flight_type="replay", cmd_args=args)
     app.run()
 
 

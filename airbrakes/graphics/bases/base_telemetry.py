@@ -1,13 +1,17 @@
 """
-Module which has the 2 telemetry panels for the flight display.
+Base class for the telemetry graphics.
+
+The real flight and mock replay flights will override this class to provide their own telemetry
+graphics, while sharing some common functionality.
 """
 
+import abc
 import multiprocessing
 
 import psutil
 from textual.app import ComposeResult
 from textual.containers import Grid
-from textual.reactive import reactive, var
+from textual.reactive import reactive
 from textual.widgets import Label, Static
 from textual.worker import Worker, get_current_worker
 
@@ -15,117 +19,85 @@ from airbrakes.context import Context
 from airbrakes.graphics.utils import set_only_class
 
 
-class FlightTelemetry(Static):
+class BaseFlightTelemetry(Static):
     """
-    Panel displaying real-time flight information.
+    Base class for the telemetry graphics.
+
+    The real flight and mock replay flights will override this class to provide their own telemetry
+    graphics, while sharing some common functionality.
     """
 
     vertical_acceleration = reactive(0.0)
     max_vertical_acceleration = reactive(0.0)
     vertical_velocity = reactive(0.0)
     max_vertical_velocity = reactive(0.0)
-    total_velocity = reactive(0.0)
-    max_total_velocity = reactive(0.0)
     current_altitude = reactive(0.0)
     max_altitude = reactive(0.0)
-    pressure_alt = reactive(0.0)
-    max_pressure_alt = reactive(0.0)
-    apogee_prediction = reactive(0.0)
     airbrakes_extension = reactive(0.0)
 
     __slots__ = (
         "accel_label",
         "airbrakes_label",
         "altitude_label",
-        "apogee_label",
         "context",
-        "debug_telemetry",
         "max_accel_label",
         "max_altitude_label",
-        "max_pressure_alt_label",
-        "max_total_velocity_label",
         "max_velocity_label",
-        "pressure_alt_label",
-        "total_velocity_label",
         "velocity_label",
     )
 
-    def compose(self) -> ComposeResult:
-        with Grid(id="flight-telemetry-grid"):  # Declared with 5 colums in tcss file
-            # Row 1:
-            yield Static("Vertical Accel:", id="average-acceleration-static-label")
-            self.accel_label = Label("0.0", id="average-acceleration-label")
-            yield self.accel_label
-            yield Static("Max:", id="max-acceleration-static-label")
-            self.max_accel_label = Label("0.0", id="max-acceleration-label")
-            yield self.max_accel_label
-            yield Static("m/s\u00b2", id="acceleration-units-static-label", classes="units")
-
-            # Row 2:
-            yield Static("Vertical Velocity:", id="vertical-velocity-static-label")
-            self.velocity_label = Label("0.0", id="vertical-velocity-label")
-            yield self.velocity_label
-            yield Static("Max:", id="max-vertical-velocity-static-label")
-            self.max_velocity_label = Label("0.0", id="max-vertical-velocity-label")
-            yield self.max_velocity_label
-            yield Static("m/s", id="vertical-velocity-units-static-label", classes="units")
-
-            # Row 3:
-            yield Static("Total Velocity:", id="total-velocity-static-label")
-            self.total_velocity_label = Label("0.0", id="total-velocity-label")
-            yield self.total_velocity_label
-            yield Static("Max:", id="max-total-velocity-static-label")
-            self.max_total_velocity_label = Label("0.0", id="max-total-velocity-label")
-            yield self.max_total_velocity_label
-            yield Static("m/s", id="total-velocity-units-static-label", classes="units")
-
-            # Row 4:
-            yield Static("Altitude:", id="altitude-static-label")
-            self.altitude_label = Label("0.0", id="current-altitude-label")
-            yield self.altitude_label
-            yield Static("Max:", id="max-altitude-static-label")
-            self.max_altitude_label = Label("0.0", id="max-altitude-label")
-            yield self.max_altitude_label
-            yield Static("m", id="altitude-units-static-label", classes="units")
-
-            # Row 5:
-            yield Static("Pressure Alt:", id="pressure-altitude-static-label")
-            self.pressure_alt_label = Label("0.0", id="pressure-altitude-label")
-            yield self.pressure_alt_label
-            yield Static("Max:", id="max-pressure-altitude-static-label")
-            self.max_pressure_alt_label = Label("0.0", id="max-pressure-altitude-label")
-            yield self.max_pressure_alt_label
-            yield Static("m", id="pressure-altitude-units-static-label", classes="units")
-
-            # Row 6:
-            yield Static("Predicted Apogee:", id="predicted-apogee-static-label")
-            self.apogee_label = Label("0.0", id="predicted-apogee-label")
-            yield self.apogee_label
-            yield Static()
-            yield Static()
-            yield Static("m", id="apogee-units-static-label", classes="units")
-
-            # Row 7:
-            yield Static("Airbrakes Extension:", id="airbrakes-extension-static-label")
-            self.airbrakes_label = Label("0.0", id="airbrakes-extension-label")
-            yield self.airbrakes_label
-            yield Static()
-            yield Static()
-            yield Static("\u00b0", id="airbrakes-extension-units-static-label", classes="units")
-
-        self.debug_telemetry = DebugTelemetry(id="debug-telemetry")
-        self.debug_telemetry.border_title = "DEBUG TELEMETRY"
-        yield self.debug_telemetry
+    @abc.abstractmethod
+    def compose(self) -> ComposeResult: ...
 
     def initialize_widgets(self, context: Context) -> None:
         self.context = context
-        self.debug_telemetry.initialize_widgets(context)
 
-    def reset_widgets(self) -> None:
+    def _compose_vertical_acceleration_label(self) -> ComposeResult:
         """
-        Resets the widgets to their initial state.
+        Called by superclass to compose the vertical acceleration label.
         """
-        self.debug_telemetry.reset_widgets()
+        yield Static("Vertical Accel:", id="vertical-acceleration-static-label")
+        self.accel_label = Label("0.0", id="vertical-acceleration-label")
+        yield self.accel_label
+        yield Static("Max:", id="max-vertical-acceleration-static-label")
+        self.max_accel_label = Label("0.0", id="max-vertical-acceleration-label")
+        yield self.max_accel_label
+        yield Static("m/s\u00b2", id="vertical-acceleration-units-static-label", classes="units")
+
+    def _compose_vertical_velocity_label(self) -> ComposeResult:
+        """
+        Called by superclass to compose the vertical velocity label.
+        """
+        yield Static("Vertical Velocity:", id="vertical-velocity-static-label")
+        self.velocity_label = Label("0.0", id="vertical-velocity-label")
+        yield self.velocity_label
+        yield Static("Max:", id="max-vertical-velocity-static-label")
+        self.max_velocity_label = Label("0.0", id="max-vertical-velocity-label")
+        yield self.max_velocity_label
+        yield Static("m/s", id="vertical-velocity-units-static-label", classes="units")
+
+    def _compose_current_altitude_label(self) -> ComposeResult:
+        """
+        Called by superclass to compose the current altitude label.
+        """
+        yield Static("Altitude:", id="altitude-static-label")
+        self.altitude_label = Label("0.0", id="current-altitude-label")
+        yield self.altitude_label
+        yield Static("Max:", id="max-altitude-static-label")
+        self.max_altitude_label = Label("0.0", id="max-altitude-label")
+        yield self.max_altitude_label
+        yield Static("m", id="altitude-units-static-label", classes="units")
+
+    def _compose_airbrakes_extension_label(self) -> ComposeResult:
+        """
+        Called by superclass to compose the airbrakes extension label.
+        """
+        yield Static("Airbrakes Extension:", id="airbrakes-extension-static-label")
+        self.airbrakes_label = Label("0.0", id="airbrakes-extension-label")
+        yield self.airbrakes_label
+        yield Static()
+        yield Static()
+        yield Static("\u00b0", id="airbrakes-extension-units-static-label", classes="units")
 
     def watch_vertical_acceleration(self) -> None:
         self.accel_label.update(f"{self.vertical_acceleration:.2f}")
@@ -139,110 +111,132 @@ class FlightTelemetry(Static):
     def watch_max_vertical_velocity(self) -> None:
         self.max_velocity_label.update(f"{self.max_vertical_velocity:.2f}")
 
-    def watch_total_velocity(self) -> None:
-        self.total_velocity_label.update(f"{self.total_velocity:.2f}")
-
-    def watch_max_total_velocity(self) -> None:
-        self.max_total_velocity_label.update(f"{self.max_total_velocity:.2f}")
-
     def watch_current_altitude(self) -> None:
         self.altitude_label.update(f"{self.current_altitude:.2f}")
 
     def watch_max_altitude(self) -> None:
         self.max_altitude_label.update(f"{self.max_altitude:.2f}")
 
-    def watch_pressure_alt(self) -> None:
-        self.pressure_alt_label.update(f"{self.pressure_alt:.2f}")
-
-    def watch_max_pressure_alt(self) -> None:
-        self.max_pressure_alt_label.update(f"{self.max_pressure_alt:.2f}")
-
-    def watch_apogee_prediction(self) -> None:
-        self.apogee_label.update(f"{self.apogee_prediction:.2f}")
-
     def watch_airbrakes_extension(self) -> None:
         self.airbrakes_label.update(f"{self.airbrakes_extension:.2f}")
 
-    def update_flight_telemetry(self) -> None:
+    def update_telemetry(self) -> None:
+        """
+        Base method to update the telemetry.
+
+        This method should be overridden by the subclasses to provide their own implementation.
+        """
         self.vertical_acceleration = self.context.data_processor.vertical_acceleration
-        self.max_vertical_acceleration = self.context.data_processor.max_vertical_acceleration
-        self.vertical_velocity = self.context.data_processor.vertical_velocity
-        self.max_vertical_velocity = self.context.data_processor.max_vertical_velocity
-        self.total_velocity = self.context.data_processor.total_velocity
-        self.max_total_velocity = self.context.data_processor.max_total_velocity
         self.current_altitude = self.context.data_processor.current_altitude
         self.max_altitude = self.context.data_processor.max_altitude
-        self.apogee_prediction = self.context.last_apogee_predictor_packet.predicted_apogee
+        self.vertical_velocity = self.context.data_processor.vertical_velocity
+        self.max_vertical_velocity = self.context.data_processor.max_vertical_velocity
         self.airbrakes_extension = self.context.servo.current_extension.value
-        self.pressure_alt = self.context.data_processor.current_pressure_altitude
-        self.max_pressure_alt = self.context.data_processor.max_pressure_altitude
-
-        self.debug_telemetry.update_debug_telemetry()
 
 
-class DebugTelemetry(Static):
+class BaseDebugTelemetry(Static):
     """
-    Collapsible panel for displaying debug telemetry data.
+    Base class for the telemetry graphics.
+
+    The real flight and mock replay flights will override this class to provide their own telemetry
+    graphics, while sharing some common functionality.
     """
 
-    queued_imu_packets = reactive(0, init=False)
-    cpu_usage = reactive("", init=False)
-    state = var("Standby", init=False)
-    apogee = reactive(0.0, init=False)
     average_pitch = reactive(0.0, init=False)
-    log_buffer_size = reactive(0, init=False)
-    retrieved_packets = reactive(0, init=False)
     invalid_fields = reactive("", init=False)
 
     __slots__ = (
-        "alt_convergence_label",
-        "apogee_convergence_time",
-        "coast_start_time",
         "context",
-        "convergence_time_label",
-        "first_apogee_label",
-        "imu_packets_per_cycle_label",
         "invalid_fields_label",
-        "log_buffer_size_label",
         "pitch_label",
+    )
+
+    @abc.abstractmethod
+    def compose(self) -> ComposeResult: ...
+
+    def initialize_widgets(self, context: Context) -> None:
+        """
+        Initialize the widgets with the flight data from the context.
+        """
+        self.context = context
+        self.query_one(CPUUsage).initialize_widgets(context)
+
+    def _compose_invalid_fields_label(self) -> ComposeResult:
+        """
+        Called by superclass to compose the invalid fields label.
+        """
+        yield Static("Invalid fields:", id="invalid-fields-static-label")
+        self.invalid_fields_label = Label("None", id="invalid-fields-label", expand=True)
+        yield self.invalid_fields_label
+
+    def _compose_average_pitch_label(self) -> ComposeResult:
+        """
+        Called by superclass to compose the average pitch label.
+        """
+        yield Static("Average Pitch:", id="average-pitch-static-label")
+        self.pitch_label = Label("0.0", id="average-pitch-label")
+        yield self.pitch_label
+        yield Static("\u00b0", id="pitch-units", classes="units")
+
+    def _compose_cpu_usage_widget(self) -> ComposeResult:
+        """
+        Called by superclass to compose the CPU usage widget.
+        """
+        cpu_usage = CPUUsage(id="cpu_usage_widget")
+        cpu_usage.border_title = "CPU Usage"
+        yield cpu_usage
+
+    def watch_average_pitch(self) -> None:
+        """
+        Update the average pitch label with the new value.
+
+        The label is defined in a superclass.
+        """
+        self.pitch_label.update(f"{self.average_pitch:.2f}")
+
+    def watch_invalid_fields(self) -> None:
+        """
+        Update the invalid fields label with the new value.
+
+        The label is defined in a superclass.
+        """
+        # Remove the square brackets, since textual interprets it as markup, which is invalid.
+        # TODO: make this not a string:
+        invalid_fields = self.invalid_fields.replace("[", "").replace("]", "").strip()
+        if invalid_fields != "None":
+            invalid_fields = f"[$text-error]{invalid_fields}[/]"
+
+        self.invalid_fields_label.update(f"{invalid_fields}")
+
+    def update_telemetry(self) -> None:
+        """
+        Update the debug telemetry.
+        """
+        self.invalid_fields = str(self.context.data_processor._last_data_packet.invalid_fields)
+        self.average_pitch = self.context.data_processor.average_pitch
+
+
+class QueueSizesTelemetry(Static):
+    """
+    Class to display the queue sizes of the queues throughout the application.
+    """
+
+    __slots__ = (
+        "imu_packets_per_cycle_label",
+        "log_buffer_size_label",
         "queued_packets_label",
         "retrieved_packets_label",
     )
 
+    queued_imu_packets = reactive(0, init=False)
+    log_buffer_size = reactive(0, init=False)
+    retrieved_packets = reactive(0, init=False)
+    imu_packets_per_cycle = reactive(0, init=False)
+
     def compose(self) -> ComposeResult:
-        with Grid(id="debug-telemetry-grid"):  # Declared with 3 columns in tcss file
-            # Row 1:
-            yield Static("Average Pitch:", id="average-pitch-static-label")
-            self.pitch_label = Label("0.0", id="average-pitch-label")
-            yield self.pitch_label
-            yield Static("\u00b0", id="pitch-units", classes="units")
-
-            # Row 2:
-            yield Static("First Apogee:", id="apogee-static-label")
-            self.first_apogee_label = Label("0.0", id="first-apogee-label")
-            yield self.first_apogee_label
-            yield Static("m", id="apogee-units", classes="units")
-
-            # Row 3:
-            yield Static("Convergence Time:", id="apogee-convergence-time-static-label")
-            self.convergence_time_label = Label("0.0", id="apogee-convergence-time-label")
-            yield self.convergence_time_label
-            yield Static("s", id="convergence-time-units", classes="units")
-
-            # Row 4:
-            yield Static("Convergence Height:", id="alt-at-convergence-static-label")
-            self.alt_convergence_label = Label("0.0", id="altitude-at-convergence-label")
-            yield self.alt_convergence_label
-            yield Static("m", id="altitude-at-convergence-units", classes="units")
-
-            # Row 5:
-            yield Static("Invalid fields:", id="invalid-fields-static-label")
-            self.invalid_fields_label = Label("None", id="invalid-fields-label", expand=True)
-            yield self.invalid_fields_label
-
         with Grid(id="packet-grid") as grid:  # Declared with 4 columns in tcss file
             # Row 1:
-            self.imu_packets_per_cycle_label = Label("N/A", id="imu-packets-per-cycle-label")
+            self.imu_packets_per_cycle_label = Label("0", id="imu-packets-per-cycle-label")
             yield self.imu_packets_per_cycle_label
             self.queued_packets_label = Label("0", id="queued-imu-packets-label")
             yield self.queued_packets_label
@@ -260,42 +254,14 @@ class DebugTelemetry(Static):
             # Assign the title to the grid:
             grid.border_title = "Queue Sizes"
 
-        cpu_usage = CPUUsage(id="cpu_usage_widget")
-        cpu_usage.border_title = "CPU Usage"
-        yield cpu_usage
-
     def initialize_widgets(self, context: Context) -> None:
+        """
+        Initialize the widgets with the flight data from the context.
+        """
         self.context = context
-        self.coast_start_time = 0
-        self.apogee_convergence_time = 0.0
-        self.query_one(CPUUsage).initialize_widgets(context)
-
-    def reset_widgets(self) -> None:
-        """
-        Resets the widgets to their initial state.
-        """
-        # Reinitialize class variables in case we are restarting a flight:
-        self.apogee_convergence_time = 0.0
-        self.convergence_time_label.update("0.0")
-        self.alt_convergence_label.update("0.0")
-        self.first_apogee_label.update("0.0")
-        self.coast_start_time = 0
 
     def watch_queued_imu_packets(self) -> None:
         self.queued_packets_label.update(f"{self.queued_imu_packets}")
-
-    def watch_state(self) -> None:
-        if self.state == "CoastState":
-            self.coast_start_time = self.context.state.start_time_ns
-
-    def watch_apogee(self) -> None:
-        if self.coast_start_time and not self.apogee_convergence_time:
-            self.apogee_convergence_time = (
-                self.context.data_processor.current_timestamp - self.coast_start_time
-            ) * 1e-9
-            self.convergence_time_label.update(f"{self.apogee_convergence_time:.2f}")
-            self.alt_convergence_label.update(f"{self.context.data_processor.current_altitude:.2f}")
-            self.first_apogee_label.update(f"{self.apogee:.2f}")
 
     def watch_log_buffer_size(self) -> None:
         self.log_buffer_size_label.update(f"{self.log_buffer_size}")
@@ -303,26 +269,17 @@ class DebugTelemetry(Static):
     def watch_retrieved_packets(self) -> None:
         self.retrieved_packets_label.update(f"{self.retrieved_packets}")
 
-    def watch_average_pitch(self) -> None:
-        self.pitch_label.update(f"{self.average_pitch:.2f}")
+    def watch_imu_packets_per_cycle(self) -> None:
+        self.imu_packets_per_cycle_label.update(f"{self.imu_packets_per_cycle}")
 
-    def watch_invalid_fields(self) -> None:
-        # Remove the square brackets, since textual interprets it as markup, which is invalid.
-        # TODO: make this not a string:
-        invalid_fields = self.invalid_fields.replace("[", "").replace("]", "").strip()
-        if invalid_fields != "None":
-            invalid_fields = f"[$text-error]{invalid_fields}[/]"
-
-        self.invalid_fields_label.update(f"{invalid_fields}")
-
-    def update_debug_telemetry(self) -> None:
-        self.average_pitch = self.context.data_processor.average_pitch
+    def update_queue_sizes_telemetry(self) -> None:
+        """
+        Update the queue sizes telemetry.
+        """
+        self.imu_packets_per_cycle = self.context.imu.imu_packets_per_cycle
         self.queued_imu_packets = self.context.context_data_packet.queued_imu_packets
         self.retrieved_packets = self.context.context_data_packet.retrieved_imu_packets
         self.log_buffer_size = len(self.context.logger._log_buffer)
-        self.apogee = self.context.last_apogee_predictor_packet.predicted_apogee
-        self.state = self.context.state.name
-        self.invalid_fields = str(self.context.data_processor._last_data_packet.invalid_fields)
 
 
 class CPUUsage(Static):

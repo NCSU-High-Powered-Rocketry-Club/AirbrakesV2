@@ -59,7 +59,7 @@ class MockIMU(BaseIMU):
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log
         file.
 
-        We don't call the parent constructor as the IMU class has different     parameters, so we
+        We don't call the parent constructor as the IMU class has different parameters, so we
         manually start the process that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.

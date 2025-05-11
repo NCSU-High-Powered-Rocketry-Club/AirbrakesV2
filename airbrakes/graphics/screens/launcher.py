@@ -36,14 +36,29 @@ from airbrakes.mock.mock_imu import MockIMU
 AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 
 
-class LaunchOptions(msgspec.Struct):
+class RealLaunchOptions(msgspec.Struct):
+    """
+    The options for the launch simulation.
+
+    Args:
+        mock_servo (bool): Whether to use the mock servo.
+        mock_camera (bool): Whether to use the mock camera.
+        verbose (bool): Whether to show extra information in the screen.
+    """
+
+    mock_servo: bool
+    mock_camera: bool
+    verbose: bool
+
+
+class ReplayLaunchOptions(msgspec.Struct):
     """
     The options for the launch simulation.
 
     Args:
         real_servo (bool): Whether to use the real servo.
         keep_log_file (bool): Whether to keep the log file.
-        fast_simulation (bool): Whether to use fast simulation.
+        fast_replay (bool): Whether to use fast replay.
         real_camera (bool): Whether to use the real camera.
         target_apogee (float | None): The target apogee in meters. If None, the target from the
             metadata is used.
@@ -58,11 +73,15 @@ class LaunchOptions(msgspec.Struct):
 
 class SelectedLaunchConfiguration(msgspec.Struct):
     """
-    The selected launch configuration, which is sent to the main sim screen.
+    The selected launch configuration from the launcher screen.
+
+    This is also constructed with the command line arguments if the user chose to skip the launch
+    file selection.
     """
 
-    selected_launch: Path | None
-    launch_options: LaunchOptions
+    selected_launch: Path | None = None
+    replay_launch_options: ReplayLaunchOptions | None = None
+    real_launch_options: RealLaunchOptions | None = None
     benchmark_mode: bool = False
 
 
@@ -74,7 +93,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     CSS_PATH = "../css/launcher.tcss"
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
-    launch_options: LaunchOptions = LaunchOptions(
+    launch_options: ReplayLaunchOptions = ReplayLaunchOptions(
         real_servo=False, keep_log_file=False, fast_replay=False, real_camera=False
     )
     all_metadata = MockIMU.read_all_metadata()
@@ -172,13 +191,13 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
         """
         config = SelectedLaunchConfiguration(
             selected_launch=self.selected_file,
-            launch_options=self.launch_options,
+            replay_launch_options=self.launch_options,
         )
 
         # Pop the launch selector screen and push the flight display screen:
         if event.button.id == "run-benchmark-button":
             # Forcibly override "fast_replay" to True:
-            config.launch_options.fast_replay = True
+            config.replay_launch_options.fast_replay = True
             config.benchmark_mode = True
             self.benchmark_button.label = "Running Benchmark..."
             self.benchmark_button.disabled = True
@@ -196,7 +215,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
         # Update the button label to "Run Benchmark" when the screen is resumed:
         self.benchmark_button.label = "Run Benchmark"
         self.benchmark_button.disabled = False
-        self.launch_options = LaunchOptions(
+        self.launch_options = ReplayLaunchOptions(
             real_servo=False,
             keep_log_file=False,
             fast_replay=False,

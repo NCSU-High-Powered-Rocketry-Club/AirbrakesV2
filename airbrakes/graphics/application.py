@@ -4,7 +4,7 @@ Module to show the terminal GUI for the airbrakes system.
 
 import time
 from argparse import Namespace
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from textual import on
 from textual.app import App
@@ -25,9 +25,11 @@ from airbrakes.context import Context
 from airbrakes.graphics.screens.benchmark import BenchmarkScreen
 from airbrakes.graphics.screens.launcher import (
     LauncherScreen,
-    LaunchOptions,
+    RealLaunchOptions,
+    ReplayLaunchOptions,
     SelectedLaunchConfiguration,
 )
+from airbrakes.graphics.screens.real import RealFlightScreen
 from airbrakes.graphics.screens.replay import ReplayScreen
 from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
@@ -53,21 +55,22 @@ class AirbrakesApplication(App):
         "launcher_screen": LauncherScreen,
         "replay_screen": ReplayScreen,
         "benchmark_screen": BenchmarkScreen,
+        "real_screen": RealFlightScreen,
     }
 
     __slots__ = (
         "_args",
         "_profiled_time",
         "context",
-        "is_mock",
+        "flight_type",
         "launch_config",
     )
 
-    def __init__(self, is_mock: bool, cmd_args: Namespace) -> None:
+    def __init__(self, flight_type: Literal["replay", "real", "sim"], cmd_args: Namespace) -> None:
         super().__init__()
         self.theme = "catppuccin-mocha"  # Set the default (dark mode) application theme
         self.context: Context = None
-        self.is_mock: bool = is_mock
+        self.flight_type: Literal["replay", "real", "sim"] = flight_type
         self._args = cmd_args
         self._profiled_time: float = 0.0  # Time taken to run the flight loop in benchmark mode
         self.launch_config: SelectedLaunchConfiguration = self._construct_launch_config_from_args()
@@ -110,17 +113,21 @@ class AirbrakesApplication(App):
         self.context.start()
 
         # Run normally, updating the display:
-        if not self.launch_config.benchmark_mode:
-            self.get_screen("replay_screen").start()
-            # self.screen.query_one(CPUUsage).start()
-            self.run_worker(
-                self.run_replay_flight_loop, name="Flight Loop", exclusive=True, thread=True
-            )
-        elif self.launch_config.benchmark_mode:
-            # In benchmark mode, enforce blocking the entire display and run the flight only.
-            self.run_benchmark_flight_loop()
+        if self.flight_type in ["replay", "sim"]:
+            if not self.launch_config.benchmark_mode:
+                self.get_screen("replay_screen").start()
+                self.run_worker(
+                    self.run_replay_flight_loop, name="Flight Loop", exclusive=True, thread=True
+                )
+            elif self.launch_config.benchmark_mode:
+                # In benchmark mode, enforce blocking the entire display and run the flight only.
+                self.run_benchmark_flight_loop()
         else:
-            ...  # implement uv run real flight loop
+            # Real flight mode - the main loop is blocking, and the display is updated in a thread.
+            # The display is updated at a lower frequency, so the flight loop can run in the main
+            # thread.
+            self.get_screen("real_screen").start()
+            self.run_real_flight_loop()
 
     def stop(self) -> None:
         """
@@ -155,7 +162,7 @@ class AirbrakesApplication(App):
         Currently used to check if the main menu button should be shown on the launch selector
         screen.
         """
-        if action == "main_menu" and type(self.screen) is LauncherScreen:
+        if action == "main_menu" and type(self.screen) in (LauncherScreen, RealFlightScreen):
             return False
         return super().check_action(action, parameters)
 
@@ -169,24 +176,31 @@ class AirbrakesApplication(App):
         3. Real flight mode - There is no launch selector screen.
         4. Sim mode - WIP, will take a long time to implement, since it is barely used.
         """
-        if self.is_mock:
+        if self.flight_type:
             imu = MockIMU(
-                real_time_replay=2.0 if self.launch_config.launch_options.fast_replay else 1.0,
+                real_time_replay=2.0
+                if self.launch_config.replay_launch_options.fast_replay
+                else 1.0,
                 log_file_path=self.launch_config.selected_launch,
             )
             logger = MockLogger(
-                LOGS_PATH, delete_log_file=not self.launch_config.launch_options.keep_log_file
+                LOGS_PATH,
+                delete_log_file=not self.launch_config.replay_launch_options.keep_log_file,
             )
 
             servo = (
                 Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
-                if self.launch_config.launch_options.real_servo
+                if self.launch_config.replay_launch_options.real_servo
                 else MockServo(
                     ENCODER_PIN_A,
                     ENCODER_PIN_B,
                 )
             )
-            camera = MockCamera() if not self.launch_config.launch_options.real_camera else Camera()
+            camera = (
+                MockCamera()
+                if not self.launch_config.replay_launch_options.real_camera
+                else Camera()
+            )
             data_processor = (
                 ExtendedDataProcessor()
                 if not self.launch_config.benchmark_mode
@@ -195,7 +209,7 @@ class AirbrakesApplication(App):
 
         else:  # uv run real interface
             # Maybe use mock components as specified by the command line arguments:
-            if self._args.mock_servo:
+            if self.launch_config.real_launch_options.mock_servo:
                 servo = MockServo(
                     ENCODER_PIN_A,
                     ENCODER_PIN_B,
@@ -203,7 +217,9 @@ class AirbrakesApplication(App):
             else:
                 servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
-            camera = MockCamera() if self._args.mock_camera else Camera()
+            camera = (
+                MockCamera() if self.launch_config.real_launch_options.mock_camera else Camera()
+            )
             imu = IMU(IMU_PORT)
             logger = Logger(LOGS_PATH)
             data_processor = DataProcessor()
@@ -261,6 +277,20 @@ class AirbrakesApplication(App):
         self.stop()
         self.show_benchmark_results()
 
+    def run_real_flight_loop(self) -> None:
+        """
+        Flight loop which runs in real mode.
+
+        The display is updated at a lower fixed frequency, in a different thread.
+        """
+        while True:
+            self.context.update()
+
+            if self.context.shutdown_requested:
+                break
+
+        self.stop()
+
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """
         Used to shut down the airbrakes system when the data is exhausted.
@@ -272,17 +302,21 @@ class AirbrakesApplication(App):
         """
         Assigns the target apogee to the airbrakes system.
         """
-        if self.launch_config.launch_options.target_apogee is None:
+        if self.launch_config.replay_launch_options.target_apogee is None:
             # If no target apogee is specified, e.g. when bypassing the launch selector screen,
             # get the target apogee from the metadata:
-            self.launch_config.launch_options.target_apogee = self.context.imu.file_metadata[
+            self.launch_config.replay_launch_options.target_apogee = self.context.imu.file_metadata[
                 "flight_data"
             ]["target_apogee_meters"]
 
-        airbrakes.constants.TARGET_APOGEE_METERS = self.launch_config.launch_options.target_apogee
+        airbrakes.constants.TARGET_APOGEE_METERS = (
+            self.launch_config.replay_launch_options.target_apogee
+        )
         # This updates the target apogee in the state machine, so you don't have to use
         # constants.TARGET_APOGEE_METERS directly in state.py.
-        state.__dict__["TARGET_APOGEE_METERS"] = self.launch_config.launch_options.target_apogee
+        state.__dict__["TARGET_APOGEE_METERS"] = (
+            self.launch_config.replay_launch_options.target_apogee
+        )
 
     async def _receive_launch_configuration(
         self, launch_config: SelectedLaunchConfiguration
@@ -297,16 +331,27 @@ class AirbrakesApplication(App):
         """
         Constructs the launch configuration from the command line arguments.
         """
-        return SelectedLaunchConfiguration(
-            selected_launch=self._args.path,
-            launch_options=LaunchOptions(
-                real_servo=self._args.real_servo,
-                real_camera=self._args.real_camera,
-                fast_replay=self._args.fast_replay,
-                keep_log_file=self._args.keep_log_file,
-                target_apogee=self._args.target_apogee,
-            ),
-            benchmark_mode=self._args.bench,
+        return (
+            SelectedLaunchConfiguration(
+                selected_launch=self._args.path,
+                replay_launch_options=ReplayLaunchOptions(
+                    real_servo=self._args.real_servo,
+                    real_camera=self._args.real_camera,
+                    fast_replay=self._args.fast_replay,
+                    keep_log_file=self._args.keep_log_file,
+                    target_apogee=self._args.target_apogee,
+                ),
+                benchmark_mode=self._args.bench,
+            )
+            if self.flight_type in ["replay", "sim"]
+            else SelectedLaunchConfiguration(
+                selected_launch=None,
+                real_launch_options=RealLaunchOptions(
+                    mock_servo=self._args.mock_servo,
+                    mock_camera=self._args.mock_camera,
+                    verbose=self._args.verbose,
+                ),
+            )
         )
 
     async def _setup_application(self) -> None:
@@ -316,13 +361,18 @@ class AirbrakesApplication(App):
         self.create_components()
         self._assign_target_apogee()
 
-        if not self.launch_config.benchmark_mode:
-            # wait for all widgets to be mounted before initializing them, hence the await
-            await self.push_screen("replay_screen")
-            screen: ReplayScreen = self.screen
-            screen.initialize_widgets(self.context, self.is_mock)
+        if self.flight_type != "real":
+            if not self.launch_config.benchmark_mode:
+                # wait for all widgets to be mounted before initializing them, hence the await
+                await self.push_screen("replay_screen")
+                screen: ReplayScreen = self.screen
+                screen.initialize_widgets(self.context, is_mock=True)
+            else:
+                await self.push_screen("benchmark_screen")
+                screen: BenchmarkScreen = self.screen
+                screen.initialize_widgets(self.context, self.launch_config.selected_launch)
         else:
-            await self.push_screen("benchmark_screen")
-            screen: BenchmarkScreen = self.screen
-            screen.initialize_widgets(self.context, self.launch_config.selected_launch)
+            await self.push_screen("real_screen")
+            screen: RealFlightScreen = self.screen
+            screen.initialize_widgets(self.context, self.launch_config.real_launch_options)
         self.start()

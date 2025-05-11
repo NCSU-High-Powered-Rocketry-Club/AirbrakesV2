@@ -139,7 +139,7 @@ class FlightProgressBar(Static):
         set_only_class(inner_bar, state.lower())
 
 
-class FlightHeader(Static):
+class ReplayFlightHeader(Static):
     """
     Panel displaying the launch file name, launch time, and simulation status.
     """

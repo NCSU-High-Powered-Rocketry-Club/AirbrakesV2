@@ -6,9 +6,9 @@ from textual.app import ComposeResult
 from textual.widgets import Static
 
 from airbrakes.context import Context
-from airbrakes.graphics.flight.graphs import FlightGraph
-from airbrakes.graphics.flight.telemetry import FlightTelemetry
-from airbrakes.graphics.flight.visualization import Visualization
+from airbrakes.graphics.replay_widgets.graphs import FlightGraph
+from airbrakes.graphics.replay_widgets.telemetry import ReplayFlightTelemetry
+from airbrakes.graphics.replay_widgets.visualization import Visualization
 
 
 class FlightInformation(Static):
@@ -19,7 +19,7 @@ class FlightInformation(Static):
     __slots__ = ("context", "flight_graph", "flight_telemetry", "rocket_visualization")
 
     def compose(self) -> ComposeResult:
-        self.flight_telemetry: FlightTelemetry = FlightTelemetry(id="flight-data-panel")
+        self.flight_telemetry: ReplayFlightTelemetry = ReplayFlightTelemetry(id="flight-data-panel")
         self.flight_telemetry.border_title = "SIMULATED TELEMETRY"
         yield self.flight_telemetry
         self.flight_graph: FlightGraph = FlightGraph(id="flight-graph-panel")
@@ -42,5 +42,5 @@ class FlightInformation(Static):
         self.flight_telemetry.reset_widgets()
 
     def update_flight_information(self) -> None:
-        self.flight_telemetry.update_flight_telemetry()
+        self.flight_telemetry.update_telemetry()
         self.rocket_visualization.update_visualization()

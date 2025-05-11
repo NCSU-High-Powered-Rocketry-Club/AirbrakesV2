@@ -8,9 +8,9 @@ from textual.screen import Screen
 from textual.widgets import Footer
 
 from airbrakes.context import Context
-from airbrakes.graphics.flight.header import FlightHeader
-from airbrakes.graphics.flight.panel import FlightInformation
-from airbrakes.graphics.flight.telemetry import CPUUsage
+from airbrakes.graphics.bases.base_telemetry import CPUUsage
+from airbrakes.graphics.replay_widgets.header import ReplayFlightHeader
+from airbrakes.graphics.replay_widgets.panel import FlightInformation
 
 
 class ReplayScreen(Screen[None]):
@@ -39,7 +39,7 @@ class ReplayScreen(Screen[None]):
         Create the top level layout of the screen.
         """
         with Grid(id="main-grid"):
-            self.flight_header = FlightHeader(id="flight-header")
+            self.flight_header = ReplayFlightHeader(id="flight-header")
             self.flight_information = FlightInformation(id="flight-information-panel")
             yield self.flight_header
             yield self.flight_information
