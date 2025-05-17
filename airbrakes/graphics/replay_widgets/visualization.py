@@ -333,7 +333,7 @@ class Visualization(Widget):
             )
 
         # Draw all lines
-        self.canvas.draw_hires_lines(lines, style="#ffffff")
+        self.canvas.draw_hires_lines(lines, style=self.app.theme_variables["primary"])
 
         # Draw the altitude axis:
         self.draw_altitude_axis()

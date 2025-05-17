@@ -5,6 +5,7 @@
     grid-columns: 2.0fr 1.2fr 1fr;
 
     #title {
+        margin-top: 1;
         height: 100%;
         width: 100%;
         content-align: center middle;
@@ -13,7 +14,6 @@
     }
 
     #launch-image-widget {
-        # background: blue;
         align: center middle;
     }
 
@@ -23,16 +23,18 @@
     }
 
     #launch-configuration-container {
-        border: round $border 60%;
-        border-title-align: center;
-
         #launch-configuration-grid {
+            border: round $border 60%;
+            border-title-align: center;
             grid-size: 2;  /* 2 columns */
             grid-gutter: 1;
             grid-columns: auto auto;
             grid-rows: auto;
             align: center middle;
-            # background: lightgray;
+
+                &:hover, &:focus {
+                    border: round $border;
+                }
             }
 
             Switch {
@@ -40,6 +42,15 @@
                 width: 100%;
                 padding: 0;
                 content-align: center middle;
+                /* Taken from original CSS - modified to make it more lighter on focus/hover */
+                &:hover, &:focus {
+                    & > .switch--slider {
+                        color: $panel-lighten-3
+                    }
+                    &.-on > .switch--slider {
+                        color: $success-lighten-3;
+                    }
+                }
             }
 
             Label {
@@ -69,7 +80,6 @@
 
     #launch-files-container {
         align: center middle;
-        # background: lightgray;
 
         #launch-files-radio-set {
             align: left middle;
@@ -82,7 +92,6 @@
             /* Style the heck out of the radio buttons */
             & > RadioButton {
                 margin-bottom: 1;
-                # width: 100%;
 
                 & > .toggle--button {
                     background: $background;
@@ -100,10 +109,10 @@
     #button-container {
         content-align: center middle;
         column-span: 2;
-        # border: round;
 
         Button {
             width: 100%;
+            tint: $surface 20%;
         }
     }
 }

@@ -13,15 +13,16 @@
     background: $panel 50%;
     grid-rows: auto;
 
-    #real-state-label {
-        margin-top: 1;
-        width: 100%;
+    #state-center-container {
         row-span: 2;
+        #real-state-label {
+            margin-top: 1;
+            background: $primary-muted;
+        }
     }
 
     #real-target-apogee-label {
         text-align: center;
-        width: 100%;
         content-align: center middle;
         height: 100%;
     }
@@ -32,9 +33,19 @@
         text-style: bold underline;
     }
 
-    #launch-status-label {
-        text-align: center;
-        width: 100%;
+    #launch-status-center-container {
+        #launch-status-label {
+            text-align: center;
+            background: $primary-muted;
+
+            &.hold {
+                background: $error-muted;
+            }
+
+            &.launched {
+                background: $success-muted;
+            }
+        }
     }
 
     #elapsed-time-label {

@@ -120,7 +120,6 @@ The GPIO pin the buzzer is connected to.
 # Display Configuration
 # -------------------------------------------------------
 
-# TODO: This should be in the launch selector screen:
 MOCK_DISPLAY_UPDATE_RATE = 1 / 15
 """
 The frequency at which the display updates in replay or sim mode.

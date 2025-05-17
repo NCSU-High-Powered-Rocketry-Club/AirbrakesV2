@@ -3,8 +3,10 @@ Module which has the benchmark screen for the flight display.
 """
 
 from pathlib import Path
+from typing import ClassVar
 
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
@@ -20,6 +22,11 @@ class BenchmarkScreen(ModalScreen[None]):
     CSS_PATH = "../css/benchmark.tcss"
 
     __slots__ = ("context", "flight_name")
+
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding("m", "main_screen", "Back to Main Screen"),
+        Binding("e", "exit", "Exit"),
+    ]
 
     def initialize_widgets(self, context: Context, flight_name: Path) -> None:
         self.context = context
@@ -66,13 +73,13 @@ class BenchmarkScreen(ModalScreen[None]):
             with Horizontal(id="button-container"):
                 # Add the button to go back to the main screen
                 yield Button(
-                    "Back to Main Screen",
+                    "Back to [u]M[/]ain Screen",
                     id="back-to-main-screen-button",
                     variant="primary",
                     disabled=True,
                 )
                 # Add the Button to exit the application
-                yield Button("Exit", id="exit-button", variant="error", disabled=True)
+                yield Button("[u]E[/]xit", id="exit-button", variant="error", disabled=True)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """
@@ -84,3 +91,15 @@ class BenchmarkScreen(ModalScreen[None]):
             self.app.pop_screen()
         elif event.button.id == "exit-button":
             self.app.exit()
+
+    def action_main_screen(self) -> None:
+        """
+        Called when the 'm' keyboard shortcut is pressed.
+        """
+        self.query_one("#back-to-main-screen-button", Button).press()
+
+    def action_exit(self) -> None:
+        """
+        Called when the 'e' keyboard shortcut is pressed.
+        """
+        self.query_one("#exit-button", Button).press()

@@ -5,7 +5,7 @@ UI Header for when you are running a real flight.
 import time
 
 from textual.app import ComposeResult
-from textual.containers import Grid
+from textual.containers import Center, Grid
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Label, Static
@@ -15,6 +15,7 @@ from airbrakes.constants import TARGET_APOGEE_METERS
 from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.screens.launcher import RealLaunchOptions
+from airbrakes.graphics.utils import set_only_class
 
 
 class MotorBurnSignal(Message):
@@ -49,14 +50,15 @@ class RealFlightHeader(Static):
         with Grid(id="real-header-grid"):
             # Column 1:
             # Row 1 & 2 - State:
-            self.state_label = FigletWidget(
-                "STANDBY",
-                id="real-state-label",
-                font="future",
-                justify="center",
-                color1=self.app.theme_variables["primary"],
-            )
-            yield self.state_label
+            with Center(id="state-center-container"):
+                self.state_label = FigletWidget(
+                    "STANDBY",
+                    id="real-state-label",
+                    font="future",
+                    justify="center",
+                    color1=self.app.theme_variables["primary"],
+                )
+                yield self.state_label
 
             # Column 2:
             # Row 1 - Elapsed Time since script start:
@@ -70,14 +72,15 @@ class RealFlightHeader(Static):
 
             # Column 2:
             # Row 2 - Launch Status:
-            self.launch_status_label = FigletWidget(
-                "GO FOR LAUNCH",
-                id="launch-status-label",
-                font="smblock",
-                justify="center",
-                color1=self.app.theme_variables["primary"],
-            )
-            yield self.launch_status_label
+            with Center(id="launch-status-center-container"):
+                self.launch_status_label = FigletWidget(
+                    "GO FOR LAUNCH",
+                    id="launch-status-label",
+                    font="smblock",
+                    justify="center",
+                    color1=self.app.theme_variables["primary"],
+                )
+                yield self.launch_status_label
 
             # Column 3:
             # Row 2 - Target Apogee label:
@@ -111,21 +114,40 @@ class RealFlightHeader(Static):
         Update the launch status to "GO FOR LAUNCH".
         """
         self.launch_status_label.update("GO FOR LAUNCH")
-        self.launch_status_label.color1 = self.app.theme_variables["primary"]
+        set_only_class(self.launch_status_label, None)
+        self.refresh_pyfiglet_colors()
 
     def launch_hold(self) -> None:
         """
         Update the launch status to "HOLD".
         """
         self.launch_status_label.update("HOLD")
-        self.launch_status_label.color1 = self.app.theme_variables["error"]
+        set_only_class(self.launch_status_label, "hold")
+        self.refresh_pyfiglet_colors()
 
     def launched(self) -> None:
         """
         Update the launch status to "LAUNCHED".
         """
         self.launch_status_label.update("LAUNCHED")
-        self.launch_status_label.color1 = self.app.theme_variables["success"]
+        set_only_class(self.launch_status_label, "launched")
+        self.refresh_pyfiglet_colors()
+
+    def refresh_pyfiglet_colors(self) -> None:
+        """
+        Refresh the colors of the Figlet widgets.
+
+        Can be called when the theme changes.
+        """
+        self.state_label.color1 = self.app.theme_variables["text-primary"]
+        match list(self.launch_status_label.classes):
+            case ["hold"]:
+                self.launch_status_label.color1 = self.app.theme_variables["text-error"]
+            case ["launched"]:
+                self.launch_status_label.color1 = self.app.theme_variables["text-success"]
+            case _:
+                # Default to primary if no class is set
+                self.launch_status_label.color1 = self.app.theme_variables["text-accent"]
 
     def initialize_widgets(self, context: Context, launch_options: RealLaunchOptions) -> None:
         self.context = context

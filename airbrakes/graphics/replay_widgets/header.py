@@ -28,8 +28,8 @@ class SimulationSpeed(Static, can_focus=True):
     """
 
     BINDINGS: ClassVar[list] = [
-        ("comma", "decrease_sim_speed", "Dec. speed"),
-        ("full_stop", "increase_sim_speed", "Inc. speed"),
+        ("comma,left", "decrease_sim_speed", "Dec. speed"),
+        ("full_stop,right", "increase_sim_speed", "Inc. speed"),
         ("space", "pause_sim", "Pause sim"),
         ("space", "play_sim", "Play sim"),
     ]

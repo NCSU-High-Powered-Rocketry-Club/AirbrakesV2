@@ -118,12 +118,12 @@ class RealDebugTelemetry(BaseDebugTelemetry):
 
         # Buttons for extending/retracting the airbrakes:
         self.extend_airbrakes_button = Button(
-            "Extend Airbrakes",
+            "[u]E[/]xtend Airbrakes",
             id="extend-airbrakes-button",
             variant="primary",
         )
         self.retract_airbrakes_button = Button(
-            "Retract Airbrakes",
+            "[u]R[/]etract Airbrakes",
             id="retract-airbrakes-button",
             variant="primary",
         )

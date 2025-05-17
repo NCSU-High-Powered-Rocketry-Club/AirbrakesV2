@@ -3,10 +3,12 @@ The launch file selection screen displayed on startup.
 """
 
 from pathlib import Path
+from typing import ClassVar, Literal
 
 import msgspec
 from textual import on
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.containers import Center, Grid, Vertical
 from textual.message import Message
 from textual.reactive import reactive
@@ -99,6 +101,17 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     all_metadata = MockIMU.read_all_metadata()
     file_metadata = reactive(all_metadata[AVAILABLE_FILES[0].name])
 
+    # Define keyboard bindings for easy selection and navigation:
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding("s", "change_launch_config('s')", "Enable or disable real servo", show=False),
+        Binding("l", "change_launch_config('l')", "Enable or disable keep log file", show=False),
+        Binding("f", "change_launch_config('f')", "Enable or disable fast simulation", show=False),
+        Binding("c", "change_launch_config('c')", "Enable or disable real camera", show=False),
+        Binding("t", "change_launch_config('t')", "Change target apogee", show=False),
+        Binding("r", "run_mock_simulation", "Run mock simulation", show=False),
+        Binding("b", "run_benchmark", "Run benchmark", show=False),
+    ]
+
     __slots__ = (
         "benchmark_button",
         "launch_config",
@@ -142,15 +155,18 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
             self.launch_config = LaunchConfiguration(id="launch-configuration-container").data_bind(
                 LauncherScreen.file_metadata,
             )
-            self.launch_config.border_title = "Launch Configuration"
             yield self.launch_config
             self.launch_metadata = LaunchMetadataDisplay(id="launch-metadata-container").data_bind(
                 LauncherScreen.file_metadata,
             )
             yield self.launch_metadata
             with Vertical(id="button-container"), Center():
-                yield Button("Run Mock Simulation", id="run-mock-sim-button")
-                self.benchmark_button = Button("Run Benchmark", id="run-benchmark-button")
+                yield Button(
+                    "[u]R[/]un Mock Simulation", id="run-mock-sim-button", variant="primary"
+                )
+                self.benchmark_button = Button(
+                    "Run [u]B[/]enchmark", id="run-benchmark-button", variant="warning"
+                )
                 yield self.benchmark_button
 
         yield Footer()
@@ -214,6 +230,34 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
             self.post_message(self.BenchmarkConfig(config))
         else:
             self.dismiss(result=config)
+
+    def action_change_launch_config(self, key: Literal["s", "l", "f", "c", "t"]) -> None:
+        """
+        Change the launch configuration based on the key pressed.
+        """
+        match key:
+            case "s":
+                self.query_one("#real-servo-switch", Switch).toggle()
+            case "l":
+                self.query_one("#keep-log-file-switch", Switch).toggle()
+            case "f":
+                self.query_one("#fast-sim-switch", Switch).toggle()
+            case "c":
+                self.query_one("#real-camera-switch", Switch).toggle()
+            case "t":
+                self.query_one("#input-target-apogee", Input).focus()
+
+    def action_run_mock_simulation(self) -> None:
+        """
+        Activated when the keyboard shortcut for running the mock simulation is pressed.
+        """
+        self.query_one("#run-mock-sim-button", Button).press()
+
+    def action_run_benchmark(self) -> None:
+        """
+        Activated when the keyboard shortcut for running the benchmark is pressed.
+        """
+        self.query_one("#run-benchmark-button", Button).press()
 
     def on_screen_resume(self) -> None:
         """
@@ -322,20 +366,25 @@ class LaunchConfiguration(Widget):
     __slots__ = ("target_apogee_input",)
 
     def compose(self) -> ComposeResult:
-        with Grid(id="launch-configuration-grid"):
-            yield Label("Real Servo", id="label-real-servo")
-            yield Switch(id="real-servo-switch")
-            yield Label("Keep Log File", id="label-keep-log-file")
-            yield Switch(id="keep-log-file-switch")
-            yield Label("Fast Simulation", id="label-fast-sim")
-            yield Switch(id="fast-sim-switch")
-            yield Label("Real Camera", id="label-real-camera")
-            yield Switch(id="real-camera-switch")
-            yield Label("Target Apogee", id="label-target-apogee")
+        with Grid(id="launch-configuration-grid") as config_grid:
+            yield Label("Real [u]S[/]ervo", id="label-real-servo")
+            yield Switch(id="real-servo-switch", tooltip="Whether to use the real servo")
+            yield Label("Keep [u]L[/]og File", id="label-keep-log-file")
+            yield Switch(id="keep-log-file-switch", tooltip="Keep log file after mock replay?")
+            yield Label("[u]F[/]ast Simulation", id="label-fast-sim")
+            yield Switch(id="fast-sim-switch", tooltip="Run the replay as fast as possible")
+            yield Label("Real [u]C[/]amera", id="label-real-camera")
+            yield Switch(id="real-camera-switch", tooltip="Whether to use the real camera")
+            yield Label("[u]T[/]arget Apogee", id="label-target-apogee")
             self.target_apogee_input = Input(
-                placeholder="", type="number", valid_empty=True, id="input-target-apogee"
+                placeholder="",
+                type="number",
+                valid_empty=True,
+                id="input-target-apogee",
+                tooltip="Target apogee for airbrakes in meters",
             )
             yield self.target_apogee_input
+        config_grid.border_title = "Launch Configuration"
 
     def watch_file_metadata(self) -> None:
         """

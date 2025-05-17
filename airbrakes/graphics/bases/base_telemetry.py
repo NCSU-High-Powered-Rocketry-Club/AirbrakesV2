@@ -204,6 +204,8 @@ class BaseDebugTelemetry(Static):
         """
         if self.invalid_fields:
             set_only_class(self.invalid_fields_label, "bad-data")
+        else:
+            self.invalid_fields_label.remove_class("bad-data")
 
         self.invalid_fields_label.update(f"{self.invalid_fields}")
 

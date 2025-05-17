@@ -8,9 +8,10 @@ from typing import ClassVar
 
 from textual import on
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.containers import Grid
 from textual.screen import Screen
-from textual.widgets import Footer
+from textual.widgets import Button, Footer
 
 from airbrakes.constants import REAL_TIME_DISPLAY_UPDATE_RATE
 from airbrakes.context import Context
@@ -32,8 +33,10 @@ class RealFlightScreen(Screen[None]):
 
     __slots__ = ("bell_timer", "context", "flight_header", "flight_telemetry", "launch_options")
 
-    BINDINGS: ClassVar[list[tuple[str, str, str]]] = [
-        ("l", "toggle_light", "Toggle light mode"),
+    BINDINGS: ClassVar[list[Binding]] = [
+        Binding("l", "toggle_light", "Toggle light mode"),
+        Binding("e", "extend_airbrakes", "Extend airbrakes", show=False),
+        Binding("r", "retract_airbrakes", "Retract airbrakes", show=False),
     ]
 
     def compose(self) -> ComposeResult:
@@ -115,9 +118,26 @@ class RealFlightScreen(Screen[None]):
 
     def action_toggle_light(self) -> None:
         """
-        Toggle the light mode of the screen.
+        Toggle the light mode of the screen, upon keyboard shortcut.
         """
         if self.app.theme == "textual-light":
             self.app.theme = "catppuccin-mocha"
         else:
             self.app.theme = "textual-light"
+
+        # Unfortunately, we need to set the color of the FigletWidget manually (it doesn't support
+        # CSS updates).
+        # The call_after_refresh is important otherwise it would use the previous theme's colors.
+        self.call_after_refresh(self.flight_header.refresh_pyfiglet_colors)
+
+    def action_extend_airbrakes(self) -> None:
+        """
+        Extend the airbrakes, upon keyboard shortcut.
+        """
+        self.query_one("#extend-airbrakes-button", Button).press()
+
+    def action_retract_airbrakes(self) -> None:
+        """
+        Retract the airbrakes, upon keyboard shortcut.
+        """
+        self.query_one("#retract-airbrakes-button", Button).press()
