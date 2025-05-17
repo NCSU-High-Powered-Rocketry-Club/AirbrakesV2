@@ -1,0 +1,187 @@
+#real-main-grid {
+    grid-size: 1;
+    grid-rows: auto 1fr;
+}
+
+
+#real-header-grid {
+    layout: grid;
+    overflow-y: auto;
+    grid-size: 3; /* 3 columns */
+    grid-gutter: 1;
+    height: auto;
+    background: $panel 50%;
+    grid-rows: auto;
+    # background: blue;
+
+    #real-state-label {
+        color: $primary 80%;
+        height: 100%;
+        content-align: center middle;
+        align: center middle;
+        text-style: bold;
+        text-align: center;
+        row-span: 2;
+    }
+
+    #real-target-apogee-label {
+        text-align: center;
+        width: 100%;
+        content-align: center middle;
+        height: 100%;
+        # text-style: underline;
+    }
+
+    #servo-status-label {
+        text-align: center;
+        width: 100%;
+        text-style: bold underline;
+    }
+
+    #launch-status-label {
+        text-align: center;
+        width: 100%;
+        color: $primary 80%;
+        text-style: bold;
+
+        &.hold {
+            color: $error 80%;
+        }
+        &.launched {
+            color: $success 80%;
+        }
+    }
+
+    #elapsed-time-label {
+        text-align: center;
+        width: 100%;
+    }
+}
+
+#real-flight-telemetry-panel {
+    border: round $border 80%;
+    border-title-align: center;
+    border-title-style: bold;
+
+    /* assign the color for the numbers */
+    Label {
+        color: $text-accent;
+
+        &.bad-data {
+            color: $error 80%;
+        }
+        &:disabled {
+            visibility: hidden;
+        }
+    }
+    Static:disabled {
+        visibility: hidden;
+    }
+
+    #real-flight-telemetry-grid{
+        grid-size: 5;  /* 5 columns */
+        grid-columns: auto 10 auto auto auto;
+        grid-rows: auto;
+        grid-gutter: 0 1;
+        height: auto;
+
+    }
+
+    #real-debug-telemetry {
+        overflow: auto;
+        border-top: round $border 80%;
+        border-title-align: center;
+        border-title-style: bold;
+
+        #real-debug-telemetry-grid{
+            grid-size: 3;  /* 3 columns */
+            grid-columns: auto 1fr 1fr;
+            grid-gutter: 0 1;
+            height: auto;
+
+            #invalid-fields-label{
+                column-span: 2;
+            }
+            #encoder-position-label {
+                column-span: 2;
+            }
+
+        }
+
+        Button {
+            width: 100%;
+            margin-top: 1;
+
+            &:disabled {  /* don't display the button when not running with -v */
+                display: none;
+            }
+        }
+
+        #packet-grid {
+            align: center middle;
+            text-align: center;
+            grid-size: 4;  /* 4 columns */
+            grid-columns: 1fr;
+            border-top: round $border 80%;
+            grid-rows: auto;
+            padding-top: 1;
+            margin-bottom: 1;
+            grid-gutter: 0 1;
+            height: auto;
+
+
+            Static {
+                text-align: center;
+                width: 100%;
+            }
+        }
+
+
+        #cpu-usage-widget {
+            layout: grid;
+            border-top: round $border 80%;
+            /* 4 Processes = 4 columns */
+            grid-size: 4 3;
+            overflow: auto;
+            grid-gutter: 1;
+            grid-columns: 1fr;
+            grid-rows: auto;
+            padding-top: 1;
+
+            &:disabled {  /* don't display the CPU usage widget when not running with -v */
+                display: none;
+            }
+
+            CPUBars {
+                max-height: 10;
+                content-align: center middle;
+            }
+
+            CPUBar {
+                color: grey 50%;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+
+                &.active {
+                    &.low {
+                        color: white 80%;
+                    }
+
+                    &.medium {
+                        color: yellow 80%;
+                    }
+
+                    &.high {
+                        color: red 80%;
+                    }
+                }
+            }
+
+            Label {
+                content-align: center middle;
+                text-align: center;
+            }
+        }
+    }
+}

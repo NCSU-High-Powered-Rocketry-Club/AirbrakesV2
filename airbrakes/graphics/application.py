@@ -15,7 +15,6 @@ from airbrakes import state
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
-    IMU_PORT,
     LOGS_PATH,
     MOCK_DISPLAY_UPDATE_RATE,
     SERVO_1_CHANNEL,
@@ -32,7 +31,6 @@ from airbrakes.graphics.screens.launcher import (
 from airbrakes.graphics.screens.real import RealFlightScreen
 from airbrakes.graphics.screens.replay import ReplayScreen
 from airbrakes.hardware.camera import Camera
-from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.extended_data_processor import ExtendedDataProcessor
 from airbrakes.mock.mock_camera import MockCamera
@@ -66,12 +64,12 @@ class AirbrakesApplication(App):
         "launch_config",
     )
 
-    def __init__(self, flight_type: Literal["replay", "real", "sim"], cmd_args: Namespace) -> None:
+    def __init__(self, cmd_args: Namespace) -> None:
         super().__init__()
         self.theme = "catppuccin-mocha"  # Set the default (dark mode) application theme
         self.context: Context = None
-        self.flight_type: Literal["replay", "real", "sim"] = flight_type
         self._args = cmd_args
+        self.flight_type: Literal["mock", "real", "sim"] = self._args.mode
         self._profiled_time: float = 0.0  # Time taken to run the flight loop in benchmark mode
         self.launch_config: SelectedLaunchConfiguration = self._construct_launch_config_from_args()
 
@@ -81,7 +79,7 @@ class AirbrakesApplication(App):
         Used when the benchmark mode button is pressed.
         """
         self.launch_config = event.launch_config
-        await self._setup_application()
+        await self._run_application()
 
     async def on_mount(self) -> None:
         """
@@ -89,22 +87,21 @@ class AirbrakesApplication(App):
         specified.
         """
         # If the path isn't specified, don't skip the launch selector screen.
-        if not self._args.path:
+        if self._args.mode != "real" and not self._args.path:
             self.push_screen("launcher_screen", self._receive_launch_configuration)
         else:
             # If the path is specified, skip the launch selector screen.
-            await self._setup_application()
+            await self._run_application()
 
     def on_unmount(self) -> None:
         """
         Stop the airbrakes system when the app is unmounted.
         """
-        if self.context:
-            self.context.stop()
+        self.stop()
 
     def start(self) -> None:
         """
-        Starts the flight display.
+        Starts the flight loop.
 
         Starts a different kind of flight loop depending on the launch configuration. This method is
         blocking when running in benchmark mode and for real flights.
@@ -113,7 +110,7 @@ class AirbrakesApplication(App):
         self.context.start()
 
         # Run normally, updating the display:
-        if self.flight_type in ["replay", "sim"]:
+        if self.flight_type in ["mock", "sim"]:
             if not self.launch_config.benchmark_mode:
                 self.get_screen("replay_screen").start()
                 self.run_worker(
@@ -127,18 +124,25 @@ class AirbrakesApplication(App):
             # The display is updated at a lower frequency, so the flight loop can run in the main
             # thread.
             self.get_screen("real_screen").start()
-            self.run_real_flight_loop()
+            self.run_worker(
+                self.run_real_flight_loop, name="Real Flight Loop", exclusive=True, thread=True
+            )
 
     def stop(self) -> None:
         """
-        Stops the flight display.
+        Stops the flight loop.
         """
         if not self.context:
             return
 
         self.context.stop()
-        if not self.launch_config.benchmark_mode:
-            self.get_screen("replay_screen").stop()
+        if self.screen_stack:
+            if self.flight_type == "mock" and not self.launch_config.benchmark_mode:
+                # Stop the display and the flight loop:
+                self.get_screen("replay_screen").stop()
+            elif self.flight_type == "real":
+                # Stop the display and the flight loop:
+                self.get_screen("real_screen").stop()
 
     def show_benchmark_results(self) -> None:
         """
@@ -176,7 +180,7 @@ class AirbrakesApplication(App):
         3. Real flight mode - There is no launch selector screen.
         4. Sim mode - WIP, will take a long time to implement, since it is barely used.
         """
-        if self.flight_type:
+        if self.flight_type != "real":
             imu = MockIMU(
                 real_time_replay=2.0
                 if self.launch_config.replay_launch_options.fast_replay
@@ -220,7 +224,10 @@ class AirbrakesApplication(App):
             camera = (
                 MockCamera() if self.launch_config.real_launch_options.mock_camera else Camera()
             )
-            imu = IMU(IMU_PORT)
+            # imu = IMU(IMU_PORT)
+            imu = MockIMU(
+                real_time_replay=1.0,
+            )
             logger = Logger(LOGS_PATH)
             data_processor = DataProcessor()
 
@@ -290,6 +297,7 @@ class AirbrakesApplication(App):
                 break
 
         self.stop()
+        self.exit()
 
     def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """
@@ -325,7 +333,7 @@ class AirbrakesApplication(App):
         Receives the launch configuration from the launch selector screen.
         """
         self.launch_config = launch_config
-        await self._setup_application()
+        await self._run_application()
 
     def _construct_launch_config_from_args(self) -> SelectedLaunchConfiguration:
         """
@@ -343,7 +351,7 @@ class AirbrakesApplication(App):
                 ),
                 benchmark_mode=self._args.bench,
             )
-            if self.flight_type in ["replay", "sim"]
+            if self.flight_type in ["mock", "sim"]
             else SelectedLaunchConfiguration(
                 selected_launch=None,
                 real_launch_options=RealLaunchOptions(
@@ -354,19 +362,19 @@ class AirbrakesApplication(App):
             )
         )
 
-    async def _setup_application(self) -> None:
+    async def _run_application(self) -> None:
         """
         Common setup code for initializing widgets and starting the application.
         """
         self.create_components()
-        self._assign_target_apogee()
 
         if self.flight_type != "real":
+            self._assign_target_apogee()
             if not self.launch_config.benchmark_mode:
                 # wait for all widgets to be mounted before initializing them, hence the await
                 await self.push_screen("replay_screen")
                 screen: ReplayScreen = self.screen
-                screen.initialize_widgets(self.context, is_mock=True)
+                screen.initialize_widgets(self.context)
             else:
                 await self.push_screen("benchmark_screen")
                 screen: BenchmarkScreen = self.screen

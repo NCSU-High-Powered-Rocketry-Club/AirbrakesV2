@@ -11,7 +11,7 @@ from airbrakes.context import Context
 from airbrakes.graphics.bases.base_telemetry import (
     BaseDebugTelemetry,
     BaseFlightTelemetry,
-    QueueSizesTelemetry,
+    BaseQueueSizesTelemetry,
 )
 
 
@@ -117,7 +117,7 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
         self.debug_telemetry.update_telemetry()
 
 
-class ReplayQueueSizesTelemetry(QueueSizesTelemetry):
+class ReplayQueueSizesTelemetry(BaseQueueSizesTelemetry):
     """
     Modifies the QueueSizesTelemetry to not use the real hardware queue size.
     """

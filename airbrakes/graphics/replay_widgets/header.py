@@ -152,7 +152,6 @@ class ReplayFlightHeader(Static):
         "_pre_calculated_motor_burn_time_ns",
         "context",
         "flight_progress_bar",
-        "is_mock",
         "sim_start_time",
         "sim_time_label",
         "takeoff_time_ns",
@@ -180,12 +179,11 @@ class ReplayFlightHeader(Static):
         self.flight_progress_bar = FlightProgressBar(id="flight-progress-bar")
         yield self.flight_progress_bar
 
-    def initialize_widgets(self, context: Context, is_mock: bool) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         """
         Initializes the widgets with the context and the mock flag.
         """
         self.context = context
-        self.is_mock = is_mock
         self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
         self.takeoff_time_ns = 0
 
@@ -272,11 +270,8 @@ class ReplayFlightHeader(Static):
             return current_timestamp - self.takeoff_time_ns
 
         # We are before launch (T-0). Only happens when running a mock:
-        if self.is_mock:
-            current_timestamp = self.context.data_processor.current_timestamp
-            return current_timestamp - self._pre_calculated_motor_burn_time_ns
-
-        return 0
+        current_timestamp = self.context.data_processor.current_timestamp
+        return current_timestamp - self._pre_calculated_motor_burn_time_ns
 
     def update_header(self) -> None:
         self.state = self.context.state.name

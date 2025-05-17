@@ -27,13 +27,13 @@ class BaseFlightTelemetry(Static):
     graphics, while sharing some common functionality.
     """
 
-    vertical_acceleration = reactive(0.0)
-    max_vertical_acceleration = reactive(0.0)
-    vertical_velocity = reactive(0.0)
-    max_vertical_velocity = reactive(0.0)
-    current_altitude = reactive(0.0)
-    max_altitude = reactive(0.0)
-    airbrakes_extension = reactive(0.0)
+    vertical_acceleration = reactive(0.0, init=False)
+    max_vertical_acceleration = reactive(0.0, init=False)
+    vertical_velocity = reactive(0.0, init=False)
+    max_vertical_velocity = reactive(0.0, init=False)
+    current_altitude = reactive(0.0, init=False)
+    max_altitude = reactive(0.0, init=False)
+    airbrakes_extension = reactive(0.0, init=False)
 
     __slots__ = (
         "accel_label",
@@ -49,7 +49,7 @@ class BaseFlightTelemetry(Static):
     @abc.abstractmethod
     def compose(self) -> ComposeResult: ...
 
-    def initialize_widgets(self, context: Context) -> None:
+    def initialize_widgets(self, context: Context, *_, **__) -> None:
         self.context = context
 
     def _compose_vertical_acceleration_label(self) -> ComposeResult:
@@ -154,7 +154,7 @@ class BaseDebugTelemetry(Static):
     @abc.abstractmethod
     def compose(self) -> ComposeResult: ...
 
-    def initialize_widgets(self, context: Context) -> None:
+    def initialize_widgets(self, context: Context, *_, **__) -> None:
         """
         Initialize the widgets with the flight data from the context.
         """
@@ -166,7 +166,9 @@ class BaseDebugTelemetry(Static):
         Called by superclass to compose the invalid fields label.
         """
         yield Static("Invalid fields:", id="invalid-fields-static-label")
-        self.invalid_fields_label = Label("None", id="invalid-fields-label", expand=True)
+        self.invalid_fields_label = Label(
+            "None", id="invalid-fields-label", markup=False, expand=True
+        )
         yield self.invalid_fields_label
 
     def _compose_average_pitch_label(self) -> ComposeResult:
@@ -182,7 +184,7 @@ class BaseDebugTelemetry(Static):
         """
         Called by superclass to compose the CPU usage widget.
         """
-        cpu_usage = CPUUsage(id="cpu_usage_widget")
+        cpu_usage = CPUUsage(id="cpu-usage-widget")
         cpu_usage.border_title = "CPU Usage"
         yield cpu_usage
 
@@ -200,23 +202,20 @@ class BaseDebugTelemetry(Static):
 
         The label is defined in a superclass.
         """
-        # Remove the square brackets, since textual interprets it as markup, which is invalid.
-        # TODO: make this not a string:
-        invalid_fields = self.invalid_fields.replace("[", "").replace("]", "").strip()
-        if invalid_fields != "None":
-            invalid_fields = f"[$text-error]{invalid_fields}[/]"
+        if self.invalid_fields:
+            set_only_class(self.invalid_fields_label, "bad-data")
 
-        self.invalid_fields_label.update(f"{invalid_fields}")
+        self.invalid_fields_label.update(f"{self.invalid_fields}")
 
     def update_telemetry(self) -> None:
         """
         Update the debug telemetry.
         """
-        self.invalid_fields = str(self.context.data_processor._last_data_packet.invalid_fields)
+        self.invalid_fields = self.context.data_processor._last_data_packet.invalid_fields
         self.average_pitch = self.context.data_processor.average_pitch
 
 
-class QueueSizesTelemetry(Static):
+class BaseQueueSizesTelemetry(Static):
     """
     Class to display the queue sizes of the queues throughout the application.
     """
@@ -327,7 +326,8 @@ class CPUUsage(Static):
         )
 
     def stop(self) -> None:
-        self.worker.cancel()
+        if self.worker:
+            self.worker.cancel()
 
     def update_labels(self) -> None:
         main_pct_label = self.query_one("#cpu_main_pct", Label)

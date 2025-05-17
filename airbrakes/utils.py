@@ -209,8 +209,8 @@ def arg_parser() -> argparse.Namespace:
     add_common_arguments(sim_parser, is_mock=False)
 
     parsed_args = main_parser.parse_args()
-
-    if parsed_args.bench:  # If benchmark mode is enabled, set fast replay to True
+    # If benchmark mode is enabled, set fast replay to True
+    if parsed_args.mode != "real" and parsed_args.bench:
         parsed_args.fast_replay = True
 
     return parsed_args

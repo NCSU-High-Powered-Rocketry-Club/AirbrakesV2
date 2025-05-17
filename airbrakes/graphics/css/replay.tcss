@@ -167,6 +167,9 @@
                 /* assign the color for the numbers in the debug telemetry grid */
                 Label {
                     color: $text-accent;
+                    &.bad-data {
+                        color: $error 80%;
+                    }
                 }
             }
 
@@ -196,7 +199,7 @@
             }
 
 
-            #cpu_usage_widget {
+            #cpu-usage-widget {
                 layout: grid;
                 border-top: round $border 80%;
                 /* 4 Processes = 4 columns */

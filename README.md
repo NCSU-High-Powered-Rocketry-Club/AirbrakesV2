@@ -326,6 +326,11 @@ uv sync --all-groups
 
 ### Run a real flight with real hardware:
 ```bash
+sudo $(which uv) run real
+```
+
+If you want to see additional information from the IMU and have the ability to control the servo, run:
+```bash
 sudo $(which uv) run real -v
 ```
 

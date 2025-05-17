@@ -45,12 +45,12 @@ class ReplayScreen(Screen[None]):
             yield self.flight_information
         yield Footer()
 
-    def initialize_widgets(self, context: Context, is_mock: bool) -> None:
+    def initialize_widgets(self, context: Context) -> None:
         """
         Supplies the airbrakes context and related objects to the widgets for proper operation.
         """
         self.context = context
-        self.flight_header.initialize_widgets(self.context, is_mock)
+        self.flight_header.initialize_widgets(self.context)
         self.flight_information.initialize_widgets(self.context)
         self.watch(self.query_one("#sim-speed-panel"), "sim_speed", self._change_sim_speed)
         self.watch(

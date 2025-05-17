@@ -105,9 +105,14 @@ def format_seconds_to_mins_and_secs(seconds: int) -> str:
     return f"{seconds // 60:.0f}:{seconds % 60:02.0f}"
 
 
-def set_only_class(obj: Widget, class_name: str) -> None:
+def set_only_class(obj: Widget, class_name: str | None) -> None:
     """
     Sets the only class of the object to the given class name, removes all others.
+
+    Args:
+        obj: The object to set the class for.
+        class_name: The class name to set. Set to an empty string to remove all classes.
     """
     obj.remove_class(*obj.classes)
-    obj.set_class(True, class_name)
+    if class_name:
+        obj.set_class(True, class_name)
