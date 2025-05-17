@@ -12,15 +12,10 @@
     height: auto;
     background: $panel 50%;
     grid-rows: auto;
-    # background: blue;
 
     #real-state-label {
-        color: $primary 80%;
-        height: 100%;
-        content-align: center middle;
-        align: center middle;
-        text-style: bold;
-        text-align: center;
+        margin-top: 1;
+        width: 100%;
         row-span: 2;
     }
 
@@ -29,7 +24,6 @@
         width: 100%;
         content-align: center middle;
         height: 100%;
-        # text-style: underline;
     }
 
     #servo-status-label {
@@ -41,15 +35,6 @@
     #launch-status-label {
         text-align: center;
         width: 100%;
-        color: $primary 80%;
-        text-style: bold;
-
-        &.hold {
-            color: $error 80%;
-        }
-        &.launched {
-            color: $success 80%;
-        }
     }
 
     #elapsed-time-label {

@@ -236,7 +236,6 @@ dependencies = [
     { name = "textual-hires-canvas" },
     { name = "textual-image" },
     { name = "textual-plot" },
-    { name = "textual-plotext" },
     { name = "textual-pyfiglet" },
 ]
 
@@ -276,8 +275,7 @@ requires-dist = [
     { name = "textual-hires-canvas", specifier = ">=0.5.0.post2" },
     { name = "textual-image", specifier = ">=0.8.1" },
     { name = "textual-plot", specifier = ">=0.4.0.post1" },
-    { name = "textual-plotext", specifier = ">=1.0.1" },
-    { name = "textual-pyfiglet", specifier = "<0.6.0" },
+    { name = "textual-pyfiglet", specifier = "~=0.7.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -861,15 +859,6 @@ wheels = [
 ]
 
 [[package]]
-name = "plotext"
-version = "5.3.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c9/d7/f75f397af966fe252d0d34ffd3cae765317fce2134f925f95e7d6725d1ce/plotext-5.3.2.tar.gz", hash = "sha256:52d1e932e67c177bf357a3f0fe6ce14d1a96f7f7d5679d7b455b929df517068e", size = 61967, upload-time = "2024-09-24T15:13:37.728Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/1e/12fe7c40cd2099a1f454518754ed229b01beaf3bbb343127f0cc13ce6c22/plotext-5.3.2-py3-none-any.whl", hash = "sha256:394362349c1ddbf319548cfac17ca65e6d5dfc03200c40dfdc0503b3e95a2283", size = 64047, upload-time = "2024-09-24T15:13:36.296Z" },
-]
-
-[[package]]
 name = "pluggy"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1121,6 +1110,19 @@ wheels = [
 ]
 
 [[package]]
+name = "rich-pyfiglet"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "rich" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/33/68a5ce08ee26e9383feb8f6b707f257598e4bf655e2bef940caade0dcdfd/rich_pyfiglet-0.1.3.tar.gz", hash = "sha256:f5eae51b1aa7ce9c29804882a8ffa8dac96ee1769f84f213bb3fd0c02be3a468", size = 1466678, upload-time = "2025-05-15T01:24:07.719Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/f0/787f3069b2f1c09b02313a9a1a500486f9b0769336658d840317e52f932a/rich_pyfiglet-0.1.3-py3-none-any.whl", hash = "sha256:23791f9346f281e48edcf5f5c66d9c28e44aaa78273d6aba7e054dd2ace368d5", size = 1644279, upload-time = "2025-05-15T01:24:06.058Z" },
+]
+
+[[package]]
 name = "rpi-gpio"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1299,29 +1301,17 @@ wheels = [
 ]
 
 [[package]]
-name = "textual-plotext"
-version = "1.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "plotext" },
-    { name = "textual" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/b0/e4e0f38df057db778252db0dd2c08522d7222b8537b6a0181d797b9044bd/textual_plotext-1.0.1.tar.gz", hash = "sha256:836f53a3316756609e194129a35c2875638e7958c261f541e0a794f7c98011be", size = 16489, upload-time = "2024-11-30T19:25:56.625Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/35/53/fba7da208f9d3f59254413660fa0aa6599f2aca806f3ae356670455fd4ea/textual_plotext-1.0.1-py3-none-any.whl", hash = "sha256:6b6bfd00b29f121ddf216eaaf9bdac9d688ed72f40028484d279a10cbbb169ed", size = 16558, upload-time = "2024-11-30T19:25:32.208Z" },
-]
-
-[[package]]
 name = "textual-pyfiglet"
-version = "0.5.5"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "platformdirs" },
+    { name = "rich-pyfiglet" },
     { name = "textual" },
+    { name = "textual-slidecontainer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/06/7b9aad121af1ea25581deb7dbe77f2244ff25e06674f626bfcabbaf66369/textual_pyfiglet-0.5.5.tar.gz", hash = "sha256:970a941afc8e54e5319b66516a80b2883c3611a28208ccb505f0c3b8b36bb934", size = 64174, upload-time = "2024-11-16T22:35:12.129Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dc/c4/281b6f940c36f793f40d59206e6cefa830c67a62532ddad4507c24c32522/textual_pyfiglet-0.7.0.tar.gz", hash = "sha256:1e2b5e4f21cbc907edffe48e884a360085b24f5ade695824bff77338d99fd413", size = 157075, upload-time = "2025-05-13T14:53:51.155Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/5d/8275bf13a1e838e9206b0fea96f34d759f0c3020a2064fc7252eaaabb3fd/textual_pyfiglet-0.5.5-py3-none-any.whl", hash = "sha256:5b947c243af08c01345ea3c9a235e08e0669dd2d9eae0fa14cd1043a9fa483bd", size = 71311, upload-time = "2024-11-16T22:35:09.974Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/1a/b7096d64604e1b4268123ec45786a1e0adfb6abe72044172cf90dafc5fdb/textual_pyfiglet-0.7.0-py3-none-any.whl", hash = "sha256:635902a546e86803bbf41fff0ae19193a3cd82ff82c05543c6a9d7eadd5229f8", size = 18002, upload-time = "2025-05-13T14:53:50.162Z" },
 ]
 
 [[package]]
@@ -1338,6 +1328,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/27/41/09d5695b050d592ff58422be2ca5c9915787f59ff576ca91d9541d315406/textual_serve-1.1.2.tar.gz", hash = "sha256:0ccaf9b9df9c08d4b2d7a0887cad3272243ba87f68192c364f4bed5b683e4bd4", size = 892959, upload-time = "2025-04-16T12:11:41.746Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/fb/0006f86960ab8a2f69c9f496db657992000547f94f53a2f483fd611b4bd2/textual_serve-1.1.2-py3-none-any.whl", hash = "sha256:147d56b165dccf2f387203fe58d43ce98ccad34003fe3d38e6d2bc8903861865", size = 447326, upload-time = "2025-04-16T12:11:43.176Z" },
+]
+
+[[package]]
+name = "textual-slidecontainer"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "textual" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/00/0bff4f5839208d31c871ad9d045c46451071e4844b16c6d7f442db8fb60a/textual_slidecontainer-0.4.0.tar.gz", hash = "sha256:d572e1d700e44d24f0f82fcccf990540acc81f8c751f05c93f1f6354b2007e21", size = 147742, upload-time = "2025-05-05T07:20:39.35Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/e7/693f5068bec0f9c1dedb5fda18913e48987d9008dba1d0e28e822a76b27a/textual_slidecontainer-0.4.0-py3-none-any.whl", hash = "sha256:35f58ae680b760cb7bea0325d9c73ed73d76f66da5fc8479b56a34f4c0333adc", size = 10692, upload-time = "2025-05-05T07:20:37.918Z" },
 ]
 
 [[package]]

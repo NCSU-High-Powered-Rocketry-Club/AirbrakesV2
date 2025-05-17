@@ -121,7 +121,16 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
     def compose(self) -> ComposeResult:
         with Grid(id="launch-selector-grid"):
             # The title takes 3 columns:
-            yield FigletWidget("AirbrakesV2", id="title", font="dos_rebel")
+            yield FigletWidget(
+                "AirbrakesV2",
+                id="title",
+                font="dos_rebel",
+                justify="center",
+                color1=self.app.theme_variables["secondary"],
+                color2=self.app.theme_variables["accent"],
+                animate=True,
+                animation_interval=0.5,
+            )
 
             # TODO: Legacy launch 2 and purple launch are missing pictures
             self.launch_image = LaunchImage(id="launch-image-widget").data_bind(

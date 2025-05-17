@@ -260,7 +260,7 @@ class AirbrakesApplication(App):
 
                 # Update the telemetry display at a fixed frequency:
                 if time.monotonic() - start_time >= MOCK_DISPLAY_UPDATE_RATE:
-                    self.call_from_thread(self.screen.update_telemetry)
+                    self.call_from_thread(self.get_screen("replay_screen").update_telemetry)
                     start_time = time.monotonic()
 
     def run_benchmark_flight_loop(self) -> None:

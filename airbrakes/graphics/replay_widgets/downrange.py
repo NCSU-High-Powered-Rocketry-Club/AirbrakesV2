@@ -55,8 +55,8 @@ class DownrangeMap(Widget):
     def watch_horizontal_range(self) -> None:
         self.horizontal_range_label.update(f"Range: {self.horizontal_range:.2f} m")
 
-    def initialize_widgets(self, airbrakes: Context) -> None:
-        self.context = airbrakes
+    def initialize_widgets(self, context: Context) -> None:
+        self.context = context
         self.information_store = InformationStore(time_to_store_for=None)
         self.information_store.initalize_new_data("x_distance")
         self.information_store.initalize_new_data("y_distance")

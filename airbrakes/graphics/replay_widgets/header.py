@@ -50,10 +50,10 @@ class SimulationSpeed(Static, can_focus=True):
 
     def compose(self) -> ComposeResult:
         with Horizontal():
-            yield Button(LEFT_TRIANGLE, id="speed_decrease_button")
-            self.sim_speed_label = Label("1.0x", id="simulation_speed")
+            yield Button(LEFT_TRIANGLE, id="speed-decrease-button")
+            self.sim_speed_label = Label("1.0x", id="simulation-speed")
             yield self.sim_speed_label
-            yield Button(RIGHT_TRIANGLE, id="speed_increase_button")
+            yield Button(RIGHT_TRIANGLE, id="speed-increase-button")
 
     def validate_sim_speed(self, sim_speed: float) -> float:
         if sim_speed < 0.0:
@@ -77,11 +77,11 @@ class SimulationSpeed(Static, can_focus=True):
     def action_play_sim(self) -> None:
         self.sim_speed = self.old_sim_speed
 
-    @on(Button.Pressed, "#speed_decrease_button")
+    @on(Button.Pressed, "#speed-decrease-button")
     def decrease_speed(self) -> None:
         self.sim_speed -= 0.1
 
-    @on(Button.Pressed, "#speed_increase_button")
+    @on(Button.Pressed, "#speed-increase-button")
     def increase_speed(self) -> None:
         self.sim_speed += 0.1
 
@@ -168,7 +168,14 @@ class ReplayFlightHeader(Static):
         self.sim_time_label = Label("00:00.00", id="normal-sim-time")
         yield self.sim_time_label
         yield Static()
-        yield FigletWidget("", id="state", font="smblock")
+        self.state_label = FigletWidget(
+            "STANDBY",
+            id="state",
+            font="smblock",
+            justify="center",
+            color1=self.app.theme_variables["primary"],
+        )
+        yield self.state_label
         self.time_display = TimeDisplay("T+00:00", id="launch-clock")
         yield self.time_display
         yield Static()
@@ -181,7 +188,7 @@ class ReplayFlightHeader(Static):
 
     def initialize_widgets(self, context: Context) -> None:
         """
-        Initializes the widgets with the context and the mock flag.
+        Initializes the widgets with the context.
         """
         self.context = context
         self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
@@ -221,24 +228,21 @@ class ReplayFlightHeader(Static):
         Updates the launch time display, and the progress bar.
         """
         # Update the launch time display:
-        time_display = self.time_display
         after_launch = self.t_zero_time_ns > 0
         launch_time = TimeDisplay.format_ns_to_min_s_ms(abs(self.t_zero_time_ns))
         launch_time = f"T+{launch_time}" if after_launch else f"T-{launch_time}"
-        time_display.update(launch_time)
+        self.time_display.update(launch_time)
 
         # Update the progress bar with the launch time:
         launch_time_seconds = convert_ns_to_s(self.t_zero_time_ns)
         self.flight_progress_bar.set_progress(launch_time_seconds)
 
     def watch_state(self) -> None:
-        state_label = self.query_one("#state", FigletWidget)
-
         if not self.takeoff_time_ns and self.state == "MotorBurnState":
             self.takeoff_time_ns = self.context.state.start_time_ns
 
         label = self.state.removesuffix("State")
-        state_label.update(f"{label.upper()}")
+        self.state_label.update(f"{label.upper()}")
         self.flight_progress_bar.update_progress_bar_color(label)
 
     def watch_current_sim_time(self) -> None:
