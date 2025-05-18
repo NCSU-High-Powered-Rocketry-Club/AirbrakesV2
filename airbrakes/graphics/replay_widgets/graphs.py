@@ -42,28 +42,34 @@ class FlightGraph(Widget):
         Compose the main layout, consisting of 3 tabs.
         """
         self.tabbed_content = TabbedContent(id="tabbed-content", initial="accel-tab", disabled=True)
-        with VerticalScroll(id="vertical-graph-panels"):
+        self.tabbed_content.can_focus = False
+        with VerticalScroll(id="vertical-graph-panels") as scroll:
             with self.tabbed_content:
                 with TabPane("Acceleration", id="accel-tab"):
                     self.accel_plot = PlotWidget(allow_pan_and_zoom=False)
                     self.accel_plot._margin_left = 5
+                    self.accel_plot.can_focus = False
                     yield self.accel_plot
                 with TabPane("Velocity", id="vel-tab"):
                     self.vel_plot = PlotWidget(allow_pan_and_zoom=False)
                     self.vel_plot._margin_left = 5
+                    self.vel_plot.can_focus = False
                     yield self.vel_plot
                 with TabPane("Altitude", id="alt-tab"):
                     self.alt_plot = PlotWidget(allow_pan_and_zoom=False)
                     self.alt_plot._margin_left = 5
+                    self.alt_plot.can_focus = False
                     yield self.alt_plot
                 with TabPane("Predicted Apogee", id="pred-apogee-tab"):
                     self.apogee_plot = PlotWidget(allow_pan_and_zoom=False)
                     self.apogee_plot._margin_left = 5
+                    self.apogee_plot.can_focus = False
                     yield self.apogee_plot
 
             self.downrange_map = DownrangeMap(id="downrange-map-panel")
             self.downrange_map.border_title = "DOWNRANGE MAP"
             yield self.downrange_map
+        scroll.can_focus = False
 
     def initialize_widgets(self, context: Context) -> None:
         """

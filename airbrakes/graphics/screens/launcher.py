@@ -320,6 +320,7 @@ class LaunchMetadataDisplay(Widget):
         self.data_table = DataTable(
             show_header=False, zebra_stripes=True, id="launch-metadata", cursor_type="none"
         )
+        self.data_table.can_focus = False
         self.data_table.border_title = "Launch Metadata"
         yield self.data_table
 

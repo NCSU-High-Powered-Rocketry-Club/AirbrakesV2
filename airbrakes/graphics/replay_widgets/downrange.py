@@ -36,6 +36,7 @@ class DownrangeMap(Widget):
     def compose(self) -> ComposeResult:
         self.downrange_plot = PlotWidget(allow_pan_and_zoom=False, id="downrange-map-widget")
         self.downrange_plot._margin_left = 7
+        self.downrange_plot.can_focus = False
         yield self.downrange_plot
 
         with Center(), Horizontal():
