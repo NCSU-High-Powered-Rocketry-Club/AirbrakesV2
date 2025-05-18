@@ -2,6 +2,7 @@
 Module to show the terminal GUI for the airbrakes system.
 """
 
+import gc
 import time
 from argparse import Namespace
 from typing import ClassVar, Literal
@@ -270,6 +271,7 @@ class AirbrakesApplication(App):
         This ensures that no control is given to Textual, and not a single display element is
         updated, even in the background, only the flight loop is run.
         """
+        gc.disable()
         start_profile_time = time.perf_counter()
         # In benchmark mode, we don't need to update the display, so just run the loop
         # until the data is exhausted:
@@ -281,6 +283,8 @@ class AirbrakesApplication(App):
                 break
         self._profiled_time = time.perf_counter() - start_profile_time
 
+        gc.collect()
+        gc.enable()
         self.stop()
         self.show_benchmark_results()
 
