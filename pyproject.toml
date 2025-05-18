@@ -74,6 +74,7 @@ packages = ["airbrakes"]
 [tool.hatch.build.targets.wheel.force-include]
 # specify one launch file so that the mock flight can be run as a demo with uvx.
 "launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
+"launch_data/pictures/genesis_launch_1.jpg" = "/launch_data/pictures/genesis_launch_1.jpg"
 
 # RUFF:
 [tool.ruff]
