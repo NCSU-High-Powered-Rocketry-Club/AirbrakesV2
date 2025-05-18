@@ -45,10 +45,10 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
 
             # Row 3:
             yield Static("Total Velocity:", id="total-velocity-static-label")
-            self.total_velocity_label = Label("0.0", id="total-velocity-label")
+            self.total_velocity_label = Label("0.0", id="total-velocity-label", expand=True)
             yield self.total_velocity_label
             yield Static("Max:", id="max-total-velocity-static-label")
-            self.max_total_velocity_label = Label("0.0", id="max-total-velocity-label")
+            self.max_total_velocity_label = Label("0.0", id="max-total-velocity-label", expand=True)
             yield self.max_total_velocity_label
             yield Static("m/s", id="total-velocity-units-static-label", classes="units")
 
@@ -57,16 +57,18 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
 
             # Row 5:
             yield Static("Pressure Alt:", id="pressure-altitude-static-label")
-            self.pressure_alt_label = Label("0.0", id="pressure-altitude-label")
+            self.pressure_alt_label = Label("0.0", id="pressure-altitude-label", expand=True)
             yield self.pressure_alt_label
             yield Static("Max:", id="max-pressure-altitude-static-label")
-            self.max_pressure_alt_label = Label("0.0", id="max-pressure-altitude-label")
+            self.max_pressure_alt_label = Label(
+                "0.0", id="max-pressure-altitude-label", expand=True
+            )
             yield self.max_pressure_alt_label
             yield Static("m", id="pressure-altitude-units-static-label", classes="units")
 
             # Row 6:
             yield Static("Predicted Apogee:", id="predicted-apogee-static-label")
-            self.apogee_label = Label("0.0", id="predicted-apogee-label")
+            self.apogee_label = Label("0.0", id="predicted-apogee-label", expand=True)
             yield self.apogee_label
             yield Static()
             yield Static()

@@ -103,9 +103,8 @@ class RealFlightHeader(Static):
 
         If we hit motor burn, we should stop the display.
         """
-        self.state_label.update(self.state)
-        # TODO: Check if we are in motor burn and stop the display.
-        if self.state == "MotorBurn":
+        self.state_label.update(self.state.removesuffix("State"))
+        if self.state == "MotorBurnState":
             self.launched()
             self.post_message(MotorBurnSignal())
 
@@ -161,5 +160,5 @@ class RealFlightHeader(Static):
         """
         Update the header with the latest telemetry data.
         """
-        self.state = self.context.state.name.removesuffix("State")
+        self.state = self.context.state.name
         self.time_elapsed = time.monotonic_ns() - self.flight_start_time_ns

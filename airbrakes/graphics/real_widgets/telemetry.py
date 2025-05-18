@@ -75,16 +75,17 @@ class RealFlightTelemetry(BaseFlightTelemetry):
         """
         super().watch_vertical_velocity()
         # Check if the vertical velocity is bad:
-        if self.vertical_velocity < 0.0:
+        bad_velocity = self.vertical_velocity < -2.0
+        if bad_velocity and not self.bad_velocity:
             set_only_class(self.velocity_label, "bad-data")
             self.post_message(BadDataSignal())
             self.bad_velocity = True
             return
 
         # If the vertical velocity is good, remove the bad-data class:
-        if self.bad_velocity:
-            self.velocity_label.remove_class("bad-data")
+        if not bad_velocity and self.bad_velocity:
             self.bad_velocity = False
+            self.velocity_label.remove_class("bad-data")
             self.post_message(GoodDataSignal())
 
     def update_telemetry(self) -> None:
@@ -101,7 +102,7 @@ class RealDebugTelemetry(BaseDebugTelemetry):
 
     __slots__ = ("encoder_position_label", "queue_sizes_widget")
     bad_pitch: bool = False
-    bad_invalid_fields: bool = False
+    has_invalid_fields: bool = False
     initial_pitch: float | None = None
 
     def compose(self) -> ComposeResult:
@@ -173,14 +174,16 @@ class RealDebugTelemetry(BaseDebugTelemetry):
             self.initial_pitch = self.average_pitch
 
         # Check if the average pitch is bad:
-        if abs(self.average_pitch - self.initial_pitch) > 2.0:
+        pitch_is_bad = abs(self.average_pitch - self.initial_pitch) > 2.0
+
+        if pitch_is_bad and not self.bad_pitch:
             set_only_class(self.pitch_label, "bad-data")
             self.post_message(BadDataSignal())
             self.bad_pitch = True
             return
 
         # If the average pitch is good, remove the bad-data class:
-        if self.bad_pitch:
+        if not pitch_is_bad and self.bad_pitch:
             self.bad_pitch = False
             self.pitch_label.remove_class("bad-data")
             self.post_message(GoodDataSignal())
@@ -189,14 +192,14 @@ class RealDebugTelemetry(BaseDebugTelemetry):
         super().watch_invalid_fields()
 
         # Check if the invalid fields are bad:
-        if self.invalid_fields:
+        if self.invalid_fields and not self.has_invalid_fields:
             self.post_message(BadDataSignal())
-            self.bad_invalid_fields = True
+            self.has_invalid_fields = True
             return
 
         # If the invalid fields are good, remove the bad-data class:
-        if self.bad_invalid_fields:
-            self.bad_invalid_fields = False
+        if not self.invalid_fields and self.has_invalid_fields:
+            self.has_invalid_fields = False
             self.invalid_fields_label.remove_class("bad-data")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
@@ -222,14 +225,15 @@ class RealQueueSizesTelemetry(BaseQueueSizesTelemetry):
     def watch_imu_packets_per_cycle(self) -> None:
         super().watch_imu_packets_per_cycle()
 
-        if self.imu_packets_per_cycle > 30:
+        high_packets_per_cycle = self.imu_packets_per_cycle > 30
+        if high_packets_per_cycle and not self.bad_queue_size:
             set_only_class(self.imu_packets_per_cycle_label, "bad-data")
             self.post_message(BadDataSignal())
             self.bad_queue_size = True
             return
 
         # If the IMU packets per cycle is good, remove the bad-data class:
-        if self.bad_queue_size:
+        if not high_packets_per_cycle and self.bad_queue_size:
             self.bad_queue_size = False
             self.imu_packets_per_cycle_label.remove_class("bad-data")
             self.post_message(GoodDataSignal())

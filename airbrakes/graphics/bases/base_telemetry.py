@@ -57,7 +57,7 @@ class BaseFlightTelemetry(Static):
         Called by superclass to compose the vertical acceleration label.
         """
         yield Static("Vertical Accel:", id="vertical-acceleration-static-label")
-        self.accel_label = Label("0.0", id="vertical-acceleration-label")
+        self.accel_label = Label("0.0", id="vertical-acceleration-label", expand=True)
         yield self.accel_label
         yield Static("Max:", id="max-vertical-acceleration-static-label")
         self.max_accel_label = Label("0.0", id="max-vertical-acceleration-label")
@@ -69,7 +69,7 @@ class BaseFlightTelemetry(Static):
         Called by superclass to compose the vertical velocity label.
         """
         yield Static("Vertical Velocity:", id="vertical-velocity-static-label")
-        self.velocity_label = Label("0.0", id="vertical-velocity-label")
+        self.velocity_label = Label("0.0", id="vertical-velocity-label", expand=True)
         yield self.velocity_label
         yield Static("Max:", id="max-vertical-velocity-static-label")
         self.max_velocity_label = Label("0.0", id="max-vertical-velocity-label")
@@ -81,10 +81,10 @@ class BaseFlightTelemetry(Static):
         Called by superclass to compose the current altitude label.
         """
         yield Static("Altitude:", id="altitude-static-label")
-        self.altitude_label = Label("0.0", id="current-altitude-label")
+        self.altitude_label = Label("0.0", id="current-altitude-label", expand=True)
         yield self.altitude_label
         yield Static("Max:", id="max-altitude-static-label")
-        self.max_altitude_label = Label("0.0", id="max-altitude-label")
+        self.max_altitude_label = Label("0.0", id="max-altitude-label", expand=True)
         yield self.max_altitude_label
         yield Static("m", id="altitude-units-static-label", classes="units")
 
@@ -93,7 +93,7 @@ class BaseFlightTelemetry(Static):
         Called by superclass to compose the airbrakes extension label.
         """
         yield Static("Airbrakes Extension:", id="airbrakes-extension-static-label")
-        self.airbrakes_label = Label("0.0", id="airbrakes-extension-label")
+        self.airbrakes_label = Label("0.0", id="airbrakes-extension-label", expand=True)
         yield self.airbrakes_label
         yield Static()
         yield Static()
@@ -176,7 +176,7 @@ class BaseDebugTelemetry(Static):
         Called by superclass to compose the average pitch label.
         """
         yield Static("Average Pitch:", id="average-pitch-static-label")
-        self.pitch_label = Label("0.0", id="average-pitch-label")
+        self.pitch_label = Label("0.0", id="average-pitch-label", expand=True)
         yield self.pitch_label
         yield Static("\u00b0", id="pitch-units", classes="units")
 
