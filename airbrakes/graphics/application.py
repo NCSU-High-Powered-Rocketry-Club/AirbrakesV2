@@ -16,6 +16,7 @@ from airbrakes import state
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
+    IMU_PORT,
     LOGS_PATH,
     MOCK_DISPLAY_UPDATE_RATE,
     SERVO_1_CHANNEL,
@@ -32,6 +33,7 @@ from airbrakes.graphics.screens.launcher import (
 from airbrakes.graphics.screens.real import RealFlightScreen
 from airbrakes.graphics.screens.replay import ReplayScreen
 from airbrakes.hardware.camera import Camera
+from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.extended_data_processor import ExtendedDataProcessor
 from airbrakes.mock.mock_camera import MockCamera
@@ -225,10 +227,10 @@ class AirbrakesApplication(App):
             camera = (
                 MockCamera() if self.launch_config.real_launch_options.mock_camera else Camera()
             )
-            # imu = IMU(IMU_PORT)
-            imu = MockIMU(
-                real_time_replay=1.0,
-            )
+            imu = IMU(IMU_PORT)
+            # imu = MockIMU(
+            #     real_time_replay=1.0,
+            # )
             logger = Logger(LOGS_PATH)
             data_processor = DataProcessor()
 

@@ -66,5 +66,6 @@ if __name__ == "__main__":
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.
     #     -v, --verbose : Enables a detailed display with more flight data.
 
-    app = AirbrakesApplication()
+    args = arg_parser()
+    app = AirbrakesApplication(cmd_args=args)
     app.run()
