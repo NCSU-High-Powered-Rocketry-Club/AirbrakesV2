@@ -121,12 +121,12 @@ class RealDebugTelemetry(BaseDebugTelemetry):
         self.extend_airbrakes_button = Button(
             "[u]E[/]xtend Airbrakes",
             id="extend-airbrakes-button",
-            variant="primary",
+            variant="success",
         )
         self.retract_airbrakes_button = Button(
             "[u]R[/]etract Airbrakes",
             id="retract-airbrakes-button",
-            variant="primary",
+            variant="error",
         )
         yield self.extend_airbrakes_button
         yield self.retract_airbrakes_button
@@ -200,7 +200,7 @@ class RealDebugTelemetry(BaseDebugTelemetry):
         # If the invalid fields are good, remove the bad-data class:
         if not self.invalid_fields and self.has_invalid_fields:
             self.has_invalid_fields = False
-            self.invalid_fields_label.remove_class("bad-data")
+            self.post_message(GoodDataSignal())
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "extend-airbrakes-button":
