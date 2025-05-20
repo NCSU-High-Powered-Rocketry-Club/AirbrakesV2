@@ -103,10 +103,10 @@ class RealFlightHeader(Static):
 
         If we hit motor burn, we should stop the display.
         """
-        self.state_label.update(self.state.removesuffix("State"))
-        if self.state == "MotorBurnState":
+        if self.state != "StandbyState":
             self.launched()
             self.post_message(MotorBurnSignal())
+        self.state_label.update(self.state.removesuffix("State"))
 
     def go_for_launch(self) -> None:
         """
@@ -150,7 +150,7 @@ class RealFlightHeader(Static):
 
     def initialize_widgets(self, context: Context, launch_options: RealLaunchOptions) -> None:
         self.context = context
-        self.state = self.context.state.name.removesuffix("State")
+        self.state = self.context.state.name
         self.flight_start_time_ns = time.monotonic_ns()
 
         if launch_options.mock_servo:
