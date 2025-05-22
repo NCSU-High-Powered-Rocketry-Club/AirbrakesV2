@@ -145,7 +145,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
                 animation_interval=0.5,
             )
 
-            # TODO: Legacy launch 2 and purple launch are missing pictures
+            # TODO: Legacy launch 2 is missing its picture
             self.launch_image = LaunchImage(id="launch-image-widget").data_bind(
                 LauncherScreen.selected_file
             )

@@ -22,7 +22,7 @@ dependencies = [
     "textual-plot>=0.4.0.post1",
     "textual-hires-canvas>=0.5.0.post2",
     "textual-image>=0.8.1",
-    "textual-pyfiglet~=0.7.0",
+    "textual-pyfiglet~=0.7.0",  # 0.8.0 has a bug - https://github.com/edward-jazzhands/textual-pyfiglet/issues/1
     "numpy-quaternion>=2024.0.8",
 ]
 
