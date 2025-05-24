@@ -13,7 +13,7 @@ from textual.containers import Grid
 from textual.screen import Screen
 from textual.widgets import Button, Footer
 
-from airbrakes.constants import REAL_TIME_DISPLAY_UPDATE_RATE
+from airbrakes.constants import DARK_THEME, LIGHT_THEME, REAL_TIME_DISPLAY_UPDATE_RATE
 from airbrakes.context import Context
 from airbrakes.graphics.real_widgets.header import MotorBurnSignal, RealFlightHeader
 from airbrakes.graphics.real_widgets.telemetry import (
@@ -120,15 +120,7 @@ class RealFlightScreen(Screen[None]):
         """
         Toggle the light mode of the screen, upon keyboard shortcut.
         """
-        if self.app.theme == "textual-light":
-            self.app.theme = "catppuccin-mocha"
-        else:
-            self.app.theme = "textual-light"
-
-        # Unfortunately, we need to set the color of the FigletWidget manually (it doesn't support
-        # CSS updates).
-        # The call_after_refresh is important otherwise it would use the previous theme's colors.
-        self.call_after_refresh(self.flight_header.refresh_pyfiglet_colors)
+        self.app.theme = LIGHT_THEME if self.app.theme != LIGHT_THEME else DARK_THEME
 
     def action_extend_airbrakes(self) -> None:
         """

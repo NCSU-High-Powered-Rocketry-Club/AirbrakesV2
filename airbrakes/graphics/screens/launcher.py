@@ -139,10 +139,9 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
                 id="title",
                 font="dos_rebel",
                 justify="center",
-                color1=self.app.theme_variables["secondary"],
-                color2=self.app.theme_variables["accent"],
+                colors=["$primary", "$accent"],
                 animate=True,
-                animation_interval=0.5,
+                fps=8,
             )
 
             # TODO: Legacy launch 2 is missing its picture

@@ -251,20 +251,20 @@ class AirbrakesApplication(App):
         #     context.imu.set_airbrakes_status(context.servo.current_extension)
 
         start_time = time.monotonic()
-        if not self.launch_config.benchmark_mode:
-            while True:
-                self.context.update()
+        replay_screen: ReplayScreen = self.get_screen("replay_screen")
+        while True:
+            self.context.update()
 
-                # See https://github.com/python/cpython/issues/130279 for why this is here and not
-                # in the loop condition.
-                # Stop the simulation when the data is exhausted or when shutdown is requested:
-                if self.context.shutdown_requested or not self.context.imu.is_running:
-                    break
+            # See https://github.com/python/cpython/issues/130279 for why this is here and not
+            # in the loop condition.
+            # Stop the simulation when the data is exhausted or when shutdown is requested:
+            if self.context.shutdown_requested or not self.context.imu.is_running:
+                break
 
-                # Update the telemetry display at a fixed frequency:
-                if time.monotonic() - start_time >= MOCK_DISPLAY_UPDATE_RATE:
-                    self.call_from_thread(self.get_screen("replay_screen").update_telemetry)
-                    start_time = time.monotonic()
+            # Update the telemetry display at a fixed frequency:
+            if time.monotonic() - start_time >= MOCK_DISPLAY_UPDATE_RATE:
+                self.call_from_thread(replay_screen.update_telemetry)
+                start_time = time.monotonic()
 
     def run_benchmark_flight_loop(self) -> None:
         """

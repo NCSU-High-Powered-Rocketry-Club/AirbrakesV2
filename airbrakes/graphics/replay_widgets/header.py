@@ -173,7 +173,7 @@ class ReplayFlightHeader(Static):
             id="state",
             font="smblock",
             justify="center",
-            color1=self.app.theme_variables["primary"],
+            colors=["$primary"],
         )
         yield self.state_label
         self.time_display = TimeDisplay("T+00:00", id="launch-clock")

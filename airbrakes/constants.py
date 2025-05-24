@@ -149,6 +149,16 @@ LEFT_TRIANGLE = "◀"
 The icons used to represent the simulation speed.
 """
 
+LIGHT_THEME = "textual-light"
+"""
+The name of the light theme.
+"""
+
+DARK_THEME = "catppuccin-mocha"
+"""
+The name of the dark theme.
+"""
+
 
 # Constants for rocket dimensions (in canvas cells)
 ROCKET_WIDTH = 6

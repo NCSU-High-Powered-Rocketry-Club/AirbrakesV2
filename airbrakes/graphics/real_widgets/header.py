@@ -56,7 +56,7 @@ class RealFlightHeader(Static):
                     id="real-state-label",
                     font="future",
                     justify="center",
-                    color1=self.app.theme_variables["primary"],
+                    colors=["$text-primary"],
                 )
                 yield self.state_label
 
@@ -78,7 +78,7 @@ class RealFlightHeader(Static):
                     id="launch-status-label",
                     font="smblock",
                     justify="center",
-                    color1=self.app.theme_variables["primary"],
+                    colors=["$text-primary"],
                 )
                 yield self.launch_status_label
 
@@ -134,19 +134,19 @@ class RealFlightHeader(Static):
 
     def refresh_pyfiglet_colors(self) -> None:
         """
-        Refresh the colors of the Figlet widgets.
+        Refresh the colors of the Figlet widgets. The background of that widget is changed
+        automatically since that's defined in the CSS.
 
         Can be called when the theme changes.
         """
-        self.state_label.color1 = self.app.theme_variables["text-primary"]
         match list(self.launch_status_label.classes):
             case ["hold"]:
-                self.launch_status_label.color1 = self.app.theme_variables["text-error"]
+                self.launch_status_label.set_color_list(["$text-error"])
             case ["launched"]:
-                self.launch_status_label.color1 = self.app.theme_variables["text-success"]
+                self.launch_status_label.set_color_list(["$text-success"])
             case _:
                 # Default to primary if no class is set
-                self.launch_status_label.color1 = self.app.theme_variables["text-accent"]
+                self.launch_status_label.set_color_list(["$text-primary"])
 
     def initialize_widgets(self, context: Context, launch_options: RealLaunchOptions) -> None:
         self.context = context
