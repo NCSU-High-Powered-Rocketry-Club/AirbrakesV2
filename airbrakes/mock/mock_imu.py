@@ -228,8 +228,8 @@ class MockIMU(BaseIMU):
                         execution_time = time.time() - start_time
                         sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
                         adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
-                        # Believe it or not, time.sleep(0) makes everything at least 2x slower...
-                        # so we only sleep if the adjusted sleep time is greater than 0
+                        # See https://github.com/python/cpython/issues/125997 on why we don't
+                        # time.sleep(0). If we did that, the mocks would be at least 2x slower.
                         if adjusted_sleep_time:
                             time.sleep(adjusted_sleep_time)
                     else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
