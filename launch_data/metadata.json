@@ -298,7 +298,7 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 1281.25,
+            "apogee_meters": 1293.72,
             "landed_coordinates": {
                 "latitude": 34.88886,
                 "longitude": -86.61492
