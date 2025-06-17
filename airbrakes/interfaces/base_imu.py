@@ -6,7 +6,10 @@ the rocket.
 import contextlib
 from multiprocessing import Process, TimeoutError, Value
 
-from faster_fifo import Empty, Queue
+from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for this library
+    Empty,
+    Queue,
+)
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (

@@ -6,7 +6,8 @@ import contextlib
 import multiprocessing
 
 import msgspec
-from faster_fifo import Queue
+import msgspec.msgpack
+from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 from python_mscl import mscl
 
 from airbrakes.constants import (
@@ -248,7 +249,7 @@ class IMU(BaseIMU):
                         if not data_point.valid():
                             if imu_data_packet.invalid_fields is None:
                                 imu_data_packet.invalid_fields = []
-                            imu_data_packet.invalid_fields.append(data_point.channelName())
+                            imu_data_packet.invalid_fields.append(data_point.channelName())  # ty: ignore[possibly-unbound-attribute]
                 else:
                     continue  # We never actually reach here, but keeping it just in case
 

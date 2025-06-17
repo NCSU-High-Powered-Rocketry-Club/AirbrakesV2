@@ -26,10 +26,11 @@ dependencies = [
 dev = [
     "pytest>=8.4.0",
     "pytest-cov",
-    "ruff",
+    "ruff>=0.12.0",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
     "docformatter",
+    "ty>=0.0.1a10",
 ]
 
 profiling = [
@@ -143,6 +144,9 @@ fail_under = 88
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.ty.src]
+root = "./airbrakes"
 
 [tool.docformatter]
 wrap-summaries = 100

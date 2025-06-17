@@ -297,9 +297,11 @@ class DataGenerator:
         # calculates the forces and accelerations
         forces = self._calculate_forces(next_timestamp, self._last_velocities)
         force_accelerations = forces / self._calculate_mass(next_timestamp)
-        compensated_accel = self._est_rotation_manager.calculate_compensated_accel(
-            force_accelerations[0],
-            force_accelerations[1],
+        compensated_accel: npt.NDArray[np.float64] = (
+            self._est_rotation_manager.calculate_compensated_accel(
+                force_accelerations[0],
+                force_accelerations[1],
+            )
         )
 
         # adds noise to compensated acceleration
@@ -315,7 +317,7 @@ class DataGenerator:
             self._last_velocities[2] < self._max_vertical_velocity * MAX_VELOCITY_THRESHOLD
             and self._last_est_packet.timestamp > 1e9
         ):
-            comp_accel_mag = np.linalg.norm(compensated_accel)
+            comp_accel_mag = np.float64(np.linalg.norm(compensated_accel))
             comp_accel_noise_mag = get_random_value(
                 self._config.rand_config.acceleration_noise_coefficients, comp_accel_mag
             )

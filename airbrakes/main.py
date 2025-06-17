@@ -7,6 +7,7 @@ It will create the AirbrakesContext object and run the main loop.
 import argparse
 import sys
 import time
+from typing import cast
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
@@ -182,7 +183,8 @@ def run_flight_loop(
             # This allows the simulation to know whether air brakes are deployed or not, and
             # change the drag coefficient and reference area used
             if is_sim:
-                context.imu.set_airbrakes_status(context.servo.current_extension)
+                sim_imu = cast("SimIMU", context.imu)
+                sim_imu.set_airbrakes_status(context.servo.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
