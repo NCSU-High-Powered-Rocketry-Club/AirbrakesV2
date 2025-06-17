@@ -1,8 +1,9 @@
 # Make sure that the additional_dependencies here match pyproject.toml
 
-ci:
-  autofix_prs: false
-  autoupdate_schedule: "monthly"
+# TODO: Uncomment the ci section and delete pre-commit.yml file after repo is public
+# ci:
+#   autofix_prs: false
+#   autoupdate_schedule: "monthly"
 
 repos:
   - repo: https://github.com/PyCQA/docformatter
