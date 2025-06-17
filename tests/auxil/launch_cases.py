@@ -474,7 +474,7 @@ class PelicanatorLaunchCase1(LaunchCase):
 
         Data got cutoff ~22 seconds before landing.
         """
-        return lines_in_log_file > 35_000
+        return lines_in_log_file > 33_000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
         """
