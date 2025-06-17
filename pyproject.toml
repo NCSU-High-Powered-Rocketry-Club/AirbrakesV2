@@ -15,16 +15,16 @@ dependencies = [
     "faster-fifo",
     "textual",
     "python-mscl>=67.0.0",
+    "numpy-quaternion>=2024.0.8",
     # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
     # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
     "rpi-gpio>=0.7.1",
     "adafruit-circuitpython-servokit>=1.3.19",
-    "numpy-quaternion>=2024.0.8",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest",
+    "pytest>=8.4.0",
     "pytest-cov",
     "ruff",
     "pre-commit",

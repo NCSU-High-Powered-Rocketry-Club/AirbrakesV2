@@ -24,6 +24,7 @@ from tests.auxil.launch_cases import (
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
+    PelicanatorLaunchCase4,
     PurpleLaunchCase,
     StateInformation,
 )
@@ -73,6 +74,8 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase1
         elif launch_name == "pelicanator_launch_2":
             launch_case = PelicanatorLaunchCase2
+        elif launch_name == "pelicanator_launch_4":
+            launch_case = PelicanatorLaunchCase4
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
@@ -157,30 +160,23 @@ class TestIntegration:
         # Let's validate our data!
         launch_case_init = launch_case(states_dict, target_altitude)
 
-        all_states = launch_case_init.test_all_states_present()
-        assert all_states, f"Test failed for {launch_name}, states {all_states}"
+        all_states = launch_case_init.all_states_present()
+        assert all_states.passed, f"Test failed for {launch_name}"
 
         standby_cases = launch_case_init.standby_case_test()
-        assert all(standby_cases.values()), (
-            f"Test failed for {launch_name}, StandbyState {standby_cases}"
-        )
+        assert standby_cases.passed, f"Test failed for {launch_name}"
 
         motor_burn_cases = launch_case_init.motor_burn_case_test()
-        assert all(motor_burn_cases.values()), (
-            f"Test failed for {launch_name}, MotorBurnState {motor_burn_cases}"
-        )
+        assert motor_burn_cases.passed, f"Test failed for {launch_name}"
+
         coast_cases = launch_case_init.coast_case_test()
-        assert all(coast_cases.values()), f"Test failed for {launch_name}, CoastState {coast_cases}"
+        assert coast_cases.passed, f"Test failed for {launch_name}"
 
         free_fall_cases = launch_case_init.free_fall_case_test()
-        assert all(free_fall_cases.values()), (
-            f"Test failed for {launch_name}, FreeFallState {free_fall_cases}"
-        )
+        assert free_fall_cases.passed, f"Test failed for {launch_name}"
 
         landed_cases = launch_case_init.landed_case_test()
-        assert all(landed_cases.values()), (
-            f"Test failed for {launch_name}, LandedState {landed_cases}"
-        )
+        assert landed_cases.passed, f"Test failed for {launch_name}"
 
         # Now let's check if everything was logged correctly using pandas
 
