@@ -1,4 +1,6 @@
-"""Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket."""
+"""
+Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket.
+"""
 
 import contextlib
 import multiprocessing
@@ -27,8 +29,9 @@ from airbrakes.telemetry.packets.imu_data_packet import (
 
 class MockIMU(BaseIMU):
     """
-    A mock implementation of the IMU for testing purposes. It doesn't interact with any hardware
-    and returns data read from a previous log file.
+    A mock implementation of the IMU for testing purposes.
+
+    It doesn't interact with any hardware and returns data read from a previous log file.
     """
 
     __slots__ = (
@@ -45,9 +48,11 @@ class MockIMU(BaseIMU):
         start_after_log_buffer: bool = True,
     ):
         """
-        Initializes the object that pretends to be an IMU for testing purposes by reading from a
-            log file. We don't call the parent constructor as the IMU class has different
-            parameters, so we manually start the process that fetches data from the log file.
+        Initializes the object that pretends to be an IMU for testing purposes by reading from a log
+        file.
+
+        We don't call the parent constructor as the IMU class has different     parameters, so we
+        manually start the process that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
@@ -103,12 +108,12 @@ class MockIMU(BaseIMU):
         usecols: list[str] | object = DEFAULT,
         **kwargs,
     ) -> pl.DataFrame:
-        """Reads the csv file and returns it as a polars DataFrame.
+        """
+        Reads the csv file and returns it as a polars DataFrame.
 
         :param start_index: The index to start reading the file from. Must be a keyword argument.
         :param usecols: The columns to read from the file. Must be a keyword argument.
         :param kwargs: Additional keyword arguments to pass to pl.read_csv.
-
         :return: The DataFrame or TextFileReader object.
         """
         # This is here because of issues with using "fork" multiprocessing on Linux with polars.
@@ -139,6 +144,7 @@ class MockIMU(BaseIMU):
     def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
+
         :return: The index where the log buffer ends.
         """
         metadata_buffer_index: int | None = self.file_metadata["flight_data"]["log_buffer_index"]
@@ -159,10 +165,11 @@ class MockIMU(BaseIMU):
     def _read_file(self, real_time_replay: bool, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
-        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period,
-        or run at full speed, e.g. for using it in the CI.
+
+        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period, or run
+            at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
@@ -180,10 +187,8 @@ class MockIMU(BaseIMU):
             # an estimated data packet
             if row_dict.get("scaledAccelX"):
                 imu_data_packet = RawDataPacket(**row_dict)
-            elif row_dict.get("estPressureAlt"):  # checking for estPressureAlt
-                imu_data_packet = EstimatedDataPacket(**row_dict)
             else:
-                continue
+                imu_data_packet = EstimatedDataPacket(**row_dict)
 
             # Put the packet in the queue in a batch, to reduce the cost of acquiring locks.
             # TODO: While faster under -f, this method has a drawback of artifically increasing the
@@ -215,10 +220,11 @@ class MockIMU(BaseIMU):
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
-        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period,
-        or run at full speed.
+
+        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period, or run
+            at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
-        was filled for Standby state.
+            was filled for Standby state.
         """
         self._setup_queue_serialization_method()
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the

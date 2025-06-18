@@ -1,12 +1,15 @@
-"""Module for describing the data packet for the processed IMU data."""
+"""
+Module for describing the data packet for the processed IMU data.
+"""
 
 import msgspec
 
 
 class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     """
-    Represents a packet of processed data from the IMUDataProcessor. All of these fields are the
-    processed values of the IMU's estimated data.
+    Represents a packet of processed data from the IMUDataProcessor.
+
+    All of these fields are the processed values of the IMU's estimated data.
     """
 
     current_altitude: float  # This is the zeroed-out altitude of the rocket.

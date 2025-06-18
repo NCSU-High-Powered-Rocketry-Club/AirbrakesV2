@@ -1,4 +1,6 @@
-"""Module for the finite state machine that represents which state of flight the rocket is in."""
+"""
+Module for the finite state machine that represents which state of flight the rocket is in.
+"""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
@@ -21,8 +23,8 @@ if TYPE_CHECKING:
 class State(ABC):
     """
     Abstract Base class for the states of the air brakes system. Each state will have an update
-    method that will be called every loop iteration and a next_state method that will be called
-    when the state is over.
+    method that will be called every loop iteration and a next_state method that will be called when
+    the state is over.
 
     For Airbrakes, we will have 5 states:
     1. Standby - when the rocket is on the rail on the ground
@@ -38,9 +40,7 @@ class State(ABC):
     __slots__ = ("context", "start_time_ns")
 
     def __init__(self, context: "Context"):
-        """
-        :param context: The Airbrakes Context managing the state machine.
-        """
+        """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
@@ -48,23 +48,23 @@ class State(ABC):
 
     @property
     def name(self):
-        """
-        :return: The name of the state
-        """
+        """:return: The name of the state"""
         return self.__class__.__name__
 
     @abstractmethod
     def update(self):
         """
-        Called every loop iteration. Uses the Airbrakes Context to interact with the hardware and
-        decides when to move to the next state.
+        Called every loop iteration.
+
+        Uses the Airbrakes Context to interact with the hardware and decides when to move to the
+        next state.
         """
 
     @abstractmethod
     def next_state(self):
         """
-        We never expect/want to go back a state e.g. We're never going to go
-        from Flight to Motor Burn, so this method just goes to the next state.
+        We never expect/want to go back a state e.g. We're never going to go from Flight to Motor
+        Burn, so this method just goes to the next state.
         """
 
 
@@ -79,7 +79,6 @@ class StandbyState(State):
         """
         Checks if the rocket has launched, based on our velocity.
         """
-
         data = self.context.data_processor
         # If the velocity of the rocket is above a threshold, the rocket has launched.
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
@@ -102,9 +101,10 @@ class MotorBurnState(State):
         self.context.camera.start_recording()
 
     def update(self):
-        """Checks to see if the velocity has decreased lower than the maximum velocity, indicating
-        the motor has burned out."""
-
+        """
+        Checks to see if the velocity has decreased lower than the maximum velocity, indicating the
+        motor has burned out.
+        """
         data = self.context.data_processor
 
         # If our current velocity is less than our max velocity, that means we have stopped
@@ -121,8 +121,9 @@ class MotorBurnState(State):
 
 class CoastState(State):
     """
-    When the motor has burned out and the rocket is coasting to apogee. This is the state
-    we actually control the air brakes extension.
+    When the motor has burned out and the rocket is coasting to apogee.
+
+    This is the state we actually control the air brakes extension.
     """
 
     __slots__ = ("airbrakes_extended",)
@@ -132,8 +133,9 @@ class CoastState(State):
         self.airbrakes_extended = False
 
     def update(self):
-        """Checks to see if the rocket has reached apogee, indicating the start of free fall."""
-
+        """
+        Checks to see if the rocket has reached apogee, indicating the start of free fall.
+        """
         # In Coast State we start predicting the apogee
         self.context.predict_apogee()
 
@@ -179,8 +181,9 @@ class FreeFallState(State):
         self.context.switch_altitude_back_to_pressure()
 
     def update(self):
-        """Check if the rocket has landed, based on our altitude and a spike in acceleration."""
-
+        """
+        Check if the rocket has landed, based on our altitude and a spike in acceleration.
+        """
         data = self.context.data_processor
 
         # If our altitude is around 0, and we have an acceleration spike, we have landed
@@ -207,8 +210,9 @@ class LandedState(State):
     __slots__ = ()
 
     def update(self):
-        """We use this method to stop the air brakes system after we have hit our log buffer."""
-
+        """
+        We use this method to stop the air brakes system after we have hit our log buffer.
+        """
         if self.context.logger.is_log_buffer_full:
             self.context.stop()
 

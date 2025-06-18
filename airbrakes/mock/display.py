@@ -1,4 +1,6 @@
-"""File to handle the display of real-time flight data in the terminal."""
+"""
+File to handle the display of real-time flight data in the terminal.
+"""
 
 import argparse
 import multiprocessing
@@ -24,8 +26,8 @@ RESET = Style.RESET_ALL
 
 class FlightDisplay:
     """
-    Class related to displaying real-time flight data in the terminal with pretty colors
-    and spacing.
+    Class related to displaying real-time flight data in the terminal with pretty colors and
+    spacing.
     """
 
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
@@ -55,6 +57,7 @@ class FlightDisplay:
     def __init__(self, context: "Context", args: argparse.Namespace) -> None:
         """
         Initializes the FlightDisplay object.
+
         :param conetxt: The AirbrakesContext object.
         :param args: Command line arguments determining the program configuration.
         """
@@ -95,9 +98,10 @@ class FlightDisplay:
 
     def start(self) -> None:
         """
-        Starts the display and cpu monitoring thread. Also prepares the processes for monitoring
-        in the replay. This should only be done *after* context.start() is called, because we
-        need the process IDs.
+        Starts the display and cpu monitoring thread.
+
+        Also prepares the processes for monitoring in the replay. This should only be done *after*
+        context.start() is called, because we need the process IDs.
         """
         self._running = True
         self._processes = self.prepare_process_dict()
@@ -107,8 +111,10 @@ class FlightDisplay:
 
     def stop(self) -> None:
         """
-        Stops the display thread. Similar to start(), this must be called *before*
-        context.stop() is called to prevent psutil from raising a NoSuchProcess exception.
+        Stops the display thread.
+
+        Similar to start(), this must be called *before* context.stop() is called to prevent psutil
+        from raising a NoSuchProcess exception.
         """
         self._running = False
         self._cpu_thread.join()
@@ -116,8 +122,9 @@ class FlightDisplay:
 
     def update_cpu_usage(self, interval: float = 0.3) -> None:
         """
-        Update CPU usage for each monitored process every `interval` seconds. This is run in
-        another thread because polling for CPU usage is a blocking operation.
+        Update CPU usage for each monitored process every `interval` seconds.
+
+        This is run in another thread because polling for CPU usage is a blocking operation.
         :param interval: time in seconds between polling CPU usage.
         """
         cpu_count = psutil.cpu_count()
@@ -134,8 +141,9 @@ class FlightDisplay:
 
     def sound_alarm_if_imu_is_having_issues(self) -> None:
         """
-        Sounds an audible alarm if the IMU has invalid fields or large change in velocity. This is
-        most useful on real flights, where it is hard to see the display due to sunlight.
+        Sounds an audible alarm if the IMU has invalid fields or large change in velocity.
+
+        This is most useful on real flights, where it is hard to see the display due to sunlight.
         """
         has_invalid_fields = False
         has_large_velocity = False
@@ -165,8 +173,9 @@ class FlightDisplay:
 
     def update_display(self) -> None:
         """
-        Updates the display with real-time data. Runs in another thread. Automatically stops when
-        the replay ends.
+        Updates the display with real-time data.
+
+        Runs in another thread. Automatically stops when the replay ends.
         """
         # Don't print the flight data if we are in debug mode
         if self._args.debug:
@@ -200,6 +209,7 @@ class FlightDisplay:
     def _update_display(self, end_type: DisplayEndingType | None = None) -> None:
         """
         Updates the display with real-time data.
+
         :param end_type: The type of ending for the flight data display.
         """
         current_queue_size = self._context.imu.queued_imu_packets
@@ -310,6 +320,7 @@ class FlightDisplay:
     def prepare_process_dict(self) -> dict[str, psutil.Process]:
         """
         Prepares a dictionary of processes to monitor CPU usage for.
+
         :return: A dictionary of process names and their corresponding psutil.Process objects.
         """
         all_processes = {}

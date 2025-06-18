@@ -1,4 +1,6 @@
-"""Module containing static config settings for simulation"""
+"""
+Module containing static config settings for simulation.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -12,8 +14,9 @@ from airbrakes.simulation.random_config import (
 
 class SimulationConfig:
     """
-    Configuration settings for static values in the simulation. Includes presets of full-scale
-    and sub-scale flights.
+    Configuration settings for static values in the simulation.
+
+    Includes presets of full-scale and sub-scale flights.
     """
 
     def __init__(
@@ -125,9 +128,9 @@ PELICANATOR_CONFIG = SimulationConfig(
 
 def get_configuration(config_type: str) -> SimulationConfig:
     """
-    Gets the configuration for the simulation
-    :param config_type: The type of simulation to run. This can be either "full-scale",
-    "sub-scale" or "legacy".
+    Gets the configuration for the simulation :param config_type: The type of simulation to run.
+
+    This can be either "full-scale", "sub-scale" or "legacy".
     :return: The configuration for the simulation
     """
     match config_type:

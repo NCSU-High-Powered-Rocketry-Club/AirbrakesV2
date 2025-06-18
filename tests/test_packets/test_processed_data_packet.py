@@ -14,7 +14,9 @@ def processor_data_packet():
 
 
 class TestProcessorDataPacket:
-    """Tests for the ProcessorDataPacket class."""
+    """
+    Tests for the ProcessorDataPacket class.
+    """
 
     current_altitude = 0.0
     vertical_velocity = 0.0

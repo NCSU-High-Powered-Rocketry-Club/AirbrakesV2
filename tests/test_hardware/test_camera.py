@@ -1,17 +1,24 @@
-"""Tests the camera module."""
+"""
+Tests the camera module.
+"""
 
 import pytest
 
 
 @pytest.fixture
 def both_cameras(request):
-    """Fixture that returns both the Camera and MockCamera classes (if you specify them)."""
+    """
+    Fixture that returns both the Camera and MockCamera classes (if you specify them).
+    """
     return request.getfixturevalue(request.param)
 
 
 class TestCamera:
-    """Tests the Camera class. This tests the base methods, which are common between the Camera and
-    MockCamera classes."""
+    """
+    Tests the Camera class.
+
+    This tests the base methods, which are common between the Camera and MockCamera classes.
+    """
 
     @pytest.mark.parametrize("both_cameras", ["camera", "mock_camera"], indirect=True)
     def test_slots(self, both_cameras):

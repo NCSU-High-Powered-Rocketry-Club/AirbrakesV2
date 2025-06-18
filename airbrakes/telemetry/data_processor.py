@@ -1,4 +1,6 @@
-"""Module for processing IMU data on a higher level."""
+"""
+Module for processing IMU data on a higher level.
+"""
 
 import numpy as np
 import numpy.typing as npt
@@ -16,9 +18,10 @@ from airbrakes.utils import convert_ns_to_s
 
 class DataProcessor:
     """
-    Performs high level calculations on the estimated data packets received from the IMU. Includes
-    calculation the vertical acceleration, velocity, maximum altitude so far, etc., from the set of
-    data points.
+    Performs high level calculations on the estimated data packets received from the IMU.
+
+    Includes calculation the vertical acceleration, velocity, maximum altitude so far, etc., from
+    the set of data points.
     """
 
     __slots__ = (
@@ -41,10 +44,11 @@ class DataProcessor:
 
     def __init__(self):
         """
-        Initializes the IMUDataProcessor object. It processes data points to calculate various
-        things we need such as the maximum altitude, vertical acceleration, velocity, etc. All
-        numbers in this class are handled with numpy. This class also has properties to return
-        some of these values.
+        Initializes the IMUDataProcessor object.
+
+        It processes data points to calculate various things we need such as the maximum altitude,
+        vertical acceleration, velocity, etc. All numbers in this class are handled with numpy. This
+        class also has properties to return some of these values.
         """
         self._max_altitude: np.float64 = np.float64(0.0)
         self._previous_altitude: np.float64 = np.float64(0.0)
@@ -66,8 +70,9 @@ class DataProcessor:
     @property
     def max_altitude(self) -> float:
         """
-        Returns the highest altitude (zeroed-out) attained by the rocket for the entire flight
-        so far, in meters.
+        Returns the highest altitude (zeroed-out) attained by the rocket for the entire flight so
+        far, in meters.
+
         :return: the maximum zeroed-out altitude of the rocket.
         """
         return float(self._max_altitude)
@@ -76,6 +81,7 @@ class DataProcessor:
     def current_altitude(self) -> float:
         """
         Returns the altitudes of the rocket (zeroed out) from the data points, in meters.
+
         :return: the current zeroed-out altitude of the rocket.
         """
         return float(self._current_altitudes[-1])
@@ -83,8 +89,10 @@ class DataProcessor:
     @property
     def vertical_velocity(self) -> float:
         """
-        The current vertical velocity of the rocket in m/s. Calculated by integrating the
-        compensated acceleration after rotating it to the vertical direction.
+        The current vertical velocity of the rocket in m/s.
+
+        Calculated by integrating the compensated acceleration after rotating it to the vertical
+        direction.
         :return: The vertical velocity of the rocket.
         """
         return float(self._vertical_velocities[-1])
@@ -93,6 +101,7 @@ class DataProcessor:
     def max_vertical_velocity(self) -> float:
         """
         The maximum vertical velocity the rocket has attained during the flight, in m/s.
+
         :return: The maximum vertical velocity of the rocket.
         """
         return float(self._max_vertical_velocity)
@@ -101,14 +110,18 @@ class DataProcessor:
     def average_vertical_acceleration(self) -> float:
         """
         The average vertical acceleration of the rocket in m/s^2.
+
         :return: The average vertical acceleration of the rocket.
         """
         return float(np.mean(self._rotated_accelerations))
 
     @property
     def average_pitch(self) -> float:
-        """The average pitch of the rocket in degrees. 0 degrees is nose up, 90 degrees is
-        horizontal, and 180 degrees is nose down."""
+        """
+        The average pitch of the rocket in degrees.
+
+        0 degrees is nose up, 90 degrees is horizontal, and 180 degrees is nose down.
+        """
         if self._current_orientation_quaternions is not None:
             rotated = (
                 self._current_orientation_quaternions
@@ -124,6 +137,7 @@ class DataProcessor:
     def current_timestamp(self) -> int:
         """
         The timestamp of the last data packet in nanoseconds.
+
         :return: the current timestamp of the most recent EstimatedDataPacket.
         """
         try:
@@ -133,8 +147,9 @@ class DataProcessor:
 
     def update(self, data_packets: list[EstimatedDataPacket]) -> None:
         """
-        Updates the data points to process. This will recompute all information such as altitude,
-        velocity, etc.
+        Updates the data points to process.
+
+        This will recompute all information such as altitude, velocity, etc.
         :param data_packets: A list of EstimatedDataPacket objects to process
         """
         # If the data points are empty, we don't want to try to process anything
@@ -164,9 +179,10 @@ class DataProcessor:
 
     def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
-        Processes the data points and returns a list of ProcessorDataPacket objects. The length
-        of the list should be the same as the length of the list of estimated data packets most
-        recently passed in by update()
+        Processes the data points and returns a list of ProcessorDataPacket objects.
+
+        The length of the list should be the same as the length of the list of estimated data
+        packets most recently passed in by update()
         :return: A list of ProcessorDataPacket objects.
         """
         return [
@@ -182,9 +198,11 @@ class DataProcessor:
     def prepare_for_extending_airbrakes(self) -> None:
         """
         When we extend the airbrakes, it messes with the pressure sensor which messes up the
-        altitude data. Additionally, the velocity data could have accumulated error due to the
-        strong acceleration from the motor burn. Because of these things, this function makes the
-        data processor start integrating for altitude.
+        altitude data.
+
+        Additionally, the velocity data could have accumulated error due to the strong acceleration
+        from the motor burn. Because of these things, this function makes the data processor start
+        integrating for altitude.
         """
         self._integrating_for_altitude = True
 
@@ -198,9 +216,10 @@ class DataProcessor:
 
     def _first_update(self) -> None:
         """
-        Sets up the initial values for the data processor. This includes setting the initial
-        altitude, and the initial orientation of the rocket. This should only be called once, when
-        the first estimated data packets are passed in.
+        Sets up the initial values for the data processor.
+
+        This includes setting the initial altitude, and the initial orientation of the rocket. This
+        should only be called once, when the first estimated data packets are passed in.
         """
         # Setting last data point as the first element, makes it so that the time diff
         # automatically becomes 0, and the velocity becomes 0
@@ -244,8 +263,10 @@ class DataProcessor:
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the current altitudes, by zeroing out the initial altitude. It either uses the
-        altitude from the pressure sensor, or integrates acceleration for the altitude.
+        Calculates the current altitudes, by zeroing out the initial altitude.
+
+        It either uses the altitude from the pressure sensor, or integrates acceleration for the
+        altitude.
         :return: A numpy array of the current altitudes of the rocket at each data point
         """
         # While the airbrakes are extended, we integrate acceleration for the altitude rather than
@@ -277,8 +298,9 @@ class DataProcessor:
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the vertical rotated accelerations. Converts gyroscope data into a delta
-        quaternion, and adds onto the last quaternion.
+        Calculates the vertical rotated accelerations.
+
+        Converts gyroscope data into a delta quaternion, and adds onto the last quaternion.
         :return: numpy list of vertical rotated accelerations.
         """
         # We integrate gyro to get position instead of using the quaternions from our packet
@@ -336,8 +358,9 @@ class DataProcessor:
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the velocity of the rocket based on the rotated acceleration. Integrates that
-        acceleration to get the velocity.
+        Calculates the velocity of the rocket based on the rotated acceleration.
+
+        Integrates that acceleration to get the velocity.
         :return: A numpy array of the vertical velocity of the rocket at each data packet
         """
         # Gets the vertical accelerations from the rotated vertical acceleration. gravity needs to
@@ -363,10 +386,11 @@ class DataProcessor:
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data packet and the previous data packet.
+
         This cannot be called on the first update as _last_data_packet is None. Units are in
         seconds.
-        :return: A numpy array of the time difference between each data packet and the previous
-        data packet.
+        :return: A numpy array of the time difference between each data packet and the previous data
+            packet.
         """
         # calculate the time differences between each data packet
         # We are converting from ns to s, since we don't want to have a velocity in m/ns^2

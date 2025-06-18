@@ -1,5 +1,8 @@
-"""The main file which will be run on the Raspberry Pi. It will create the AirbrakesContext object
-and run the main loop."""
+"""
+The main file which will be run on the Raspberry Pi.
+
+It will create the AirbrakesContext object and run the main loop.
+"""
 
 import argparse
 import sys
@@ -31,8 +34,12 @@ from airbrakes.utils import arg_parser
 
 
 def run_real_flight() -> None:
-    """Entry point for the application to run the real flight. Entered when run with
-    `uv run real` or `uvx --from git+... real`."""
+    """
+    Entry point for the application to run the real flight.
+
+    Entered when run with
+    `uv run real` or `uvx --from git+... real`.
+    """
     # Modify sys.argv to include real as the first argument:
     sys.argv.insert(1, "real")
     args = arg_parser()
@@ -40,8 +47,12 @@ def run_real_flight() -> None:
 
 
 def run_mock_flight() -> None:
-    """Entry point for the application to run the mock flight. Entered when run with
-    `uvx --from git+... mock` or `uv run mock`."""
+    """
+    Entry point for the application to run the mock flight.
+
+    Entered when run with
+    `uvx --from git+... mock` or `uv run mock`.
+    """
     # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
     args = arg_parser()
@@ -49,8 +60,12 @@ def run_mock_flight() -> None:
 
 
 def run_sim_flight() -> None:
-    """Entry point for the application to run the sim flight. Entered when run with
-    `uvx --from git+... sim` or `uv run sim`."""
+    """
+    Entry point for the application to run the sim flight.
+
+    Entered when run with
+    `uvx --from git+... sim` or `uv run sim`.
+    """
     # Modify sys.argv to include sim as the first argument:
     sys.argv.insert(1, "sim")
     args = arg_parser()
@@ -60,6 +75,7 @@ def run_sim_flight() -> None:
 def run_flight(args: argparse.Namespace) -> None:
     """
     Initializes the Airbrakes components and starts the main loop.
+
     :param args: Command line arguments determining the program configuration.
     """
     servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)
@@ -75,11 +91,12 @@ def create_components(
     args: argparse.Namespace,
 ) -> tuple[BaseServo, BaseIMU, Camera, Logger, DataProcessor, ApogeePredictor]:
     """
-    Creates the system components needed for the air brakes system. Depending on its arguments, it
-    will return either mock, sim, or real components.
+    Creates the system components needed for the air brakes system.
+
+    Depending on its arguments, it will return either mock, sim, or real components.
     :param args: Command line arguments determining the program configuration.
     :return: A tuple containing the Servo, IMU, Camera, Logger, IMUDataProcessor, and
-    ApogeePredictor objects.
+        ApogeePredictor objects.
     """
     if args.mode in ("mock", "sim"):
         if args.mode == "mock":
@@ -136,6 +153,7 @@ def run_flight_loop(
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
+
     :param context: The AirbrakesContext managing the state machine.
     :param flight_display: Display interface for flight data.
     :param is_mock: Whether running in mock replay mode.

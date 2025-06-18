@@ -15,7 +15,9 @@ def apogee_predictor_data_packet():
 
 
 class TestApogeePredictorDataPacket:
-    """Tests for the ApogeePredictorPacket class."""
+    """
+    Tests for the ApogeePredictorPacket class.
+    """
 
     predicted_apogee = 0.45
     a_coefficient = 0.5

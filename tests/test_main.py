@@ -1,4 +1,6 @@
-"""Module to test the main script."""
+"""
+Module to test the main script.
+"""
 
 import platform
 import sys
@@ -30,14 +32,18 @@ from airbrakes.utils import arg_parser
 
 
 class MockedServoKit:
-    """Mocked class for the real servo."""
+    """
+    Mocked class for the real servo.
+    """
 
     def __init__(self, channels: int, *_, **__):
         self.servo = [MockedServo()] * channels
 
 
 class MockedServo:
-    """Mocked class for the adafruit.motor servo."""
+    """
+    Mocked class for the adafruit.motor servo.
+    """
 
     def __init__(self, *_, **__):
         self.actuation_range = 180
@@ -49,7 +55,9 @@ class MockedServo:
 
 @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
 def _clear_directory():
-    """Clear the tests/logs directory after running each test."""
+    """
+    Clear the tests/logs directory after running each test.
+    """
     yield  # This is where the test runs
     # Test run is over, now clean up
     for log in LOGS_PATH.glob("log_*.csv"):
@@ -58,8 +66,9 @@ def _clear_directory():
 
 @pytest.fixture
 def parsed_args(request, monkeypatch):
-    """Fixture to return the parsed arguments."""
-
+    """
+    Fixture to return the parsed arguments.
+    """
     # modify the sys.argv to the arguments passed in the request, so arg_parser can parse them
     # correctly
     monkeypatch.setattr(sys, "argv", request.param)
@@ -98,13 +107,18 @@ def parsed_args(request, monkeypatch):
     indirect=True,
 )
 def test_create_components(parsed_args, monkeypatch):
-    """Tests whether we create the correct components, given the arguments."""
-
+    """
+    Tests whether we create the correct components, given the arguments.
+    """
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
     def mock_servo__init__(self, *args, **kwargs):
-        """Mock the __init__ of the airbrakes Servo class. Because the import of LGPIOFactory
-        fails on non-raspberry pi devices, we need to mock the Servo class."""
+        """
+        Mock the __init__ of the airbrakes Servo class.
+
+        Because the import of LGPIOFactory fails on non-raspberry pi devices, we need to mock the
+        Servo class.
+        """
 
     monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
@@ -181,7 +195,9 @@ def test_create_components(parsed_args, monkeypatch):
 
 
 def test_run_real_flight(monkeypatch):
-    """Tests the run_real_flight function."""
+    """
+    Tests the run_real_flight function.
+    """
     arg_parser_arguments = []
     calls = []
 
@@ -208,7 +224,9 @@ def test_run_real_flight(monkeypatch):
 
 
 def test_run_mock_flight(monkeypatch):
-    """Tests the run_mock_flight function."""
+    """
+    Tests the run_mock_flight function.
+    """
     arg_parser_kwargs = []
     calls = []
 
@@ -235,7 +253,9 @@ def test_run_mock_flight(monkeypatch):
 
 
 def test_run_sim_flight(monkeypatch):
-    """Tests the run_sim_flight function."""
+    """
+    Tests the run_sim_flight function.
+    """
     arg_parser_kwargs = []
     calls = []
 
@@ -262,7 +282,9 @@ def test_run_sim_flight(monkeypatch):
 
 
 def test_run_flight(monkeypatch, mocked_args_parser):
-    """Tests that the run_flight function initializes the components and runs the flight loop."""
+    """
+    Tests that the run_flight function initializes the components and runs the flight loop.
+    """
     calls = []
     called_args = []
 

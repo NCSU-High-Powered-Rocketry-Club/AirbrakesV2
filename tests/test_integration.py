@@ -1,6 +1,10 @@
-"""Tests the full integration of the airbrakes system. This is done by reading data from a previous
+"""
+Tests the full integration of the airbrakes system.
+
+This is done by reading data from a previous
 launch and manually verifying the data output by the code. This test will run at full speed in the
-CI. To run it in real time, see `main.py` or instructions in the `README.md`."""
+CI. To run it in real time, see `main.py` or instructions in the `README.md`.
+"""
 
 import threading
 import time
@@ -19,6 +23,7 @@ from tests.auxil.launch_cases import (
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
+    PelicanatorLaunchCase4,
     PurpleLaunchCase,
     StateInformation,
 )
@@ -27,7 +32,9 @@ SNAPSHOT_INTERVAL = 0.001  # seconds
 
 
 class TestIntegration:
-    """Tests the full integration of the airbrakes system by using previous launch data."""
+    """
+    Tests the full integration of the airbrakes system by using previous launch data.
+    """
 
     # general method of testing this is capturing the state of the system at different points in
     # time and verifying that the state is as expected at each point in time.
@@ -38,7 +45,9 @@ class TestIntegration:
         mock_imu_airbrakes,
         monkeypatch,
     ):
-        """Tests whether the whole system works, i.e. state changes, correct logged data, etc."""
+        """
+        Tests whether the whole system works, i.e. state changes, correct logged data, etc.
+        """
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
         # values being StateInformation, which will note information about that state.
@@ -64,6 +73,8 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase1
         elif launch_name == "pelicanator_launch_2":
             launch_case = PelicanatorLaunchCase2
+        elif launch_name == "pelicanator_launch_4":
+            launch_case = PelicanatorLaunchCase4
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
@@ -148,30 +159,23 @@ class TestIntegration:
         # Let's validate our data!
         launch_case_init = launch_case(states_dict, target_altitude)
 
-        all_states = launch_case_init.test_all_states_present()
-        assert all_states, f"Test failed for {launch_name}, states {all_states}"
+        all_states = launch_case_init.all_states_present()
+        assert all_states.passed, f"Test failed for {launch_name}"
 
         standby_cases = launch_case_init.standby_case_test()
-        assert all(standby_cases.values()), (
-            f"Test failed for {launch_name}, StandbyState {standby_cases}"
-        )
+        assert standby_cases.passed, f"Test failed for {launch_name}"
 
         motor_burn_cases = launch_case_init.motor_burn_case_test()
-        assert all(motor_burn_cases.values()), (
-            f"Test failed for {launch_name}, MotorBurnState {motor_burn_cases}"
-        )
+        assert motor_burn_cases.passed, f"Test failed for {launch_name}"
+
         coast_cases = launch_case_init.coast_case_test()
-        assert all(coast_cases.values()), f"Test failed for {launch_name}, CoastState {coast_cases}"
+        assert coast_cases.passed, f"Test failed for {launch_name}"
 
         free_fall_cases = launch_case_init.free_fall_case_test()
-        assert all(free_fall_cases.values()), (
-            f"Test failed for {launch_name}, FreeFallState {free_fall_cases}"
-        )
+        assert free_fall_cases.passed, f"Test failed for {launch_name}"
 
         landed_cases = launch_case_init.landed_case_test()
-        assert all(landed_cases.values()), (
-            f"Test failed for {launch_name}, LandedState {landed_cases}"
-        )
+        assert landed_cases.passed, f"Test failed for {launch_name}"
 
         # Now let's check if everything was logged correctly using polars
 
@@ -258,8 +262,10 @@ class TestIntegration:
 
     @pytest.mark.imu_benchmark
     def test_fetched_imu_packets_integration(self, context):
-        """Test that the fetched IMU packets are a reasonable size. Run with sudo. E.g.
-        $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
+        """
+        Test that the fetched IMU packets are a reasonable size.
+
+        Run with sudo. E.g. $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
         ab = context
 
@@ -272,7 +278,9 @@ class TestIntegration:
         has_airbrakes_stopped = threading.Event()
 
         def stop_thread():
-            """Stops airbrakes after a set amount of time."""
+            """
+            Stops airbrakes after a set amount of time.
+            """
             ab.stop()
             has_airbrakes_stopped.set()
 

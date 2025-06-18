@@ -19,14 +19,18 @@ from tests.auxil.utils import make_est_data_packet
 
 
 class PortIMU(IMU):
-    """IMU class that puts the port in the queue."""
+    """
+    IMU class that puts the port in the queue.
+    """
 
     def _fetch_data_loop(self, port: str):
         self._queued_imu_packets.put(port)
 
 
 class PacketsIMU(IMU):
-    """IMU class that puts packets in the queue."""
+    """
+    IMU class that puts packets in the queue.
+    """
 
     def _fetch_data_loop(self, _: str):
         while self._running.value:
@@ -34,17 +38,23 @@ class PacketsIMU(IMU):
 
 
 class SinglePacketIMU(IMU):
-    """IMU class that only puts one packet in the queue."""
+    """
+    IMU class that only puts one packet in the queue.
+    """
 
     def _fetch_data_loop(self, _: str):
         self._queued_imu_packets.put(make_est_data_packet())
 
 
 class CtrlCIMU(IMU):
-    """IMU class that handles Ctrl+C signals."""
+    """
+    IMU class that handles Ctrl+C signals.
+    """
 
     def _fetch_data_loop(self, port: str):
-        """Monkeypatched method for testing."""
+        """
+        Monkeypatched method for testing.
+        """
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         while self._running.value:
             continue
@@ -52,7 +62,9 @@ class CtrlCIMU(IMU):
 
 
 class TestIMU:
-    """Class to test the IMU class in imu.py"""
+    """
+    Class to test the IMU class in imu.py.
+    """
 
     def test_slots(self, imu):
         inst = imu
@@ -60,7 +72,9 @@ class TestIMU:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, imu, mock_imu):
-        """Tests whether the IMU and MockIMU objects initialize correctly."""
+        """
+        Tests whether the IMU and MockIMU objects initialize correctly.
+        """
         # Tests that the data queue is correctly initialized
         assert isinstance(imu._queued_imu_packets, faster_fifo.Queue)
         assert type(imu._queued_imu_packets) is type(mock_imu._queued_imu_packets)
@@ -79,8 +93,9 @@ class TestIMU:
         assert isinstance(imu.imu_packets_per_cycle, int)
 
     def test_imu_start(self):
-        """Tests whether the IMU process starts correctly with the passed arguments."""
-
+        """
+        Tests whether the IMU process starts correctly with the passed arguments.
+        """
         imu = PortIMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
@@ -91,8 +106,9 @@ class TestIMU:
         assert imu._queued_imu_packets.get() == IMU_PORT
 
     def test_imu_stop_simple(self):
-        """Tests whether the IMU process stops correctly."""
-
+        """
+        Tests whether the IMU process stops correctly.
+        """
         imu = PortIMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.2)  # Sleep a bit to let the process start and put the data
@@ -105,7 +121,9 @@ class TestIMU:
         assert imu.queued_imu_packets == 0
 
     def test_imu_stop_when_queue_is_full(self, monkeypatch):
-        """Tests whether the IMU process stops correctly when the queue is full."""
+        """
+        Tests whether the IMU process stops correctly when the queue is full.
+        """
         monkeypatch.setattr("airbrakes.hardware.imu.MAX_QUEUE_SIZE", 10)
 
         imu = PacketsIMU(port=IMU_PORT)
@@ -120,8 +138,9 @@ class TestIMU:
         assert imu.queued_imu_packets == 1
 
     def test_imu_stop_signal(self):
-        """Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL"""
-
+        """
+        Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL.
+        """
         imu = SinglePacketIMU(port=IMU_PORT)
         imu.start()
         time.sleep(0.01)  # Give the process time to start and put the values
@@ -132,7 +151,9 @@ class TestIMU:
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
     def test_imu_ctrl_c_handling(self):
-        """Tests whether the IMU's stop() handles Ctrl+C fine."""
+        """
+        Tests whether the IMU's stop() handles Ctrl+C fine.
+        """
         imu = CtrlCIMU(port=IMU_PORT)
         imu.start()
         assert imu._running.value
@@ -152,7 +173,9 @@ class TestIMU:
         assert imu._queued_imu_packets.get() == IMU_PORT
 
     def test_data_packets_fetch(self, random_data_mock_imu):
-        """Tests whether the data fetching loop actually adds data to the queue."""
+        """
+        Tests whether the data fetching loop actually adds data to the queue.
+        """
         imu = random_data_mock_imu
         imu.start()
         time.sleep(0.7)  # Time to start the process
@@ -187,7 +210,9 @@ class TestIMU:
         assert 1.1 >= raw_count / est_count >= 0.95, f"Actual ratio was: {raw_count / est_count}"
 
     def test_imu_packet_fetch_timeout(self, monkeypatch, idle_mock_imu):
-        """Tests whether the IMU's get_imu_data_packets() times out correctly."""
+        """
+        Tests whether the IMU's get_imu_data_packets() times out correctly.
+        """
         imu = idle_mock_imu
         monkeypatch.setattr("airbrakes.interfaces.base_imu.IMU_TIMEOUT_SECONDS", 0.1)
         imu.start()

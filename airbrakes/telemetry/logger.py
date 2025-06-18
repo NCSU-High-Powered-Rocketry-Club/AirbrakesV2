@@ -1,4 +1,6 @@
-"""Module for logging data to a CSV file in real time."""
+"""
+Module for logging data to a CSV file in real time.
+"""
 
 import csv
 import multiprocessing
@@ -27,17 +29,22 @@ from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacke
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 DecodedLoggerDataPacket = list[int | float | str]
-"""The type of LoggerDataPacket after an instance of it was decoded from the queue. It is
-the same type as msgspec.to_builtins(LoggerDataPacket)."""
+"""
+The type of LoggerDataPacket after an instance of it was decoded from the queue.
+
+It is the same type as msgspec.to_builtins(LoggerDataPacket).
+"""
 
 
 class Logger:
     """
-    A class that logs data to a CSV file. Similar to the IMU class, it runs in a separate process.
-    This is because the logging process is I/O-bound, meaning that it spends most of its time
-    waiting for the file to be written to. By running it in a separate process, we can continue to
-    log data while the main loop is running. It uses Python's csv module to append the airbrakes'
-    current state, extension, and IMU data to our logs in real time.
+    A class that logs data to a CSV file.
+
+    Similar to the IMU class, it runs in a separate process. This is because the logging process is
+    I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
+    running it in a separate process, we can continue to log data while the main loop is running. It
+    uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our
+    logs in real time.
     """
 
     LOG_BUFFER_STATES = ("S", "L")
@@ -52,11 +59,12 @@ class Logger:
 
     def __init__(self, log_dir: Path) -> None:
         """
-        Initializes the logger object. It creates a new log file in the specified directory. Like
-        the IMU class, it creates a queue to store log messages, and starts a separate process to
-        handle the logging. We are logging a lot of data, and logging is I/O-bound, so running it
-        in a separate process allows the main loop to continue running without waiting for the log
-        file to be written to.
+        Initializes the logger object.
+
+        It creates a new log file in the specified directory. Like the IMU class, it creates a queue
+        to store log messages, and starts a separate process to handle the logging. We are logging a
+        lot of data, and logging is I/O-bound, so running it in a separate process allows the main
+        loop to continue running without waiting for the log file to be written to.
         :param log_dir: The directory where the log files will be.
         """
         # Create the log directory if it doesn't exist
@@ -116,8 +124,9 @@ class Logger:
     @staticmethod
     def _convert_unknown_type_to_str(obj_type: Any) -> str:
         """
-        Truncates the decimal place of the object to 8 decimal places. Used by msgspec to
-        convert numpy float64 to a string.
+        Truncates the decimal place of the object to 8 decimal places.
+
+        Used by msgspec to convert numpy float64 to a string.
         :param obj_type: The object to truncate.
         :return: The truncated object.
         """
@@ -133,6 +142,7 @@ class Logger:
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
+
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param imu_data_packets: The IMU data packets to log.
@@ -249,13 +259,17 @@ class Logger:
 
     def start(self) -> None:
         """
-        Starts the logging process. This is called before the main while loop starts.
+        Starts the logging process.
+
+        This is called before the main while loop starts.
         """
         self._log_process.start()
 
     def stop(self) -> None:
         """
-        Stops the logging process. It will finish logging the current message and then stop.
+        Stops the logging process.
+
+        It will finish logging the current message and then stop.
         """
         # Log the buffer before stopping the process
         self._log_the_buffer()
@@ -273,6 +287,7 @@ class Logger:
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
+
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param imu_data_packets: The IMU data packets to log.
@@ -315,6 +330,7 @@ class Logger:
     def _truncate_floats(data: DecodedLoggerDataPacket) -> list[str | int]:
         """
         Truncates the decimal place of the floats in the list to 8 decimal places.
+
         :param data: The list of values whose floats we should truncate.
         :return: The truncated list.
         """
@@ -322,7 +338,9 @@ class Logger:
 
     def _logging_loop(self) -> None:  # pragma: no cover
         """
-        The loop that saves data to the logs. It runs in parallel with the main loop.
+        The loop that saves data to the logs.
+
+        It runs in parallel with the main loop.
         """
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
