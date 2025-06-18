@@ -14,7 +14,6 @@ from faster_fifo import Queue
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
-    DEFAULT,
     MAX_FETCHED_PACKETS,
     MAX_QUEUE_SIZE,
     STOP_SIGNAL,
@@ -85,7 +84,7 @@ class MockIMU(BaseIMU):
         )
 
         self._log_file_path: Path = typing.cast("Path", log_file_path)
-        self._headers: list[str] | None = None  # The headers of the csv file being read.
+        self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
         self._needed_fields: list[str] | None = None  # The fields we need to read from the csv
 
         file_metadata: dict = MockIMU.read_file_metadata()
@@ -105,20 +104,19 @@ class MockIMU(BaseIMU):
         self,
         *,
         start_index: int = 0,
-        usecols: list[str] | object = DEFAULT,
         **kwargs,
     ) -> pl.DataFrame:
         """
         Reads the csv file and returns it as a polars DataFrame.
 
         :param start_index: The index to start reading the file from. Must be a keyword argument.
-        :param usecols: The columns to read from the file. Must be a keyword argument.
         :param kwargs: Additional keyword arguments to pass to pl.read_csv.
         :return: The DataFrame or TextFileReader object.
         """
         # This is here because of issues with using "fork" multiprocessing on Linux with polars.
         # We should be using "spawn", and that will be the default in Python 3.14.
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
+
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those (it's also faster to read few columns rather than all). This needs to
         # be in the same order as the source definition:
@@ -135,7 +133,7 @@ class MockIMU(BaseIMU):
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         return pl.read_csv(
             self._log_file_path,
-            columns=self._needed_fields if usecols is DEFAULT else usecols,
+            columns=self._needed_fields,
             skip_rows_after_header=start_index,
             infer_schema_length=10,
             **kwargs,
@@ -178,7 +176,6 @@ class MockIMU(BaseIMU):
         reader: pl.DataFrame = self._read_csv(start_index=start_index)
 
         # Iterate over the rows of the dataframe and put the data packets in the queue
-        packets = []
         for row in reader.iter_rows(named=True):
             start_time = time.perf_counter()
             row_dict = {k: v for k, v in row.items() if v is not None}
@@ -190,15 +187,6 @@ class MockIMU(BaseIMU):
             else:
                 imu_data_packet = EstimatedDataPacket(**row_dict)
 
-            # Put the packet in the queue in a batch, to reduce the cost of acquiring locks.
-            # TODO: While faster under -f, this method has a drawback of artifically increasing the
-            # convergence time, and negatively affecting the "real-time" experience when not running
-            # under -f. A way to fix this would be to add another code path if running under -f.
-            # if len(packets) < MAX_FETCHED_PACKETS:
-            #     packets.append(imu_data_packet)
-            # else:
-            #     self._queued_imu_packets.put_many(packets)
-            #     packets = []
             self._queued_imu_packets.put(imu_data_packet)
 
             # Sleep only if we are running a real-time replay
@@ -208,10 +196,6 @@ class MockIMU(BaseIMU):
                 # Mimic the polling interval so it "runs in real time"
                 end_time = time.perf_counter()
                 time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
-
-        # Put the remaining packets in the queue
-        if packets:
-            self._queued_imu_packets.put_many(packets)
 
     def _fetch_data_loop(
         self,
