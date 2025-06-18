@@ -84,8 +84,21 @@ class MockIMU(BaseIMU):
         )
 
         self._log_file_path: Path = typing.cast("Path", log_file_path)
+
+        # If we ever switch back to using "fork", the below line should be moved into `_read_csv`.
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
-        self._needed_fields: list[str] | None = None  # The fields we need to read from the csv
+        # Get the columns that are common between the data packet and the log file, since we only
+        # care about those (it's also faster to read few columns rather than all). This needs to
+        # be in the same order as the source definition:
+        # Get all field names from both packet types
+        raw_fields = list(RawDataPacket.__struct_fields__)
+        estimated_fields = list(EstimatedDataPacket.__struct_fields__)
+
+        # Combine fields in the desired order (raw first, then estimated)
+        all_fields_ordered = raw_fields + [f for f in estimated_fields if f not in raw_fields]
+
+        # The fields we need to read from the csv:
+        self._needed_fields = [field for field in all_fields_ordered if field in self._headers]
 
         file_metadata: dict = MockIMU.read_file_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
@@ -113,23 +126,6 @@ class MockIMU(BaseIMU):
         :param kwargs: Additional keyword arguments to pass to pl.read_csv.
         :return: The DataFrame or TextFileReader object.
         """
-        # This is here because of issues with using "fork" multiprocessing on Linux with polars.
-        # We should be using "spawn", and that will be the default in Python 3.14.
-        self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
-
-        # Get the columns that are common between the data packet and the log file, since we only
-        # care about those (it's also faster to read few columns rather than all). This needs to
-        # be in the same order as the source definition:
-        # Get all field names from both packet types
-        raw_fields = list(RawDataPacket.__struct_fields__)
-        estimated_fields = list(EstimatedDataPacket.__struct_fields__)
-
-        # Combine fields in the desired order (raw first, then estimated)
-        all_fields_ordered = raw_fields + [f for f in estimated_fields if f not in raw_fields]
-
-        # Filter to only include fields that exist in the CSV headers
-        self._needed_fields = [field for field in all_fields_ordered if field in self._headers]
-
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         return pl.read_csv(
             self._log_file_path,

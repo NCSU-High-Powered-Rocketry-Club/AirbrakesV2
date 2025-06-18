@@ -183,8 +183,11 @@ class FlightDisplay:
 
         # Wait till we processed a data packet. This is to prevent the display from updating
         # before we have any data to display.
-        while not self._context.context_data_packet:
-            pass
+        while True:
+            # See https://github.com/python/cpython/issues/130279 for why this is here and not
+            # in the loop condition.
+            if self._context.context_data_packet and self._context.data_processor._last_data_packet:
+                break
 
         self._start_time = time.time()
 
