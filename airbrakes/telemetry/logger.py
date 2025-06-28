@@ -6,12 +6,17 @@ import csv
 import multiprocessing
 import os
 import signal
+import typing
 from collections import deque
 from pathlib import Path
 from typing import Any, Literal
 
 import msgspec
-from faster_fifo import Empty, Queue
+import msgspec.msgpack
+from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for this library
+    Empty,
+    Queue,
+)
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
@@ -23,7 +28,11 @@ from airbrakes.constants import (
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, IMUDataPacket
+from airbrakes.telemetry.packets.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
+)
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -217,6 +226,7 @@ class Logger:
                 # Add index:
                 index += 1
             else:  # It is a raw packet:
+                imu_data_packet = typing.cast("RawDataPacket", imu_data_packet)
                 # Extract all the fields from the RawDataPacket
                 logger_packet.scaledAccelX = imu_data_packet.scaledAccelX
                 logger_packet.scaledAccelY = imu_data_packet.scaledAccelY

@@ -10,8 +10,10 @@ import typing
 from pathlib import Path
 
 import msgspec
+import msgspec.json
+import msgspec.msgpack
 import pandas as pd
-from faster_fifo import Queue
+from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
 from airbrakes.constants import (
     CHUNK_SIZE,
@@ -133,7 +135,7 @@ class MockIMU(BaseIMU):
         :return: The DataFrame or TextFileReader object.
         """
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
-        return pd.read_csv(
+        return pd.read_csv(  # ty: ignore[no-matching-overload]
             self._log_file_path,
             engine="c",
             usecols=self._needed_fields if usecols is DEFAULT else usecols,
