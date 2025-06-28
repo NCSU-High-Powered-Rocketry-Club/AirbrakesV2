@@ -8,9 +8,13 @@ from collections import deque
 from typing import Literal
 
 import msgspec
+import msgspec.msgpack
 import numpy as np
 import numpy.typing as npt
-from faster_fifo import Empty, Queue
+from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for this library
+    Empty,
+    Queue,
+)
 from scipy.optimize import curve_fit
 
 from airbrakes.constants import (

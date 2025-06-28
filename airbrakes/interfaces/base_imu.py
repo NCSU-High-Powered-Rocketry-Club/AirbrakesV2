@@ -8,8 +8,11 @@ import multiprocessing
 from multiprocessing import TimeoutError
 from multiprocessing.context import ForkServerProcess
 
-import msgspec
-from faster_fifo import Empty, Queue
+import msgspec.msgpack
+from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for this library
+    Empty,
+    Queue,
+)
 
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.telemetry.packets.imu_data_packet import (

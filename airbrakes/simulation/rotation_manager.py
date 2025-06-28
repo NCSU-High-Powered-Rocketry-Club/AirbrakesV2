@@ -94,7 +94,7 @@ class RotationManager:
 
     def calculate_compensated_accel(
         self, thrust_acceleration: np.float64, drag_acceleration: np.float64
-    ) -> npt.NDArray:
+    ) -> npt.NDArray[np.float64]:
         """
         Uses the acceleration due to drag and thrust in Earth frame to find the compensated
         acceleration.

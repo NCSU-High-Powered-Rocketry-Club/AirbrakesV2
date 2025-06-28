@@ -11,9 +11,9 @@ from airbrakes.constants import CAMERA_SAVE_PATH
 
 # These libraries are only available on the Raspberry Pi so we ignore them if they are not available
 with suppress(ImportError):
-    from picamera2 import Picamera2
-    from picamera2.encoders import H264Encoder
-    from picamera2.outputs import CircularOutput
+    from picamera2 import Picamera2  # ty: ignore[unresolved-import]
+    from picamera2.encoders import H264Encoder  # ty: ignore[unresolved-import]
+    from picamera2.outputs import CircularOutput  # ty: ignore[unresolved-import]
 
 
 # !!! Currently, we are not actually using a camera on our air brakes pi

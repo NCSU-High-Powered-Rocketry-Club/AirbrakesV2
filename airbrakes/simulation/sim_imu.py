@@ -8,7 +8,7 @@ import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-from faster_fifo import Queue
+from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
 from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 from airbrakes.simulation.sim_utils import update_timestamp
@@ -87,11 +87,11 @@ class SimIMU(BaseIMU):
                 data_generator.is_airbrakes_extended = self._airbrakes_extended.value
 
                 # if the timestamp is a multiple of the raw time step, generate a raw data packet.
-                if any(np.isclose(timestamp % raw_dt, [0, raw_dt])):
+                if any(np.isclose(timestamp % raw_dt, [0, raw_dt])):  # ty: ignore[invalid-argument-type]
                     self._queued_imu_packets.put(data_generator.generate_raw_data_packet())
 
                 # if the timestamp is a multiple of the est time step, generate an est data packet.
-                if any(np.isclose(timestamp % est_dt, [0, est_dt])):
+                if any(np.isclose(timestamp % est_dt, [0, est_dt])):  # ty: ignore[invalid-argument-type]
                     self._queued_imu_packets.put(data_generator.generate_estimated_data_packet())
 
                 # updates the timestamp and sleeps until next packet is ready in real-time

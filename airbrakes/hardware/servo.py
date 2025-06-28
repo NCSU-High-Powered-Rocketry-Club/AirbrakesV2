@@ -64,7 +64,7 @@ class Servo(BaseServo):
         servo_2.actuation_range = SERVO_MAX_ANGLE
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
-        from gpiozero.pins.lgpio import LGPIOFactory as Factory
+        from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.

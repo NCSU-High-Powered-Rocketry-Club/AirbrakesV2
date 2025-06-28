@@ -22,4 +22,7 @@ jobs:
         with:
             python-version-file: "pyproject.toml"
 
+      - name: Install ty for pre-commit
+        run: uv sync && uv tool install ty
+
       - uses: pre-commit/action@v3.0.1

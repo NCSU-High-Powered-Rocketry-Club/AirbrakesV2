@@ -5,7 +5,7 @@ Module for interacting with the IMU (Inertial measurement unit) on the rocket.
 import contextlib
 import multiprocessing
 
-from faster_fifo import Queue
+from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 from python_mscl import mscl
 
 from airbrakes.constants import (

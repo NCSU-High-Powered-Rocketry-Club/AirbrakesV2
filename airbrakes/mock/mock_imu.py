@@ -9,8 +9,9 @@ import typing
 from pathlib import Path
 
 import msgspec
+import msgspec.json
 import polars as pl
-from faster_fifo import Queue
+from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
