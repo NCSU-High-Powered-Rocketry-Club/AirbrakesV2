@@ -6,7 +6,6 @@ It will create the AirbrakesContext object and run the main loop.
 
 import argparse
 import sys
-import time
 from typing import cast
 
 from airbrakes.constants import (
@@ -80,12 +79,10 @@ def run_flight(args: argparse.Namespace) -> None:
 
     :param args: Command line arguments determining the program configuration.
     """
-    mock_time_start = time.time()
-
     servo, imu, camera, logger, data_processor, apogee_predictor = create_components(args)
     # Initialize the Airbrakes Context and display
     context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
-    flight_display = FlightDisplay(context, mock_time_start, args)
+    flight_display = FlightDisplay(context, args)
 
     # Run the main flight loop
     run_flight_loop(context, flight_display, args.mode == "mock", args.mode == "sim")

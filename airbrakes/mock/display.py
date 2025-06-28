@@ -54,17 +54,16 @@ class FlightDisplay:
         "end_mock_natural",
     )
 
-    def __init__(self, context: "Context", start_time: float, args: argparse.Namespace) -> None:
+    def __init__(self, context: "Context", args: argparse.Namespace) -> None:
         """
         Initializes the FlightDisplay object.
 
         :param conetxt: The AirbrakesContext object.
-        :param start_time: The time (in seconds) the replay started.
         :param args: Command line arguments determining the program configuration.
         """
         init(autoreset=True)  # Automatically reset colors after each print
         self._context = context
-        self._start_time = start_time
+        self._start_time = 0.0  # Time since the replay started (first packet received)
         self._running = False
         self._args = args
         self._launch_time_ns: int = 0  # Launch time from MotorBurnState
@@ -184,8 +183,13 @@ class FlightDisplay:
 
         # Wait till we processed a data packet. This is to prevent the display from updating
         # before we have any data to display.
-        while not self._context.data_processor._last_data_packet:
-            pass
+        while True:
+            # See https://github.com/python/cpython/issues/130279 for why this is here and not
+            # in the loop condition.
+            if self._context.context_data_packet and self._context.data_processor._last_data_packet:
+                break
+
+        self._start_time = time.time()
 
         # Update the display as long as the program is running:
         while self._running:

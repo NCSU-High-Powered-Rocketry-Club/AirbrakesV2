@@ -5,8 +5,6 @@ Module for interacting with the IMU (Inertial measurement unit) on the rocket.
 import contextlib
 import multiprocessing
 
-import msgspec
-import msgspec.msgpack
 from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 from python_mscl import mscl
 
@@ -65,18 +63,13 @@ class IMU(BaseIMU):
         # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
         # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
         # it's being logged.
-        # We will never run the actual IMU on Windows, so we can use the faster_fifo library always:
-        msgpack_encoder = msgspec.msgpack.Encoder()
-        msgpack_decoder = msgspec.msgpack.Decoder(type=EstimatedDataPacket | RawDataPacket)
-
         _queued_imu_packets: Queue[IMUDataPacket] = Queue(
             maxsize=MAX_QUEUE_SIZE,
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
-            dumps=msgpack_encoder.encode,
-            loads=msgpack_decoder.decode,
         )
         # Starts the process that fetches data from the IMU
-        data_fetch_process = multiprocessing.Process(
+        context = multiprocessing.get_context("forkserver")
+        data_fetch_process = context.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
         super().__init__(data_fetch_process, _queued_imu_packets)
@@ -247,9 +240,11 @@ class IMU(BaseIMU):
 
                         # Check if the data point is invalid and update the invalid fields list.
                         if not data_point.valid():
-                            if imu_data_packet.invalid_fields is None:
-                                imu_data_packet.invalid_fields = []
-                            imu_data_packet.invalid_fields.append(data_point.channelName())  # ty: ignore[possibly-unbound-attribute]
+                            if imu_data_packet.invalid_fields:  # append the string:
+                                imu_data_packet.invalid_fields = (
+                                    f"{imu_data_packet.invalid_fields},{data_point.channelName()}"
+                                )
+                            imu_data_packet.invalid_fields = data_point.channelName()
                 else:
                     continue  # We never actually reach here, but keeping it just in case
 
@@ -269,5 +264,6 @@ class IMU(BaseIMU):
         It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         """
+        self._setup_queue_serialization_method()
         with contextlib.suppress(KeyboardInterrupt):
             self._fetch_data_loop(port)

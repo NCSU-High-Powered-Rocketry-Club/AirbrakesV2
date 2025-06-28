@@ -204,6 +204,8 @@ class RandomDataIMU(IMU):
     Mocks the data fetch loop, since we don't have the actual IMU to use locally.
     """
 
+    __slots__ = ()
+
     def _fetch_data_loop(self, _: str) -> None:
         """
         Output Est and Raw Data packets at the sampling rate we use for the IMU.

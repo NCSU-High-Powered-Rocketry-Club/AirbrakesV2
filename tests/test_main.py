@@ -4,7 +4,6 @@ Module to test the main script.
 
 import platform
 import sys
-import time
 from functools import partial
 
 import gpiozero
@@ -314,8 +313,7 @@ def test_run_flight(monkeypatch, mocked_args_parser):
     # For airbrakes context, we should have the components as arguments:
     assert len(called_args[0]) == 6  # These are all the components
 
-    # For the flight display, we should have the airbrakes, the mock time start, and the args:
-    assert len(called_args[1]) == 3  # These are the airbrakes, the display, and the args
+    # For the flight display, we should have the airbrakes, and the args:
+    assert len(called_args[1]) == 2
     assert isinstance(called_args[1][0], PatchedContext)
-    assert called_args[1][1] == pytest.approx(time.time())
-    assert called_args[1][2] == mocked_args_parser
+    assert called_args[1][1] == mocked_args_parser
