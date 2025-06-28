@@ -145,8 +145,11 @@ fail_under = 88
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
+[tool.ty.environment]
+root = ["./airbrakes"]
+
 [tool.ty.src]
-root = "./airbrakes"
+exclude = ["tests", "scripts"]
 
 [tool.docformatter]
 wrap-summaries = 100
