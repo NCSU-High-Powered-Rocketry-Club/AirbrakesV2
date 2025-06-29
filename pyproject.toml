@@ -10,30 +10,32 @@ dependencies = [
     "numpy",
     "psutil",
     "scipy",
-    "pandas",
+    "faster-fifo",
     "textual",
     "textual-dev>=1.7.0",
     "faster-fifo",
     "python-mscl>=67.0.0",
-    # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
-    # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
-    "rpi-gpio>=0.7.1",
-    "adafruit-circuitpython-servokit>=1.3.19",
+    "numpy-quaternion>=2024.0.8",
+    "polars>=1.27.1",
     "textual-plot>=0.4.0.post1",
     "textual-hires-canvas>=0.5.0.post2",
     "textual-image>=0.8.1",
     "textual-pyfiglet~=0.8.3",
-    "numpy-quaternion>=2024.0.8",
+    # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
+    # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
+    "rpi-gpio>=0.7.1",
+    "adafruit-circuitpython-servokit>=1.3.19",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest",
+    "pytest>=8.4.0",
     "pytest-cov",
-    "ruff>=0.8.4",
+    "ruff>=0.12.0",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
     "docformatter",
+    "ty>=0.0.1a10",
 ]
 
 profiling = [
@@ -148,6 +150,12 @@ fail_under = 88
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.ty.environment]
+root = ["./airbrakes"]
+
+[tool.ty.src]
+exclude = ["tests", "scripts"]
 
 [tool.docformatter]
 wrap-summaries = 100

@@ -124,8 +124,8 @@ class Context:
             return
         self.retract_airbrakes()
         self.imu.stop()
-        self.logger.stop()
-        self.apogee_predictor.stop()
+        # self.logger.stop()
+        # self.apogee_predictor.stop()
         # self.camera.stop()
         self.shutdown_requested = True
 
@@ -143,7 +143,7 @@ class Context:
         self.imu_data_packets = self.imu.get_imu_data_packets()
 
         # This should not happen, since we wait for IMU packets. Only happens when the mock replay
-        # is paused.
+        # is paused, or when the replay is over.
         if not self.imu_data_packets:
             return
 

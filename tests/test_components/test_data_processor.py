@@ -4,11 +4,10 @@ from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
-import pandas as pd
+import polars as pl
 import pytest
 import quaternion
 
-from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
@@ -51,27 +50,24 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacke
     """
     data_packets = []
     needed_columns = list(set(EstimatedDataPacket.__struct_fields__) - {"invalid_fields"})
-    df = pd.read_csv(
+    df = pl.read_csv(
         csv_path,
-        usecols=needed_columns,
-        converters={"invalid_fields": MockIMU._convert_invalid_fields},
-        chunksize=n_packets * 3,
+        columns=needed_columns,
+        n_rows=n_packets * 3,
     )
 
-    with df:
-        for chunk in df:
-            for row in chunk.itertuples(index=False):
-                # Convert the named tuple to a dictionary and remove any NaN values:
-                row_dict = {k: v for k, v in row._asdict().items() if pd.notna(v)}
-                # Create an EstimatedDataPacket instance from the dictionary
-                if row_dict.get("estPressureAlt"):
-                    packet = EstimatedDataPacket(**row_dict)
-                else:
-                    continue
-                data_packets.append(packet)
+    for row in df.iter_rows(named=True):
+        # Convert the named tuple to a dictionary and remove any NaN values:
+        row_dict = {k: v for k, v in row.items() if v is not None}
+        # Create an EstimatedDataPacket instance from the dictionary
+        if row_dict.get("estPressureAlt"):
+            packet = EstimatedDataPacket(**row_dict)
+        else:
+            continue
+        data_packets.append(packet)
 
-                if len(data_packets) >= n_packets:
-                    return data_packets
+        if len(data_packets) >= n_packets:
+            return data_packets
 
     raise ValueError(f"Could not read {n_packets} packets from {csv_path}")
 

@@ -42,11 +42,11 @@ class RandomAttribute:
     def __init__(
         self,
         type: RandomType,
+        regression_coefficients: list[float],
+        std_dev: float,
         value: np.float64 | None = None,
         range: npt.NDArray[np.float64] | None = None,
-        std_dev: np.float64 | None = None,
         mean: np.float64 | None = None,
-        regression_coefficients: npt.NDArray[np.float64] | None = None,
     ):
         self.type = type
         self.value = value

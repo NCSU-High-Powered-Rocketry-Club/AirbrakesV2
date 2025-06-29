@@ -23,7 +23,7 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def convert_to_nanoseconds(timestamp_str: str) -> int | None:
+def convert_to_nanoseconds(timestamp_str: str) -> int:
     """
     Converts seconds to nanoseconds, if it isn't already in nanoseconds.
     """
@@ -31,11 +31,8 @@ def convert_to_nanoseconds(timestamp_str: str) -> int | None:
         # check if value is already in nanoseconds:
         return int(timestamp_str)
     except ValueError:
-        try:
-            timestamp_float = float(timestamp_str)
-            return int(timestamp_float * 1e9)  # return the value in nanoseconds
-        except ValueError:
-            return None
+        timestamp_float = float(timestamp_str)
+        return int(timestamp_float * 1e9)  # return the value in nanoseconds
 
 
 def convert_ns_to_s(nanoseconds: int) -> float:

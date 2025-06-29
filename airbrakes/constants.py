@@ -313,11 +313,6 @@ The size of the chunk to read from the log file at a time.
 This has 2 benefits. Less memory usage and faster initial read of the file.
 """
 
-DEFAULT = object()
-"""
-Default sentinel value for usecols in the read_csv method.
-"""
-
 # Constants for IMU field names and quantifiers
 DELTA_THETA_FIELD = 32775
 DELTA_VEL_FIELD = 32776

@@ -9,13 +9,12 @@ CI. To run it in real time, see `main.py` or instructions in the `README.md`.
 import threading
 import time
 
-import pandas as pd
+import polars as pl
 import pytest
 
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
@@ -24,6 +23,7 @@ from tests.auxil.launch_cases import (
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
+    PelicanatorLaunchCase4,
     PurpleLaunchCase,
     StateInformation,
 )
@@ -73,6 +73,8 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase1
         elif launch_name == "pelicanator_launch_2":
             launch_case = PelicanatorLaunchCase2
+        elif launch_name == "pelicanator_launch_4":
+            launch_case = PelicanatorLaunchCase4
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
@@ -157,49 +159,39 @@ class TestIntegration:
         # Let's validate our data!
         launch_case_init = launch_case(states_dict, target_altitude)
 
-        all_states = launch_case_init.test_all_states_present()
-        assert all_states, f"Test failed for {launch_name}, states {all_states}"
+        all_states = launch_case_init.all_states_present()
+        assert all_states.passed, f"Test failed for {launch_name}"
 
         standby_cases = launch_case_init.standby_case_test()
-        assert all(standby_cases.values()), (
-            f"Test failed for {launch_name}, StandbyState {standby_cases}"
-        )
+        assert standby_cases.passed, f"Test failed for {launch_name}"
 
         motor_burn_cases = launch_case_init.motor_burn_case_test()
-        assert all(motor_burn_cases.values()), (
-            f"Test failed for {launch_name}, MotorBurnState {motor_burn_cases}"
-        )
+        assert motor_burn_cases.passed, f"Test failed for {launch_name}"
+
         coast_cases = launch_case_init.coast_case_test()
-        assert all(coast_cases.values()), f"Test failed for {launch_name}, CoastState {coast_cases}"
+        assert coast_cases.passed, f"Test failed for {launch_name}"
 
         free_fall_cases = launch_case_init.free_fall_case_test()
-        assert all(free_fall_cases.values()), (
-            f"Test failed for {launch_name}, FreeFallState {free_fall_cases}"
-        )
+        assert free_fall_cases.passed, f"Test failed for {launch_name}"
 
         landed_cases = launch_case_init.landed_case_test()
-        assert all(landed_cases.values()), (
-            f"Test failed for {launch_name}, LandedState {landed_cases}"
-        )
+        assert landed_cases.passed, f"Test failed for {launch_name}"
 
-        # Now let's check if everything was logged correctly using pandas
+        # Now let's check if everything was logged correctly using polars
 
-        # Read the log file into a pandas DataFrame
-        df = pd.read_csv(
-            ab.logger.log_path,
-            converters={"invalid_fields": MockIMU._convert_invalid_fields},
-        )
+        # Read the log file into a polars DataFrame
+        df = pl.read_csv(ab.logger.log_path)
 
         # Check if all headers were logged
         assert list(df.columns) == list(LoggerDataPacket.__struct_fields__)
 
         # Test the first row for specific validations
-        first_row = df.iloc[0]
+        first_row = df.row(0, named=True)
 
         # Check if values are rounded to 8 decimal places
         accel = (
             first_row["estLinearAccelX"]
-            if pd.notna(first_row["estLinearAccelX"])
+            if first_row["estLinearAccelX"] is not None
             else first_row["scaledAccelX"]
         )
         accel_str = str(accel)
@@ -216,19 +208,32 @@ class TestIntegration:
         assert len(state) == 1
 
         # Get counts and perform other validations without looping
-        line_number = len(df)
-        state_list: list = df["state_letter"].unique().tolist()
+        line_number = df.height
+        state_list = (
+            df.group_by("state_letter", maintain_order=True)
+            .agg()
+            .get_column("state_letter")
+            .to_list()
+        )
 
         # Filter for coast state data
-        coast_df = df[df["state_letter"] == "C"]
-        pred_apogees_in_coast = coast_df["predicted_apogee"].dropna().tolist()
-        uncertainities_in_coast = coast_df["uncertainty_threshold_1"].dropna().tolist()
+        coast_df = df.filter(pl.col("state_letter") == "C")
+        pred_apogees_in_coast = (
+            coast_df.filter(pl.col("predicted_apogee").is_not_null())
+            .get_column("predicted_apogee")
+            .to_list()
+        )
+        uncertainities_in_coast = (
+            coast_df.filter(pl.col("uncertainty_threshold_1").is_not_null())
+            .get_column("uncertainty_threshold_1")
+            .to_list()
+        )
 
         # Check estimated data packet validations
-        est_data_df = df[df["estLinearAccelX"].notna()]
-        assert est_data_df["vertical_velocity"].notna().all()
-        assert est_data_df["current_altitude"].notna().all()
-        assert est_data_df["vertical_acceleration"].notna().all()
+        est_data_df = df.filter(pl.col("estLinearAccelX").is_not_null())
+        assert est_data_df.select(pl.col("vertical_velocity").is_not_null()).to_series().all()
+        assert est_data_df.select(pl.col("current_altitude").is_not_null()).to_series().all()
+        assert est_data_df.select(pl.col("vertical_acceleration").is_not_null()).to_series().all()
 
         # Check if extensions are valid floats
         valid_extensions = [
@@ -237,7 +242,12 @@ class TestIntegration:
             ServoExtension.MIN_NO_BUZZ.value,
             ServoExtension.MAX_NO_BUZZ.value,
         ]
-        assert df["set_extension"].astype(float).isin(valid_extensions).all()
+        all_extensions_valid = (
+            df.select(pl.col("set_extension").cast(pl.Float64).is_in(valid_extensions))
+            .to_series()
+            .all()
+        )
+        assert all_extensions_valid
 
         # Check if we have a lot of lines in the log file
         assert launch_case_init.log_file_lines_test(line_number)

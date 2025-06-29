@@ -15,7 +15,7 @@ class IMUDataPacket(msgspec.Struct, array_like=True, tag=True):
 
     timestamp: int  # in nanoseconds
     # list of fields which may be invalid as reported by the IMU
-    invalid_fields: list[str] | None = None
+    invalid_fields: str | None = None
 
 
 class RawDataPacket(IMUDataPacket):
