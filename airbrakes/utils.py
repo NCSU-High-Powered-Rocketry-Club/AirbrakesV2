@@ -123,27 +123,6 @@ def arg_parser() -> argparse.Namespace:
     #   selection.
     global_parser = argparse.ArgumentParser(add_help=False)
 
-    # Global mutually exclusive group, for the `--debug` and `--verbose` options:
-    global_group = global_parser.add_mutually_exclusive_group()
-
-    # These are global options, available to `mock`, `real`, and `sim` modes:
-    global_group.add_argument(
-        "-d",
-        "--debug",
-        help="Run the flight without a display. This will not print the flight data and allow "
-        "you to inspect the values of your print() statements.",
-        action="store_true",
-        default=False,
-    )
-
-    global_group.add_argument(
-        "-v",
-        "--verbose",
-        help="Shows the display with much more data.",
-        action="store_true",
-        default=False,
-    )
-
     # Top-level parser for the main script:
     main_parser = argparse.ArgumentParser(
         description="Main parser for the Airbrakes program.",
@@ -174,6 +153,13 @@ def arg_parser() -> argparse.Namespace:
         "-c",
         "--mock-camera",
         help="Run the real flight with a mock camera instead of the real camera.",
+        action="store_true",
+        default=False,
+    )
+    real_parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Shows the display with much more data.",
         action="store_true",
         default=False,
     )
