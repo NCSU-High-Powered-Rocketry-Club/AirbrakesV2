@@ -2,6 +2,7 @@
 Module where fixtures are shared between all test files.
 """
 
+import multiprocessing as mp
 import time
 from pathlib import Path
 
@@ -24,6 +25,9 @@ from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
+
+mp.set_start_method("spawn", force=True)
+
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
