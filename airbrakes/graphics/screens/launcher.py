@@ -3,7 +3,7 @@ The launch file selection screen displayed on startup.
 """
 
 from pathlib import Path
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, cast
 
 import msgspec
 from textual import on
@@ -221,7 +221,7 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
         # Pop the launch selector screen and push the flight display screen:
         if event.button.id == "run-benchmark-button":
             # Forcibly override "fast_replay" to True:
-            config.replay_launch_options.fast_replay = True
+            cast("ReplayLaunchOptions", config.replay_launch_options).fast_replay = True
             config.benchmark_mode = True
             self.benchmark_button.label = "Running Benchmark..."
             self.benchmark_button.disabled = True

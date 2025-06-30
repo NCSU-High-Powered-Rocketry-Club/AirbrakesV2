@@ -20,9 +20,9 @@ class DownrangeMap(Widget):
     Panel displaying the downrange map.
     """
 
-    x_distance: reactive[float] = reactive(0.0)
-    y_distance: reactive[float] = reactive(0.0)
-    horizontal_range: reactive[float] = reactive(0.0)
+    x_distance: reactive[float] = reactive(0.0)  # ty: ignore[invalid-assignment]
+    y_distance: reactive[float] = reactive(0.0)  # ty: ignore[invalid-assignment]
+    horizontal_range: reactive[float] = reactive(0.0)  # ty: ignore[invalid-assignment]
 
     __slots__ = (
         "context",

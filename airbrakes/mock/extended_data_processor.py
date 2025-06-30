@@ -136,8 +136,10 @@ class ExtendedDataProcessor(DataProcessor):
         """
         Calculates the total velocity of the rocket based on the horizontal and vertical velocities.
         """
-        return np.linalg.norm(
-            np.hstack((self._horizontal_velocities[:, -1], self._vertical_velocities[-1]))
+        return np.float64(
+            np.linalg.norm(
+                np.hstack((self._horizontal_velocities[:, -1], self._vertical_velocities[-1]))
+            )
         )
 
     def _calculate_horizontal_velocity(self) -> npt.NDArray[np.float64]:

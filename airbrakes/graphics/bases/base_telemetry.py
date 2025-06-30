@@ -434,7 +434,7 @@ class CPUBars(Static):
         # E.g. a usage of 14.5 would mean that the first bar is FULL_BLOCK,
         # the second bar is MEDIUM_SHADE, and the rest are empty.
         # Then we do the same for the next bar, and so on.
-        bars: list[CPUBar] = reversed(list(self.children))
+        bars: reversed[CPUBar] = reversed(list(self.children))
         solid_bars, shaded_block = usage // 10, usage % 10
         bars_to_update = int(solid_bars) + 1 if shaded_block > 0 else int(solid_bars)
 

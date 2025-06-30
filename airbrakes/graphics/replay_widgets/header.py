@@ -34,7 +34,7 @@ class SimulationSpeed(Static, can_focus=True):
         ("space", "play_sim", "Play sim"),
     ]
 
-    sim_speed: reactive[float] = reactive(1.0, bindings=True)
+    sim_speed: reactive[float] = reactive(1.0, bindings=True)  # ty: ignore[invalid-assignment]
     old_sim_speed: float = 1.0
 
     __slots__ = ("sim_speed_label",)

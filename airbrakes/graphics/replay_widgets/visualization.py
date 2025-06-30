@@ -33,10 +33,10 @@ class Visualization(Widget):
     Class to display the 2D rocket visualization.
     """
 
-    pitch: reactive[float] = reactive(0.0, init=False)
+    pitch: reactive[float] = reactive(0.0, init=False)  # ty: ignore[invalid-assignment]
     state: reactive[str] = reactive("StandbyState", init=False)
     extension: reactive[float] = reactive(ServoExtension.MIN_EXTENSION.value, init=False)
-    altitude: reactive[float] = reactive(0.0, init=False)
+    altitude: reactive[float] = reactive(0.0, init=False)  # ty: ignore[invalid-assignment]
 
     __slots__ = (
         "altitude_at_last_draw",
