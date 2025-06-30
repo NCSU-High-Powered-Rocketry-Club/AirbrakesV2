@@ -27,13 +27,13 @@ class BaseFlightTelemetry(Static):
     graphics, while sharing some common functionality.
     """
 
-    vertical_acceleration = reactive(0.0, init=False)
-    max_vertical_acceleration = reactive(0.0, init=False)
-    vertical_velocity = reactive(0.0, init=False)
-    max_vertical_velocity = reactive(0.0, init=False)
-    current_altitude = reactive(0.0, init=False)
-    max_altitude = reactive(0.0, init=False)
-    airbrakes_extension = reactive(0.0, init=False)
+    vertical_acceleration = reactive("0.0", init=False)
+    max_vertical_acceleration = reactive("0.0", init=False)
+    vertical_velocity = reactive("0.0", init=False)
+    max_vertical_velocity = reactive("0.0", init=False)
+    current_altitude = reactive("0.0", init=False)
+    max_altitude = reactive("0.0", init=False)
+    airbrakes_extension = reactive("0.0", init=False)
 
     __slots__ = (
         "accel_label",
@@ -100,25 +100,25 @@ class BaseFlightTelemetry(Static):
         yield Static("\u00b0", id="airbrakes-extension-units-static-label", classes="units")
 
     def watch_vertical_acceleration(self) -> None:
-        self.accel_label.update(f"{self.vertical_acceleration:.2f}")
+        self.accel_label.update(self.vertical_acceleration)
 
     def watch_max_vertical_acceleration(self) -> None:
-        self.max_accel_label.update(f"{self.max_vertical_acceleration:.2f}")
+        self.max_accel_label.update(self.max_vertical_acceleration)
 
     def watch_vertical_velocity(self) -> None:
-        self.velocity_label.update(f"{self.vertical_velocity:.2f}")
+        self.velocity_label.update(self.vertical_velocity)
 
     def watch_max_vertical_velocity(self) -> None:
-        self.max_velocity_label.update(f"{self.max_vertical_velocity:.2f}")
+        self.max_velocity_label.update(self.max_vertical_velocity)
 
     def watch_current_altitude(self) -> None:
-        self.altitude_label.update(f"{self.current_altitude:.2f}")
+        self.altitude_label.update(self.current_altitude)
 
     def watch_max_altitude(self) -> None:
-        self.max_altitude_label.update(f"{self.max_altitude:.2f}")
+        self.max_altitude_label.update(self.max_altitude)
 
     def watch_airbrakes_extension(self) -> None:
-        self.airbrakes_label.update(f"{self.airbrakes_extension:.2f}")
+        self.airbrakes_label.update(self.airbrakes_extension)
 
     def update_telemetry(self) -> None:
         """
@@ -126,12 +126,12 @@ class BaseFlightTelemetry(Static):
 
         This method should be overridden by the subclasses to provide their own implementation.
         """
-        self.vertical_acceleration = self.context.data_processor.vertical_acceleration
-        self.current_altitude = self.context.data_processor.current_altitude
-        self.max_altitude = self.context.data_processor.max_altitude
-        self.vertical_velocity = self.context.data_processor.vertical_velocity
-        self.max_vertical_velocity = self.context.data_processor.max_vertical_velocity
-        self.airbrakes_extension = self.context.servo.current_extension.value
+        self.vertical_acceleration = f"{self.context.data_processor.vertical_acceleration:.2f}"
+        self.current_altitude = f"{self.context.data_processor.current_altitude:.2f}"
+        self.max_altitude = f"{self.context.data_processor.max_altitude:.2f}"
+        self.vertical_velocity = f"{self.context.data_processor.vertical_velocity:.2f}"
+        self.max_vertical_velocity = f"{self.context.data_processor.max_vertical_velocity:.2f}"
+        self.airbrakes_extension = f"{self.context.servo.current_extension.value:.2f}"
 
 
 class BaseDebugTelemetry(Static):

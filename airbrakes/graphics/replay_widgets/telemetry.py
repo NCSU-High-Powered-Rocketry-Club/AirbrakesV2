@@ -20,13 +20,13 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
     Panel displaying real-time flight information.
     """
 
-    total_velocity = reactive(0.0)
-    max_total_velocity = reactive(0.0)
-    pressure_alt = reactive(0.0)
-    max_pressure_alt = reactive(0.0)
-    apogee_prediction = reactive(0.0)
-    integrated_altitude = reactive(0.0)
-    max_integrated_altitude = reactive(0.0)
+    total_velocity = reactive("0.0")
+    max_total_velocity = reactive("0.0")
+    pressure_alt = reactive("0.0")
+    max_pressure_alt = reactive("0.0")
+    apogee_prediction = reactive("0.0")
+    integrated_altitude = reactive("0.0")
+    max_integrated_altitude = reactive("0.0")
 
     __slots__ = (
         "apogee_label",
@@ -110,36 +110,38 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
         self.debug_telemetry.reset_widgets()
 
     def watch_total_velocity(self) -> None:
-        self.total_velocity_label.update(f"{self.total_velocity:.2f}")
+        self.total_velocity_label.update(self.total_velocity)
 
     def watch_max_total_velocity(self) -> None:
-        self.max_total_velocity_label.update(f"{self.max_total_velocity:.2f}")
+        self.max_total_velocity_label.update(self.max_total_velocity)
 
     def watch_pressure_alt(self) -> None:
-        self.pressure_alt_label.update(f"{self.pressure_alt:.2f}")
+        self.pressure_alt_label.update(self.pressure_alt)
 
     def watch_max_pressure_alt(self) -> None:
-        self.max_pressure_alt_label.update(f"{self.max_pressure_alt:.2f}")
+        self.max_pressure_alt_label.update(self.max_pressure_alt)
 
     def watch_apogee_prediction(self) -> None:
-        self.apogee_label.update(f"{self.apogee_prediction:.2f}")
+        self.apogee_label.update(self.apogee_prediction)
 
     def watch_integrated_altitude(self) -> None:
-        self.integrated_altitude_label.update(f"{self.integrated_altitude:.2f}")
+        self.integrated_altitude_label.update(self.integrated_altitude)
 
     def watch_max_integrated_altitude(self) -> None:
-        self.max_integrated_altitude_label.update(f"{self.max_integrated_altitude:.2f}")
+        self.max_integrated_altitude_label.update(self.max_integrated_altitude)
 
     def update_telemetry(self) -> None:
         super().update_telemetry()
-        self.max_vertical_acceleration = self.context.data_processor.max_vertical_acceleration
-        self.total_velocity = self.context.data_processor.total_velocity
-        self.max_total_velocity = self.context.data_processor.max_total_velocity
-        self.apogee_prediction = self.context.last_apogee_predictor_packet.predicted_apogee
-        self.pressure_alt = self.context.data_processor.current_pressure_altitude
-        self.max_pressure_alt = self.context.data_processor.max_pressure_altitude
-        self.integrated_altitude = self.context.data_processor.integrated_altitude
-        self.max_integrated_altitude = self.context.data_processor.max_integrated_altitude
+        self.max_vertical_acceleration = (
+            f"{self.context.data_processor.max_vertical_acceleration:.2f}"
+        )
+        self.total_velocity = f"{self.context.data_processor.total_velocity:.2f}"
+        self.max_total_velocity = f"{self.context.data_processor.max_total_velocity:.2f}"
+        self.apogee_prediction = f"{self.context.last_apogee_predictor_packet.predicted_apogee:.2f}"
+        self.pressure_alt = f"{self.context.data_processor.current_pressure_altitude:.2f}"
+        self.max_pressure_alt = f"{self.context.data_processor.max_pressure_altitude:.2f}"
+        self.integrated_altitude = f"{self.context.data_processor.integrated_altitude:.2f}"
+        self.max_integrated_altitude = f"{self.context.data_processor.max_integrated_altitude:.2f}"
 
         self.debug_telemetry.update_telemetry()
 

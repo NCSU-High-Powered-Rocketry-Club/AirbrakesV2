@@ -150,7 +150,7 @@
 
             #debug-telemetry-grid{
                 grid-size: 3;  /* 3 columns */
-                grid-columns: auto auto 1fr;
+                grid-columns: auto 7 auto;
                 grid-rows: auto;
                 grid-gutter: 0 1;
                 height: auto;
