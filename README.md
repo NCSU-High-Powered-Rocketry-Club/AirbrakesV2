@@ -222,9 +222,11 @@ git push -u origin branch-name
 ## Advanced Local Usage
 
 For performance improvements, we recommend turning on the experimental Python JIT compiler. To do this, export `PYTHON_JIT=1` in your shell (preferably in your `.bashrc` or `.zshrc` file).
+Additionally, we also recommend exporting `TEXTUAL_SPEEDUPS=1` to enable speedups in the Textual library, which uses some Rust under the hood.
 
 ```bash
 export PYTHON_JIT=1
+export TEXTUAL_SPEEDUPS=1
 ```
 
 ### Running Mock Launches

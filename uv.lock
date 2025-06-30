@@ -238,6 +238,7 @@ dependencies = [
     { name = "textual-image" },
     { name = "textual-plot" },
     { name = "textual-pyfiglet" },
+    { name = "textual-speedups" },
 ]
 
 [package.dev-dependencies]
@@ -278,6 +279,7 @@ requires-dist = [
     { name = "textual-image", specifier = ">=0.8.1" },
     { name = "textual-plot", specifier = ">=0.4.0.post1" },
     { name = "textual-pyfiglet", specifier = "~=0.8.3" },
+    { name = "textual-speedups", specifier = ">=0.2.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1309,6 +1311,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/fe/f2/62381768399bc15036642ebc24101b72521a328c21d625fc2a5c79b64221/textual_slidecontainer-0.5.2.tar.gz", hash = "sha256:c206cc629acfba729a3c300fbdc4690326bf6f33bf102a7bebd31d0794ab6c55", size = 88503, upload-time = "2025-06-17T12:39:37.51Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/61/d4/8be85bf085bd6408eebe60705af865b2eb41d9144e447f2eed7798bcc89b/textual_slidecontainer-0.5.2-py3-none-any.whl", hash = "sha256:013d29f8ec2ec5b809eba88370389c9ad001a9c339e611ff576690739e95fbd8", size = 10252, upload-time = "2025-06-17T12:39:36.382Z" },
+]
+
+[[package]]
+name = "textual-speedups"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/fa/979584993986defcf788e25ef46e2fe19a510ffe4aaabc5e706759e080c4/textual_speedups-0.2.0.tar.gz", hash = "sha256:e9e045e94b7daff79917f4fc699c6d99db6005559298929141d68a1293c3cc6d", size = 11650, upload-time = "2025-06-06T20:10:16.206Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/ff/4e77ef334db7017036b284ba890665f1e29fb344549eca66be5db7464a24/textual_speedups-0.2.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ca81a27e7c6f65a342fb827cbc84a67166a879ea79bf06fa222d5fb96f8c557f", size = 244732, upload-time = "2025-06-06T20:10:14.85Z" },
 ]
 
 [[package]]
