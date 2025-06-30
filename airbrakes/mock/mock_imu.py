@@ -4,6 +4,8 @@ Module for simulating interacting with the IMU (Inertial measurement unit) on th
 
 import contextlib
 import multiprocessing
+
+# import threading
 import time
 import typing
 from pathlib import Path
@@ -75,8 +77,7 @@ class MockIMU(BaseIMU):
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
         )
         # Starts the process that fetches data from the log file
-        context = multiprocessing.get_context("forkserver")
-        data_fetch_process = context.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(start_after_log_buffer,),
             name="Mock IMU Process",
@@ -84,9 +85,9 @@ class MockIMU(BaseIMU):
 
         self._log_file_path: Path = typing.cast("Path", log_file_path)
 
-        self._sim_speed_factor = context.Value("d", real_time_replay, lock=False)
+        self._sim_speed_factor = multiprocessing.Value("d", real_time_replay, lock=False)
 
-        # If we ever switch back to using "fork", the below line should be moved into `_read_csv`.
+        # If we ever switch back to using "fork", the below line should be moved into `_scan_csv`.
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
         # Get the columns that are common between the data packet and the log file, since we only
         # care about those (it's also faster to read few columns rather than all). This needs to
@@ -174,7 +175,11 @@ class MockIMU(BaseIMU):
 
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in collected_data.iter_rows(named=True):
-            start_time = time.perf_counter()
+            # Check if the loop should stop:
+            if not self._requested_to_run.value:
+                break
+
+            start_time = time.time()
 
             # Drop None values from the row so msgspec Structs can be made:
             # This approach of deleting is faster than using a dict comprehension by about 6%
@@ -196,19 +201,21 @@ class MockIMU(BaseIMU):
             # sleep only if we are running a real-time simulation
             # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
             # pretend to be real-time
-            if raw_packet:
-                sim_speed = self._sim_speed_factor.value
-                if sim_speed > 0:
-                    execution_time = time.time() - start_time
-                    sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
-                    adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
-                    # See https://github.com/python/cpython/issues/125997 on why we don't
-                    # time.sleep(0). If we did that, the mocks would be at least 2x slower.
-                    if adjusted_sleep_time:
-                        time.sleep(adjusted_sleep_time)
-                else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
-                    while not self._sim_speed_factor.value and self._running.value:
-                        time.sleep(0.1)
+            if not raw_packet:
+                continue
+
+            sim_speed = self._sim_speed_factor.value
+            if sim_speed > 0:
+                execution_time = time.time() - start_time
+                sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
+                adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
+                # See https://github.com/python/cpython/issues/125997 on why we don't
+                # time.sleep(0). If we did that, the mocks would be at least 2x slower.
+                if adjusted_sleep_time:
+                    time.sleep(adjusted_sleep_time)
+            else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
+                while not self._sim_speed_factor.value and self._running.value:
+                    time.sleep(0.1)
 
     def _fetch_data_loop(
         self,
@@ -220,6 +227,7 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
+        self._running.value = True  # Specify that the process is running
         self._setup_queue_serialization_method()
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
@@ -238,8 +246,8 @@ class MockIMU(BaseIMU):
         :return int: The corresponding launch time in nanoseconds. Returns 0 if the launch time
             could not be found.
         """
-        # Read the file, and check when the "state" field shows "M", or when the magnitude of the
-        # estimated linear acceleration is greater than 3 m/s^2:
+        # Read the file, and check when the "state_letter" field shows "M", or when the
+        # magnitude of the estimated linear acceleration is greater than 3 m/s^2:
 
         # We get an exception for files which didn't log any state, e.g. purple_launch.csv
         with contextlib.suppress(Exception):

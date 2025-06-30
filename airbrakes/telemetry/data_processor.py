@@ -59,7 +59,7 @@ class DataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: quaternion.quaternion | None = None
-        self._rotated_accelerations: npt.NDArray[np.float64] = np.zeros((3, 1), dtype=np.float64)
+        self._rotated_accelerations: npt.NDArray[np.float64] = np.zeros((1, 3), dtype=np.float64)
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False

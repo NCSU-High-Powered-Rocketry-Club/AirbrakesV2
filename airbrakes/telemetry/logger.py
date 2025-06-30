@@ -96,25 +96,33 @@ class Logger:
             writer = csv.writer(file_writer)
             writer.writerow(headers)
 
-        # Makes a queue to store log messages, basically it's a process-safe list that you add to
-        # the back and pop from front, meaning that things will be logged in the order they were
-        # added.
-        # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=Logger._convert_unknown_type_to_str)
-        # No need to specify the type to decode to, since we want to log it immediately, so a list
-        # is wanted (and faster!):
-        msgpack_decoder = msgspec.msgpack.Decoder()
-
         self._log_queue: Queue[list[LoggerDataPacket] | Literal["STOP"]] = Queue(
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
-            loads=msgpack_decoder.decode,
-            dumps=msgpack_encoder.encode,
         )
 
         # Start the logging process
         self._log_process = multiprocessing.Process(
             target=self._logging_loop, name="Logger Process"
         )
+
+    def _setup_queue_serialization_method(self) -> None:
+        """
+        Sets up the serialization methods for the queued logger packets for faster-fifo.
+
+        This is not done in the __init__ because "spawn" and "forkserver" will attempt to pickle the
+        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
+        after the child has been born.
+        """
+        # Makes a queue to store log messages, basically it's a process-safe list that you add to
+        # the back and pop from front, meaning that things will be logged in the order they were
+        # added.
+        # Signals (like stop) are sent as strings, but data is sent as dictionaries
+        self._log_queue.dumps = msgspec.msgpack.Encoder(
+            enc_hook=Logger._convert_unknown_type_to_str
+        ).encode
+        # No need to specify the type to decode to, since we want to log it immediately, so a list
+        # is wanted (and faster!):
+        self._log_queue.loads = msgspec.msgpack.Decoder().decode
 
     @property
     def is_running(self) -> bool:
@@ -274,6 +282,7 @@ class Logger:
         This is called before the main while loop starts.
         """
         self._log_process.start()
+        self._setup_queue_serialization_method()
 
     def stop(self) -> None:
         """
@@ -352,6 +361,7 @@ class Logger:
 
         It runs in parallel with the main loop.
         """
+        self._setup_queue_serialization_method()
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
 

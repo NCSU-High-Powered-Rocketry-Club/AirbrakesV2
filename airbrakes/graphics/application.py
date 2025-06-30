@@ -110,7 +110,8 @@ class AirbrakesApplication(App):
         blocking when running in benchmark mode and for real flights.
         """
         # Initialize the airbrakes context and display
-        self.context.start()
+        with self.suspend():  # This is very important if you want it to work with "spawn"
+            self.context.start(wait_for_start=True)
 
         # Run normally, updating the display:
         if self.flight_type in ["mock", "sim"]:
@@ -228,9 +229,6 @@ class AirbrakesApplication(App):
                 MockCamera() if self.launch_config.real_launch_options.mock_camera else Camera()
             )
             imu = IMU(IMU_PORT)
-            # imu = MockIMU(
-            #     real_time_replay=1.0,
-            # )
             logger = Logger(LOGS_PATH)
             data_processor = DataProcessor()
 
@@ -372,7 +370,8 @@ class AirbrakesApplication(App):
         """
         Common setup code for initializing widgets and starting the application.
         """
-        self.create_components()
+        with self.suspend():  # This is very important if you want it to work with "spawn"
+            self.create_components()
 
         if self.flight_type != "real":
             self._assign_target_apogee()

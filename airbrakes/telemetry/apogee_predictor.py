@@ -80,22 +80,13 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
-        msgpack_apg_data_packet_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
-        msgpack_processor_data_packet_decoder = msgspec.msgpack.Decoder(
-            type=ProcessorDataPacket | str
-        )
         self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
             Queue(
                 max_size_bytes=BUFFER_SIZE_IN_BYTES,
-                dumps=msgpack_encoder.encode,
-                loads=msgpack_processor_data_packet_decoder.decode,
             )
         )
         self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
-            dumps=msgpack_encoder.encode,
-            loads=msgpack_apg_data_packet_decoder.decode,
         )
 
         self._prediction_process = multiprocessing.Process(
@@ -114,6 +105,26 @@ class ApogeePredictor:
         self._initial_velocity = None
         self.lookup_table: LookupTable = LookupTable()
         # ------------------------------------------------------------------------
+
+    def _setup_queue_serialization_method(self) -> None:
+        """
+        Sets up the serialization methods for the queued packets for faster-fifo.
+
+        This is not done in the __init__ because "spawn" or "forkserver" will attempt to pickle the
+        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
+        after the child has been born.
+        """
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
+        msgpack_apg_data_packet_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        msgpack_processor_data_packet_decoder = msgspec.msgpack.Decoder(
+            type=ProcessorDataPacket | str
+        )
+
+        self._processor_data_packet_queue.dumps = msgpack_encoder.encode
+        self._processor_data_packet_queue.loads = msgpack_processor_data_packet_decoder.decode
+
+        self._apogee_predictor_packet_queue.dumps = msgpack_encoder.encode
+        self._apogee_predictor_packet_queue.loads = msgpack_apg_data_packet_decoder.decode
 
     @property
     def is_running(self) -> bool:
@@ -139,6 +150,7 @@ class ApogeePredictor:
         This is called before the main loop starts.
         """
         self._prediction_process.start()
+        self._setup_queue_serialization_method()
 
     def stop(self) -> None:
         """
@@ -256,6 +268,7 @@ class ApogeePredictor:
 
         Runs in a separate process.
         """
+        self._setup_queue_serialization_method()
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
 

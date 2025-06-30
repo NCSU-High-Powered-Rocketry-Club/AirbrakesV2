@@ -4,6 +4,7 @@ The main file which will be run on the Raspberry Pi.
 It will create the Context object and run the main loop.
 """
 
+import multiprocessing as mp
 import sys
 
 from airbrakes.graphics.application import AirbrakesApplication
@@ -17,6 +18,7 @@ def run_real_flight() -> None:
     Entered when run with
     `uv run real` or `uvx --from git+... real`.
     """
+    mp.set_start_method("spawn", force=True)
     # Modify sys.argv to include real as the first argument:
     sys.argv.insert(1, "real")
     args = arg_parser()
@@ -31,6 +33,7 @@ def run_mock_flight() -> None:
     Entered when run with
     `uvx --from git+... mock` or `uv run mock`.
     """
+    mp.set_start_method("spawn", force=True)
     # Modify sys.argv to include mock as the first argument:
     sys.argv.insert(1, "mock")
     args = arg_parser()
