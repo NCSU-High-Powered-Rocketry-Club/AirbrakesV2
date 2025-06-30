@@ -214,7 +214,7 @@ class MockIMU(BaseIMU):
                 if adjusted_sleep_time:
                     time.sleep(adjusted_sleep_time)
             else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
-                while not self._sim_speed_factor.value and self._running.value:
+                while not self._sim_speed_factor.value and self._requested_to_run.value:
                     time.sleep(0.1)
 
     def _fetch_data_loop(

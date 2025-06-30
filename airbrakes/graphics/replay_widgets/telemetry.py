@@ -25,10 +25,14 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
     pressure_alt = reactive(0.0)
     max_pressure_alt = reactive(0.0)
     apogee_prediction = reactive(0.0)
+    integrated_altitude = reactive(0.0)
+    max_integrated_altitude = reactive(0.0)
 
     __slots__ = (
         "apogee_label",
         "debug_telemetry",
+        "integrated_altitude_label",
+        "max_integrated_altitude_label",
         "max_pressure_alt_label",
         "max_total_velocity_label",
         "pressure_alt_label",
@@ -67,14 +71,27 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
             yield Static("m", id="pressure-altitude-units-static-label", classes="units")
 
             # Row 6:
+            yield Static("Integrated Altitude:", id="integrated-altitude-static-label")
+            self.integrated_altitude_label = Label(
+                "0.0", id="integrated-altitude-label", expand=True
+            )
+            yield self.integrated_altitude_label
+            yield Static("Max:", id="max-integrated-altitude-static-label")
+            self.max_integrated_altitude_label = Label(
+                "0.0", id="max-integrated-altitude-label", expand=True
+            )
+            yield self.max_integrated_altitude_label
+            yield Static("m", id="integrated-altitude-units-static-label", classes="units")
+
+            # Row 7:
             yield Static("Predicted Apogee:", id="predicted-apogee-static-label")
             self.apogee_label = Label("0.0", id="predicted-apogee-label", expand=True)
             yield self.apogee_label
-            yield Static()
-            yield Static()
+            yield Static(shrink=True)
+            yield Static(shrink=True)
             yield Static("m", id="apogee-units-static-label", classes="units")
 
-            # Row 7:
+            # Row 8:
             yield from self._compose_airbrakes_extension_label()
 
         self.debug_telemetry = ReplayDebugTelemetry(id="debug-telemetry")
@@ -107,6 +124,12 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
     def watch_apogee_prediction(self) -> None:
         self.apogee_label.update(f"{self.apogee_prediction:.2f}")
 
+    def watch_integrated_altitude(self) -> None:
+        self.integrated_altitude_label.update(f"{self.integrated_altitude:.2f}")
+
+    def watch_max_integrated_altitude(self) -> None:
+        self.max_integrated_altitude_label.update(f"{self.max_integrated_altitude:.2f}")
+
     def update_telemetry(self) -> None:
         super().update_telemetry()
         self.max_vertical_acceleration = self.context.data_processor.max_vertical_acceleration
@@ -115,6 +138,8 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
         self.apogee_prediction = self.context.last_apogee_predictor_packet.predicted_apogee
         self.pressure_alt = self.context.data_processor.current_pressure_altitude
         self.max_pressure_alt = self.context.data_processor.max_pressure_altitude
+        self.integrated_altitude = self.context.data_processor.integrated_altitude
+        self.max_integrated_altitude = self.context.data_processor.max_integrated_altitude
 
         self.debug_telemetry.update_telemetry()
 

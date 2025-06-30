@@ -20,6 +20,8 @@ class ExtendedDataProcessor(DataProcessor):
         "_current_pressure_altitudes",
         "_horizontal_distances",
         "_horizontal_velocities",
+        "_integrated_altitudes",
+        "_max_integrated_altitude",
         "_max_pressure_altitude",
         "_max_total_velocity",
         "_max_vertical_acceleration",
@@ -36,6 +38,8 @@ class ExtendedDataProcessor(DataProcessor):
         self._total_velocity: np.float64 = np.float64(0.0)
         self._max_total_velocity: np.float64 = np.float64(0.0)
         self._max_vertical_acceleration: np.float64 = np.float64(0.0)
+        self._integrated_altitudes: npt.NDArray[np.float64] = np.zeros((1, 1))
+        self._max_integrated_altitude: np.float64 = np.float64(0.0)
 
     @property
     def x_distance(self) -> float:
@@ -100,20 +104,42 @@ class ExtendedDataProcessor(DataProcessor):
         """
         return float(np.linalg.norm(self._horizontal_distances[:, -1]))
 
+    @property
+    def integrated_altitude(self) -> float:
+        """
+        The integrated altitude of the rocket based on the vertical velocities.
+
+        :return: The integrated altitude of the rocket at the last data packet
+        """
+        return float(self._integrated_altitudes[-1])
+
+    @property
+    def max_integrated_altitude(self) -> float:
+        """
+        The maximum integrated altitude of the rocket based on the vertical velocities.
+
+        :return: The maximum integrated altitude of the rocket at the last data packet
+        """
+        return float(self._max_integrated_altitude)
+
     def update(self, data_packets: list[EstimatedDataPacket]) -> None:
         super().update(data_packets)
         self._horizontal_velocities = self._calculate_horizontal_velocity()
         self._horizontal_distances = self._calculate_horizontal_distance()
+
+        self._integrated_altitudes = self._calculate_integrated_altitudes()
+        self._max_integrated_altitude = max(
+            self._integrated_altitudes.max(), self._max_integrated_altitude
+        )
+
         self._current_pressure_altitudes = self._calculate_pressure_altitudes()
         self._max_pressure_altitude = max(
             self._current_pressure_altitudes.max(), self._max_pressure_altitude
         )
 
-        # Join the _vertical_velocity and _horizontal_velocity arrays:
         self._total_velocity = self._calculate_total_velocity()
         self._max_total_velocity = max(self._total_velocity, self._max_total_velocity)
 
-        # Calculate the maximum vertical acceleration
         self._max_vertical_acceleration = max(
             self._max_vertical_acceleration, self._rotated_accelerations[:, 2][-1]
         )
@@ -149,7 +175,7 @@ class ExtendedDataProcessor(DataProcessor):
         Integrates that acceleration to get the velocity.
         :return: A numpy array of the horizontal velocity of the rocket at each data packet
         """
-        # Initialize horizontal velocities array with the previous value
+        # preallocate the horizontal velocities array:
         horizontal_velocities = np.zeros((2, len(self._data_packets)))
 
         # Integrate the accelerations to get the velocities
@@ -176,3 +202,15 @@ class ExtendedDataProcessor(DataProcessor):
             )
 
         return horizontal_distances
+
+    def _calculate_integrated_altitudes(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the integrated altitude of the rocket based on the vertical velocities.
+
+        Integrates the vertical accelerations to get the altitude.
+        :return: A numpy array of the integrated altitude of the rocket at each data packet
+        """
+        # Integrate the vertical velocities to get the altitudes
+        return self._integrated_altitudes[-1] + np.cumsum(
+            self._vertical_velocities * self._time_differences
+        )

@@ -131,7 +131,7 @@
 
         #flight-telemetry-grid{
             grid-size: 5;  /* 5 columns */
-            grid-columns: auto 10 auto auto auto;
+            grid-columns: auto 10 auto 7 auto;
             grid-rows: auto;
             grid-gutter: 0 1;
             height: auto;
