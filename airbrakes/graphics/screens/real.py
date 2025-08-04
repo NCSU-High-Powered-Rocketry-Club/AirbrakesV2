@@ -13,7 +13,7 @@ from textual.containers import Grid
 from textual.screen import Screen
 from textual.widgets import Button, Footer
 
-from airbrakes.constants import DARK_THEME, LIGHT_THEME, REAL_TIME_DISPLAY_UPDATE_RATE
+from airbrakes.constants import DARK_THEME, LIGHT_THEME, REALTIME_DISPLAY_UPDATE_RATE
 from airbrakes.context import Context
 from airbrakes.graphics.real_widgets.header import MotorBurnSignal, RealFlightHeader
 from airbrakes.graphics.real_widgets.telemetry import (
@@ -62,7 +62,7 @@ class RealFlightScreen(Screen[None]):
         """
         Start updating the screen by setting a timer.
         """
-        self.update_timer = self.set_interval(REAL_TIME_DISPLAY_UPDATE_RATE, self.update_telemetry)
+        self.update_timer = self.set_interval(REALTIME_DISPLAY_UPDATE_RATE, self.update_telemetry)
         if self.launch_options.verbose:
             self.flight_telemetry.debug_telemetry.start()
 

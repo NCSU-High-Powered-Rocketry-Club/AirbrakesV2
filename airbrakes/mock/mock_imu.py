@@ -17,7 +17,9 @@ from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints fo
 
 from airbrakes.constants import (
     BUFFER_SIZE_IN_BYTES,
+    BUSY_WAIT_SECONDS,
     MAX_FETCHED_PACKETS,
+    REALTIME_PLAYBACK_SPEED,
     STOP_SIGNAL,
 )
 from airbrakes.interfaces.base_imu import BaseIMU
@@ -46,7 +48,7 @@ class MockIMU(BaseIMU):
 
     def __init__(
         self,
-        real_time_replay: float = 1.0,
+        real_time_replay: float = REALTIME_PLAYBACK_SPEED,
         log_file_path: Path | None = None,
         start_after_log_buffer: bool = True,
     ):
@@ -215,7 +217,7 @@ class MockIMU(BaseIMU):
                     time.sleep(adjusted_sleep_time)
             else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
                 while not self._sim_speed_factor.value and self._requested_to_run.value:
-                    time.sleep(0.1)
+                    time.sleep(BUSY_WAIT_SECONDS)
 
     def _fetch_data_loop(
         self,

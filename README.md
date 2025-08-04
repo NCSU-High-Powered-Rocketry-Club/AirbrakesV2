@@ -234,7 +234,7 @@ Testing our code can be difficult, so we've developed a way to run mock launches
 
 To run a mock launch, run:
 ```bash
-uv run textual run -c mock
+uv run mock
 ```
 
 To connect to the dev console, open another terminal, and run:

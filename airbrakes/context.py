@@ -5,7 +5,7 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import MAIN_PROCESS_PRIORITY
+from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
 from airbrakes.hardware.camera import Camera
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.interfaces.base_servo import BaseServo
@@ -125,7 +125,7 @@ class Context:
             while True:
                 if self.imu.is_running:
                     break
-                time.sleep(0.1)
+                time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:
         """

@@ -19,6 +19,10 @@ It's a bit lower than the IMU process because we want to make sure the IMU proce
 and getting data.
 """
 
+BUSY_WAIT_SECONDS = 0.1
+"""
+The amount of time to sleep while busy waiting in a loop.
+"""
 
 # -------------------------------------------------------
 # Servo Configuration
@@ -127,7 +131,7 @@ The frequency at which the display updates in replay or sim mode.
 Increasing this value will negatively affect the performance when running with a "fast" simulation.
 """
 
-REAL_TIME_DISPLAY_UPDATE_RATE = 1 / 10  # 10 Hz
+REALTIME_DISPLAY_UPDATE_RATE = 1 / 10  # 10 Hz
 """
 The frequency at which the display updates in real mode.
 
@@ -306,11 +310,11 @@ packet) before it is considered to have timed out.
 This is used to prevent the program from deadlocking if the IMU stops sending data.
 """
 
-CHUNK_SIZE = LOG_BUFFER_SIZE + 1
+REALTIME_PLAYBACK_SPEED: float = 1.0
 """
-The size of the chunk to read from the log file at a time.
+The speed at which the Mock IMU plays back the data.
 
-This has 2 benefits. Less memory usage and faster initial read of the file.
+1.0 means real-time playback, 2.0 means maximum speed.
 """
 
 # Constants for IMU field names and quantifiers
