@@ -47,22 +47,18 @@ class FlightGraph(Widget):
             with self.tabbed_content:
                 with TabPane("Acceleration", id="accel-tab"):
                     self.accel_plot = PlotWidget(allow_pan_and_zoom=False)
-                    self.accel_plot._margin_left = 5
                     self.accel_plot.can_focus = False
                     yield self.accel_plot
                 with TabPane("Velocity", id="vel-tab"):
                     self.vel_plot = PlotWidget(allow_pan_and_zoom=False)
-                    self.vel_plot._margin_left = 5
                     self.vel_plot.can_focus = False
                     yield self.vel_plot
                 with TabPane("Altitude", id="alt-tab"):
                     self.alt_plot = PlotWidget(allow_pan_and_zoom=False)
-                    self.alt_plot._margin_left = 5
                     self.alt_plot.can_focus = False
                     yield self.alt_plot
                 with TabPane("Predicted Apogee", id="pred-apogee-tab"):
                     self.apogee_plot = PlotWidget(allow_pan_and_zoom=False)
-                    self.apogee_plot._margin_left = 5
                     self.apogee_plot.can_focus = False
                     yield self.apogee_plot
 
@@ -77,6 +73,12 @@ class FlightGraph(Widget):
         """
         self.context = context
         self.downrange_map.initialize_widgets(self.context)
+
+        # Make the plots waste less space on the left:
+        self.accel_plot.margin_left = 5
+        self.apogee_plot.margin_left = 5
+        self.alt_plot.margin_left = 5
+        self.vel_plot.margin_left = 5
 
         self.information_store = InformationStore(
             time_to_store_for=GRAPH_DATA_STORE_INTERVAL_SECONDS,

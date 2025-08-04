@@ -35,7 +35,6 @@ class DownrangeMap(Widget):
 
     def compose(self) -> ComposeResult:
         self.downrange_plot = PlotWidget(allow_pan_and_zoom=False, id="downrange-map-widget")
-        self.downrange_plot._margin_left = 7
         self.downrange_plot.can_focus = False
         yield self.downrange_plot
 
@@ -58,6 +57,10 @@ class DownrangeMap(Widget):
 
     def initialize_widgets(self, context: Context) -> None:
         self.context = context
+
+        # Make the plot waste less space on the left:
+        self.downrange_plot.margin_left = 5
+
         self.information_store = InformationStore(time_to_store_for=None)
         self.information_store.initalize_new_data("x_distance")
         self.information_store.initalize_new_data("y_distance")
