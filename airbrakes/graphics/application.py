@@ -5,11 +5,14 @@ Module to show the terminal GUI for the airbrakes system.
 import gc
 import time
 from argparse import Namespace
+from pathlib import Path
 from typing import ClassVar, Literal
 
+from pyfiglet import FigletFont
 from textual import on
 from textual.app import App
 from textual.worker import Worker, WorkerState
+from textual_pyfiglet import FigletWidget
 
 import airbrakes.constants
 from airbrakes import state
@@ -372,6 +375,11 @@ class AirbrakesApplication(App):
         """
         with self.suspend():  # This is very important if you want it to work with "spawn"
             self.create_components()
+
+        # Let's install the font required:
+        FigletFont.installFonts(Path("airbrakes/graphics/fonts/smblock.tlf"))  # ty: ignore[invalid-argument-type]
+        # Trick textual-pyfiglet into thinking that the font is installed:
+        FigletWidget.fonts_list.append("smblock")
 
         if self.flight_type != "real":
             self._assign_target_apogee()

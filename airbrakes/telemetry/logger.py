@@ -258,11 +258,11 @@ class Logger:
             # is NOT covered by tests.
             if apogee_predictor_data_packets:
                 apogee_packet = apogee_predictor_data_packets.pop(0)
-                logger_packet.predicted_apogee = apogee_packet.predicted_apogee
-                logger_packet.a_coefficient = apogee_packet.a_coefficient
-                logger_packet.b_coefficient = apogee_packet.b_coefficient
-                logger_packet.uncertainty_threshold_1 = apogee_packet.uncertainty_threshold_1
-                logger_packet.uncertainty_threshold_2 = apogee_packet.uncertainty_threshold_2
+                logger_packet.predicted_apogee = apogee_packet.predicted_apogee  # ty: ignore[invalid-assignment]
+                logger_packet.a_coefficient = apogee_packet.a_coefficient  # ty: ignore[invalid-assignment]
+                logger_packet.b_coefficient = apogee_packet.b_coefficient  # ty: ignore[invalid-assignment]
+                logger_packet.uncertainty_threshold_1 = apogee_packet.uncertainty_threshold_1  # ty: ignore[invalid-assignment]
+                logger_packet.uncertainty_threshold_2 = apogee_packet.uncertainty_threshold_2  # ty: ignore[invalid-assignment]
 
             logger_data_packets.append(logger_packet)
 

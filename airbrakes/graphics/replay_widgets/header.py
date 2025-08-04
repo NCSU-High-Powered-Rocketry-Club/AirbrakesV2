@@ -114,6 +114,7 @@ class FlightProgressBar(Static):
             id="progress-bar-widget",
             show_eta=False,
             show_percentage=False,
+            total=1,  # Will be updated later, cannot be None since that errors out (it's a bug)
         )
         yield self.progress_bar
 
