@@ -8,7 +8,6 @@ from argparse import Namespace
 from pathlib import Path
 from typing import ClassVar, Literal
 
-from pyfiglet import FigletFont
 from textual import on
 from textual.app import App
 from textual.worker import Worker, WorkerState
@@ -377,9 +376,7 @@ class AirbrakesApplication(App):
             self.create_components()
 
         # Let's install the font required:
-        FigletFont.installFonts(Path("airbrakes/graphics/fonts/smblock.tlf"))  # ty: ignore[invalid-argument-type]
-        # Trick textual-pyfiglet into thinking that the font is installed:
-        FigletWidget.fonts_list.append("smblock")
+        FigletWidget.install_font(Path("airbrakes/graphics/fonts/smblock.tlf"))
 
         if self.flight_type != "real":
             self._assign_target_apogee()

@@ -278,7 +278,7 @@ requires-dist = [
     { name = "textual-hires-canvas", specifier = ">=0.10.1" },
     { name = "textual-image", specifier = ">=0.8.3" },
     { name = "textual-plot", specifier = ">=0.8.0" },
-    { name = "textual-pyfiglet", specifier = "~=1.0.1" },
+    { name = "textual-pyfiglet", specifier = "~=1.1.0" },
     { name = "textual-speedups", specifier = ">=0.2.0" },
 ]
 
@@ -1366,7 +1366,7 @@ wheels = [
 
 [[package]]
 name = "textual-pyfiglet"
-version = "1.0.1"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyfiglet" },
@@ -1374,9 +1374,9 @@ dependencies = [
     { name = "textual-coloromatic" },
     { name = "textual-slidecontainer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/55/23/fad8270359579c96b6ecd469e864ee327a60750162d487b2dcd391ae425e/textual_pyfiglet-1.0.1.tar.gz", hash = "sha256:e04ac9be3a1ad1c75df5a3bfbfbbe8efcf56c916049cca99229f8f4cca7cdc98", size = 139134, upload-time = "2025-07-30T08:25:49.947Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dc/fd/de3fafcca531b1c154c36de42f375de469d2d02d64215d5e3ccac8dd4776/textual_pyfiglet-1.1.0.tar.gz", hash = "sha256:f8b24c213bc5818ac50820403ca8e69e357bdb53c7bf8981d5e8a9aea8486658", size = 140697, upload-time = "2025-08-07T11:54:03.673Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/9d/2a9d3048d66e2ea633fd77fcdbdd3342746ba597d2d9eb2de9a1cf9407ac/textual_pyfiglet-1.0.1-py3-none-any.whl", hash = "sha256:ebbae0ba953c1aa60fd8c2a3a28dc1e63b32b6d24ca43ab08c43cd8fb69baf27", size = 23688, upload-time = "2025-07-30T08:25:48.461Z" },
+    { url = "https://files.pythonhosted.org/packages/4d/56/1c7cc069c9270fbe8d1056738931478cbb1e6a01af3692c9149912158cf5/textual_pyfiglet-1.1.0-py3-none-any.whl", hash = "sha256:e1aff02de37734aaa2bf492578f629e541519f4aa4e68f957baaadaeb94f6c48", size = 24302, upload-time = "2025-08-07T11:54:02.51Z" },
 ]
 
 [[package]]

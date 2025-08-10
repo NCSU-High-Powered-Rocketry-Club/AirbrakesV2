@@ -150,7 +150,7 @@
 
             #debug-telemetry-grid{
                 grid-size: 3;  /* 3 columns */
-                grid-columns: auto 7 auto;
+                grid-columns: auto 1fr 1fr;
                 grid-rows: auto;
                 grid-gutter: 0 1;
                 height: auto;
@@ -218,7 +218,7 @@
 
                     &.active {
                         &.low {
-                            color: white 80%;
+                            color: $primary 80%;
                         }
 
                         &.medium {
