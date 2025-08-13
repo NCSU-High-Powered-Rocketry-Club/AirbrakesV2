@@ -1,4 +1,5 @@
 {
+    "$schema": "metadata_schema.json",
     "purple_launch.csv": {
         "date": "2023-12-16T17:11:35.000-05:00",
         "launch_site": {
@@ -8,7 +9,7 @@
             "wind_direction": "ESE",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1758000,
+                "latitude": 35.1758000,
                 "longitude": -76.8283400
             },
             "launch_rod_angle": 5.0
@@ -72,7 +73,7 @@
             "wind_direction": "S",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1758000,
+                "latitude": 35.1758000,
                 "longitude": -76.8283400
             },
             "launch_rod_angle": 6.0
@@ -105,7 +106,7 @@
             "wind_direction": "S",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1758000,
+                "latitude": 35.1758000,
                 "longitude": -76.8283400
             },
             "launch_rod_angle": 5.0
@@ -137,7 +138,7 @@
             "wind_direction": "N",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1757368,
+                "latitude": 35.1757368,
                 "longitude": -76.8282710
             },
             "launch_rod_angle": 2.0
@@ -246,7 +247,7 @@
         "flight_data": {
             "log_buffer_index": 5000,
             "apogee_meters": 1090.16,
-            "landed_coordinates:": {
+            "landed_coordinates": {
                 "latitude": 34.04811560103679,
                 "longitude": -80.42347345289595
             },
@@ -265,7 +266,7 @@
             "wind_direction": "SW",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1762107,
+                "latitude": 35.1762107,
                 "longitude": -76.8293647
             },
             "launch_rod_angle": 5.0
@@ -297,7 +298,7 @@
             "wind_direction": "NW",
             "location": "Bragg Farms, AL",
             "launch_coordinates": {
-                "latitiude": 34.894610,
+                "latitude": 34.894610,
                 "longitude": -86.616470
             },
             "launch_rod_angle": 5.0
