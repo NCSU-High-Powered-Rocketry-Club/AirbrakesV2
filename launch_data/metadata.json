@@ -40,7 +40,7 @@
             "wind_direction": "SSW",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitiude": 35.1758000,
+                "latitude": 35.1758000,
                 "longitude": -76.8283400
             },
             "launch_rod_angle": 5.0
@@ -182,7 +182,7 @@
         "flight_data": {
             "log_buffer_index": 5000,
             "apogee_meters": null,
-            "landed_coordinates:": {
+            "landed_coordinates": {
                 "latitude": 35.17482376,
                 "longitude": -76.82660675
             },
