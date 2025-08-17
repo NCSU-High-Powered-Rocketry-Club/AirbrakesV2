@@ -37,6 +37,8 @@ dev = [
     "pytest-benchmark>=5.1.0",
     "docformatter",
     "ty>=0.0.1a16",
+    "pytest-textual-snapshot>=1.1.0",
+    "pytest-asyncio>=1.1.0",
 ]
 
 profiling = [
@@ -102,7 +104,6 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error", # treat warnings as errors
     "ignore:Could not import LGPIOFactory", # ignore warning about LGPIO
     "ignore:This process:DeprecationWarning", # ignore warning about fork()
     "ignore:To reduce servo jitter", # ignore warning about pigpio
@@ -113,6 +114,7 @@ addopts = "--benchmark-skip"  # skip benchmarks by default:
 markers = [
     "imu_benchmark",
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true

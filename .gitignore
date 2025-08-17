@@ -46,3 +46,6 @@ test_logs/
 
 # Repomix (Code for AI)
 repomix-output.xml
+
+# Textual snapshot testing reports:
+snapshot_report.html

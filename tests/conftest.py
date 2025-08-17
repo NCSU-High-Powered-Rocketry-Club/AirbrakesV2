@@ -40,6 +40,29 @@ LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+class MockArgs:
+    """
+    All the possible command line arguments.
+
+    See the fixtures below which will modify these for mock, real, sim.
+    """
+
+    # Global:
+    mode = "mock"
+    # "real" args:
+    mock_servo = False
+    mock_camera = False
+    verbose = False
+    # "mock" args:
+    real_servo = False
+    keep_log_file = False
+    fast_replay = False
+    real_camera = False
+    bench = False
+    target_apogee = None
+    path = None
+
+
 def pytest_collection_modifyitems(config, items):
     marker = "imu_benchmark"
     marker_expr = config.getoption("-m", None)
@@ -155,19 +178,6 @@ def mocked_args_parser():
     """
     Fixture that returns a mocked argument parser.
     """
-
-    class MockArgs:
-        mode = "mock"
-        real_servo = False
-        keep_log_file = False
-        fast_replay = False
-        debug = False
-        path = None
-        real_camera = False
-        verbose = False
-        sim = False
-        real_imu = False
-
     return MockArgs()
 
 
