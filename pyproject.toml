@@ -36,7 +36,7 @@ dev = [
     "pre-commit",
     "pytest-benchmark>=5.1.0",
     "docformatter",
-    "ty>=0.0.1a16",
+    "ty>=0.0.1a18",
     "pytest-textual-snapshot>=1.1.0",
     "pytest-asyncio>=1.1.0",
 ]
