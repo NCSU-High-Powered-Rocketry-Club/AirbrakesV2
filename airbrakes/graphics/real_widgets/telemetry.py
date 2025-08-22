@@ -75,7 +75,7 @@ class RealFlightTelemetry(BaseFlightTelemetry):
         """
         super().watch_vertical_velocity()
         # Check if the vertical velocity is bad:
-        bad_velocity = self.vertical_velocity < -2.0
+        bad_velocity = float(self.vertical_velocity) < -2.0
         if bad_velocity and not self.bad_velocity:
             set_only_class(self.velocity_label, "bad-data")
             self.post_message(BadDataSignal())

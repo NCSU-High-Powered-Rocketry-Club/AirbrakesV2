@@ -294,7 +294,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-textual-snapshot", specifier = ">=1.1.0" },
     { name = "ruff", specifier = ">=0.12.7" },
-    { name = "ty", specifier = ">=0.0.1a16" },
+    { name = "ty", specifier = ">=0.0.1a18" },
 ]
 encoder = [
     { name = "lgpio", specifier = ">=0.2.2.0" },
