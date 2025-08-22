@@ -29,7 +29,7 @@
         },
         "flight_description": "The servo died right before the launch, so this was just a data collection flight. It was with the first iteration of the Airbrakes code, so it doesn't have all of the fields we normally log. Our rotation data is not accurate, so we cannot get a good velocity estimate for most of the flight."
     },
-    "interest_launch.csv": {
+    "shake_n_bake.csv": {
         "date": "2024-09-28T14:51:21.437-04:00",
         "launch_site": {
             "air_temperature_celsius": 30.0,
