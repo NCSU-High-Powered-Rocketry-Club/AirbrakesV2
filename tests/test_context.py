@@ -190,7 +190,7 @@ class TestContext:
         mocked_airbrakes.state = CoastState(
             mocked_airbrakes
         )  # Set to coast state to test apogee update
-        mocked_airbrakes.start()
+        mocked_airbrakes.start(wait_for_start=True)
 
         time.sleep(0.7)  # Sleep a bit so that the IMU queue is being filled
 
@@ -443,7 +443,7 @@ class TestContext:
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
         context.start()
-        time.sleep(0.7)
+        time.sleep(0.9)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
         assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
 

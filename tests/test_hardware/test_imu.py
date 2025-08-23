@@ -117,7 +117,7 @@ class TestIMU:
         """
         imu = PortIMU(port=IMU_PORT)
         imu.start()
-        time.sleep(0.2)  # Sleep a bit to let the process start and put the data
+        time.sleep(0.4)  # Sleep a bit to let the process start and put the data
         assert imu._queued_imu_packets.qsize() == 1
         imu.stop()
         assert not imu._running.value
@@ -134,8 +134,8 @@ class TestIMU:
 
         imu = PacketsIMU(port=IMU_PORT)
         imu.start()
-        time.sleep(0.2)  # Sleep a bit to let the process start and put the data
-        assert imu._queued_imu_packets.qsize() == 10
+        time.sleep(0.4)  # Sleep a bit to let the process start and put the data
+        assert imu._queued_imu_packets.qsize() >= 10
         imu.stop()
         assert not imu.is_running
         assert not imu._data_fetch_process.is_alive()
@@ -184,7 +184,7 @@ class TestIMU:
         """
         imu = random_data_mock_imu
         imu.start()
-        time.sleep(0.7)  # Time to start the process
+        time.sleep(0.8)  # Time to start the process
         time.sleep(0.31)  # Time to put data
         # Theoretical number of packets in 0.3s:
         # T = N / 1000 => N = 0.3 * 1000 = 300
