@@ -184,7 +184,7 @@ class TestIMU:
         """
         imu = random_data_mock_imu
         imu.start()
-        time.sleep(0.8)  # Time to start the process
+        time.sleep(0.9)  # Time to start the process
         time.sleep(0.31)  # Time to put data
         # Theoretical number of packets in 0.3s:
         # T = N / 1000 => N = 0.3 * 1000 = 300

@@ -442,7 +442,7 @@ class TestContext:
         monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
-        context.start()
+        context.start(wait_for_start=True)
         time.sleep(0.9)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
         assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
