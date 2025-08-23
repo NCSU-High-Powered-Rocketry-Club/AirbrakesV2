@@ -6,7 +6,6 @@ the rocket.
 import contextlib
 import multiprocessing
 from multiprocessing import TimeoutError
-from multiprocessing.context import ForkServerProcess
 
 import msgspec.msgpack
 from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for this library
@@ -31,10 +30,11 @@ class BaseIMU:
         "_data_fetch_process",
         "_imu_packets_per_cycle",
         "_queued_imu_packets",
+        "_requested_to_run",
         "_running",
     )
 
-    def __init__(self, data_fetch_process: ForkServerProcess, queued_imu_packets: Queue) -> None:
+    def __init__(self, data_fetch_process: multiprocessing.Process, queued_imu_packets: Queue):
         """
         Initialises object using arguments passed by the constructors of the subclasses.
 
@@ -45,22 +45,18 @@ class BaseIMU:
         self._queued_imu_packets = queued_imu_packets
         self._data_fetch_process = data_fetch_process
         # Makes a boolean value that is shared between processes
-        context = multiprocessing.get_context("forkserver")
-        self._running = context.Value("b", False, lock=False)
-        self._imu_packets_per_cycle = context.Value("i", 0, lock=False)
+        self._requested_to_run = multiprocessing.Value("b", False, lock=False)
+        self._running = multiprocessing.Value("b", False, lock=False)
+        self._imu_packets_per_cycle = multiprocessing.Value("i", 0, lock=False)
 
-    def _setup_queue_serialization_method(self) -> None:
+    @property
+    def requested_to_run(self) -> bool:
         """
-        Sets up the serialization methods for the queued IMU packets for faster-fifo.
+        Returns whether the process fetching data from the IMU has been requested to run.
 
-        This is not done in the __init__ because "spawn" and "forkserver" will attempt to pickle the
-        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
-        after the child has been born.
+        :return: True if the process is requested to run, False otherwise.
         """
-        self._queued_imu_packets.dumps = msgspec.msgpack.Encoder().encode
-        self._queued_imu_packets.loads = msgspec.msgpack.Decoder(
-            type=EstimatedDataPacket | RawDataPacket | str
-        ).decode
+        return self._requested_to_run.value
 
     @property
     def imu_packets_per_cycle(self) -> int:
@@ -91,7 +87,7 @@ class BaseIMU:
         """
         Stops the process separate from the main process for fetching data from the IMU.
         """
-        self._running.value = False
+        self._requested_to_run.value = False
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
         # stuck (i.e. deadlocks) waiting for the process to finish. A more technical explanation:
         # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
@@ -104,7 +100,7 @@ class BaseIMU:
         """
         Starts the process separate from the main process for fetching data from the IMU.
         """
-        self._running.value = True
+        self._requested_to_run.value = True
         self._data_fetch_process.start()
         self._setup_queue_serialization_method()
 
@@ -134,3 +130,16 @@ class BaseIMU:
             if STOP_SIGNAL in packets:  # only used by the MockIMU
                 return []  # Makes the main update() loop exit early.
             return packets
+
+    def _setup_queue_serialization_method(self) -> None:
+        """
+        Sets up the serialization methods for the queued IMU packets for faster-fifo.
+
+        This is not done in the __init__ because "spawn" and "forkserver" will attempt to pickle the
+        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
+        after the child has been born.
+        """
+        self._queued_imu_packets.dumps = msgspec.msgpack.Encoder().encode
+        self._queued_imu_packets.loads = msgspec.msgpack.Decoder(
+            type=EstimatedDataPacket | RawDataPacket | str
+        ).decode

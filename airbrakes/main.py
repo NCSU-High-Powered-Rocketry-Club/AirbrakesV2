@@ -5,6 +5,7 @@ It will create the AirbrakesContext object and run the main loop.
 """
 
 import argparse
+import multiprocessing as mp
 import sys
 from typing import cast
 
@@ -42,6 +43,7 @@ def run_real_flight() -> None:
     `uv run real` or `uvx --from git+... real`.
     """
     # Modify sys.argv to include real as the first argument:
+    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "real")
     args = arg_parser()
     run_flight(args)
@@ -55,6 +57,7 @@ def run_mock_flight() -> None:
     `uvx --from git+... mock` or `uv run mock`.
     """
     # Modify sys.argv to include mock as the first argument:
+    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "mock")
     args = arg_parser()
     run_flight(args)
@@ -68,6 +71,7 @@ def run_sim_flight() -> None:
     `uvx --from git+... sim` or `uv run sim`.
     """
     # Modify sys.argv to include sim as the first argument:
+    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "sim")
     args = arg_parser()
     run_flight(args)
@@ -162,7 +166,7 @@ def run_flight_loop(
     """
     try:
         # Starts the air brakes system and display
-        context.start()
+        context.start(wait_for_start=True)
         flight_display.start()
 
         while True:
@@ -226,5 +230,6 @@ if __name__ == "__main__":
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.
     #     -v, --verbose : Enables a detailed display with more flight data.
 
+    mp.set_start_method("spawn", force=True)
     args = arg_parser()
     run_flight(args)

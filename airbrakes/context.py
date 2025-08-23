@@ -5,7 +5,7 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import MAIN_PROCESS_PRIORITY
+from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
 from airbrakes.hardware.camera import Camera
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.interfaces.base_servo import BaseServo
@@ -99,11 +99,16 @@ class Context:
         self.servo_data_packet: ServoDataPacket | None = None
         self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
 
-    def start(self) -> None:
+    def start(self, wait_for_start: bool = False) -> None:
         """
         Starts the processes for the IMU, Logger, ApogeePredictor, and Camera.
 
         This is called before the main loop starts.
+
+        :param wait_for_start: If True, waits for all the processes to have actually started. This
+            matters because starting processes via the "spawn"/"forkserver" method is slow, and we
+            want to prevent data races where the main loop tries to access data before the processes
+            have started.
         """
         set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
@@ -112,6 +117,15 @@ class Context:
         # Currently there is no camera for the airbrakes, but we will leave this here for future
         # use
         # self.camera.start()
+
+        if wait_for_start:
+            # Wait for all processes to start. It is assumed that once the IMU is running, all other
+            # processes are also running. Even if they aren't it's okay, since the queue will fill
+            # up with data and the other processes will start processing it when they wake up.
+            while True:
+                if self.imu.is_running:
+                    break
+                time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:
         """

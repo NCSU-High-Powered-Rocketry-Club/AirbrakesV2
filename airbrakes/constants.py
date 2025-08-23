@@ -19,6 +19,10 @@ It's a bit lower than the IMU process because we want to make sure the IMU proce
 and getting data.
 """
 
+BUSY_WAIT_SECONDS = 0.1
+"""
+The amount of time to sleep while busy waiting in a loop.
+"""
 
 # -------------------------------------------------------
 # Servo Configuration

@@ -68,8 +68,7 @@ class IMU(BaseIMU):
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
         )
         # Starts the process that fetches data from the IMU
-        context = multiprocessing.get_context("forkserver")
-        data_fetch_process = context.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
         )
         super().__init__(data_fetch_process, _queued_imu_packets)
@@ -101,7 +100,7 @@ class IMU(BaseIMU):
         # - Checking for raw data packets or estimated data packets, not both
         # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
         # - High priority for the process
-        while self.is_running:
+        while self._requested_to_run.value:
             # Retrieve data packets from the IMU.
             packets: mscl.MipDataPackets = node.getDataPackets(timeout=10)
 
@@ -264,6 +263,8 @@ class IMU(BaseIMU):
         It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         """
+        self._running.value = True
         self._setup_queue_serialization_method()
         with contextlib.suppress(KeyboardInterrupt):
             self._fetch_data_loop(port)
+        self._running.value = False

@@ -4,6 +4,7 @@ Module for simulating interacting with the IMU (Inertial measurement unit) on th
 
 import contextlib
 import multiprocessing
+import signal
 import time
 import typing
 from pathlib import Path
@@ -77,8 +78,7 @@ class MockIMU(BaseIMU):
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
         )
         # Starts the process that fetches data from the log file
-        context = multiprocessing.get_context("forkserver")
-        data_fetch_process = context.Process(
+        data_fetch_process = multiprocessing.Process(
             target=self._fetch_data_loop,
             args=(real_time_replay, start_after_log_buffer),
             name="Mock IMU Process",
@@ -113,6 +113,8 @@ class MockIMU(BaseIMU):
         """
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
 
     def _scan_csv(
         self,
@@ -174,7 +176,11 @@ class MockIMU(BaseIMU):
 
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in collected_data.iter_rows(named=True):
-            start_time = time.perf_counter()
+            # Check if the loop should stop:
+            if not self._requested_to_run.value:
+                break
+
+            start_time = time.time()
 
             # Drop None values from the row so msgspec Structs can be made:
             # This approach of deleting is faster than using a dict comprehension by about 6%
@@ -197,7 +203,7 @@ class MockIMU(BaseIMU):
             # between each packet to pretend to be real-time
             if real_time_replay and type(imu_data_packet) is RawDataPacket:
                 # Mimic the polling interval so it "runs in real time"
-                end_time = time.perf_counter()
+                end_time = time.time()
                 time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
 
     def _fetch_data_loop(
@@ -213,7 +219,10 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
+        self._running.value = True  # Specify that the process is running
         self._setup_queue_serialization_method()
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):

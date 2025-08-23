@@ -248,7 +248,7 @@ class TestLogger:
         logger._log_queue.put(self.sample_ldp)
         assert logger._log_queue.qsize() == 1
         logger.start()
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.4)  # Give the process time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
