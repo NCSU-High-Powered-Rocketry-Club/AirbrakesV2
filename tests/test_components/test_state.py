@@ -476,18 +476,18 @@ class TestLandedState:
 
     def test_update(self, landed_state, context):
         # Test that calling update before shutdown delay does not shut down the system:
-        context.start()
+        context.start(wait_for_start=True)
         landed_state.update()
         assert context.logger.is_running
         assert context.imu.is_running
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
-        context.logger._log_buffer.extend([1] * LOG_BUFFER_SIZE)
+        context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
         landed_state.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
-        assert not context.imu.is_running
+        assert not context.imu.requested_to_run
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert not context.logger.is_log_buffer_full
         assert len(context.logger._log_buffer) == 0

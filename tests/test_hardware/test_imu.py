@@ -24,7 +24,9 @@ class PortIMU(IMU):
     """
 
     def _fetch_data_loop(self, port: str):
+        self._running.value = True
         self._queued_imu_packets.put(port)
+        self._running.value = False
 
 
 class PacketsIMU(IMU):
@@ -33,8 +35,10 @@ class PacketsIMU(IMU):
     """
 
     def _fetch_data_loop(self, _: str):
-        while self._running.value:
+        self._running.value = True
+        while self._requested_to_run.value:
             self._queued_imu_packets.put(make_est_data_packet())
+        self._running.value = False
 
 
 class SinglePacketIMU(IMU):
@@ -43,7 +47,9 @@ class SinglePacketIMU(IMU):
     """
 
     def _fetch_data_loop(self, _: str):
+        self._running.value = True
         self._queued_imu_packets.put(make_est_data_packet())
+        self._running.value = False
 
 
 class CtrlCIMU(IMU):
@@ -55,10 +61,12 @@ class CtrlCIMU(IMU):
         """
         Monkeypatched method for testing.
         """
+        self._running.value = True
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        while self._running.value:
+        while self._requested_to_run.value:
             continue
         self._queued_imu_packets.put(port)
+        self._running.value = False
 
 
 class TestIMU:
@@ -84,7 +92,7 @@ class TestIMU:
         assert not imu._running.value
         assert not mock_imu._running.value
         # Tests that the process is correctly initialized
-        assert isinstance(imu._data_fetch_process, multiprocessing.context.ForkServerProcess)
+        assert isinstance(imu._data_fetch_process, multiprocessing.context.Process)
         assert type(imu._data_fetch_process) is type(mock_imu._data_fetch_process)
 
         # Test IMU properties:
@@ -98,10 +106,8 @@ class TestIMU:
         """
         imu = PortIMU(port=IMU_PORT)
         imu.start()
-        assert imu._running.value
-        assert imu.is_running
-        assert imu._data_fetch_process.is_alive()
-        time.sleep(0.2)  # Give the process time to start and put the values
+        time.sleep(0.4)  # Give the process time to start and put the values
+        assert imu._requested_to_run.value
         assert imu._queued_imu_packets.qsize() == 1
         assert imu._queued_imu_packets.get() == IMU_PORT
 
@@ -156,10 +162,10 @@ class TestIMU:
         """
         imu = CtrlCIMU(port=IMU_PORT)
         imu.start()
+        time.sleep(0.4)  # Give the process time to start and recreate the actual loop
         assert imu._running.value
         assert imu.is_running
         assert imu._data_fetch_process.is_alive()
-        time.sleep(0.01)  # Give the process time to start and recreate the actual loop
         # send a KeyboardInterrupt to test if the process stops cleanly
         try:
             raise KeyboardInterrupt
