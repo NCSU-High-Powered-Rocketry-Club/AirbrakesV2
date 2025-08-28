@@ -391,9 +391,9 @@ class PurpleLaunchCase(LaunchCase):
         return case_result
 
 
-class InterestLaunchCase(LaunchCase):
+class ShakeNBakeLaunchCase(LaunchCase):
     """
-    The test case for the interest launch data.
+    The test case for the shake n bake launch data.
     """
 
 

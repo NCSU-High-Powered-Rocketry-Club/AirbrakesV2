@@ -263,7 +263,7 @@ class TestDataProcessor:
 
         d.update(
             [
-                # reference data is interest launch (very rounded data)
+                # reference data is shake_n_bake launch (very rounded data)
                 EstimatedDataPacket(
                     2 * 1e9,
                     estCompensatedAccelX=0,

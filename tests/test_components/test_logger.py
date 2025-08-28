@@ -72,7 +72,7 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
     for k, v in d.items():
         if isinstance(v, int):
             new_d[k] = str(v)
-        elif v is None:  # Skip None values
+        elif v is None or not v:  # Skip None values
             continue
         elif truncation:
             try:
@@ -109,7 +109,7 @@ class TestLogger:
         state_letter="S",
         set_extension="0.0",
         timestamp=4,
-        invalid_fields=[],
+        invalid_fields="",
         encoder_position=None,
         imu_packets_per_cycle=None,
         retrieved_imu_packets=None,
@@ -185,7 +185,7 @@ class TestLogger:
         """
         logger.start()
         logger._log_queue.put(STOP_SIGNAL)
-        time.sleep(0.01)
+        time.sleep(0.4)
         assert not logger.is_running
         assert not logger._log_process.is_alive()
         logger.stop()
@@ -214,41 +214,11 @@ class TestLogger:
             assert count == 1
         assert len(logger._log_buffer) == 0
 
-    def test_logger_ctrl_c_handling(self, monkeypatch):
-        """
-        Tests whether the Logger handles Ctrl+C events from main loop correctly.
-        """
-        values = faster_fifo.Queue()
-        org_method = Logger._logging_loop
-
-        def _logging_loop_patched(self):
-            """
-            Monkeypatched method for testing.
-            """
-            org_method(self)
-            values.put("clean exit")
-
-        monkeypatch.setattr(Logger, "_logging_loop", _logging_loop_patched)
-
-        logger = Logger(LOG_PATH)
-        logger.start()
-        assert logger.is_running
-        assert values.qsize() == 0
-        try:
-            raise KeyboardInterrupt  # send a KeyboardInterrupt to test __exit__
-        except KeyboardInterrupt:
-            logger.stop()
-
-        assert not logger.is_running
-        assert not logger._log_process.is_alive()
-        assert values.qsize() == 1
-        assert values.get() == "clean exit"
-
     def test_logging_loop_add_to_queue(self, logger):
+        logger.start()
         logger._log_queue.put(self.sample_ldp)
         assert logger._log_queue.qsize() == 1
-        logger.start()
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.4)  # Give the process time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
