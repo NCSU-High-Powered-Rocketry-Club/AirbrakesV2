@@ -48,7 +48,7 @@ class MockServo(BaseServo):
             pin_factory=factory,
         )
 
-        # Suppress PWMSoftwareFallback warnings here
+        # Suppress the servo jitter warning for mock servos
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             first_servo = Servo(0, pin_factory=factory)

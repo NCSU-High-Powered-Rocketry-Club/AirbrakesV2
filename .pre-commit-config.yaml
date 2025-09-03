@@ -17,13 +17,14 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
-  - repo: local
-    hooks:
-      - id: ty-type-checker
-        name: ty
-        # Only type check the airbrakes directory:
-        entry: ty check airbrakes/
-        language: system
-        types: [python]
-        pass_filenames: false
-        description: Run ty static type checker
+# TODO: add this back in when ty has a repo
+#  - repo: local
+#    hooks:
+#      - id: ty-type-checker
+#        name: ty
+#        # Only type check the airbrakes directory:
+#        entry: ty check airbrakes/
+#        language: system
+#        types: [python]
+#        pass_filenames: false
+#        description: Run ty static type checker
