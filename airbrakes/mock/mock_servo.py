@@ -2,6 +2,8 @@
 Module which contains the MockServo class and doesn't use the adafruit circuitpython library.
 """
 
+import warnings
+
 from gpiozero import RotaryEncoder, Servo
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
@@ -34,7 +36,7 @@ class MockServo(BaseServo):
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
             to.
         """
-        # Setup the PCA9685 PWM servo driver. This contains the servos that control the airbrakes.
+        factory = MockFactory(pin_class=MockPWMPin)
 
         # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
@@ -43,10 +45,14 @@ class MockServo(BaseServo):
             encoder_pin_number_a,
             encoder_pin_number_b,
             max_steps=0,
-            pin_factory=MockFactory(pin_class=MockPWMPin),
+            pin_factory=factory,
         )
-        first_servo = Servo(0, pin_factory=MockFactory(pin_class=MockPWMPin))
-        second_servo = Servo(1, pin_factory=MockFactory(pin_class=MockPWMPin))
+
+        # Suppress PWMSoftwareFallback warnings here
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            first_servo = Servo(0, pin_factory=factory)
+            second_servo = Servo(1, pin_factory=factory)
 
         super().__init__(first_servo, second_servo, encoder)
 

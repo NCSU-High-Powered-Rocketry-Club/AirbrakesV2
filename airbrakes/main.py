@@ -7,6 +7,7 @@ It will create the AirbrakesContext object and run the main loop.
 import argparse
 import multiprocessing as mp
 import sys
+import warnings
 from typing import cast
 
 from airbrakes.constants import (
@@ -56,6 +57,8 @@ def run_mock_flight() -> None:
     Entered when run with
     `uvx --from git+... mock` or `uv run mock`.
     """
+    # Silence process priority warning for when running mock on WSL
+    warnings.filterwarnings("ignore", "Could not set process priority*", UserWarning)
     # Modify sys.argv to include mock as the first argument:
     mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "mock")
