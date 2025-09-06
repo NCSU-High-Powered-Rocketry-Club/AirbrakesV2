@@ -7,7 +7,7 @@ import warnings
 from gpiozero import RotaryEncoder, Servo
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-from airbrakes.constants import SERVO_MAX_ANGLE, ServoExtension
+from airbrakes.constants import SERVO_MAX_ANGLE_DEGREES, ServoExtension
 from airbrakes.interfaces.base_servo import BaseServo
 
 
@@ -38,7 +38,6 @@ class MockServo(BaseServo):
         """
         factory = MockFactory(pin_class=MockPWMPin)
 
-        # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
         encoder = RotaryEncoder(
@@ -54,7 +53,7 @@ class MockServo(BaseServo):
             first_servo = Servo(0, pin_factory=factory)
             second_servo = Servo(1, pin_factory=factory)
 
-        super().__init__(first_servo, second_servo, encoder)
+        super().__init__(encoder=encoder, first_servo=first_servo, second_servo=second_servo)
 
     @staticmethod
     def _scale_min_max(extension: float) -> float:
@@ -64,7 +63,7 @@ class MockServo(BaseServo):
         :param extension: The extension to set the servo to.
         :return: The scaled extension value.
         """
-        return extension / SERVO_MAX_ANGLE
+        return extension / SERVO_MAX_ANGLE_DEGREES
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """

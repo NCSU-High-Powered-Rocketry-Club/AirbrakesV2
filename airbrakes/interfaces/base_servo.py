@@ -13,8 +13,8 @@ import gpiozero
 from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
 
 if TYPE_CHECKING:
-    from adafruit_motor.servo import Servo as AdafruitServo
     from gpiozero import Servo as MockedGPIOServo
+    from rpi_hardware_pwm import HardwarePWM
 
 
 class BaseServo(ABC):
@@ -24,8 +24,10 @@ class BaseServo(ABC):
     position. The encoder is controlled using the gpiozero library, which provides a simple
     interface for controlling GPIO pins on the Raspberry Pi.
 
-    The servo we use is the DS3235, which is a coreless digital servo. This is controlled with the
-    Adafruit PCA9685 PWM circuit board.
+    The servo we use is the DS3235, which is a coreless digital servo. We use hardware PWM to
+    control the servo on the Pi 5. We can't use the gpiozero Servo class because it uses software
+    PWM, which causes too much jitter (more specifically, the PiGPIO library does not support the Pi
+    5, which is why it falls back to software PWM).
     """
 
     __slots__ = (
@@ -39,21 +41,21 @@ class BaseServo(ABC):
 
     def __init__(
         self,
-        first_servo: "AdafruitServo | MockedGPIOServo",
-        second_servo: "AdafruitServo | MockedGPIOServo",
         encoder: gpiozero.RotaryEncoder,
+        first_servo: "HardwarePWM | MockedGPIOServo",
+        second_servo: "HardwarePWM | MockedGPIOServo | None" = None,
     ) -> None:
         """
         Initializes the servo and the encoder.
 
         :param first_servo: The first servo object. Can be a real servo or a mock servo.
-        :param second_servo: The second servo object. Can be a real servo or a mock servo.
+        :param second_servo: The second servo object. Can be a real servo or a mock servo, optional.
         :param encoder: The rotary encoder object.
         """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
-        self.first_servo: AdafruitServo | MockedGPIOServo = first_servo
-        self.second_servo: AdafruitServo | MockedGPIOServo = second_servo
+        self.first_servo: HardwarePWM | MockedGPIOServo = first_servo
+        self.second_servo: HardwarePWM | MockedGPIOServo | None = second_servo
 
         self.encoder = encoder
 

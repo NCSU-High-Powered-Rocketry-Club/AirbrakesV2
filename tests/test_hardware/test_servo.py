@@ -4,7 +4,8 @@ import time
 import gpiozero
 import pytest
 
-from airbrakes.constants import SERVO_DELAY_SECONDS, SERVO_MAX_ANGLE, ServoExtension
+from airbrakes.constants import SERVO_DELAY_SECONDS, SERVO_MAX_ANGLE_DEGREES, ServoExtension
+from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx
@@ -34,9 +35,9 @@ class TestBaseServo:
 
     def test_min_max_scaling(self, servo):
         assert servo._scale_min_max(0) == 0
-        assert servo._scale_min_max(SERVO_MAX_ANGLE) == 1
-        assert servo._scale_min_max(SERVO_MAX_ANGLE / 2) == 0.5
-        assert servo._scale_min_max(SERVO_MAX_ANGLE * 2) > 1
+        assert servo._scale_min_max(SERVO_MAX_ANGLE_DEGREES) == 1
+        assert servo._scale_min_max(SERVO_MAX_ANGLE_DEGREES / 2) == 0.5
+        assert servo._scale_min_max(SERVO_MAX_ANGLE_DEGREES * 2) > 1
 
     def test_set_extension(self, servo):
         servo._set_extension(ServoExtension.MAX_EXTENSION)
@@ -170,3 +171,13 @@ class TestBaseServo:
         assert servo.get_encoder_reading() == -10
         servo.encoder.steps = 0
         assert servo.get_encoder_reading() == 0
+
+    def test_angle_to_duty_cycle(self):
+        """
+        Tests that the angle to duty cycle conversion is correct.
+        """
+        assert Servo._angle_to_duty_cycle(0) == approx(2.5)
+        assert Servo._angle_to_duty_cycle(90) == approx(7.5)
+        assert Servo._angle_to_duty_cycle(180) == approx(12.5)
+        assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
+        assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping

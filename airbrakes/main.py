@@ -16,7 +16,6 @@ from airbrakes.constants import (
     IMU_PORT,
     LOGS_PATH,
     SERVO_1_CHANNEL,
-    SERVO_2_CHANNEL,
 )
 from airbrakes.context import Context
 from airbrakes.hardware.camera import Camera
@@ -119,7 +118,7 @@ def create_components(
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
-            Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            Servo(SERVO_1_CHANNEL, None, ENCODER_PIN_A, ENCODER_PIN_B)
             if args.real_servo
             else MockServo(
                 ENCODER_PIN_A,
@@ -141,7 +140,7 @@ def create_components(
                 ENCODER_PIN_B,
             )
         else:
-            servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            servo = Servo(SERVO_1_CHANNEL, None, ENCODER_PIN_A, ENCODER_PIN_B)
 
         camera = MockCamera() if args.mock_camera else Camera()
 

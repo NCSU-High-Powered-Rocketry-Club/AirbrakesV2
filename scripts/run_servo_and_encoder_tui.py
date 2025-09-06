@@ -3,7 +3,7 @@ Ensure you are in the root directory of the project and run the following comman
 uv run scripts/run_servo_and_encoder.py
 """
 
-from airbrakes.constants import SERVO_1_CHANNEL, SERVO_2_CHANNEL, SERVO_MAX_ANGLE, ServoExtension
+from airbrakes.constants import SERVO_1_CHANNEL, SERVO_MAX_ANGLE_DEGREES, ServoExtension
 from airbrakes.hardware.servo import Servo
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
@@ -36,7 +36,7 @@ class ServoControllerApp(App):
         super().__init__(**kwargs)
         self.stop_event = Event()
         # Initialize Servo and Rotary Encoder
-        self.servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+        self.servo = Servo(SERVO_1_CHANNEL, None, ENCODER_PIN_A, ENCODER_PIN_B)
         self.encoder = self.servo.encoder
 
     def compose(self) -> ComposeResult:
@@ -128,7 +128,7 @@ class ServoControllerApp(App):
         input_value = self.servo_input.value.strip()
         try:
             value = float(input_value)
-            if not 0 <= value <= SERVO_MAX_ANGLE:
+            if not 0 <= value <= SERVO_MAX_ANGLE_DEGREES:
                 raise ValueError("Value out of range")
             # Assuming the servo's set_position method accepts values from -1 to 1
             self.servo.first_servo.angle = value
