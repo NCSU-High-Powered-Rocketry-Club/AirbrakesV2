@@ -2,7 +2,6 @@
 Module to test the main script.
 """
 
-import platform
 import sys
 from functools import partial
 
@@ -29,15 +28,6 @@ from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
-
-
-class MockedServoKit:
-    """
-    Mocked class for the real servo.
-    """
-
-    def __init__(self, channels: int, *_, **__):
-        self.servo = [MockedServo()] * channels
 
 
 class MockedServo:
@@ -75,7 +65,6 @@ def parsed_args(request, monkeypatch):
     return arg_parser()
 
 
-@pytest.mark.skipif(platform.machine() in ("arm64", "aarch64"), reason="arm64 ServoKit import fail")
 @pytest.mark.parametrize(
     "parsed_args",
     [
@@ -120,7 +109,6 @@ def test_create_components(parsed_args, monkeypatch):
         Servo class.
         """
 
-    monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
     monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
 
