@@ -1,5 +1,3 @@
-# Make sure that the additional_dependencies here match pyproject.toml
-
 # TODO: Uncomment the ci section and delete pre-commit.yml file after repo is public
 # ci:
 #   autofix_prs: false
@@ -17,6 +15,12 @@ repos:
       - id: ruff
         args: [ --fix ]
       - id: ruff-format
+  # Validate the metadata.json file against the JSON Schema
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.33.3
+    hooks:
+      - id: check-metaschema
+        files: metadata.json
 # TODO: add this back in when ty has a repo
 #  - repo: local
 #    hooks:
