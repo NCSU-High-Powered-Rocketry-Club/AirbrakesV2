@@ -40,6 +40,8 @@ class Servo(BaseServo):
         """
         Initializes the Servo class.
 
+        :param first_servo_channel: The PWM channel that the first servo is connected to.
+        :param second_servo_channel: The PWM channel that the second servo is connected to.
         :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
             to.
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
@@ -80,6 +82,12 @@ class Servo(BaseServo):
         # Clamp the angle to the valid range:
         angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
 
+        # Servos are controlled by sending PWM signals, where the width of the "high" pulse
+        # (in microseconds) tells the servo what angle to move to. Each servo has a minimum and
+        # maximum pulse width - these values correspond to its minimum and maximum rotation angles.
+
+        # So we use linear interpolation to convert the angle to a pulse width:
+
         return SERVO_MIN_PULSE_WIDTH_US + (
             (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
             * (angle - SERVO_MIN_ANGLE_DEGREES)
@@ -95,6 +103,11 @@ class Servo(BaseServo):
         :return: The corresponding duty cycle percentage.
         """
         pulse_us = Servo._angle_to_pulse_width(angle)
+
+        # Duty cycle is simply the percentage of time that the signal is "high" in one period of
+        # the PWM signal. We convert the servo operating frequency from Hz to period in
+        # microseconds (1_000_000 / frequency) and then multiply by 100 to get a percentage.
+
         duty_cycle: float = (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
         return duty_cycle
 
