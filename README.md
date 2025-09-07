@@ -310,7 +310,7 @@ cd AirbrakesV2/
 ```bash
 sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev liblgpio-dev
 
-uv sync --all-groups
+uv sync --all-extras
 ```
 
 
