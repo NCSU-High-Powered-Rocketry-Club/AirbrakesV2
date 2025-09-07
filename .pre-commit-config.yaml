@@ -15,19 +15,20 @@ repos:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
-  - repo: local
-    hooks:
-      - id: ty-type-checker
-        name: ty
-        # Only type check the airbrakes directory:
-        entry: ty check airbrakes/
-        language: system
-        types: [python]
-        pass_filenames: false
-        description: Run ty static type checker
   # Validate the metadata.json file against the JSON Schema
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.33.2
     hooks:
       - id: check-metaschema
         files: metadata.json
+# TODO: add this back in when ty has a repo
+#  - repo: local
+#    hooks:
+#      - id: ty-type-checker
+#        name: ty
+#        # Only type check the airbrakes directory:
+#        entry: ty check airbrakes/
+#        language: system
+#        types: [python]
+#        pass_filenames: false
+#        description: Run ty static type checker

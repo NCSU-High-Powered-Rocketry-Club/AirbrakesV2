@@ -4,8 +4,7 @@ Module for simulating interacting with the IMU (Inertial measurement unit) on th
 
 import contextlib
 import multiprocessing
-
-# import threading
+import signal
 import time
 import typing
 from pathlib import Path
@@ -116,6 +115,8 @@ class MockIMU(BaseIMU):
         """
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
 
     def _scan_csv(
         self,
@@ -231,6 +232,8 @@ class MockIMU(BaseIMU):
         """
         self._running.value = True  # Specify that the process is running
         self._setup_queue_serialization_method()
+        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
+        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
         # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
         # function in a context manager to suppress the KeyboardInterrupt
         with contextlib.suppress(KeyboardInterrupt):

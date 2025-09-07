@@ -19,12 +19,12 @@ from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
-    InterestLaunchCase,
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
     PelicanatorLaunchCase4,
     PurpleLaunchCase,
+    ShakeNBakeLaunchCase,
     StateInformation,
 )
 
@@ -58,7 +58,7 @@ class TestIntegration:
         #  ...
         # }
 
-        # request.node.name is the name of the test function, e.g. test_update[interest_launch]
+        # request.node.name is the name of the test function, e.g. test_update[shake_n_bake]
         launch_name = request.node.name.split("[")[-1].strip("]")
 
         if launch_name == "purple_launch":
@@ -67,8 +67,8 @@ class TestIntegration:
             launch_case = LegacyLaunchCase
         elif launch_name == "genesis_launch_2":
             launch_case = GenesisLaunchCase
-        elif launch_name == "interest_launch":
-            launch_case = InterestLaunchCase
+        elif launch_name == "shake_n_bake":
+            launch_case = ShakeNBakeLaunchCase
         elif launch_name == "pelicanator_launch_1":
             launch_case = PelicanatorLaunchCase1
         elif launch_name == "pelicanator_launch_2":

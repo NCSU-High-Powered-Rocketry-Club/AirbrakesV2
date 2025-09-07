@@ -2,7 +2,7 @@
 Module where fixtures are shared between all test files.
 """
 
-import multiprocessing as mp
+import multiprocessing
 import time
 from pathlib import Path
 
@@ -26,9 +26,6 @@ from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
-mp.set_start_method("spawn", force=True)
-
-
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
 LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
@@ -38,6 +35,8 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
+
+multiprocessing.set_start_method("spawn", force=True)
 
 
 class MockArgs:
@@ -187,13 +186,13 @@ def target_altitude(request):
     Fixture to return the target altitude based on the mock IMU log file name.
     """
     # This will be used to set the constants for the test, since they change for different flights:
-    # request.node.name is the name of the test function, e.g. test_update[interest_launch]
+    # request.node.name is the name of the test function, e.g. test_update[shake_n_bake]
     launch_name = request.node.name.split("[")[-1].strip("]")
     # We set the target altitude about 50m less than its actual value, since we want to test
     # that the airbrakes deploy before it hits its true apogee.
     if launch_name == "purple_launch":
         return 750.0  # actual apogee was about 794m
-    if launch_name == "interest_launch":
+    if launch_name == "shake_n_bake":
         return 1800.0  # actual apogee was about 1854m
     if launch_name == "genesis_launch_2":
         return 413.0  # actual apogee was about 462m
@@ -224,6 +223,7 @@ class RandomDataIMU(IMU):
         """
         Output Est and Raw Data packets at the sampling rate we use for the IMU.
         """
+        self._running.value = True
         # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
         EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
         RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
@@ -232,7 +232,7 @@ class RandomDataIMU(IMU):
         next_estimated = time.time_ns() + EST_INTERVAL_NS
         next_raw = time.time_ns() + RAW_INTERVAL_NS
 
-        while self._running.value:
+        while self._requested_to_run.value:
             now = time.time_ns()
 
             # Generate all raw packets due since last iteration
@@ -252,6 +252,7 @@ class RandomDataIMU(IMU):
             # Only sleep if we're ahead of schedule
             if sleep_time > 0.0001:  # 100μs buffer for precision
                 time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing
+        self._running.value = False
 
 
 class IdleIMU(IMU):
@@ -260,5 +261,5 @@ class IdleIMU(IMU):
     """
 
     def _fetch_data_loop(self, _: str) -> None:
-        while self.is_running:
+        while self.requested_to_run:
             time.sleep(0.1)

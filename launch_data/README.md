@@ -19,7 +19,7 @@ Added fields:
 The quaternion uncertainties are set to a low value for a majority of the flight, except whenever 
 the altitude is between 500 - 600 meters. During this range, we set the quaternion uncertainties to a high value, to test our code.
 
-2. `interest_launch.csv`:
+2. `shake_n_bake.csv`:
 
 Added fields:
 - Renamed `state` to `state_letter`.

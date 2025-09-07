@@ -88,7 +88,7 @@ def parsed_args(request, monkeypatch):
         (["main.py", "mock", "-s", "-c"]),
         (["main.py", "mock", "-s", "-c", "-l"]),
         (["main.py", "mock", "-s", "-c", "-l", "-f"]),
-        (["main.py", "mock", "-s", "-c", "-l", "-f", "-p", "launch_data/interest_launch.csv"]),
+        (["main.py", "mock", "-s", "-c", "-l", "-f", "-p", "launch_data/shake_n_bake.csv"]),
         (["main.py", "sim", "sub-scale", "-s"]),
     ],
     ids=[

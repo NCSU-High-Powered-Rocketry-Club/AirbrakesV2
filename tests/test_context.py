@@ -62,7 +62,7 @@ class TestContext:
         assert context.servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_start(self, context):
-        context.start()
+        context.start(wait_for_start=True)
         assert context.imu.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
@@ -72,9 +72,9 @@ class TestContext:
     def test_stop_simple(self, context):
         context.start()
         context.stop()
-        assert not context.imu.is_running
+        assert not context.imu.requested_to_run
         assert not context.logger.is_running
-        assert not context.imu._running.value
+        assert not context.imu._requested_to_run.value
         assert not context.imu._data_fetch_process.is_alive()
         assert not context.logger._log_process.is_alive()
         assert not context.apogee_predictor.is_running
@@ -94,7 +94,7 @@ class TestContext:
         except KeyboardInterrupt:
             context.stop()
 
-        assert not context.imu.is_running
+        assert not context.imu.requested_to_run
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert not context.camera.is_running
@@ -112,7 +112,7 @@ class TestContext:
         finally:
             context.stop()
 
-        assert not context.imu.is_running
+        assert not context.imu.requested_to_run
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert not context.camera.is_running
@@ -189,7 +189,7 @@ class TestContext:
         mocked_airbrakes.state = CoastState(
             mocked_airbrakes
         )  # Set to coast state to test apogee update
-        mocked_airbrakes.start()
+        mocked_airbrakes.start(wait_for_start=True)
 
         time.sleep(0.7)  # Sleep a bit so that the IMU queue is being filled
 
@@ -441,8 +441,8 @@ class TestContext:
         monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
-        context.start()
-        time.sleep(0.7)
+        context.start(wait_for_start=True)
+        time.sleep(0.9)
         # Need to assert that we have these many packets otherwise apogee prediction won't run:
         assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
 

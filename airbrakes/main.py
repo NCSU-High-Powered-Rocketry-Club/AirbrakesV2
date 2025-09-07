@@ -6,6 +6,7 @@ It will create the Context object and run the main loop.
 
 import multiprocessing as mp
 import sys
+import warnings
 
 from airbrakes.graphics.application import AirbrakesApplication
 from airbrakes.utils import arg_parser
@@ -20,6 +21,7 @@ def run_real_flight() -> None:
     """
     mp.set_start_method("spawn", force=True)
     # Modify sys.argv to include real as the first argument:
+    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "real")
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
@@ -33,8 +35,10 @@ def run_mock_flight() -> None:
     Entered when run with
     `uvx --from git+... mock` or `uv run mock`.
     """
-    mp.set_start_method("spawn", force=True)
+    # Silence process priority warning for when running mock on WSL
+    warnings.filterwarnings("ignore", "Could not set process priority*", UserWarning)
     # Modify sys.argv to include mock as the first argument:
+    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "mock")
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
@@ -69,6 +73,7 @@ if __name__ == "__main__":
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.
     #     -v, --verbose : Enables a detailed display with more flight data.
 
+    mp.set_start_method("spawn", force=True)
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
     app.run()

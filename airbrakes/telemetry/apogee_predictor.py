@@ -106,26 +106,6 @@ class ApogeePredictor:
         self.lookup_table: LookupTable = LookupTable()
         # ------------------------------------------------------------------------
 
-    def _setup_queue_serialization_method(self) -> None:
-        """
-        Sets up the serialization methods for the queued packets for faster-fifo.
-
-        This is not done in the __init__ because "spawn" or "forkserver" will attempt to pickle the
-        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
-        after the child has been born.
-        """
-        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
-        msgpack_apg_data_packet_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
-        msgpack_processor_data_packet_decoder = msgspec.msgpack.Decoder(
-            type=ProcessorDataPacket | str
-        )
-
-        self._processor_data_packet_queue.dumps = msgpack_encoder.encode
-        self._processor_data_packet_queue.loads = msgpack_processor_data_packet_decoder.decode
-
-        self._apogee_predictor_packet_queue.dumps = msgpack_encoder.encode
-        self._apogee_predictor_packet_queue.loads = msgpack_apg_data_packet_decoder.decode
-
     @property
     def is_running(self) -> bool:
         """
@@ -183,6 +163,26 @@ class ApogeePredictor:
             new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
             total_packets.extend(new_packets)
         return total_packets
+
+    def _setup_queue_serialization_method(self) -> None:
+        """
+        Sets up the serialization methods for the queued packets for faster-fifo.
+
+        This is not done in the __init__ because "spawn" or "forkserver" will attempt to pickle the
+        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
+        after the child has been born.
+        """
+        msgpack_encoder = msgspec.msgpack.Encoder(enc_hook=convert_unknown_type_to_float)
+        msgpack_apg_data_packet_decoder = msgspec.msgpack.Decoder(type=ApogeePredictorDataPacket)
+        msgpack_processor_data_packet_decoder = msgspec.msgpack.Decoder(
+            type=ProcessorDataPacket | str
+        )
+
+        self._processor_data_packet_queue.dumps = msgpack_encoder.encode
+        self._processor_data_packet_queue.loads = msgpack_processor_data_packet_decoder.decode
+
+        self._apogee_predictor_packet_queue.dumps = msgpack_encoder.encode
+        self._apogee_predictor_packet_queue.loads = msgpack_apg_data_packet_decoder.decode
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
