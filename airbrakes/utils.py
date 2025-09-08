@@ -137,13 +137,6 @@ def arg_parser() -> argparse.Namespace:
         action="store_true",
         default=False,
     )
-    real_parser.add_argument(
-        "-c",
-        "--mock-camera",
-        help="Run the real flight with a mock camera instead of the real camera.",
-        action="store_true",
-        default=False,
-    )
 
     # Mock replay parser:
     mock_replay_parser = subparsers.add_parser(
@@ -204,14 +197,6 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         "-f",
         "--fast-replay",
         help=f"Run the {_type} at full speed instead of in real time.",
-        action="store_true",
-        default=False,
-    )
-
-    parser.add_argument(
-        "-c",
-        "--real-camera",
-        help=f"Run the {_type} with the real camera.",
         action="store_true",
         default=False,
     )

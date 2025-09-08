@@ -96,10 +96,6 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "Context"):
-        super().__init__(context)
-        self.context.camera.start_recording()
-
     def update(self):
         """
         Checks to see if the velocity has decreased lower than the maximum velocity, indicating the

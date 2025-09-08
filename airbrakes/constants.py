@@ -303,22 +303,6 @@ ATTITUDE_UNCERT_QUALIFIER = 5
 PRESSURE_ALT_QUALIFIER = 67
 AMBIENT_PRESSURE_QUALIFIER = 58
 
-# -------------------------------------------------------
-# Camera Configuration
-# -------------------------------------------------------
-
-CAMERA_SAVE_PATH = Path("logs/video.h264")
-"""
-The path that the output of the camera will save to.
-"""
-BYTES_PER_30_SECONDS = 9 * 1024 * 1024
-"""
-The number of bytes that the camera will write in 30 seconds.
-"""
-BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300
-"""
-The number of bytes that the camera will write in 0.1 seconds.
-"""
 
 # -------------------------------------------------------
 # State Machine Configuration

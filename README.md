@@ -294,7 +294,7 @@ This will run both ruff and doc-formatter.
 
 ## Pi Usage
 
-_There are libraries that only fully work when running on the Pi (gpiozero, mscl, picamera2), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
+_There are libraries that only fully work when running on the Pi (gpiozero, mscl), so if you're having trouble importing them locally, program the best you can and test your changes on the pi._
 
 
 ### Connecting to the Pi (SSH)
@@ -305,10 +305,10 @@ ssh pi@[IP.ADDRESS]
 cd AirbrakesV2/
 ```
 
-### Install the dependencies needed for the camera and servo integration:
+### Install the dependencies needed for the servo integration:
 
 ```bash
-sudo apt install libcap-dev libcamera-dev libkms++-dev libfmt-dev libdrm-dev liblgpio-dev
+sudo apt install liblgpio-dev
 
 uv sync --all-groups
 ```
