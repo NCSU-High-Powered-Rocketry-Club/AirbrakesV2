@@ -15,7 +15,6 @@ import pytest
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
@@ -268,7 +267,6 @@ class TestIntegration:
         Run with sudo. E.g. $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
         """
         ab = context
-
 
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
