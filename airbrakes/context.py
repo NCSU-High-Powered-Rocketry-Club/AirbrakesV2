@@ -6,7 +6,6 @@ import time
 from typing import TYPE_CHECKING
 
 from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
-from airbrakes.hardware.camera import Camera
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.state import StandbyState, State
@@ -39,7 +38,6 @@ class Context:
     __slots__ = (
         "apogee_predictor",
         "apogee_predictor_data_packets",
-        "camera",
         "context_data_packet",
         "data_processor",
         "est_data_packets",
@@ -58,7 +56,6 @@ class Context:
         self,
         servo: BaseServo,
         imu: BaseIMU,
-        camera: Camera,
         logger: Logger,
         data_processor: DataProcessor,
         apogee_predictor: ApogeePredictor,
@@ -73,8 +70,6 @@ class Context:
             real servo or a mocked servo.
         :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU,
             mock IMU, or simulation IMU.
-        :param camera: The camera object that records video from the rocket. This can be a real
-            camera or a mock camera.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
             a mock logger.
         :param data_processor: The IMUDataProcessor object that processes IMU data on a higher
@@ -83,7 +78,6 @@ class Context:
         """
         self.servo: BaseServo = servo
         self.imu: BaseIMU = imu
-        self.camera: Camera = camera
         self.logger: Logger = logger
         self.data_processor: DataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
@@ -101,7 +95,7 @@ class Context:
 
     def start(self, wait_for_start: bool = False) -> None:
         """
-        Starts the processes for the IMU, Logger, ApogeePredictor, and Camera.
+        Starts the processes for the IMU, Logger, and ApogeePredictor.
 
         This is called before the main loop starts.
 
@@ -114,9 +108,6 @@ class Context:
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
-        # Currently there is no camera for the airbrakes, but we will leave this here for future
-        # use
-        # self.camera.start()
 
         if wait_for_start:
             # Wait for all processes to start. It is assumed that once the IMU is running, all other
@@ -132,7 +123,7 @@ class Context:
         Handles shutting down the air brakes system.
 
         This will cause the main loop to break. It retracts the air brakes and stops the processes
-        for IMU, Logger, ApogeePredictor and Camera.
+        for IMU, Logger, and ApogeePredictor.
         """
         if self.shutdown_requested:
             return
@@ -140,7 +131,6 @@ class Context:
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        # self.camera.stop()
         self.shutdown_requested = True
 
     def update(self) -> None:

@@ -10,7 +10,6 @@ import gpiozero
 import pytest
 
 from airbrakes.constants import LOGS_PATH
-from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.main import (
@@ -20,7 +19,6 @@ from airbrakes.main import (
     run_real_flight,
     run_sim_flight,
 )
-from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
@@ -143,12 +141,6 @@ def test_create_components(parsed_args, monkeypatch):
         # IMU: always real in real mode (no option to mock it)
         assert type(created_components[1]) is IMU
 
-        # Camera: real by default, mock if --mock-camera is set
-        if parsed_args.mock_camera:
-            assert type(created_components[2]) is MockCamera
-        else:
-            assert type(created_components[2]) is Camera
-
         # Logger: always real in real mode
         assert type(created_components[3]) is Logger
 
@@ -179,12 +171,6 @@ def test_create_components(parsed_args, monkeypatch):
             assert not created_components[1]._data_fetch_process._args[0]
         else:
             assert created_components[1]._data_fetch_process._args[0]
-
-        # Camera: mock by default, real if --real-camera is set
-        if parsed_args.real_camera:
-            assert type(created_components[2]) is Camera
-        else:
-            assert type(created_components[2]) is MockCamera
 
         # Logger: always mock in mock/sim, with keep_log_file option
         assert type(created_components[3]) is MockLogger
