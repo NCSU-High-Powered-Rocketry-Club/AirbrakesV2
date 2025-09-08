@@ -1,0 +1,132 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": {
+        "type": "object",
+        "properties": {
+            "date": {
+                "type": "string",
+                "format": "date-time"
+            },
+            "launch_site": {
+                "type": "object",
+                "properties": {
+                    "air_temperature_celsius": {
+                        "type": "number"
+                    },
+                    "air_pressure_mb": {
+                        "type": "number"
+                    },
+                    "wind_speed_kmh": {
+                        "type": "number"
+                    },
+                    "wind_direction": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string"
+                    },
+                    "launch_coordinates": {
+                        "type": "object",
+                        "properties": {
+                            "latitude": {
+                                "type": ["number", "null"]
+                            },
+                            "longitude": {
+                                "type": ["number", "null"]
+                            }
+                        },
+                        "required": ["latitude", "longitude"],
+                        "additionalProperties": false
+                    },
+                    "launch_rod_angle": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "air_temperature_celsius",
+                    "air_pressure_mb",
+                    "wind_speed_kmh",
+                    "wind_direction",
+                    "location",
+                    "launch_coordinates",
+                    "launch_rod_angle"
+                ],
+                "additionalProperties": false
+            },
+            "imu_details": {
+                "type": "object",
+                "properties": {
+                    "imu_model": {
+                        "type": "string"
+                    },
+                    "raw_packet_frequency": {
+                        "type": "number"
+                    },
+                    "est_packet_frequency": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "imu_model",
+                    "raw_packet_frequency",
+                    "est_packet_frequency"
+                ],
+                "additionalProperties": false
+            },
+            "flight_data": {
+                "type": "object",
+                "properties": {
+                    "log_buffer_index": {
+                        "type": "integer"
+                    },
+                    "apogee_meters": {
+                        "type": ["number", "null"]
+                    },
+                    "landed_coordinates": {
+                        "type": "object",
+                        "properties": {
+                            "latitude": {
+                                "type": ["number", "null"]
+                            },
+                            "longitude": {
+                                "type": ["number", "null"]
+                            }
+                        },
+                        "required": ["latitude", "longitude"],
+                        "additionalProperties": false
+                    },
+                    "flight_length_seconds": {
+                        "type": "number"
+                    },
+                    "target_apogee_meters": {
+                        "type": "number"
+                    },
+                    "landed_coordinates_precision": {
+                        "type": ["string", "null"]
+                    }
+                },
+                "required": [
+                    "log_buffer_index",
+                    "apogee_meters",
+                    "landed_coordinates",
+                    "flight_length_seconds",
+                    "target_apogee_meters",
+                    "landed_coordinates_precision"
+                ],
+                "additionalProperties": false
+            },
+            "flight_description": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "date",
+            "launch_site",
+            "imu_details",
+            "flight_data",
+            "flight_description"
+        ],
+        "additionalProperties": false
+    }
+}
