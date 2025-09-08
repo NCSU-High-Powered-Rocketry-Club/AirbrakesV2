@@ -118,7 +118,7 @@ def test_create_components(parsed_args, monkeypatch):
 
     created_components = create_components(parsed_args)
 
-    assert len(created_components) == 6
+    assert len(created_components) == 5
     assert isinstance(created_components[-1], ApogeePredictor)
     assert isinstance(created_components[-2], DataProcessor)
 
