@@ -136,7 +136,7 @@ def test_create_components(parsed_args, monkeypatch):
         assert type(created_components[1]) is IMU
 
         # Logger: always real in real mode
-        assert type(created_components[3]) is Logger
+        assert type(created_components[2]) is Logger
 
     elif parsed_args.mode in ("mock", "sim"):
         # Servo: mock by default, real if --real-servo is set
@@ -167,11 +167,11 @@ def test_create_components(parsed_args, monkeypatch):
             assert created_components[1]._data_fetch_process._args[0]
 
         # Logger: always mock in mock/sim, with keep_log_file option
-        assert type(created_components[3]) is MockLogger
+        assert type(created_components[2]) is MockLogger
         if parsed_args.keep_log_file:
-            assert created_components[3]._delete_log_file is False
+            assert created_components[2]._delete_log_file is False
         else:
-            assert created_components[3]._delete_log_file is True
+            assert created_components[2]._delete_log_file is True
 
 
 def test_run_real_flight(monkeypatch):
@@ -291,7 +291,7 @@ def test_run_flight(monkeypatch, mocked_args_parser):
     assert calls == ["Context", "FlightDisplay", "run_flight_loop"]
     assert len(called_args) == 2
     # For airbrakes context, we should have the components as arguments:
-    assert len(called_args[0]) == 6  # These are all the components
+    assert len(called_args[0]) == 5  # These are all the components
 
     # For the flight display, we should have the airbrakes, and the args:
     assert len(called_args[1]) == 2

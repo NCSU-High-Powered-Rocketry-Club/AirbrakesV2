@@ -37,7 +37,6 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 5
         assert args.__dict__.keys() == {"mode", "verbose", "debug", "mock_servo"}
         assert args.mode == "real"
         assert args.verbose is True
@@ -55,7 +54,6 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "real_servo",
@@ -82,7 +80,6 @@ class TestArgumentParsing:
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "preset",
