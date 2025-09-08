@@ -269,8 +269,6 @@ class TestIntegration:
         """
         ab = context
 
-        ab.state = MotorBurnState(ab)  # Simulate start of camera recording (we don't have a camera
-        # anymore but I'm going to keep this here for now)
 
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
