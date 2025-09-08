@@ -130,7 +130,7 @@ class ServoControllerApp(App):
             if not 0 <= value <= SERVO_MAX_ANGLE_DEGREES:
                 raise ValueError("Value out of range")
             # Assuming the servo's set_position method accepts values from -1 to 1
-            self.servo.first_servo.angle = value
+            self.servo.first_servo.change_duty_cycle(Servo._angle_to_duty_cycle(value))
             self.status.update(f"Servo set to {value}")
         except ValueError:
             self.status.update("Invalid input! Enter a number between -1 and 1.")
