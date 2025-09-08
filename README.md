@@ -308,7 +308,7 @@ cd AirbrakesV2/
 ### Install the dependencies needed for the servo integration:
 
 ```bash
-sudo apt install libcap-dev libkms++-dev libfmt-dev libdrm-dev liblgpio-dev
+sudo apt install liblgpio-dev
 
 uv sync --all-groups
 ```
