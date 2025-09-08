@@ -28,7 +28,7 @@ class TestBaseServo:
         assert isinstance(servo, MockServo)
         assert isinstance(servo.current_extension, ServoExtension)
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert isinstance(servo.first_servo, gpiozero.Servo)
+        assert isinstance(servo.servo, gpiozero.Servo)
         assert isinstance(servo._go_to_max_no_buzz, threading.Timer)
         assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
         assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
@@ -42,20 +42,10 @@ class TestBaseServo:
     def test_set_extension(self, servo):
         servo._set_extension(ServoExtension.MAX_EXTENSION)
         assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MAX_EXTENSION.value))
         servo._set_extension(ServoExtension.MIN_EXTENSION)
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_EXTENSION.value))
 
     def test_set_extended(self, servo):
         """
@@ -65,20 +55,10 @@ class TestBaseServo:
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         servo.set_extended()
         assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MAX_EXTENSION.value))
         time.sleep(SERVO_DELAY_SECONDS + 0.05)
         assert servo.current_extension == ServoExtension.MAX_NO_BUZZ
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_NO_BUZZ.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_NO_BUZZ.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MAX_NO_BUZZ.value))
 
     def test_set_retracted(self, servo):
         """
@@ -88,20 +68,10 @@ class TestBaseServo:
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         servo.set_retracted()
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_EXTENSION.value))
         time.sleep(SERVO_DELAY_SECONDS + 0.05)
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value))
 
     def test_repeated_extension_retraction(self, servo):
         """
@@ -112,12 +82,7 @@ class TestBaseServo:
 
         servo.set_extended()
         assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MAX_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MAX_EXTENSION.value))
         # Assert that going to min no buzz was cancelled:
         assert servo._go_to_min_no_buzz.finished.is_set()
         # Assert that the thread to tell the servo to go to max no buzz has started:
@@ -127,12 +92,7 @@ class TestBaseServo:
         time.sleep(time_taken)
         servo.set_retracted()
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_EXTENSION.value))
         # Assert that going to max no buzz was cancelled:
         assert servo._go_to_max_no_buzz.finished.is_set()
         # Assert that the thread to tell the servo to go to min no buzz has started:
@@ -142,23 +102,13 @@ class TestBaseServo:
         time_taken = SERVO_DELAY_SECONDS / 2 + 0.02  # The 0.02 is to give the code time to execute:
         time.sleep(time_taken)
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_EXTENSION.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_EXTENSION.value))
 
         # At 0.45s, make sure the servo will go to min_no_buzz:
         time_taken = SERVO_DELAY_SECONDS / 2
         time.sleep(time_taken)
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert servo.first_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value)
-        )
-        assert servo.second_servo.value == approx(
-            servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value)
-        )
+        assert servo.servo.value == approx(servo._scale_min_max(ServoExtension.MIN_NO_BUZZ.value))
 
     def test_encoder_get_position(self, servo):
         """

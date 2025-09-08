@@ -59,22 +59,13 @@ The operating frequency of the servo in Hertz.
 It supports 50-330Hz.
 """
 
-SERVO_1_CHANNEL = 2
+SERVO_CHANNEL = 2
 """
 The PWM channel the servo is connected to on the Pi.
 
 Channel 2 corresponds to GPIO Pin 18.
 See https://pypi.org/project/rpi-hardware-pwm/ for more information.
 """
-
-SERVO_2_CHANNEL = 3
-"""
-The PWM channel the second servo is connected to on the Pi.
-
-Channel 3 corresponds to GPIO Pin 19.
-See https://pypi.org/project/rpi-hardware-pwm/ for more information.
-"""
-
 
 SERVO_DELAY_SECONDS = 1.0
 """

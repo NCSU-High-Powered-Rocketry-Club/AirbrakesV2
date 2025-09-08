@@ -50,10 +50,9 @@ class MockServo(BaseServo):
         # Suppress the servo jitter warning for mock servos
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            first_servo = Servo(0, pin_factory=factory)
-            second_servo = Servo(1, pin_factory=factory)
+            servo = Servo(0, pin_factory=factory)
 
-        super().__init__(encoder=encoder, first_servo=first_servo, second_servo=second_servo)
+        super().__init__(encoder=encoder, servo=servo)
 
     @staticmethod
     def _scale_min_max(extension: float) -> float:
@@ -72,5 +71,4 @@ class MockServo(BaseServo):
         :param extension: The extension to set the servo to.
         """
         super()._set_extension(extension)
-        self.first_servo.value = MockServo._scale_min_max(extension.value)
-        self.second_servo.value = MockServo._scale_min_max(extension.value)
+        self.servo.value = MockServo._scale_min_max(extension.value)

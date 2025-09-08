@@ -35,27 +35,23 @@ class BaseServo(ABC):
         "_go_to_min_no_buzz",
         "current_extension",
         "encoder",
-        "first_servo",
-        "second_servo",
+        "servo",
     )
 
     def __init__(
         self,
         encoder: gpiozero.RotaryEncoder,
-        first_servo: "HardwarePWM | MockedGPIOServo",
-        second_servo: "HardwarePWM | MockedGPIOServo | None" = None,
+        servo: "HardwarePWM | MockedGPIOServo",
     ) -> None:
         """
         Initializes the servo and the encoder.
 
-        :param first_servo: The first servo object. Can be a real servo or a mock servo.
-        :param second_servo: The second servo object. Can be a real servo or a mock servo, optional.
+        :param servo: The servo object. Can be a real servo or a mock servo.
         :param encoder: The rotary encoder object.
         """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
-        self.first_servo: HardwarePWM | MockedGPIOServo = first_servo
-        self.second_servo: HardwarePWM | MockedGPIOServo | None = second_servo
+        self.servo: HardwarePWM | MockedGPIOServo = servo
 
         self.encoder = encoder
 

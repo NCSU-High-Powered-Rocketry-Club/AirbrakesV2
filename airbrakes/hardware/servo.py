@@ -32,33 +32,21 @@ class Servo(BaseServo):
 
     def __init__(
         self,
-        first_servo_channel: int,
-        second_servo_channel: int | None,
+        servo_channel: int,
         encoder_pin_number_a: int,
         encoder_pin_number_b: int,
     ) -> None:
         """
         Initializes the Servo class.
 
-        :param first_servo_channel: The PWM channel that the first servo is connected to.
-        :param second_servo_channel: The PWM channel that the second servo is connected to.
+        :param servo_channel: The PWM channel that the servo is connected to.
         :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
             to.
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
             to.
         """
-        first_servo = HardwarePWM(
-            pwm_channel=first_servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0
-        )
-        first_servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
-
-        second_servo = None
-        if second_servo_channel is not None:
-            # Did not test with two servos, but I think we need to keep them both at same Hz.
-            second_servo = HardwarePWM(
-                pwm_channel=second_servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0
-            )
-            second_servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
+        servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
         from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
@@ -69,7 +57,7 @@ class Servo(BaseServo):
             encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
         )
 
-        super().__init__(encoder=encoder, first_servo=first_servo, second_servo=second_servo)
+        super().__init__(encoder=encoder, servo=servo)
 
     @staticmethod
     def _angle_to_pulse_width(angle: float) -> float:
@@ -119,6 +107,4 @@ class Servo(BaseServo):
         """
         super()._set_extension(extension)
         duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.first_servo.change_duty_cycle(duty_cycle)
-        if self.second_servo is not None:
-            self.second_servo.change_duty_cycle(duty_cycle)
+        self.servo.change_duty_cycle(duty_cycle)
