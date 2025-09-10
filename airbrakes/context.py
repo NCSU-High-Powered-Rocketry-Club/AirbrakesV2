@@ -104,6 +104,9 @@ class Context:
             want to prevent data races where the main loop tries to access data before the processes
             have started.
         """
+        # We have multiple processes that we run, one for the IMU, one for the Logger, and one for
+        # the Apogee Predictor. You can think of it basically like multithreading (even though it's
+        # not), where each process runs independently and communicates via queues.
         set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
@@ -135,10 +138,12 @@ class Context:
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main process.
+        Called every loop iteration from the main process. This is essentially the "brain" of the
+        air brakes system, where all the data is collected, processed, and logged, and the state
+        machine is updated.
 
-        Depending on the current state, it will do different things. It is what controls the air
-        brakes and chooses when to move to the next state.
+        This function retrieves the latest IMU data packets, processes them, updates the state
+        machine, generates data packets for logging, and logs all relevant data.
         """
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continuous data for state, apogee,
@@ -163,11 +168,14 @@ class Context:
         self.data_processor.update(self.est_data_packets)
 
         # Get the Processor Data Packets from the data processor, this will have the same length
-        # as the number of EstimatedDataPackets in data_packets
+        # as the number of EstimatedDataPackets in data_packets because a processor data packet is
+        # created for each estimated data packet.
         if self.est_data_packets:
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
-        # Gets the Apogee Predictor Data Packets
+        # Gets the Apogee Predictor Data Packets, this will only have new data if we are in
+        # coast and have called predict_apogee(), and the apogee predictor has had time to process
+        # the data and predict the apogee.
         self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
 
         # Update the last Apogee Predictor Data Packet
@@ -180,7 +188,7 @@ class Context:
         # Create Context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
-        # Logs all of the packet types from each of the relevant processes
+        # Logs all the packet types from each of the relevant processes
         self.logger.log(
             self.context_data_packet,
             self.servo_data_packet,
@@ -193,6 +201,7 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
+        # TODO: we will delete this code once the seals work
         self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 

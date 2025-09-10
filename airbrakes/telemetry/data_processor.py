@@ -179,7 +179,8 @@ class DataProcessor:
 
     def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
-        Processes the data points and returns a list of ProcessorDataPacket objects.
+        Processes the data points and returns a list of ProcessorDataPackets. These will correspond
+        one-to-one with the estimated data packets most recently passed in by update().
 
         The length of the list should be the same as the length of the list of estimated data
         packets most recently passed in by update()
