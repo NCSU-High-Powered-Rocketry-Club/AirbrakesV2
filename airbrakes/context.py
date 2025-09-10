@@ -12,9 +12,6 @@ from airbrakes.state import StandbyState, State
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
-    ApogeePredictorDataPacket,
-)
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -22,6 +19,9 @@ from airbrakes.utils import set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
@@ -61,8 +61,8 @@ class Context:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
-        and ApogeePredictor.
+        Initializes AirbrakesContext with the specified hardware objects, Logger, DataProcessor, and
+        ApogeePredictor.
 
         The state machine starts in StandbyState, which is the initial state of the air brakes
         system.
@@ -72,9 +72,9 @@ class Context:
             mock IMU, or simulation IMU.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
             a mock logger.
-        :param data_processor: The IMUDataProcessor object that processes IMU data on a higher
-            level.
-        :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
+        :param data_processor: The DataProcessor object that processes IMU data on a higher level.
+        :param apogee_predictor: The ApogeePredictor object that predicts what the apogee of the
+            rocket will be based on the processed data.
         """
         self.servo: BaseServo = servo
         self.imu: BaseIMU = imu
@@ -91,7 +91,7 @@ class Context:
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
-        self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
+        self.last_apogee_predictor_packet: ApogeePredictorDataPacket | None = None
 
     def start(self, wait_for_start: bool = False) -> None:
         """
@@ -217,7 +217,7 @@ class Context:
 
         This should only be called in the coast state, before we start controlling the air brakes.
         """
-        # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
+        # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:
             self.apogee_predictor.update(self.processor_data_packets)

@@ -141,8 +141,12 @@ class CoastState(State):
         # overshoot our target altitude, we extend the air brakes. If we predict we are going to
         # undershoot our target altitude, we retract the air brakes.
 
-        # Gets the latest apogee prediction
-        apogee = self.context.last_apogee_predictor_packet.predicted_apogee
+        # Gets the latest apogee prediction, or 0 if there is no prediction yet
+        apogee = (
+            self.context.last_apogee_predictor_packet.predicted_apogee
+            if self.context.last_apogee_predictor_packet
+            else 0.0
+        )
 
         if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()

@@ -118,6 +118,8 @@ class TestIntegration:
                     )
                     state_info.apogee_prediction.append(
                         ab.last_apogee_predictor_packet.predicted_apogee
+                        if ab.last_apogee_predictor_packet
+                        else 0.0
                     )
 
                 state_info.min_velocity = min(
@@ -144,6 +146,8 @@ class TestIntegration:
 
                 state_info.apogee_prediction.append(
                     ab.last_apogee_predictor_packet.predicted_apogee
+                    if ab.last_apogee_predictor_packet
+                    else 0.0
                 )
 
                 # Update the state information in the dictionary
