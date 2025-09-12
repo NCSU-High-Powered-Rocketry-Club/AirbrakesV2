@@ -121,6 +121,7 @@ def create_components(
             Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
             if args.real_servo
             else MockServo(
+                SERVO_CHANNEL,
                 ENCODER_PIN_A,
                 ENCODER_PIN_B,
             )
@@ -136,6 +137,7 @@ def create_components(
         # Maybe use mock components as specified by the command line arguments:
         if args.mock_servo:
             servo = MockServo(
+                SERVO_CHANNEL,
                 ENCODER_PIN_A,
                 ENCODER_PIN_B,
             )

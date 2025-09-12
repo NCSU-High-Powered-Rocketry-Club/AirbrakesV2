@@ -10,11 +10,20 @@ from typing import TYPE_CHECKING
 
 import gpiozero
 
-from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
+from airbrakes.constants import (
+    SERVO_DELAY_SECONDS,
+    SERVO_MAX_ANGLE_DEGREES,
+    SERVO_MAX_PULSE_WIDTH_US,
+    SERVO_MIN_ANGLE_DEGREES,
+    SERVO_MIN_PULSE_WIDTH_US,
+    SERVO_OPERATING_FREQUENCY_HZ,
+    ServoExtension,
+)
 
 if TYPE_CHECKING:
-    from gpiozero import Servo as MockedGPIOServo
     from rpi_hardware_pwm import HardwarePWM
+
+    from airbrakes.mock.mock_servo import MockHardwarePWM
 
 
 class BaseServo(ABC):
@@ -41,7 +50,7 @@ class BaseServo(ABC):
     def __init__(
         self,
         encoder: gpiozero.RotaryEncoder,
-        servo: "HardwarePWM | MockedGPIOServo",
+        servo: "HardwarePWM | MockHardwarePWM",
     ) -> None:
         """
         Initializes the servo and the encoder.
@@ -51,7 +60,7 @@ class BaseServo(ABC):
         """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
 
-        self.servo: HardwarePWM | MockedGPIOServo = servo
+        self.servo: HardwarePWM | MockHardwarePWM = servo
 
         self.encoder = encoder
 
@@ -69,6 +78,46 @@ class BaseServo(ABC):
         :param extension: The extension of the servo, there are 4 possible values, see constants.
         """
         self.current_extension = extension
+
+    @staticmethod
+    def _angle_to_pulse_width(angle: float) -> float:
+        """
+        Converts an angle in degrees to a pulse width in microseconds for a servo motor.
+
+        :param angle: The angle in degrees (0 to 180).
+        :return: The corresponding pulse width in microseconds.
+        """
+        # Clamp the angle to the valid range:
+        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
+
+        # Servos are controlled by sending PWM signals, where the width of the "high" pulse
+        # (in microseconds) tells the servo what angle to move to. Each servo has a minimum and
+        # maximum pulse width - these values correspond to its minimum and maximum rotation angles.
+
+        # So we use linear interpolation to convert the angle to a pulse width:
+
+        return SERVO_MIN_PULSE_WIDTH_US + (
+            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
+            * (angle - SERVO_MIN_ANGLE_DEGREES)
+            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
+        )
+
+    @staticmethod
+    def _angle_to_duty_cycle(angle: float) -> float:
+        """
+        Converts an angle in degrees to a duty cycle percentage for a servo motor.
+
+        :param angle: The angle in degrees.
+        :return: The corresponding duty cycle percentage.
+        """
+        pulse_us = BaseServo._angle_to_pulse_width(angle)
+
+        # Duty cycle is simply the percentage of time that the signal is "high" in one period of
+        # the PWM signal. We convert the servo operating frequency from Hz to period in
+        # microseconds (1_000_000 / frequency) and then multiply by 100 to get a percentage.
+
+        duty_cycle: float = (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
+        return duty_cycle
 
     def set_extended(self) -> None:
         """
