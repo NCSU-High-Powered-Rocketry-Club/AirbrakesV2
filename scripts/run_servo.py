@@ -19,8 +19,8 @@ if int(input()) == 0:
         else:
             servo.set_extended()
 else:
-    print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
     while True:
+        print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
         match int(input()):
             case 0:
                 servo._set_extension(ServoExtension.MIN_EXTENSION)
