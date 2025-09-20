@@ -2,6 +2,7 @@
 Module for processing IMU data on a higher level.
 """
 
+from collections import deque
 import numpy as np
 import numpy.typing as npt
 import quaternion
@@ -40,6 +41,8 @@ class DataProcessor:
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
+        "window_size",
+        "altitudes",
     )
 
     def __init__(self):
@@ -66,7 +69,8 @@ class DataProcessor:
         self._retraction_timestamp: float | None = None
         # The axis the IMU is on:
         self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
-
+        self.window_size = 1500
+        self.altitudes = deque(maxlen=self.window_size)
     @property
     def max_altitude(self) -> float:
         """
@@ -405,3 +409,14 @@ class DataProcessor:
         )
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
+    
+    def pressure_zero (self):
+        # Zero out the altitude based on the average of recent altitudes
+        raw_altitudes = np.array(
+                [
+                    data_packet.estPressureAlt
+                    for data_packet in self._data_packets
+                ],
+            )
+        self.altitudes.extend(raw_altitudes)
+        self._initial_altitude = np.mean(self.altitudes)

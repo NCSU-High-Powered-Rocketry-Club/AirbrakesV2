@@ -84,6 +84,8 @@ class StandbyState(State):
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
+        
+        self.context.data_processor.pressure_zero()
 
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
