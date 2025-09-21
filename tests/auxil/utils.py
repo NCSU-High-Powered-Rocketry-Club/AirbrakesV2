@@ -1,6 +1,7 @@
 """
 Utility functions used throughout the test suite.
 """
+from msgspec.structs import asdict
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
@@ -82,3 +83,13 @@ def make_logger_data_packet(**kwargs) -> LoggerDataPacket:
     """
     dummy_values = dict.fromkeys(LoggerDataPacket.__struct_fields__, "test")
     return LoggerDataPacket(**{**dummy_values, **kwargs})
+
+
+def context_to_logger_kwargs(ctx_packet) -> dict:
+    """
+    Converts a ContextDataPacket to a dictionary suitable for logging.
+    """
+    d = asdict(ctx_packet).copy()
+    state_type = d.pop("state")
+    d["state_letter"] = state_type.__name__[0]  # "S", "M", "C", "F", "L"
+    return d

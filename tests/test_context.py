@@ -153,7 +153,7 @@ class TestContext:
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(
-                ctx_dp.state_letter == "C"
+                ctx_dp.state == CoastState
                 and ctx_dp.retrieved_imu_packets >= 1
                 and ctx_dp.queued_imu_packets > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
@@ -486,7 +486,7 @@ class TestContext:
         Tests whether the airbrakes generates the correct data packets for logging.
         """
         context.generate_data_packets()
-        assert context.context_data_packet.state_letter == "S"
+        assert context.context_data_packet.state == StandbyState
         assert context.context_data_packet.retrieved_imu_packets == 0
         assert context.context_data_packet.queued_imu_packets >= 0
         assert context.context_data_packet.apogee_predictor_queue_size >= 0
