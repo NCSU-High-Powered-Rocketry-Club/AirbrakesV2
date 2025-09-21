@@ -1,6 +1,7 @@
 """
 Utility functions used throughout the test suite.
 """
+
 from msgspec.structs import asdict
 
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket

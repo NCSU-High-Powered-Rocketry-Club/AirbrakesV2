@@ -18,11 +18,9 @@ from airbrakes.constants import (
 )
 from airbrakes.state import (
     CoastState,
-    FreeFallState,
     LandedState,
     MotorBurnState,
     StandbyState,
-    State,
 )
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
@@ -34,13 +32,13 @@ from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
+    context_to_logger_kwargs,
     make_apogee_predictor_data_packet,
     make_context_data_packet,
     make_est_data_packet,
     make_processor_data_packet,
     make_raw_data_packet,
     make_servo_data_packet,
-    context_to_logger_kwargs,
 )
 from tests.conftest import LOG_PATH
 
