@@ -160,7 +160,7 @@ class TestContext:
                 and ctx_dp.imu_packets_per_cycle >= 0  # mock imus will be 0
                 and ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9)
             )
-            asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
+            asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
@@ -494,7 +494,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)
+        assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_imu):
         """
