@@ -238,7 +238,7 @@ class Context:
         # Create a Context Data Packet to log the current state and queue information of the
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(
-            state_letter=self.state.name[0],
+            state=self.state,
             retrieved_imu_packets=len(self.imu_data_packets),
             queued_imu_packets=self.imu.queued_imu_packets,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,

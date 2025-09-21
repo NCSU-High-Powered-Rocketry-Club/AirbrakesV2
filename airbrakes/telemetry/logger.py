@@ -26,6 +26,7 @@ from airbrakes.constants import (
     NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
+from airbrakes.state import LandedState, StandbyState
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -55,8 +56,6 @@ class Logger:
     uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our
     logs in real time.
     """
-
-    LOG_BUFFER_STATES = ("S", "L")
 
     __slots__ = (
         "_log_buffer",
@@ -156,7 +155,7 @@ class Logger:
         # Convert the imu data packets to a LoggerDataPacket:
         for imu_data_packet in imu_data_packets:
             logger_packet = LoggerDataPacket(
-                state_letter=context_data_packet.state_letter,
+                state_letter=context_data_packet.state.name[0],
                 set_extension=servo_data_packet.set_extension,
                 encoder_position=servo_data_packet.encoder_position,
                 timestamp=imu_data_packet.timestamp,
@@ -323,7 +322,7 @@ class Logger:
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if context_data_packet.state_letter in self.LOG_BUFFER_STATES:
+        if type(context_data_packet.state) in (StandbyState, LandedState):
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
             to_log = logger_data_packets[:log_capacity]
@@ -385,7 +384,7 @@ class Logger:
                         return
                     writer.writerow(Logger._truncate_floats(message_field))
                     number_of_lines_logged += 1
-                    # During our Pelicanator flight, the rocket fell and had an very hard impact
+                    # During our Pelicanator flight, the rocket fell and had a very hard impact
                     # causing the pi to lose power. This caused us to lose a lot of lines of data
                     # that were not written to the log file. To prevent this from happening again,
                     # we flush the logger 1000 lines (equivalent to 1 second).
