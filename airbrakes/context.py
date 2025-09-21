@@ -183,7 +183,8 @@ class Context:
             self.last_apogee_predictor_packet = self.apogee_predictor_data_packets[-1]
 
         # Update the state machine based on the latest processed data
-        self.state.update()
+        if self.processor_data_packets:
+            self.state.update(self.processor_data_packets[-1])
 
         # Create Context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
