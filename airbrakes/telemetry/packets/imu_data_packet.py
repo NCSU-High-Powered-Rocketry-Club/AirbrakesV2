@@ -13,9 +13,15 @@ class IMUDataPacket(msgspec.Struct, array_like=True, tag=True):
     they're going to be in camelCase.
     """
 
-    timestamp: int  # in nanoseconds
-    # list of fields which may be invalid as reported by the IMU
+    timestamp: int
+    """
+    The timestamp of the packet in nanoseconds in epoch time.
+    """
+
     invalid_fields: str | None = None
+    """
+    A comma-separated list of fields which may be invalid as reported by the IMU.
+    """
 
 
 class RawDataPacket(IMUDataPacket):

@@ -4,6 +4,8 @@ Module for the ServoDataPacket class.
 
 import msgspec
 
+from airbrakes.constants import ServoExtension
+
 
 class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
@@ -12,5 +14,14 @@ class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     It contains the set extension of the servo and the encoder position of the servo.
     """
 
-    set_extension: str
+    set_extension: ServoExtension
+    """
+    The set extension of the servo.
+    """
+
     encoder_position: int | None
+    """
+    The position the encoder is currently reading.
+    """
+
+    # TODO: add a field for the current

@@ -12,10 +12,24 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     All of these fields are the processed values of the IMU's estimated data.
     """
 
-    current_altitude: float  # This is the zeroed-out altitude of the rocket.
-    # This is the velocity of the rocket, in the upward axis (whichever way is up)
+    current_altitude: float
+    """
+    The zeroed-out altitude of the rocket in meters.
+
+    In other words, the altitude relative to the ground.
+    """
+
     vertical_velocity: float
-    # This is the acceleration of the rocket in the upwards direction.
+    """
+    The vertical velocity of the rocket in meters per second.
+    """
+
     vertical_acceleration: float
-    # The time difference between the current and previous data packet.
+    """
+    The vertical acceleration of the rocket in meters per second squared.
+    """
+
     time_since_last_data_packet: float
+    """
+    The time difference between the current and previous data packet in seconds.
+    """

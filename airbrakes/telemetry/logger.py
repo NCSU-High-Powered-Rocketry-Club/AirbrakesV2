@@ -156,7 +156,7 @@ class Logger:
         for imu_data_packet in imu_data_packets:
             logger_packet = LoggerDataPacket(
                 state_letter=context_data_packet.state.__name__[0],
-                set_extension=servo_data_packet.set_extension,
+                set_extension=str(servo_data_packet.set_extension.value),
                 encoder_position=servo_data_packet.encoder_position,
                 timestamp=imu_data_packet.timestamp,
                 invalid_fields=imu_data_packet.invalid_fields,

@@ -249,6 +249,6 @@ class Context:
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
         self.servo_data_packet = ServoDataPacket(
-            set_extension=str(self.servo.current_extension.value),
+            set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
         )
