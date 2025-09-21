@@ -23,5 +23,3 @@ class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     The position the encoder is currently reading.
     """
-
-    # TODO: add a field for the current

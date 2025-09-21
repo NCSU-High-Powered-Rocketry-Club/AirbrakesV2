@@ -250,7 +250,9 @@ class FlightDisplay:
                 data_processor.current_timestamp - self._coast_time_ns
             ) * 1e-9
             self._convergence_height = data_processor.current_altitude
-            self._apogee_at_convergence = self._context.last_apogee_predictor_packet
+            self._apogee_at_convergence = (
+                self._context.last_apogee_predictor_packet.predicted_apogee
+            )
 
         # Assign the startup pitch value when it is available:
         if not self._pitch_at_startup:

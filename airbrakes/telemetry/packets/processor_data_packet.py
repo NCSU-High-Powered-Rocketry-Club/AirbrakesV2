@@ -21,7 +21,7 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     """
     The zeroed-out altitude of the rocket in meters.
 
-    In other words, the altitude relative to the ground.
+    In other words, the altitude relative to the ground from the launch pad (AGL).
     """
 
     max_altitude: float
