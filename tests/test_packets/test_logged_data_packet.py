@@ -38,6 +38,10 @@ class TestLoggerDataPacket:
 
         # remove one field from proc_dp_fields:
         proc_dp_fields.remove("time_since_last_data_packet")
+        proc_dp_fields.remove("max_altitude")
+        proc_dp_fields.remove("max_vertical_velocity")
+        proc_dp_fields.remove("average_vertical_acceleration")
+        proc_dp_fields.remove("current_timestamp")
 
         # Map Context 'state' -> Logger 'state_letter' for comparisons
         context_dp_fields_mapped = {
@@ -90,6 +94,10 @@ class TestLoggerDataPacket:
         apogee_predictor_dp_fields = list(ApogeePredictorDataPacket.__struct_fields__)
 
         proc_dp_fields.remove("time_since_last_data_packet")
+        proc_dp_fields.remove("max_altitude")
+        proc_dp_fields.remove("max_vertical_velocity")
+        proc_dp_fields.remove("average_vertical_acceleration")
+        proc_dp_fields.remove("current_timestamp")
         # Remove the base class IMUDataPacket fields from the list:
         est_dp_fields.remove("timestamp")
         est_dp_fields.remove("invalid_fields")

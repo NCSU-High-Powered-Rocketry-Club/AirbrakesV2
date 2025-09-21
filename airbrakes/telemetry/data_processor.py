@@ -188,9 +188,13 @@ class DataProcessor:
         """
         return [
             ProcessorDataPacket(
+                current_timestamp=self.current_timestamp,
                 current_altitude=float(self._current_altitudes[i]),
+                max_altitude=self.max_altitude,
                 vertical_velocity=float(self._vertical_velocities[i]),
+                max_vertical_velocity=self.max_vertical_velocity,
                 vertical_acceleration=float(self._rotated_accelerations[i]),
+                average_vertical_acceleration=self.average_vertical_acceleration,
                 time_since_last_data_packet=float(self._time_differences[i]),
             )
             for i in range(len(self._data_packets))

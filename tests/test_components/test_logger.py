@@ -71,6 +71,10 @@ def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
     Returns a dictionary with only the fields that are logged in the ProcessorDataPacket.
     """
     pdp_dict.pop("time_since_last_data_packet")
+    pdp_dict.pop("max_altitude")
+    pdp_dict.pop("max_vertical_velocity")
+    pdp_dict.pop("average_vertical_acceleration")
+    pdp_dict.pop("current_timestamp")
     return pdp_dict
 
 
