@@ -7,10 +7,6 @@ import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.constants import (
-    SERVO_MAX_ANGLE_DEGREES,
-    SERVO_MAX_PULSE_WIDTH_US,
-    SERVO_MIN_ANGLE_DEGREES,
-    SERVO_MIN_PULSE_WIDTH_US,
     SERVO_OPERATING_FREQUENCY_HZ,
     ServoExtension,
 )
@@ -32,33 +28,21 @@ class Servo(BaseServo):
 
     def __init__(
         self,
-        first_servo_channel: int,
-        second_servo_channel: int | None,
+        servo_channel: int,
         encoder_pin_number_a: int,
         encoder_pin_number_b: int,
     ) -> None:
         """
         Initializes the Servo class.
 
-        :param first_servo_channel: The PWM channel that the first servo is connected to.
-        :param second_servo_channel: The PWM channel that the second servo is connected to.
+        :param servo_channel: The PWM channel that the servo is connected to.
         :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
             to.
         :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
             to.
         """
-        first_servo = HardwarePWM(
-            pwm_channel=first_servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0
-        )
-        first_servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
-
-        second_servo = None
-        if second_servo_channel is not None:
-            # Did not test with two servos, but I think we need to keep them both at same Hz.
-            second_servo = HardwarePWM(
-                pwm_channel=second_servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0
-            )
-            second_servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
+        servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
         from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
@@ -69,47 +53,7 @@ class Servo(BaseServo):
             encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
         )
 
-        super().__init__(encoder=encoder, first_servo=first_servo, second_servo=second_servo)
-
-    @staticmethod
-    def _angle_to_pulse_width(angle: float) -> float:
-        """
-        Converts an angle in degrees to a pulse width in microseconds for a servo motor.
-
-        :param angle: The angle in degrees (0 to 180).
-        :return: The corresponding pulse width in microseconds.
-        """
-        # Clamp the angle to the valid range:
-        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
-
-        # Servos are controlled by sending PWM signals, where the width of the "high" pulse
-        # (in microseconds) tells the servo what angle to move to. Each servo has a minimum and
-        # maximum pulse width - these values correspond to its minimum and maximum rotation angles.
-
-        # So we use linear interpolation to convert the angle to a pulse width:
-
-        return SERVO_MIN_PULSE_WIDTH_US + (
-            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
-            * (angle - SERVO_MIN_ANGLE_DEGREES)
-            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
-        )
-
-    @staticmethod
-    def _angle_to_duty_cycle(angle: float) -> float:
-        """
-        Converts an angle in degrees to a duty cycle percentage for a servo motor.
-
-        :param angle: The angle in degrees.
-        :return: The corresponding duty cycle percentage.
-        """
-        pulse_us = Servo._angle_to_pulse_width(angle)
-
-        # Duty cycle is simply the percentage of time that the signal is "high" in one period of
-        # the PWM signal. We convert the servo operating frequency from Hz to period in
-        # microseconds (1_000_000 / frequency) and then multiply by 100 to get a percentage.
-
-        duty_cycle: float = (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
-        return duty_cycle
+        super().__init__(encoder=encoder, servo=servo)
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
@@ -119,6 +63,4 @@ class Servo(BaseServo):
         """
         super()._set_extension(extension)
         duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.first_servo.change_duty_cycle(duty_cycle)
-        if self.second_servo is not None:
-            self.second_servo.change_duty_cycle(duty_cycle)
+        self.servo.change_duty_cycle(duty_cycle)
