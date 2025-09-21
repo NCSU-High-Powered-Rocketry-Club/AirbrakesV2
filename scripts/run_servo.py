@@ -5,10 +5,10 @@ command:
 `python -m scripts.run_servo` For the pi, you will have to use python3
 """
 
-from airbrakes.constants import ServoExtension, SERVO_1_CHANNEL, SERVO_2_CHANNEL , ENCODER_PIN_A, ENCODER_PIN_B
+from airbrakes.constants import ServoExtension, SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B
 from airbrakes.hardware.servo import Servo
 
-servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
 print("0 for testing exending/retracting, 1 for testing positions")
 if int(input()) == 0:
@@ -19,8 +19,8 @@ if int(input()) == 0:
         else:
             servo.set_extended()
 else:
-    print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
     while True:
+        print("0 is min, 1 is min no buzz, 2 is max, 3 is max no buzz")
         match int(input()):
             case 0:
                 servo._set_extension(ServoExtension.MIN_EXTENSION)

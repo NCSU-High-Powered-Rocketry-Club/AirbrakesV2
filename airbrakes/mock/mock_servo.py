@@ -2,12 +2,10 @@
 Module which contains the MockServo class and doesn't use the adafruit circuitpython library.
 """
 
-import warnings
-
-from gpiozero import RotaryEncoder, Servo
+from gpiozero import RotaryEncoder
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-from airbrakes.constants import SERVO_MAX_ANGLE, ServoExtension
+from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
 from airbrakes.interfaces.base_servo import BaseServo
 
 
@@ -25,6 +23,7 @@ class MockServo(BaseServo):
 
     def __init__(
         self,
+        servo_channel: int,
         encoder_pin_number_a: int,
         encoder_pin_number_b: int,
     ) -> None:
@@ -38,7 +37,6 @@ class MockServo(BaseServo):
         """
         factory = MockFactory(pin_class=MockPWMPin)
 
-        # The servo controlling the airbrakes is connected to channel 0 and 3 of the PCA9685.
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
         encoder = RotaryEncoder(
@@ -48,23 +46,9 @@ class MockServo(BaseServo):
             pin_factory=factory,
         )
 
-        # Suppress the servo jitter warning for mock servos
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            first_servo = Servo(0, pin_factory=factory)
-            second_servo = Servo(1, pin_factory=factory)
+        servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
-        super().__init__(first_servo, second_servo, encoder)
-
-    @staticmethod
-    def _scale_min_max(extension: float) -> float:
-        """
-        Scales the extension value to the range [0, 1] to set the servo value.
-
-        :param extension: The extension to set the servo to.
-        :return: The scaled extension value.
-        """
-        return extension / SERVO_MAX_ANGLE
+        super().__init__(encoder=encoder, servo=servo)
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
@@ -73,5 +57,34 @@ class MockServo(BaseServo):
         :param extension: The extension to set the servo to.
         """
         super()._set_extension(extension)
-        self.first_servo.value = MockServo._scale_min_max(extension.value)
-        self.second_servo.value = MockServo._scale_min_max(extension.value)
+        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
+        self.servo.change_duty_cycle(duty_cycle)
+
+
+class MockHardwarePWM:
+    """
+    A mock class that simulates the rpi_hardware_pwm.HardwarePWM class.
+    """
+
+    __slots__ = ("chip", "duty_cycle", "hz", "pwm_channel")
+
+    def __init__(self, pwm_channel: int, hz: int, chip: int) -> None:
+        """
+        Initializes the mock HardwarePWM object.
+
+        :param pwm_channel: The PWM channel to use.
+        :param hz: The frequency to use.
+        :param chip: The chip to use.
+        """
+        self.pwm_channel: int = pwm_channel
+        self.hz: int = hz
+        self.chip: int = chip
+        self.duty_cycle: float = 0.0
+
+    def change_duty_cycle(self, duty_cycle: float) -> None:
+        """
+        Changes the duty cycle of the PWM signal.
+
+        :param duty_cycle: The new duty cycle to use.
+        """
+        self.duty_cycle = duty_cycle
