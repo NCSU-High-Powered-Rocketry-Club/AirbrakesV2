@@ -155,7 +155,7 @@ class Logger:
         # Convert the imu data packets to a LoggerDataPacket:
         for imu_data_packet in imu_data_packets:
             logger_packet = LoggerDataPacket(
-                state_letter=context_data_packet.state.name[0],
+                state_letter=context_data_packet.state.__name__[0],
                 set_extension=servo_data_packet.set_extension,
                 encoder_position=servo_data_packet.encoder_position,
                 timestamp=imu_data_packet.timestamp,
@@ -322,7 +322,7 @@ class Logger:
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:
-        if type(context_data_packet.state) in (StandbyState, LandedState):
+        if context_data_packet.state in (StandbyState, LandedState):
             # Determine how many packets to log and buffer
             log_capacity = max(0, IDLE_LOG_CAPACITY - self._log_counter)
             to_log = logger_data_packets[:log_capacity]
