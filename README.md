@@ -310,7 +310,7 @@ cd AirbrakesV2/
 ```bash
 sudo apt install liblgpio-dev
 
-uv sync --all-groups
+uv sync --all-extras
 ```
 
 
