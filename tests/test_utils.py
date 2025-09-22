@@ -32,37 +32,33 @@ class TestArgumentParsing:
         """
         Tests the 'real' mode arguments.
         """
-        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-s", "-c"])
+        monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-s"])
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 5
-        assert args.__dict__.keys() == {"mode", "verbose", "debug", "mock_servo", "mock_camera"}
+        assert args.__dict__.keys() == {"mode", "verbose", "debug", "mock_servo"}
         assert args.mode == "real"
         assert args.verbose is True
         assert args.debug is False
         assert args.mock_servo is True
-        assert args.mock_camera is True
 
     def test_mock_mode(self, monkeypatch):
         """
         Tests the 'mock' mode arguments.
         """
         monkeypatch.setattr(
-            sys, "argv", ["main.py", "mock", "-s", "-l", "-f", "-c", "-p", "mock/data/path"]
+            sys, "argv", ["main.py", "mock", "-s", "-l", "-f", "-p", "mock/data/path"]
         )
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "real_servo",
             "keep_log_file",
             "fast_replay",
-            "real_camera",
             "path",
             "verbose",
             "debug",
@@ -71,7 +67,6 @@ class TestArgumentParsing:
         assert args.real_servo is True
         assert args.keep_log_file is True
         assert args.fast_replay is True
-        assert args.real_camera is True
         assert args.path == Path("mock/data/path")
         assert args.verbose is False
         assert args.debug is False
@@ -80,19 +75,17 @@ class TestArgumentParsing:
         """
         Tests the 'sim' mode arguments.
         """
-        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-s", "-l", "-f", "-c"])
+        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-s", "-l", "-f"])
 
         args = arg_parser()
         # This is to ensure that all the arguments are correctly parsed, and to make sure that
         # if you make a change, you update the test.
-        assert len(args.__dict__) == 8
         assert args.__dict__.keys() == {
             "mode",
             "preset",
             "real_servo",
             "keep_log_file",
             "fast_replay",
-            "real_camera",
             "verbose",
             "debug",
         }
@@ -102,7 +95,6 @@ class TestArgumentParsing:
         assert args.real_servo is True
         assert args.keep_log_file is True
         assert args.fast_replay is True
-        assert args.real_camera is True
         assert not hasattr(args, "path")  # `--path` should not be available in `sim` mode
 
     def test_verbose_and_debug_exclusivity(self, monkeypatch, capsys):
@@ -146,7 +138,7 @@ class TestArgumentParsing:
         "args",
         [
             ["mock", "-p", "mock/data/path"],
-            ["sim", "-s", "-l", "-f", "-c"],
+            ["sim", "-s", "-l", "-f"],
             ["sim", "legacy", "-s"],
         ],
         ids=["mock_with_path", "sim_with_common_args", "sim_with_preset_and_common_args"],
@@ -167,12 +159,10 @@ class TestArgumentParsing:
                 assert args.real_servo is True
                 assert args.keep_log_file is False
                 assert args.fast_replay is False
-                assert args.real_camera is False
             else:
                 assert args.real_servo is True
                 assert args.keep_log_file is True
                 assert args.fast_replay is True
-                assert args.real_camera is True
 
     def test_sim_default_preset(self, monkeypatch):
         """
@@ -197,7 +187,6 @@ class TestArgumentParsing:
         assert "-v, --verbose" in captured.out
         assert "-d, --debug" in captured.out
         assert "--mock-servo" in captured.out
-        assert "--mock-camera" in captured.out
         assert "--real-servo" not in captured.out  # Not in real mode
 
         monkeypatch.setattr(sys, "argv", ["main.py", "mock", "-h"])
@@ -231,6 +220,5 @@ class TestArgumentParsing:
         args = arg_parser()
         assert args.mode == "real"
         assert args.mock_servo is False  # Real servo by default
-        assert args.mock_camera is False  # Real camera by default
         assert args.verbose is False
         assert args.debug is False

@@ -17,9 +17,7 @@ from airbrakes.constants import (
     SERVO_CHANNEL,
 )
 from airbrakes.context import Context
-from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
-from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
@@ -89,8 +87,8 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def context(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
-    ab = Context(servo, imu, mock_camera, logger, data_processor, apogee_predictor)
+def context(imu, logger, servo, data_processor, apogee_predictor):
+    ab = Context(servo, imu, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
     if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
@@ -98,13 +96,13 @@ def context(imu, logger, servo, data_processor, apogee_predictor, mock_camera):
 
 
 @pytest.fixture
-def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor, mock_camera):
+def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor):
     """
     Fixture that returns an Context object with a mock IMU.
 
     This will run for all the launch data files (see the mock_imu fixture)
     """
-    ab = Context(servo, mock_imu, mock_camera, logger, data_processor, apogee_predictor)
+    ab = Context(servo, mock_imu, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
     if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
@@ -138,19 +136,6 @@ def mock_imu(request):
 
 
 @pytest.fixture
-def camera():
-    cam = Camera()
-    yield cam
-    if cam.is_running:
-        cam.stop()
-
-
-@pytest.fixture
-def mock_camera():
-    return MockCamera()
-
-
-@pytest.fixture
 def mocked_args_parser():
     """
     Fixture that returns a mocked argument parser.
@@ -163,7 +148,6 @@ def mocked_args_parser():
         fast_replay = False
         debug = False
         path = None
-        real_camera = False
         verbose = False
         sim = False
         real_imu = False

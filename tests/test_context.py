@@ -10,7 +10,6 @@ from airbrakes.constants import (
     ServoExtension,
 )
 from airbrakes.context import Context
-from airbrakes.hardware.camera import Camera
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
@@ -36,18 +35,16 @@ class TestContext:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, context, logger, imu, servo, data_processor, apogee_predictor, mock_camera):
+    def test_init(self, context, logger, imu, servo, data_processor, apogee_predictor):
         assert context.logger == logger
         assert context.servo == servo
         assert context.imu == imu
         assert context.apogee_predictor == apogee_predictor
-        assert context.camera == mock_camera
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert context.data_processor == data_processor
         assert isinstance(context.data_processor, DataProcessor)
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
-        assert isinstance(context.camera, Camera)
         assert not context.shutdown_requested
         assert not context.est_data_packets
 
@@ -67,7 +64,6 @@ class TestContext:
         assert context.imu.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
-        # assert airbrakes.camera.is_running
         context.stop()
 
     def test_stop_simple(self, context):
@@ -79,7 +75,6 @@ class TestContext:
         assert not context.imu._data_fetch_process.is_alive()
         assert not context.logger._log_process.is_alive()
         assert not context.apogee_predictor.is_running
-        assert not context.camera.is_running
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert context.shutdown_requested
         context.stop()  # Stop again to test idempotency
@@ -98,7 +93,6 @@ class TestContext:
         assert not context.imu.requested_to_run
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
-        assert not context.camera.is_running
         assert context.shutdown_requested
 
     def test_airbrakes_ctrl_c_exception(self, context):
@@ -116,7 +110,6 @@ class TestContext:
         assert not context.imu.requested_to_run
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
-        assert not context.camera.is_running
         assert context.shutdown_requested
 
     def test_airbrakes_update(
@@ -305,11 +298,9 @@ class TestContext:
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert not context.imu._running.value
-        assert not context.camera.is_running
         assert not context.imu._data_fetch_process.is_alive()
         assert not context.logger._log_process.is_alive()
         assert not context.apogee_predictor._prediction_process.is_alive()
-        assert not context.camera.camera_control_process.is_alive()
         assert context.servo.current_extension in (
             ServoExtension.MIN_EXTENSION,
             ServoExtension.MIN_NO_BUZZ,

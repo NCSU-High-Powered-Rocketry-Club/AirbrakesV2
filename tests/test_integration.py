@@ -15,7 +15,6 @@ import pytest
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
@@ -269,7 +268,6 @@ class TestIntegration:
         """
         ab = context
 
-        ab.state = MotorBurnState(ab)  # Simulate start of camera recording
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
         # List to store all the fetched_packets from the imu

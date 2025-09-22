@@ -144,17 +144,6 @@ class TestMotorBurnState:
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
-    def test_camera_recording_started(self, context):
-        """
-        Tests that the camera recording is started when the motor burn starts.
-        """
-        assert context.camera.motor_burn_started.is_set() is False
-
-        m = MotorBurnState(context)
-        m.context.state = m
-
-        assert context.camera.motor_burn_started.is_set() is True
-
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
 
