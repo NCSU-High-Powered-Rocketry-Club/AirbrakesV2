@@ -522,3 +522,29 @@ class TestContext:
         context.switch_altitude_back_to_pressure()
         assert not context.data_processor._integrating_for_altitude
         assert context.data_processor._retraction_timestamp is not None
+
+    def test_set_apogee_prediction_data(self, context):
+        """
+        Tests whether the set_apogee_prediction_data method works correctly.
+        """
+        ap_dp_no_pred = make_apogee_predictor_data_packet(predicted_apogee=0.0)
+        ap_dp_pred = make_apogee_predictor_data_packet(
+            predicted_apogee=123.4,
+        )
+        p_dp = make_processor_data_packet(
+            current_altitude=0.0,
+        )
+        context.processor_data_packets = [p_dp]
+
+        context.apogee_predictor_data_packets = [ap_dp_no_pred]
+        context._set_apogee_prediction_data()
+        assert context.last_apogee_predictor_packet == ap_dp_no_pred
+        assert context.first_apogee_prediction_packet is None
+
+        context.apogee_predictor_data_packets = [ap_dp_pred]
+        context._set_apogee_prediction_data()
+        assert context.last_apogee_predictor_packet == ap_dp_pred
+        assert context.first_apogee_prediction_packet is not None
+        assert context.first_apogee_prediction_packet.predicted_apogee == 123.4
+        assert context.first_apogee_prediction_packet.convergence_time == pytest.approx(0.0)
+        assert context.first_apogee_prediction_packet.convergence_height == 0.0

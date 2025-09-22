@@ -144,6 +144,12 @@ class TestMotorBurnState:
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
+    def test_init_launch_time_set(self, motor_burn_state):
+        ctx = motor_burn_state.context
+        ctx.data_processor._last_data_packet = EstimatedDataPacket(1000)
+        m = MotorBurnState(ctx)
+        assert m.start_time_ns == 1000
+
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
 

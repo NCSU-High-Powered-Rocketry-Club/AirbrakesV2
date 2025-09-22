@@ -222,7 +222,7 @@ class Context:
 
         This should only be called in the coast state, before we start controlling the air brakes.
         """
-        # Because the IMUDataProcessor only uses Estimated Data Packets to create Processor Data
+        # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:
             self.apogee_predictor.update(self.processor_data_packets)
