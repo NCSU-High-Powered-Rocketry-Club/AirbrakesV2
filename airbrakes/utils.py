@@ -23,7 +23,7 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def convert_ns_to_s(nanoseconds: float) -> float:
+def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.
 
