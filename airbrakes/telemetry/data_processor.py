@@ -11,6 +11,7 @@ from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
+    WINDOW_SIZE_FOR_PRESSURE_ZEROING
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -41,8 +42,7 @@ class DataProcessor:
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
-        "window_size",
-        "altitudes",
+        "_pressure_alt_buffer",
     )
 
     def __init__(self):
@@ -69,8 +69,8 @@ class DataProcessor:
         self._retraction_timestamp: float | None = None
         # The axis the IMU is on:
         self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
-        self.window_size = 1500
-        self.altitudes = deque(maxlen=self.window_size)
+        self._pressure_alt_buffer = deque(maxlen=WINDOW_SIZE_FOR_PRESSURE_ZEROING)
+
     @property
     def max_altitude(self) -> float:
         """
@@ -410,7 +410,7 @@ class DataProcessor:
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
     
-    def pressure_zero (self):
+    def zero_out_altitude(self):
         # Zero out the altitude based on the average of recent altitudes
         raw_altitudes = np.array(
                 [
@@ -418,5 +418,7 @@ class DataProcessor:
                     for data_packet in self._data_packets
                 ],
             )
-        self.altitudes.extend(raw_altitudes)
-        self._initial_altitude = np.mean(self.altitudes)
+        if raw_altitudes.size > 0:
+            self._pressure_alt_buffer.extend(raw_altitudes)
+            self._initial_altitude = np.mean(self._pressure_alt_buffer)
+        

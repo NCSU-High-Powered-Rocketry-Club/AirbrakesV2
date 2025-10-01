@@ -1,6 +1,7 @@
 import math
 import random
 from pathlib import Path
+from collections import deque
 
 import numpy as np
 import numpy.testing as npt
@@ -635,3 +636,19 @@ class TestDataProcessor:
         # Call first update with the loaded packet
         d.update(est_data_packets)
         assert 0.0 <= d.average_pitch <= 5.0, f"Wrong pitch: {d.average_pitch}"
+    
+    def test_zero_out_altitude(self):
+        rand_packets = np.array([])
+        test_deque = deque(maxlen=10)
+        for i in range(1,10):
+            rand_packets = np.append(rand_packets, [
+                make_est_data_packet(
+                    timestamp = i*1e9,
+                    estPressureAlt = i,
+                )
+            ])
+            test_deque.append(rand_packets[i-1].estPressureAlt)
+            
+        assert isinstance(rand_packets, np.ndarray)
+        assert len(test_deque) == 9
+        assert np.mean(test_deque) == 5

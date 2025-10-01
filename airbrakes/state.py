@@ -85,7 +85,7 @@ class StandbyState(State):
             self.next_state()
             return
         
-        self.context.data_processor.pressure_zero()
+        self.context.data_processor.zero_out_altitude()
 
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
@@ -156,6 +156,7 @@ class CoastState(State):
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.
+
         if (
             data.vertical_velocity <= 0
             and data.current_altitude <= data.max_altitude * MAX_ALTITUDE_THRESHOLD
