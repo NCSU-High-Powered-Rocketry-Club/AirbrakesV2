@@ -635,3 +635,48 @@ class TestDataProcessor:
         # Call first update with the loaded packet
         d.update(est_data_packets)
         assert 0.0 <= d.average_pitch <= 5.0, f"Wrong pitch: {d.average_pitch}"
+
+    def test_altitude_velocity_property(self, data_processor):
+        """
+        Tests that the altitude_velocity property correctly calculates velocity from altitude
+        changes.
+        """
+        d = data_processor
+
+        # Test with insufficient data (should return None)
+        packets = [make_est_data_packet(timestamp=1e9, estPressureAlt=100)]
+        d.update(packets)
+        assert d.altitude_velocity is None, "Should return None with only one altitude measurement"
+
+        # Test descending at 10 m/s
+        packets = [
+            make_est_data_packet(timestamp=1e9, estPressureAlt=100),
+            make_est_data_packet(timestamp=2e9, estPressureAlt=90),  # 10m drop in 1 second
+        ]
+        d.update(packets)
+        velocity = d.altitude_velocity
+        assert velocity is not None, "Should have velocity with 2+ measurements"
+        # Velocity should be -10 m/s (negative for descent)
+        assert -11 < velocity < -9, f"Expected ~-10 m/s, got {velocity}"
+
+        # Test ascending at 5 m/s
+        packets = [
+            make_est_data_packet(timestamp=1e9, estPressureAlt=100),
+            make_est_data_packet(timestamp=2e9, estPressureAlt=105),  # 5m rise in 1 second
+        ]
+        d.update(packets)
+        velocity = d.altitude_velocity
+        assert velocity is not None
+        # Velocity should be +5 m/s (positive for ascent)
+        assert 4 < velocity < 6, f"Expected ~5 m/s, got {velocity}"
+
+        # Test near-stationary (velocity < 2 m/s)
+        packets = [
+            make_est_data_packet(timestamp=1e9, estPressureAlt=10),
+            make_est_data_packet(timestamp=2e9, estPressureAlt=10.5),  # 0.5m in 1 second
+        ]
+        d.update(packets)
+        velocity = d.altitude_velocity
+        assert velocity is not None
+        assert abs(velocity) < 2, f"Expected low velocity, got {velocity}"
+

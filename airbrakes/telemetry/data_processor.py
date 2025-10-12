@@ -134,6 +134,31 @@ class DataProcessor:
         return 0.0
 
     @property
+    def altitude_velocity(self) -> float:
+        """
+        The current vertical velocity calculated from the rate of change of altitude in m/s.
+
+        This is more reliable than integrated acceleration velocity during freefall and after
+        landing, as it's based on pressure altitude changes. Negative values indicate descent.
+        Returns None if insufficient data is available.
+        :return: The vertical velocity from altitude changes, or None if data is insufficient.
+        """
+        # We need at least 2 altitude measurements to calculate velocity
+        if len(self._current_altitudes) < 2 or len(self._time_differences) < 2:
+            return None
+
+        # Calculate velocity from the last few altitude measurements (moving average)
+        # Use the last measurement for the most recent velocity estimate
+        altitude_change = self._current_altitudes[-1] - self._current_altitudes[-2]
+        time_diff = self._time_differences[-1]
+
+        # Avoid division by zero
+        if time_diff <= 0:
+            return None
+
+        return altitude_change / time_diff
+
+    @property
     def current_timestamp(self) -> int:
         """
         The timestamp of the last data packet in nanoseconds.
