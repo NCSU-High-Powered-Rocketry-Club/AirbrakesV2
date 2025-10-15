@@ -59,7 +59,7 @@ class DataProcessor:
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
-        self._initial_altitude: float | None = None
+        self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: quaternion.quaternion | None = None
@@ -67,7 +67,7 @@ class DataProcessor:
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
-        self._retraction_timestamp: float | None = None
+        self._retraction_timestamp: int | None = None
         # The axis the IMU is on:
         self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
         self._pressure_alt_buffer = deque(maxlen=WINDOW_SIZE_FOR_PRESSURE_ZEROING)
@@ -218,6 +218,21 @@ class DataProcessor:
         """
         self._integrating_for_altitude = False
         self._retraction_timestamp = self.current_timestamp
+
+    def zero_out_altitude(self):
+        """
+        Zero out the altitude based on the average of recent altitudes.
+
+        This is only used when the rocket is on the launch pad.
+        """
+        # Zero out the altitude based on the average of recent altitudes
+        self._pressure_alt_buffer.extend(
+            [data_packet.estPressureAlt for data_packet in self._data_packets],
+        )
+
+        # Avoid division by zero:
+        if (length := len(self._pressure_alt_buffer)) > 0:
+            self._initial_altitude = np.float64(sum(self._pressure_alt_buffer) / length)
 
     def _first_update(self) -> None:
         """
@@ -410,18 +425,3 @@ class DataProcessor:
         )
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
-
-    def zero_out_altitude(self):
-        """
-        Zero out the altitude based on the average of recent altitudes.
-
-        This is only used when the rocket is on the launch pad.
-        """
-        # Zero out the altitude based on the average of recent altitudes
-        self._pressure_alt_buffer.extend(
-            [data_packet.estPressureAlt for data_packet in self._data_packets],
-        )
-
-        # Avoid division by zero:
-        if (length := len(self._pressure_alt_buffer)) > 0:
-            self._initial_altitude = sum(self._pressure_alt_buffer) / length
