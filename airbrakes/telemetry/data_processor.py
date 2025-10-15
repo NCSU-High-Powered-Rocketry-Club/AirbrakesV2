@@ -2,6 +2,8 @@
 Module for processing IMU data on a higher level.
 """
 
+from collections import deque
+
 import numpy as np
 import numpy.typing as npt
 import quaternion
@@ -10,6 +12,7 @@ from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
+    WINDOW_SIZE_FOR_PRESSURE_ZEROING,
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -34,6 +37,7 @@ class DataProcessor:
         "_longitudinal_axis",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_pressure_alt_buffer",
         "_previous_altitude",
         "_previous_vertical_velocity",
         "_retraction_timestamp",
@@ -63,9 +67,10 @@ class DataProcessor:
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
-        self._retraction_timestamp: float | None = None
+        self._retraction_timestamp: int | None = None
         # The axis the IMU is on:
         self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
+        self._pressure_alt_buffer = deque(maxlen=WINDOW_SIZE_FOR_PRESSURE_ZEROING)
 
     @property
     def max_altitude(self) -> float:
@@ -204,7 +209,8 @@ class DataProcessor:
 
     def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
         """
-        Processes the data points and returns a list of ProcessorDataPacket objects.
+        Processes the data points and returns a list of ProcessorDataPackets. These will correspond
+        one-to-one with the estimated data packets most recently passed in by update().
 
         The length of the list should be the same as the length of the list of estimated data
         packets most recently passed in by update()
@@ -238,6 +244,21 @@ class DataProcessor:
         """
         self._integrating_for_altitude = False
         self._retraction_timestamp = self.current_timestamp
+
+    def zero_out_altitude(self):
+        """
+        Zero out the altitude based on the average of recent altitudes.
+
+        This is only used when the rocket is on the launch pad.
+        """
+        # Zero out the altitude based on the average of recent altitudes
+        self._pressure_alt_buffer.extend(
+            [data_packet.estPressureAlt for data_packet in self._data_packets],
+        )
+
+        # Avoid division by zero:
+        if (length := len(self._pressure_alt_buffer)) > 0:
+            self._initial_altitude = np.float64(sum(self._pressure_alt_buffer) / length)
 
     def _first_update(self) -> None:
         """

@@ -15,6 +15,13 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
+    ServoExtension,
+)
+from airbrakes.state import (
+    CoastState,
+    LandedState,
+    MotorBurnState,
+    StandbyState,
 )
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
@@ -26,6 +33,7 @@ from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
+    context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
     make_context_data_packet,
     make_est_data_packet,
@@ -45,13 +53,17 @@ def patched_stop(self):
     self._log_process.join()
 
 
-def remove_state_letter(debug_packet_dict: dict[str, str]) -> dict[str, str]:
-    """
-    Helper method which removes the state letter from the dictionary and returns the modified
-    dictionary.
-    """
-    debug_packet_dict.pop("state_letter")
-    return debug_packet_dict
+def extract_state_letter(value) -> str:
+    if isinstance(value, type):
+        return value.__name__[0]
+
+    if isinstance(value, str):
+        if value.startswith("<class "):
+            class_name = value.split(".")[-1].split("'")[0]
+            return class_name[0]
+        return value[0]
+
+    return str(value)[0]
 
 
 def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
@@ -264,8 +276,8 @@ class TestLogger:
         ),
         [
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
@@ -273,16 +285,20 @@ class TestLogger:
                 [
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="S"))
+                            asdict(make_context_data_packet(state=StandbyState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.0")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     }
                 ],
             ),
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [],
@@ -290,9 +306,13 @@ class TestLogger:
                 [
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="S"))
+                            asdict(make_context_data_packet(state=StandbyState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.0")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_est_data_packet())),
                         **only_logged_pdp_fields(
                             convert_dict_vals_to_str(asdict(make_processor_data_packet()))
@@ -301,8 +321,8 @@ class TestLogger:
                 ],
             ),
             (
-                make_context_data_packet(state_letter="M"),
-                make_servo_data_packet(set_extension="0.5"),
+                make_context_data_packet(state=MotorBurnState),
+                make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [],
@@ -310,16 +330,24 @@ class TestLogger:
                 [
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="M"))
+                            asdict(make_context_data_packet(state=MotorBurnState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.5")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     },
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="M"))
+                            asdict(make_context_data_packet(state=MotorBurnState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.5")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_est_data_packet())),
                         **only_logged_pdp_fields(
                             convert_dict_vals_to_str(asdict(make_processor_data_packet()))
@@ -328,8 +356,8 @@ class TestLogger:
                 ],
             ),
             (
-                make_context_data_packet(state_letter="C"),
-                make_servo_data_packet(set_extension="0.4"),
+                make_context_data_packet(state=CoastState),
+                make_servo_data_packet(set_extension=ServoExtension.MAX_NO_BUZZ),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
@@ -337,17 +365,25 @@ class TestLogger:
                 [
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="C"))
+                            asdict(make_context_data_packet(state=CoastState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.4")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_NO_BUZZ.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                         **convert_dict_vals_to_str(asdict(make_apogee_predictor_data_packet())),
                     },
                     {
                         **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state_letter="C"))
+                            asdict(make_context_data_packet(state=CoastState))
                         ),
-                        **asdict(make_servo_data_packet(set_extension="0.4")),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_NO_BUZZ.value)
+                            )
+                        ),
                         **convert_dict_vals_to_str(asdict(make_est_data_packet())),
                         **only_logged_pdp_fields(
                             convert_dict_vals_to_str(asdict(make_processor_data_packet()))
@@ -402,7 +438,14 @@ class TestLogger:
                 # Random check to make sure we aren't missing any fields
                 assert len(row_dict_non_empty) > 19
 
-                assert row_dict_non_empty == expected_output[idx]
+                exp = expected_output[idx].copy()
+                # Replace "state" with "state_letter" so it matches the CSV output
+                if "state" in exp and "state_letter" not in exp:
+                    exp["state_letter"] = extract_state_letter(exp["state"])
+                    exp.pop("state")
+
+                exp = convert_dict_vals_to_str(exp, truncation=False)
+                assert row_dict_non_empty == exp
 
             assert idx + 1 == file_lines
 
@@ -416,15 +459,15 @@ class TestLogger:
         ),
         [
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
             ),
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
@@ -485,15 +528,15 @@ class TestLogger:
         ),
         [
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
             ),
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
@@ -558,20 +601,20 @@ class TestLogger:
         [
             (
                 (
-                    make_context_data_packet(state_letter="S"),
-                    make_context_data_packet(state_letter="M"),
+                    make_context_data_packet(state=StandbyState),
+                    make_context_data_packet(state=MotorBurnState),
                 ),
-                make_servo_data_packet(set_extension="0.0"),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
             ),
             (
                 (
-                    make_context_data_packet(state_letter="S"),
-                    make_context_data_packet(state_letter="M"),
+                    make_context_data_packet(state=StandbyState),
+                    make_context_data_packet(state=MotorBurnState),
                 ),
-                make_servo_data_packet(set_extension="0.0"),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
@@ -653,15 +696,15 @@ class TestLogger:
         ),
         [
             (
-                make_context_data_packet(state_letter="L"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=LandedState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
             ),
             (
-                make_context_data_packet(state_letter="L"),
-                make_servo_data_packet(set_extension="0.0"),
+                make_context_data_packet(state=LandedState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [],
@@ -724,70 +767,106 @@ class TestLogger:
         ),
         [
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.1"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
                 [],
                 [
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="S")),
-                        **asdict(make_servo_data_packet(set_extension="0.1")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=StandbyState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_raw_data_packet()),
                     )
                 ],
             ),
             (
-                make_context_data_packet(state_letter="S"),
-                make_servo_data_packet(set_extension="0.1"),
+                make_context_data_packet(state=StandbyState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [],
                 [
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="S")),
-                        **asdict(make_servo_data_packet(set_extension="0.1")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=StandbyState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_est_data_packet()),
                         **only_logged_pdp_fields(asdict(make_processor_data_packet())),
                     ),
                 ],
             ),
             (
-                make_context_data_packet(state_letter="M"),
-                make_servo_data_packet(set_extension="0.1"),
+                make_context_data_packet(state=MotorBurnState),
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [],
                 [
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="M")),
-                        **asdict(make_servo_data_packet(set_extension="0.1")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=MotorBurnState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_raw_data_packet()),
                     ),
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="M")),
-                        **asdict(make_servo_data_packet(set_extension="0.1")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=MotorBurnState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_est_data_packet()),
                         **only_logged_pdp_fields(asdict(make_processor_data_packet())),
                     ),
                 ],
             ),
             (
-                make_context_data_packet(state_letter="C"),
-                make_servo_data_packet(set_extension="0.5"),
+                make_context_data_packet(state=CoastState),
+                make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
                 [make_apogee_predictor_data_packet()],
                 [
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="C")),
-                        **asdict(make_servo_data_packet(set_extension="0.5")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=CoastState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_raw_data_packet()),
                         **asdict(make_apogee_predictor_data_packet()),
                     ),
                     LoggerDataPacket(
-                        **asdict(make_context_data_packet(state_letter="C")),
-                        **asdict(make_servo_data_packet(set_extension="0.5")),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=CoastState)
+                        ),
+                        **asdict(
+                            make_servo_data_packet(
+                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
+                            )
+                        ),
                         **asdict(make_est_data_packet()),
                         **only_logged_pdp_fields(asdict(make_processor_data_packet())),
                     ),
@@ -877,8 +956,8 @@ class TestLogger:
         method.
         """
         # Prepare sample data packets
-        context_packet = make_context_data_packet(state_letter="M")  # Avoid buffering
-        servo_packet = make_servo_data_packet(set_extension="0.0")
+        context_packet = make_context_data_packet(state=MotorBurnState)  # Avoid buffering
+        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
         imu_data_packets = deque([make_raw_data_packet()])
 
         flush_calls = 0
@@ -956,7 +1035,7 @@ class TestLogger:
         """
         Tests the performance of the _prepare_logger_packets method.
         """
-        context_packet = make_context_data_packet(state_letter="S")
+        context_packet = make_context_data_packet(state=StandbyState)
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []
@@ -975,7 +1054,7 @@ class TestLogger:
         """
         Tests the performance of the _prepare_logger_packets method.
         """
-        context_packet = make_context_data_packet(state_letter="S")
+        context_packet = make_context_data_packet(state=StandbyState)
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []

@@ -153,14 +153,14 @@ class TestContext:
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(
-                ctx_dp.state_letter == "C"
+                ctx_dp.state == CoastState
                 and ctx_dp.retrieved_imu_packets >= 1
                 and ctx_dp.queued_imu_packets > 0
                 and ctx_dp.apogee_predictor_queue_size >= 0
                 and ctx_dp.imu_packets_per_cycle >= 0  # mock imus will be 0
                 and ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9)
             )
-            asserts.append(servo_dp.set_extension == str(ServoExtension.MAX_EXTENSION.value))
+            asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(isinstance(apg_dps, list))
@@ -213,7 +213,10 @@ class TestContext:
             "log called",
         ]
         assert all(asserts)
-        assert mocked_airbrakes.last_apogee_predictor_packet == make_apogee_predictor_data_packet()
+        assert (
+            mocked_airbrakes.most_recent_apogee_predictor_packet
+            == make_apogee_predictor_data_packet()
+        )
 
         mocked_airbrakes.stop()
 
@@ -462,7 +465,7 @@ class TestContext:
         time.sleep(0.01)  # sleep so apogee prediction runs
         apg_packets = context.apogee_predictor.get_prediction_data_packets()
         context.apogee_predictor_data_packets.extend(apg_packets)
-        context.last_apogee_predictor_packet = apg_packets[-1]
+        context.most_recent_apogee_predictor_packet = apg_packets[-1]
 
         context.stop()
 
@@ -474,19 +477,19 @@ class TestContext:
         assert ap_dp.uncertainty_threshold_1
         assert ap_dp.uncertainty_threshold_2
         assert ap_dp.predicted_apogee is not None
-        assert context.last_apogee_predictor_packet.predicted_apogee is not None
+        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
 
         # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
         # predicted_apogee attribute:
         context.apogee_predictor_data_packets = []
-        assert context.last_apogee_predictor_packet.predicted_apogee is not None
+        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
 
     def test_generate_data_packets(self, context):
         """
         Tests whether the airbrakes generates the correct data packets for logging.
         """
         context.generate_data_packets()
-        assert context.context_data_packet.state_letter == "S"
+        assert context.context_data_packet.state == StandbyState
         assert context.context_data_packet.retrieved_imu_packets == 0
         assert context.context_data_packet.queued_imu_packets >= 0
         assert context.context_data_packet.apogee_predictor_queue_size >= 0
@@ -494,7 +497,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == str(ServoExtension.MIN_EXTENSION.value)
+        assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_imu):
         """
@@ -522,3 +525,28 @@ class TestContext:
         context.switch_altitude_back_to_pressure()
         assert not context.data_processor._integrating_for_altitude
         assert context.data_processor._retraction_timestamp is not None
+
+    def test_set_apogee_prediction_data(self, context):
+        """
+        Tests whether the set_apogee_prediction_data method works correctly.
+        """
+        ap_dp_no_pred = make_apogee_predictor_data_packet(predicted_apogee=0.0)
+        ap_dp_pred = make_apogee_predictor_data_packet(
+            predicted_apogee=123.4,
+        )
+        p_dp = make_processor_data_packet(
+            current_altitude=0.0,
+        )
+        context.processor_data_packets = [p_dp]
+
+        context.apogee_predictor_data_packets = [ap_dp_no_pred]
+        context._set_apogee_prediction_data()
+        assert context.most_recent_apogee_predictor_packet == ap_dp_no_pred
+        assert context.first_converged_apogee is None
+
+        context.apogee_predictor_data_packets = [ap_dp_pred]
+        context._set_apogee_prediction_data()
+        assert context.most_recent_apogee_predictor_packet == ap_dp_pred
+        assert context.first_converged_apogee == 123.4
+        assert context.convergence_time == pytest.approx(0.0)
+        assert context.convergence_height == 0.0

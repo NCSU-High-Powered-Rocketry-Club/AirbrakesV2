@@ -376,8 +376,8 @@ LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 30.0
 """
 The acceleration in m/s^2 that the rocket must be above before we consider it to have landed.
 
-Upon landing, the rocket has a large spike in acceleration that is used to detect landing.
-Lowered from 50.0 to 30.0 after Huntsville launch data showed softer landings.
+Upon landing, the rocket has a large spike in acceleration that is used to detect landing. Lowered
+from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 """
 
 LANDED_VELOCITY_METERS_PER_SECOND = -2.0
@@ -431,4 +431,12 @@ UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.
 The uncertainty from the curve fit, below which we will say that our apogee has converged.
 
 This uncertainty corresponds to being off by +/- 5m.
+"""
+
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
 """

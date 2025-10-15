@@ -1,7 +1,7 @@
 """
 The main file which will be run on the Raspberry Pi.
 
-It will create the AirbrakesContext object and run the main loop.
+It will create the Context object and run the main loop.
 """
 
 import argparse
@@ -202,6 +202,11 @@ def run_flight_loop(
 
 
 if __name__ == "__main__":
+    # This code isn't actually used when running `uv run ...` but is kept for
+    # backwards compatibility. In the `pyproject.toml` file, the entry points for
+    # `uvx` are set to the functions above: `run_real_flight`, `run_mock_flight`,
+    # and `run_sim_flight`.
+
     # Deprecated way to run the program:
     # python -m airbrakes.main [ARGS]
 

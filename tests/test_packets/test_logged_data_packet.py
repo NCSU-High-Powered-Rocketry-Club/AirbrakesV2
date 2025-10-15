@@ -39,6 +39,11 @@ class TestLoggerDataPacket:
         # remove one field from proc_dp_fields:
         proc_dp_fields.remove("time_since_last_data_packet")
 
+        # Map Context 'state' -> Logger 'state_letter' for comparisons
+        context_dp_fields_mapped = {
+            ("state_letter" if f == "state" else f) for f in context_dp_fields
+        }
+
         assert servo_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {servo_dp_fields - log_dp_fields}"
         )
@@ -54,14 +59,14 @@ class TestLoggerDataPacket:
         assert apogee_predictor_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {apogee_predictor_dp_fields - log_dp_fields}"
         )
-        assert context_dp_fields.issubset(log_dp_fields), (
-            f"Missing fields: {context_dp_fields - log_dp_fields}"
+        assert context_dp_fields_mapped.issubset(log_dp_fields), (
+            f"Missing fields: {context_dp_fields_mapped - log_dp_fields}"
         )
 
         available_fields = (
             est_dp_fields.union(raw_dp_fields)
             .union(proc_dp_fields)
-            .union(context_dp_fields)
+            .union(context_dp_fields_mapped)
             .union(servo_dp_fields)
             .union(apogee_predictor_dp_fields)
         )
@@ -89,7 +94,6 @@ class TestLoggerDataPacket:
         est_dp_fields.remove("timestamp")
         est_dp_fields.remove("invalid_fields")
 
-        assert log_dp_fields[0] == context_dp_fields[0]
         assert (
             log_dp_fields[1:]
             == servo_dp_fields

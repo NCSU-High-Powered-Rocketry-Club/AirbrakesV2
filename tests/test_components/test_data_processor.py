@@ -8,6 +8,7 @@ import polars as pl
 import pytest
 import quaternion
 
+from airbrakes.constants import WINDOW_SIZE_FOR_PRESSURE_ZEROING
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
@@ -680,3 +681,25 @@ class TestDataProcessor:
         assert velocity is not None
         assert abs(velocity) < 2, f"Expected low velocity, got {velocity}"
 
+    def test_zero_out_altitude(self, data_processor):
+        for i in range(1, 11):
+            data_processor._data_packets.append(
+                make_est_data_packet(
+                    timestamp=i * 1e9,
+                    estPressureAlt=i,
+                )
+            )
+        data_processor.zero_out_altitude()
+        assert len(data_processor._pressure_alt_buffer) == 10
+        assert data_processor._initial_altitude == 5.5
+
+        # Test overflow:
+        for i in range(WINDOW_SIZE_FOR_PRESSURE_ZEROING):
+            data_processor._data_packets.append(
+                make_est_data_packet(
+                    timestamp=i * 1e9,
+                    estPressureAlt=i,
+                )
+            )
+        data_processor.zero_out_altitude()
+        assert len(data_processor._pressure_alt_buffer) == WINDOW_SIZE_FOR_PRESSURE_ZEROING
