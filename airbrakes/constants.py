@@ -416,4 +416,11 @@ The uncertainty from the curve fit, below which we will say that our apogee has 
 
 This uncertainty corresponds to being off by +/- 5m.
 """
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 1500 # 3 seconds at 500 Hz
+
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
+"""

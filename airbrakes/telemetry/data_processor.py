@@ -3,6 +3,7 @@ Module for processing IMU data on a higher level.
 """
 
 from collections import deque
+
 import numpy as np
 import numpy.typing as npt
 import quaternion
@@ -11,7 +12,7 @@ from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
-    WINDOW_SIZE_FOR_PRESSURE_ZEROING
+    WINDOW_SIZE_FOR_PRESSURE_ZEROING,
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -36,13 +37,13 @@ class DataProcessor:
         "_longitudinal_axis",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_pressure_alt_buffer",
         "_previous_altitude",
         "_previous_vertical_velocity",
         "_retraction_timestamp",
         "_rotated_accelerations",
         "_time_differences",
         "_vertical_velocities",
-        "_pressure_alt_buffer",
     )
 
     def __init__(self):
@@ -58,7 +59,7 @@ class DataProcessor:
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
-        self._initial_altitude: np.float64 | None = None
+        self._initial_altitude: float | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: quaternion.quaternion | None = None
@@ -409,16 +410,18 @@ class DataProcessor:
         )
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
-    
+
     def zero_out_altitude(self):
+        """
+        Zero out the altitude based on the average of recent altitudes.
+
+        This is only used when the rocket is on the launch pad.
+        """
         # Zero out the altitude based on the average of recent altitudes
-        raw_altitudes = np.array(
-                [
-                    data_packet.estPressureAlt
-                    for data_packet in self._data_packets
-                ],
-            )
-        if raw_altitudes.size > 0:
-            self._pressure_alt_buffer.extend(raw_altitudes)
-            self._initial_altitude = np.mean(self._pressure_alt_buffer)
-        
+        self._pressure_alt_buffer.extend(
+            [data_packet.estPressureAlt for data_packet in self._data_packets],
+        )
+
+        # Avoid division by zero:
+        if (length := len(self._pressure_alt_buffer)) > 0:
+            self._initial_altitude = sum(self._pressure_alt_buffer) / length

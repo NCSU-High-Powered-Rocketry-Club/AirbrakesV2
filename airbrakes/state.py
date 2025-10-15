@@ -84,7 +84,7 @@ class StandbyState(State):
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
-        
+
         self.context.data_processor.zero_out_altitude()
 
     def next_state(self):
