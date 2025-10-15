@@ -14,6 +14,7 @@ from airbrakes.constants import (
     EST_DATA_PACKET_SAMPLING_RATE,
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
+    SERVO_CHANNEL,
 )
 from airbrakes.context import Context
 from airbrakes.hardware.imu import IMU
@@ -77,7 +78,7 @@ def imu():
 
 @pytest.fixture
 def servo():
-    return MockServo(ENCODER_PIN_A, ENCODER_PIN_B)
+    return MockServo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
 
 @pytest.fixture
