@@ -226,14 +226,14 @@ class FlightDisplay:
             else 0
         )
 
-        if self._context.first_apogee_prediction_packet is None:
+        if self._context.first_converged_apogee is None:
             convergence_time = 0.0
             convergence_height = 0.0
             apogee_at_convergence = 0.0
         else:
-            convergence_time = self._context.first_apogee_prediction_packet.convergence_time
-            convergence_height = self._context.first_apogee_prediction_packet.convergence_height
-            apogee_at_convergence = self._context.first_apogee_prediction_packet.predicted_apogee
+            convergence_time = self._context.convergence_time
+            convergence_height = self._context.convergence_height
+            apogee_at_convergence = self._context.first_converged_apogee
 
         # Assign the startup pitch value when it is available:
         if not self._pitch_at_startup:
@@ -252,7 +252,7 @@ class FlightDisplay:
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Predicted Apogee:          {G}{self._context.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+            f"Predicted Apogee:          {G}{self._context.most_recent_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Airbrakes extension:       {G}{self._context.servo.current_extension.value:<10}{RESET} {R}deg{RESET}",  # noqa: E501
         ]
 

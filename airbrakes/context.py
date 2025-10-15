@@ -14,7 +14,6 @@ from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
-    FirstApogeePredictionPacket,
 )
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
@@ -40,14 +39,16 @@ class Context:
         "apogee_predictor",
         "apogee_predictor_data_packets",
         "context_data_packet",
+        "convergence_height",
+        "convergence_time",
         "data_processor",
         "est_data_packets",
-        "first_apogee_prediction_packet",
+        "first_converged_apogee",
         "imu",
         "imu_data_packets",
-        "last_apogee_predictor_packet",
         "launch_time_ns",
         "logger",
+        "most_recent_apogee_predictor_packet",
         "processor_data_packets",
         "servo",
         "servo_data_packet",
@@ -94,8 +95,14 @@ class Context:
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
-        self.last_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
-        self.first_apogee_prediction_packet: FirstApogeePredictionPacket | None = None
+        self.most_recent_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
+
+        # The first apogee prediction packet with a valid prediction, used mostly for the display
+        self.first_converged_apogee: float | None = None
+        self.convergence_time: float | None = None
+        self.convergence_height: float | None = None
+
+        # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_ns: int = 0
 
     def start(self, wait_for_start: bool = False) -> None:
@@ -175,7 +182,7 @@ class Context:
         # Gets the Apogee Predictor Data Packets
         self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
 
-        # Update the first and last Apogee Predictor Data Packet
+        # Update the first and most recent Apogee Predictor Data Packet
         if self.apogee_predictor_data_packets:
             self._set_apogee_prediction_data()
 
@@ -255,16 +262,14 @@ class Context:
 
         This is called every loop iteration if there are new apogee predictor data packets.
         """
-        self.last_apogee_predictor_packet = self.apogee_predictor_data_packets[-1]
+        self.most_recent_apogee_predictor_packet = self.apogee_predictor_data_packets[-1]
 
         # Set the first apogee prediction packet if it hasn't been set yet, and only if we have a
         # converged valid prediction.
         if (
-            self.first_apogee_prediction_packet is None
-            and self.last_apogee_predictor_packet.predicted_apogee
+            self.first_converged_apogee is None
+            and self.most_recent_apogee_predictor_packet.predicted_apogee > 0
         ):
-            self.first_apogee_prediction_packet = FirstApogeePredictionPacket(
-                predicted_apogee=self.last_apogee_predictor_packet.predicted_apogee,
-                convergence_time=convert_ns_to_s(self.state.start_time_ns - self.launch_time_ns),
-                convergence_height=self.processor_data_packets[-1].current_altitude,
-            )
+            self.first_converged_apogee = self.most_recent_apogee_predictor_packet.predicted_apogee
+            self.convergence_time = convert_ns_to_s(self.state.start_time_ns - self.launch_time_ns)
+            self.convergence_height = self.processor_data_packets[-1].current_altitude

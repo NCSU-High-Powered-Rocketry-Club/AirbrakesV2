@@ -213,7 +213,10 @@ class TestContext:
             "log called",
         ]
         assert all(asserts)
-        assert mocked_airbrakes.last_apogee_predictor_packet == make_apogee_predictor_data_packet()
+        assert (
+            mocked_airbrakes.most_recent_apogee_predictor_packet
+            == make_apogee_predictor_data_packet()
+        )
 
         mocked_airbrakes.stop()
 
@@ -462,7 +465,7 @@ class TestContext:
         time.sleep(0.01)  # sleep so apogee prediction runs
         apg_packets = context.apogee_predictor.get_prediction_data_packets()
         context.apogee_predictor_data_packets.extend(apg_packets)
-        context.last_apogee_predictor_packet = apg_packets[-1]
+        context.most_recent_apogee_predictor_packet = apg_packets[-1]
 
         context.stop()
 
@@ -474,12 +477,12 @@ class TestContext:
         assert ap_dp.uncertainty_threshold_1
         assert ap_dp.uncertainty_threshold_2
         assert ap_dp.predicted_apogee is not None
-        assert context.last_apogee_predictor_packet.predicted_apogee is not None
+        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
 
         # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
         # predicted_apogee attribute:
         context.apogee_predictor_data_packets = []
-        assert context.last_apogee_predictor_packet.predicted_apogee is not None
+        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
 
     def test_generate_data_packets(self, context):
         """
@@ -538,13 +541,12 @@ class TestContext:
 
         context.apogee_predictor_data_packets = [ap_dp_no_pred]
         context._set_apogee_prediction_data()
-        assert context.last_apogee_predictor_packet == ap_dp_no_pred
-        assert context.first_apogee_prediction_packet is None
+        assert context.most_recent_apogee_predictor_packet == ap_dp_no_pred
+        assert context.first_converged_apogee is None
 
         context.apogee_predictor_data_packets = [ap_dp_pred]
         context._set_apogee_prediction_data()
-        assert context.last_apogee_predictor_packet == ap_dp_pred
-        assert context.first_apogee_prediction_packet is not None
-        assert context.first_apogee_prediction_packet.predicted_apogee == 123.4
-        assert context.first_apogee_prediction_packet.convergence_time == pytest.approx(0.0)
-        assert context.first_apogee_prediction_packet.convergence_height == 0.0
+        assert context.most_recent_apogee_predictor_packet == ap_dp_pred
+        assert context.first_converged_apogee == 123.4
+        assert context.convergence_time == pytest.approx(0.0)
+        assert context.convergence_height == 0.0
