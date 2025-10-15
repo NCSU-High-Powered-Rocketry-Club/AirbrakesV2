@@ -202,7 +202,6 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
-        # TODO: we will delete this code once the seals work
         self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
