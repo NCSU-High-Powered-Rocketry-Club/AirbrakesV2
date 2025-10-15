@@ -92,6 +92,12 @@ class MotorBurnState(State):
     When the motor is burning and the rocket is accelerating.
     """
 
+    __slots__ = ()
+
+    def __init__(self, context: "Context"):
+        super().__init__(context)
+        self.context.launch_time_ns = self.start_time_ns
+
     def update(self, processor_data_packet: ProcessorDataPacket) -> None:
         """
         Checks to see if the velocity has decreased lower than the maximum velocity, indicating the
@@ -138,8 +144,8 @@ class CoastState(State):
 
         # Gets the latest apogee prediction, or 0 if there is no prediction yet
         apogee = (
-            self.context.last_apogee_predictor_packet.predicted_apogee
-            if self.context.last_apogee_predictor_packet
+            self.context.most_recent_apogee_predictor_packet.predicted_apogee
+            if self.context.most_recent_apogee_predictor_packet
             else 0.0
         )
 
@@ -203,7 +209,7 @@ class LandedState(State):
     When the rocket has landed.
     """
 
-    def update(self, _) -> None:
+    def update(self, _: ProcessorDataPacket) -> None:
         """
         We use this method to stop the air brakes system after we have hit our log buffer.
         """
