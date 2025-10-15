@@ -1,12 +1,13 @@
 import pytest
 
+from airbrakes.state import StandbyState
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 
 
 @pytest.fixture
 def context_packet():
     return ContextDataPacket(
-        state_letter="S",
+        state=StandbyState,
         retrieved_imu_packets=0,
         queued_imu_packets=1,
         apogee_predictor_queue_size=1,
@@ -29,7 +30,7 @@ class TestContextDataPacket:
 
     def test_init(self, context_packet):
         packet = context_packet
-        assert packet.state_letter == self.state_letter
+        assert packet.state.__name__[0] == self.state_letter
         assert packet.retrieved_imu_packets == self.retrieved_imu_packets
         assert packet.queued_imu_packets == self.queued_imu_packets
         assert packet.apogee_predictor_queue_size == self.apogee_predictor_queue_size

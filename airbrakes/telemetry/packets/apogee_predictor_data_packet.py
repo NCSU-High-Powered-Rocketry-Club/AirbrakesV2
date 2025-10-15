@@ -14,7 +14,26 @@ class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
 
     predicted_apogee: float
+    """
+    The predicted apogee of the rocket in meters.
+    """
+
     a_coefficient: float
+    """
+    The 'a' coefficient used in the apogee prediction curve fit.
+    """
+
     b_coefficient: float
+    """
+    The 'b' coefficient used in the apogee prediction curve fit.
+    """
+
     uncertainty_threshold_1: float
+    """
+    The first uncertainty threshold for apogee prediction in meters.
+    """
+
     uncertainty_threshold_2: float
+    """
+    The second uncertainty threshold for apogee prediction in meters.
+    """

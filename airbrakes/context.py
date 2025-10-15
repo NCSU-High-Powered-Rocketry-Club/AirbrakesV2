@@ -12,9 +12,6 @@ from airbrakes.state import StandbyState, State
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
-    ApogeePredictorDataPacket,
-)
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -22,6 +19,9 @@ from airbrakes.utils import convert_ns_to_s, set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
@@ -65,8 +65,8 @@ class Context:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes AirbrakesContext with the specified hardware objects, Logger, IMUDataProcessor,
-        and ApogeePredictor.
+        Initializes AirbrakesContext with the specified hardware objects, Logger, DataProcessor, and
+        ApogeePredictor.
 
         The state machine starts in StandbyState, which is the initial state of the air brakes
         system.
@@ -76,9 +76,9 @@ class Context:
             mock IMU, or simulation IMU.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
             a mock logger.
-        :param data_processor: The IMUDataProcessor object that processes IMU data on a higher
-            level.
-        :param apogee_predictor: The apogee predictor object that predicts the apogee of the rocket.
+        :param data_processor: The DataProcessor object that processes IMU data on a higher level.
+        :param apogee_predictor: The ApogeePredictor object that predicts what the apogee of the
+            rocket will be based on the processed data.
         """
         self.servo: BaseServo = servo
         self.imu: BaseIMU = imu
@@ -95,7 +95,7 @@ class Context:
         self.est_data_packets: list[EstimatedDataPacket] = []
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
-        self.most_recent_apogee_predictor_packet = ApogeePredictorDataPacket(0, 0, 0, 0, 0)
+        self.most_recent_apogee_predictor_packet: ApogeePredictorDataPacket | None = None
 
         # The first apogee prediction packet with a valid prediction, used mostly for the display
         self.first_converged_apogee: float | None = None
@@ -116,6 +116,9 @@ class Context:
             want to prevent data races where the main loop tries to access data before the processes
             have started.
         """
+        # We have multiple processes that we run, one for the IMU, one for the Logger, and one for
+        # the Apogee Predictor. You can think of it basically like multithreading (even though it's
+        # not), where each process runs independently and communicates via queues.
         set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
@@ -147,10 +150,12 @@ class Context:
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main process.
+        Called every loop iteration from the main process. This is essentially the "brain" of the
+        air brakes system, where all the data is collected, processed, and logged, and the state
+        machine is updated.
 
-        Depending on the current state, it will do different things. It is what controls the air
-        brakes and chooses when to move to the next state.
+        This function retrieves the latest IMU data packets, processes them, updates the state
+        machine, generates data packets for logging, and logs all relevant data.
         """
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continuous data for state, apogee,
@@ -175,11 +180,14 @@ class Context:
         self.data_processor.update(self.est_data_packets)
 
         # Get the Processor Data Packets from the data processor, this will have the same length
-        # as the number of EstimatedDataPackets in data_packets
+        # as the number of EstimatedDataPackets in data_packets because a processor data packet is
+        # created for each estimated data packet.
         if self.est_data_packets:
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
-        # Gets the Apogee Predictor Data Packets
+        # Gets the Apogee Predictor Data Packets, this will only have new data if we are in
+        # coast and have called predict_apogee(), and the apogee predictor has had time to process
+        # the data and predict the apogee.
         self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
 
         # Update the first and most recent Apogee Predictor Data Packet
@@ -192,7 +200,7 @@ class Context:
         # Create Context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
-        # Logs all of the packet types from each of the relevant processes
+        # Logs all the packet types from each of the relevant processes
         self.logger.log(
             self.context_data_packet,
             self.servo_data_packet,
@@ -241,7 +249,7 @@ class Context:
         # Create a Context Data Packet to log the current state and queue information of the
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(
-            state_letter=self.state.name[0],
+            state=type(self.state),
             retrieved_imu_packets=len(self.imu_data_packets),
             queued_imu_packets=self.imu.queued_imu_packets,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
@@ -252,7 +260,7 @@ class Context:
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
         self.servo_data_packet = ServoDataPacket(
-            set_extension=str(self.servo.current_extension.value),
+            set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
         )
 

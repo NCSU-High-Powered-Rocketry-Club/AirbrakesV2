@@ -13,7 +13,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     determines the order in which they will be logged.
     """
 
-    # Field in ContextDataPacket
+    # Fields derived from ContextDataPacket
     state_letter: str | None
 
     # Fields in ServoDataPacket

@@ -253,6 +253,7 @@ class TestCoastState:
                 predicted_apogee=predicted_apogee,
             )
         ]
+
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", predicted_apogee)
@@ -325,7 +326,7 @@ class TestCoastState:
         """
         Check that if we don't have an apogee prediction, we don't extend the airbrakes.
         """
-        assert not coast_state.context.most_recent_apogee_predictor_packet.predicted_apogee
+        assert not coast_state.context.most_recent_apogee_predictor_packet
         coast_state.update()
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 

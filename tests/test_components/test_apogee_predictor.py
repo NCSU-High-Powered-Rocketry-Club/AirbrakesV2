@@ -1,5 +1,4 @@
 import multiprocessing
-import multiprocessing.queues
 import threading
 import time
 from collections import deque

@@ -252,7 +252,7 @@ class FlightDisplay:
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Predicted Apogee:          {G}{self._context.most_recent_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+            f"Predicted Apogee:          {G}{self._context.most_recent_apogee_predictor_packet.predicted_apogee if self._context.most_recent_apogee_predictor_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Airbrakes extension:       {G}{self._context.servo.current_extension.value:<10}{RESET} {R}deg{RESET}",  # noqa: E501
         ]
 

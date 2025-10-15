@@ -2,21 +2,21 @@
 Module for the ContextDataPacket class.
 """
 
-from typing import Literal
-
 import msgspec
+
+from airbrakes.state import State
 
 
 class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
-    This data packet keeps data owned by the AirbrakesContext as well as metadata about the context.
+    This data packet keeps data owned by the Context as well as metadata about the context.
     """
 
-    state_letter: Literal["S", "M", "C", "F", "L"]
+    state: type[State]
     """
     Represents the stage of flight we are in.
 
-    Will only be a single letter.
+    This is the state that the state machine is in.
     """
 
     retrieved_imu_packets: int
