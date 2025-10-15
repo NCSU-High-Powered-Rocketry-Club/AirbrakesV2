@@ -117,7 +117,7 @@ class TestIntegration:
                         ab.data_processor.average_vertical_acceleration
                     )
                     state_info.apogee_prediction.append(
-                        ab.last_apogee_predictor_packet.predicted_apogee
+                        ab.most_recent_apogee_predictor_packet.predicted_apogee
                     )
 
                 state_info.min_velocity = min(
@@ -143,7 +143,7 @@ class TestIntegration:
                 )
 
                 state_info.apogee_prediction.append(
-                    ab.last_apogee_predictor_packet.predicted_apogee
+                    ab.most_recent_apogee_predictor_packet.predicted_apogee
                 )
 
                 # Update the state information in the dictionary

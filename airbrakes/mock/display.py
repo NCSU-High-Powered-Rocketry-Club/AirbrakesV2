@@ -12,6 +12,7 @@ import psutil
 from colorama import Fore, Style, init
 
 from airbrakes.constants import DisplayEndingType
+from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.context import Context
@@ -33,17 +34,12 @@ class FlightDisplay:
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
 
     __slots__ = (
-        "_apogee_at_convergence",
         "_args",
-        "_coast_time_ns",
         "_context",
-        "_convergence_height",
-        "_convergence_time_seconds",
         "_cpu_thread",
         "_cpu_usages",
         "_display_header",
         "_launch_file",
-        "_launch_time_ns",
         "_pitch_at_startup",
         "_processes",
         "_running",
@@ -66,12 +62,7 @@ class FlightDisplay:
         self._start_time = 0.0  # Time since the replay started (first packet received)
         self._running = False
         self._args = args
-        self._launch_time_ns: int = 0  # Launch time from MotorBurnState
-        self._coast_time_ns: int = 0  # Coast time from CoastState
-        self._convergence_time_seconds: float = 0.0  # Time to convergence of apogee from CoastState
-        self._convergence_height: float = 0.0  # Height at convergence of apogee from CoastState
         self._pitch_at_startup: float = 0.0  # The calculated pitch in degrees in StandbyState
-        self._apogee_at_convergence: float = 0.0  # Apogee at prediction convergence from CoastState
 
         # Prepare the processes for monitoring in the replay:
         self._processes: dict[str, psutil.Process] | None = None
@@ -227,32 +218,22 @@ class FlightDisplay:
         if invalid_fields:
             invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
 
-        # Set the launch time if it hasn't been set yet:
-        if not self._launch_time_ns and self._context.state.name == "MotorBurnState":
-            self._launch_time_ns = self._context.state.start_time_ns
-
-        elif not self._coast_time_ns and self._context.state.name == "CoastState":
-            self._coast_time_ns = self._context.state.start_time_ns
-
-        if self._launch_time_ns:
-            time_since_launch = (
-                self._context.data_processor.current_timestamp - self._launch_time_ns
-            ) * 1e-9
-        else:
-            time_since_launch = 0
-
-        if (
-            self._coast_time_ns
-            and not self._convergence_time_seconds
-            and self._context.last_apogee_predictor_packet.predicted_apogee
-        ):
-            self._convergence_time_seconds = (
-                data_processor.current_timestamp - self._coast_time_ns
-            ) * 1e-9
-            self._convergence_height = data_processor.current_altitude
-            self._apogee_at_convergence = (
-                self._context.last_apogee_predictor_packet.predicted_apogee
+        time_since_launch = (
+            convert_ns_to_s(
+                self._context.data_processor.current_timestamp - self._context.launch_time_ns
             )
+            if self._context.launch_time_ns
+            else 0
+        )
+
+        if self._context.first_converged_apogee is None:
+            convergence_time = 0.0
+            convergence_height = 0.0
+            apogee_at_convergence = 0.0
+        else:
+            convergence_time = self._context.convergence_time
+            convergence_height = self._context.convergence_height
+            apogee_at_convergence = self._context.first_converged_apogee
 
         # Assign the startup pitch value when it is available:
         if not self._pitch_at_startup:
@@ -271,7 +252,7 @@ class FlightDisplay:
             f"Max velocity so far:       {G}{data_processor.max_vertical_velocity:<10.2f}{RESET} {R}m/s{RESET}",  # noqa: E501
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Predicted Apogee:          {G}{self._context.last_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+            f"Predicted Apogee:          {G}{self._context.most_recent_apogee_predictor_packet.predicted_apogee:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Airbrakes extension:       {G}{self._context.servo.current_extension.value:<10}{RESET} {R}deg{RESET}",  # noqa: E501
         ]
 
@@ -282,9 +263,9 @@ class FlightDisplay:
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
                     f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
-                    f"Convergence Time:                {G}{self._convergence_time_seconds:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
-                    f"Convergence Height:              {G}{self._convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-                    f"Predicted apogee at Convergence: {G}{self._apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"Convergence Time:                {G}{convergence_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+                    f"Convergence Height:              {G}{convergence_height:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
+                    f"Predicted apogee at Convergence: {G}{apogee_at_convergence:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501

@@ -96,6 +96,10 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
+    def __init__(self, context: "Context"):
+        super().__init__(context)
+        self.context.launch_time_ns = self.start_time_ns
+
     def update(self):
         """
         Checks to see if the velocity has decreased lower than the maximum velocity, indicating the
@@ -142,7 +146,7 @@ class CoastState(State):
         # undershoot our target altitude, we retract the air brakes.
 
         # Gets the latest apogee prediction
-        apogee = self.context.last_apogee_predictor_packet.predicted_apogee
+        apogee = self.context.most_recent_apogee_predictor_packet.predicted_apogee
 
         if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()
