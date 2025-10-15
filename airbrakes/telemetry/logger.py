@@ -204,7 +204,7 @@ class Logger:
                 logger_packet.estGravityVectorY = imu_data_packet.estGravityVectorY
                 logger_packet.estGravityVectorZ = imu_data_packet.estGravityVectorZ
 
-                # Now also extract the fields from the ProcessorDataPacket
+                # Now also extract the fields that we want from the ProcessorDataPacket
                 logger_packet.current_altitude = processor_data_packets[index].current_altitude
                 logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
                 logger_packet.vertical_acceleration = processor_data_packets[
@@ -247,32 +247,6 @@ class Logger:
             logger_data_packets.append(logger_packet)
 
         return logger_data_packets
-
-    def _setup_queue_serialization_method(self) -> None:
-        """
-        Sets up the serialization methods for the queued logger packets for faster-fifo.
-
-        This is not done in the __init__ because "spawn" and "forkserver" will attempt to pickle the
-        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
-        after the child has been born.
-        """
-        # Makes a queue to store log messages, basically it's a process-safe list that you add to
-        # the back and pop from front, meaning that things will be logged in the order they were
-        # added.
-        # Signals (like stop) are sent as strings, but data is sent as dictionaries
-        self._log_queue.dumps = msgspec.msgpack.Encoder(
-            enc_hook=Logger._convert_unknown_type_to_str
-        ).encode
-        # No need to specify the type to decode to, since we want to log it immediately, so a list
-        # is wanted (and faster!):
-        self._log_queue.loads = msgspec.msgpack.Decoder().decode
-
-    def _log_the_buffer(self):
-        """
-        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
-        """
-        self._log_queue.put_many(list(self._log_buffer))
-        self._log_buffer.clear()
 
     def start(self) -> None:
         """
@@ -342,6 +316,31 @@ class Logger:
             # Reset the counter for other states
             self._log_counter = 0
             self._log_queue.put_many(logger_data_packets)
+
+    def _setup_queue_serialization_method(self) -> None:
+        """
+        Sets up the serialization methods for the queued logger packets for faster-fifo.
+
+        This is not done in the __init__ because "spawn" and "forkserver" will attempt to pickle the
+        msgpack encoder and decoder, which will fail. Thus, we do it for the main and child process
+        after the child has been born.
+        """
+        # Makes a queue to store log messages, basically it's a process-safe list that you add to
+        # the back and pop from front, meaning that things will be logged in the order they were
+        # added. Signals (like stop) are sent as strings, but data is sent as dictionaries
+        self._log_queue.dumps = msgspec.msgpack.Encoder(
+            enc_hook=Logger._convert_unknown_type_to_str
+        ).encode
+        # No need to specify the type to decode to, since we want to log it immediately, so a list
+        # is wanted (and faster!):
+        self._log_queue.loads = msgspec.msgpack.Decoder().decode
+
+    def _log_the_buffer(self):
+        """
+        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
+        """
+        self._log_queue.put_many(list(self._log_buffer))
+        self._log_buffer.clear()
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     @staticmethod
