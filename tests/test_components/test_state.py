@@ -155,6 +155,12 @@ class TestMotorBurnState:
         assert issubclass(motor_burn_state.__class__, State)
         assert motor_burn_state.start_time_ns == 0
 
+    def test_init_launch_time_set(self, motor_burn_state):
+        ctx = motor_burn_state.context
+        ctx.data_processor._last_data_packet = EstimatedDataPacket(1000)
+        m = MotorBurnState(ctx)
+        assert m.start_time_ns == 1000
+
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
 
@@ -316,7 +322,7 @@ class TestCoastState:
     def test_update_with_controls(
         self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
     ):
-        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=predicted_apogee,
         )
 
@@ -340,7 +346,7 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 900.0)
-        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=1000.0,
         )
 
@@ -353,7 +359,7 @@ class TestCoastState:
         """
         Check that if we don't have an apogee prediction, we don't extend the airbrakes.
         """
-        assert not coast_state.context.last_apogee_predictor_packet
+        assert not coast_state.context.most_recent_apogee_predictor_packet
         coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
@@ -367,7 +373,7 @@ class TestCoastState:
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 1000.0)
 
         # set the airbrakes to be extended:
-        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=1100.0,
         )
         # If the airbrakes have been extended, it means we've been integrating for altitude
@@ -379,7 +385,7 @@ class TestCoastState:
 
         # set the predicted apogee to be less than the target altitude, to test that we retract the
         # airbrakes:
-        coast_state.context.last_apogee_predictor_packet = make_apogee_predictor_data_packet(
+        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
             predicted_apogee=900.0,
         )
 

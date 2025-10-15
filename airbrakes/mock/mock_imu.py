@@ -69,6 +69,11 @@ class MockIMU(BaseIMU):
             root_dir = Path(__file__).parent.parent.parent
             log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
+        self._log_file_path: Path = typing.cast("Path", log_file_path)
+
+        if self._log_file_path == Path("launch_data/legacy_launch_2.csv"):
+            raise ValueError("There is no data for this flight, please choose another file.")
+
         # If it's not a real time replay, we limit how big the queue gets when doing an integration
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
@@ -83,8 +88,6 @@ class MockIMU(BaseIMU):
             args=(real_time_replay, start_after_log_buffer),
             name="Mock IMU Process",
         )
-
-        self._log_file_path: Path = typing.cast("Path", log_file_path)
 
         # If we ever switch back to using "fork", the below line should be moved into `_read_csv`.
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()

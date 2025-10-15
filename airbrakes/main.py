@@ -15,8 +15,7 @@ from airbrakes.constants import (
     ENCODER_PIN_B,
     IMU_PORT,
     LOGS_PATH,
-    SERVO_1_CHANNEL,
-    SERVO_2_CHANNEL,
+    SERVO_CHANNEL,
 )
 from airbrakes.context import Context
 from airbrakes.hardware.imu import IMU
@@ -117,9 +116,10 @@ def create_components(
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
-            Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
             if args.real_servo
             else MockServo(
+                SERVO_CHANNEL,
                 ENCODER_PIN_A,
                 ENCODER_PIN_B,
             )
@@ -134,11 +134,12 @@ def create_components(
         # Maybe use mock components as specified by the command line arguments:
         if args.mock_servo:
             servo = MockServo(
+                SERVO_CHANNEL,
                 ENCODER_PIN_A,
                 ENCODER_PIN_B,
             )
         else:
-            servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the IMUDataProcessor class and the ApogeePredictor class. There are no mock versions of
