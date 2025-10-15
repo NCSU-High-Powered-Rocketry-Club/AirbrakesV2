@@ -33,7 +33,7 @@ from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
-    context_to_logger_kwargs,
+    context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
     make_context_data_packet,
     make_est_data_packet,
@@ -71,10 +71,6 @@ def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
     Returns a dictionary with only the fields that are logged in the ProcessorDataPacket.
     """
     pdp_dict.pop("time_since_last_data_packet")
-    pdp_dict.pop("max_altitude")
-    pdp_dict.pop("max_vertical_velocity")
-    pdp_dict.pop("average_vertical_acceleration")
-    pdp_dict.pop("current_timestamp")
     return pdp_dict
 
 
@@ -778,7 +774,9 @@ class TestLogger:
                 [],
                 [
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=StandbyState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=StandbyState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
@@ -796,7 +794,9 @@ class TestLogger:
                 [],
                 [
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=StandbyState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=StandbyState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
@@ -815,7 +815,9 @@ class TestLogger:
                 [],
                 [
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=MotorBurnState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=MotorBurnState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
@@ -824,7 +826,9 @@ class TestLogger:
                         **asdict(make_raw_data_packet()),
                     ),
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=MotorBurnState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=MotorBurnState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
@@ -843,7 +847,9 @@ class TestLogger:
                 [make_apogee_predictor_data_packet()],
                 [
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=CoastState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=CoastState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MAX_EXTENSION.value)
@@ -853,7 +859,9 @@ class TestLogger:
                         **asdict(make_apogee_predictor_data_packet()),
                     ),
                     LoggerDataPacket(
-                        **context_to_logger_kwargs(make_context_data_packet(state=CoastState)),
+                        **context_packet_to_logger_kwargs(
+                            make_context_data_packet(state=CoastState)
+                        ),
                         **asdict(
                             make_servo_data_packet(
                                 set_extension=str(ServoExtension.MAX_EXTENSION.value)

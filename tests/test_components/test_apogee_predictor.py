@@ -1,5 +1,4 @@
 import multiprocessing
-import multiprocessing.queues
 import threading
 import time
 from collections import deque
@@ -123,13 +122,9 @@ class TestApogeePredictor:
                 [
                     ProcessorDataPacket(
                         current_altitude=100,
-                        max_altitude=100,
                         vertical_velocity=0.0,
-                        max_vertical_velocity=0.0,
                         vertical_acceleration=9.798,
-                        average_vertical_acceleration=9.798,
                         time_since_last_data_packet=0.1,
-                        current_timestamp=0,
                     ),
                 ]
                 * 100,
@@ -142,15 +137,9 @@ class TestApogeePredictor:
                         current_altitude=float(
                             i**3 / 15000 - i**2 / 20 - i**2 * 9.798 / 200 + 20 * i + 100
                         ),
-                        max_altitude=float(
-                            i**3 / 15000 - i**2 / 20 - i**2 * 9.798 / 200 + 20 * i + 100
-                        ),
                         vertical_velocity=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
-                        max_vertical_velocity=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
                         vertical_acceleration=float(-10 + i / 25),
-                        average_vertical_acceleration=float(-10 + i / 25),
                         time_since_last_data_packet=0.1,
-                        current_timestamp=i * 100_000_000,
                     )
                     for i in range(70)
                 ],
@@ -205,13 +194,9 @@ class TestApogeePredictor:
             packets = [
                 ProcessorDataPacket(
                     current_altitude=100 + i,  # add random alt so our prediction is different
-                    max_altitude=100 + i,
                     vertical_velocity=2.0 + i,
-                    max_vertical_velocity=2.0 + i,
                     vertical_acceleration=10.798,
-                    average_vertical_acceleration=10.798,
                     time_since_last_data_packet=0.01,
-                    current_timestamp=i * 10_000_000,
                 )
             ]
             threaded_apogee_predictor.update(packets)

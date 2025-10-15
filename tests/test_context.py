@@ -140,7 +140,7 @@ class TestContext:
             self._rotated_accelerations = [0.0] * len(est_data_packets)
             self._time_differences = [0.0] * len(est_data_packets)
 
-        def state(self, processor_data_packet):
+        def state(self):
             # monkeypatched method of State
             calls.append("state update called")
             if isinstance(self.context.state, CoastState):

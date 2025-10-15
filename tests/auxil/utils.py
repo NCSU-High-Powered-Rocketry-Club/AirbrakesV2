@@ -86,7 +86,7 @@ def make_logger_data_packet(**kwargs) -> LoggerDataPacket:
     return LoggerDataPacket(**{**dummy_values, **kwargs})
 
 
-def context_to_logger_kwargs(ctx_packet) -> dict:
+def context_packet_to_logger_kwargs(ctx_packet) -> dict:
     """
     Converts a ContextDataPacket to a dictionary suitable for logging.
     """

@@ -20,7 +20,6 @@ from airbrakes.state import (
     State,
 )
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_apogee_predictor_data_packet
 
 
@@ -126,17 +125,7 @@ class TestStandbyState:
     )
     def test_update(self, standby_state, current_velocity, expected_state):
         standby_state.context.data_processor._vertical_velocities = [current_velocity]
-        processor_data_packet = ProcessorDataPacket(
-            current_timestamp=0,
-            current_altitude=0,
-            vertical_acceleration=0,
-            time_since_last_data_packet=0.1,
-            max_altitude=0.0,
-            vertical_velocity=current_velocity,
-            max_vertical_velocity=0.0,
-            average_vertical_acceleration=0,
-        )
-        standby_state.update(processor_data_packet)
+        standby_state.update()
         assert isinstance(standby_state.context.state, expected_state)
 
 
@@ -191,18 +180,7 @@ class TestMotorBurnState:
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
         motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
-        processor_data_packet = ProcessorDataPacket(
-            current_timestamp=0,
-            current_altitude=0.0,
-            vertical_acceleration=0.0,
-            time_since_last_data_packet=1 * 1e9,
-            max_altitude=0.0,
-            vertical_velocity=current_velocity,
-            max_vertical_velocity=max_velocity,
-            average_vertical_acceleration=0.0,
-        )
-
-        motor_burn_state.update(processor_data_packet)
+        motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
@@ -270,17 +248,6 @@ class TestCoastState:
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
-        processor_data_packet = ProcessorDataPacket(
-            current_timestamp=0,
-            current_altitude=current_altitude,
-            vertical_acceleration=0.0,
-            time_since_last_data_packet=0.1,
-            max_altitude=max_altitude,
-            vertical_velocity=vertical_velocity,
-            max_vertical_velocity=0.0,
-            average_vertical_acceleration=0.0,
-        )
-
         coast_state.context.apogee_predictor_data_packets = [
             make_apogee_predictor_data_packet(
                 predicted_apogee=predicted_apogee,
@@ -290,7 +257,7 @@ class TestCoastState:
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", predicted_apogee)
-        coast_state.update(processor_data_packet)
+        coast_state.update()
         assert isinstance(coast_state.context.state, expected_state), (
             f"Got {coast_state.context.state.name}, expected {expected_state!r}"
         )
@@ -329,7 +296,7 @@ class TestCoastState:
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", target_altitude)
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert coast_state.context.servo.current_extension == expected_airbrakes
 
     def test_update_control_only_once(self, coast_state, monkeypatch):
@@ -350,9 +317,9 @@ class TestCoastState:
             predicted_apogee=1000.0,
         )
 
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert calls == 1
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert calls == 1
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
@@ -360,7 +327,7 @@ class TestCoastState:
         Check that if we don't have an apogee prediction, we don't extend the airbrakes.
         """
         assert not coast_state.context.most_recent_apogee_predictor_packet
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
@@ -379,7 +346,7 @@ class TestCoastState:
         # If the airbrakes have been extended, it means we've been integrating for altitude
         coast_state.context.data_processor._integrating_for_altitude = True
 
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert coast_state.airbrakes_extended
         assert coast_state.context.servo.current_extension == ServoExtension.MAX_EXTENSION
 
@@ -389,7 +356,7 @@ class TestCoastState:
             predicted_apogee=900.0,
         )
 
-        coast_state.update(ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0))
+        coast_state.update()
         assert not coast_state.airbrakes_extended
         assert not coast_state.context.data_processor._integrating_for_altitude
         assert (
@@ -476,22 +443,11 @@ class TestFreeFallState:
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
-        processor_data_packet = ProcessorDataPacket(
-            current_timestamp=free_fall_state.start_time_ns + time_length * 1e9,
-            current_altitude=current_altitude,
-            vertical_acceleration=vertical_accel,
-            time_since_last_data_packet=time_length * 1e9,
-            max_altitude=0.0,
-            vertical_velocity=0.0,
-            max_vertical_velocity=0.0,
-            average_vertical_acceleration=vertical_accel,
-        )
-
         free_fall_state.start_time_ns = 0
         free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
             time_length * 1e9
         )
-        free_fall_state.update(processor_data_packet)
+        free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
@@ -516,16 +472,15 @@ class TestLandedState:
 
     def test_update(self, landed_state, context):
         # Test that calling update before shutdown delay does not shut down the system:
-        empty_packet = ProcessorDataPacket(0, 0, 0, 0, 0, 0, 0, 0)
         context.start(wait_for_start=True)
-        landed_state.update(empty_packet)
+        landed_state.update()
         assert context.logger.is_running
         assert context.imu.is_running
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
-        landed_state.update(empty_packet)
+        landed_state.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
         assert not context.imu.requested_to_run
