@@ -1,15 +1,17 @@
 import multiprocessing
 import multiprocessing.context
-import multiprocessing.sharedctypes
 import signal
 import time
 from collections import deque
 from ctypes import c_byte, c_int
+from pathlib import Path
 
 import faster_fifo
+import pytest
 
 from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
+from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
@@ -99,6 +101,10 @@ class TestIMU:
         assert isinstance(imu.queued_imu_packets, int)
         assert isinstance(imu._imu_packets_per_cycle, c_int)
         assert isinstance(imu.imu_packets_per_cycle, int)
+
+        # Test Legacy Launch 2 exception:
+        with pytest.raises(ValueError, match="There is no data for this flight"):
+            MockIMU(False, log_file_path=Path("launch_data/legacy_launch_2.csv"))
 
     def test_imu_start(self):
         """
