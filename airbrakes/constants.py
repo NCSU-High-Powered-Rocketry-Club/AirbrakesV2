@@ -380,16 +380,6 @@ Upon landing, the rocket has a large spike in acceleration that is used to detec
 from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 """
 
-LANDED_VELOCITY_METERS_PER_SECOND = -2.0
-"""
-The velocity threshold in m/s for landing detection based on altitude rate of change.
-
-Negative values indicate descent. When the rocket is near ground and descending at this rate or
-slower (less negative, closer to zero), combined with low altitude, we consider it landed. This
-provides reliable landing detection for soft landings without large acceleration spikes.
-Note: Positive velocities (ascending) will never trigger this condition.
-"""
-
 # -------------------------------------------------------
 # Apogee Prediction Configuration
 # -------------------------------------------------------

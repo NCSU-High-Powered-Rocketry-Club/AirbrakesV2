@@ -451,69 +451,6 @@ class TestFreeFallState:
         assert isinstance(free_fall_state.context.state, expected_state)
         assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
-    @pytest.mark.parametrize(
-        ("altitudes", "time_diffs", "vertical_accel", "expected_state"),
-        [
-            # Soft landing with low velocity (< 2 m/s) and low acceleration (< 30 m/s²)
-            # Simulates Huntsville scenario: near ground, low velocity, low accel spike
-            (
-                [8.0, 7.0, 6.0],  # Descending slowly from 8m to 6m
-                [0.0, 1.0, 1.0],  # 1 second intervals
-                10.0,  # Low acceleration (below threshold)
-                LandedState,  # Should land due to low velocity
-            ),
-            # Still descending but too fast to be landed
-            (
-                [8.0, 5.0, 2.0],  # Descending fast from 8m to 2m
-                [0.0, 1.0, 1.0],  # 1 second intervals
-                10.0,  # Low acceleration
-                FreeFallState,  # Should NOT land (velocity = 3 m/s > 2 m/s threshold)
-            ),
-            # Near ground but ascending (parachute bounce)
-            (
-                [8.0, 7.0, 8.0],  # Brief ascent
-                [0.0, 1.0, 1.0],
-                10.0,
-                FreeFallState,  # Should NOT land (velocity = 1 m/s upward)
-            ),
-            # Soft landing with near-zero velocity change
-            (
-                [5.0, 5.1, 5.0],  # Nearly stationary at 5m
-                [0.0, 1.0, 1.0],
-                15.0,  # Low acceleration
-                LandedState,  # Should land (velocity ~ 0.1 m/s)
-            ),
-            # High altitude with low velocity (shouldn't land yet)
-            (
-                [20.0, 19.0, 18.0],  # Descending slowly but still high
-                [0.0, 1.0, 1.0],
-                10.0,
-                FreeFallState,  # Should NOT land (altitude > 10m threshold)
-            ),
-        ],
-        ids=[
-            "soft_landing_low_velocity",
-            "descending_too_fast",
-            "ascending_near_ground",
-            "stationary_near_ground",
-            "high_altitude_low_velocity",
-        ],
-    )
-    def test_velocity_based_landing_detection(
-        self, free_fall_state, altitudes, time_diffs, vertical_accel, expected_state
-    ):
-        """
-        Test the new velocity-based landing detection logic.
-        """
-        free_fall_state.context.data_processor._current_altitudes = altitudes
-        free_fall_state.context.data_processor._time_differences = time_diffs
-        free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
-        free_fall_state.start_time_ns = 0
-        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
-        free_fall_state.update()
-        assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
-
 
 class TestLandedState:
     """

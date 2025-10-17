@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    LANDED_VELOCITY_METERS_PER_SECOND,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
@@ -194,31 +193,11 @@ class FreeFallState(State):
         """
         data = self.context.data_processor
 
-        # Check if we've landed using multiple criteria:
-        # 1. Altitude is near ground level
-        # 2. Either acceleration spike OR low velocity from altitude changes
-        # The velocity check is more reliable for soft landings without large acceleration spikes
-        near_ground = data.current_altitude <= GROUND_ALTITUDE_METERS
-
-        # Original acceleration-based detection (lowered threshold from 50 to 30 m/s²)
-        has_acceleration_spike = (
-            data.average_vertical_acceleration >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
-        )
-
-        # New velocity-based detection using altitude rate of change
-        # We want velocity to be descending slowly or near zero (between LANDED_VELOCITY and 0)
-        # LANDED_VELOCITY is negative (e.g., -2 m/s), so we check if velocity is >= -2 and <= 0
-        # This catches slow descent and near-stationary, but not ascending motion
-        # Only use velocity check if we have sufficient data (altitude_velocity returns None if not)
-        altitude_vel = data.altitude_velocity
-        has_low_velocity = (
-            altitude_vel is not None
-            and altitude_vel >= LANDED_VELOCITY_METERS_PER_SECOND  # Not falling too fast
-            and altitude_vel <= 0  # Not ascending
-        )
-
-        # Land if near ground AND (acceleration spike OR low velocity)
-        if near_ground and (has_acceleration_spike or has_low_velocity):
+        # If our altitude is around 0, and we have an acceleration spike, we have landed
+        if (
+            data.current_altitude <= GROUND_ALTITUDE_METERS
+            and data.average_vertical_acceleration >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
+        ):
             self.next_state()
 
         # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
