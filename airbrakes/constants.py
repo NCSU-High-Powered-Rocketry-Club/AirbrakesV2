@@ -89,11 +89,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 25
-    MIN_NO_BUZZ = 37
+    MIN_EXTENSION = 40
+    MIN_NO_BUZZ = MIN_EXTENSION
 
-    MAX_EXTENSION = 125
-    MAX_NO_BUZZ = 116
+    MAX_EXTENSION = 80
+    MAX_NO_BUZZ = MAX_EXTENSION
 
 
 # -------------------------------------------------------
