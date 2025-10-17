@@ -19,8 +19,7 @@ from airbrakes.constants import (
     IMU_PORT,
     LOGS_PATH,
     MOCK_DISPLAY_UPDATE_RATE,
-    SERVO_1_CHANNEL,
-    SERVO_2_CHANNEL,
+    SERVO_CHANNEL,
 )
 from airbrakes.context import Context
 from airbrakes.graphics.screens.benchmark import BenchmarkScreen
@@ -32,11 +31,9 @@ from airbrakes.graphics.screens.launcher import (
 )
 from airbrakes.graphics.screens.real import RealFlightScreen
 from airbrakes.graphics.screens.replay import ReplayScreen
-from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.extended_data_processor import ExtendedDataProcessor
-from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
@@ -197,17 +194,13 @@ class AirbrakesApplication(App):
             )
 
             servo = (
-                Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+                Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
                 if self.launch_config.replay_launch_options.real_servo
                 else MockServo(
+                    SERVO_CHANNEL,
                     ENCODER_PIN_A,
                     ENCODER_PIN_B,
                 )
-            )
-            camera = (
-                MockCamera()
-                if not self.launch_config.replay_launch_options.real_camera
-                else Camera()
             )
             data_processor = (
                 ExtendedDataProcessor()
@@ -219,22 +212,20 @@ class AirbrakesApplication(App):
             # Maybe use mock components as specified by the command line arguments:
             if self.launch_config.real_launch_options.mock_servo:
                 servo = MockServo(
+                    SERVO_CHANNEL,
                     ENCODER_PIN_A,
                     ENCODER_PIN_B,
                 )
             else:
-                servo = Servo(SERVO_1_CHANNEL, SERVO_2_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+                servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
-            camera = (
-                MockCamera() if self.launch_config.real_launch_options.mock_camera else Camera()
-            )
             imu = IMU(IMU_PORT)
             logger = Logger(LOGS_PATH)
             data_processor = DataProcessor()
 
         apogee_predictor = ApogeePredictor()
 
-        self.context = Context(servo, imu, camera, logger, data_processor, apogee_predictor)
+        self.context = Context(servo, imu, logger, data_processor, apogee_predictor)
 
     def run_replay_flight_loop(self) -> None:
         """
@@ -348,7 +339,6 @@ class AirbrakesApplication(App):
                 selected_launch=self._args.path,
                 replay_launch_options=ReplayLaunchOptions(
                     real_servo=self._args.real_servo,
-                    real_camera=self._args.real_camera,
                     fast_replay=self._args.fast_replay,
                     keep_log_file=self._args.keep_log_file,
                     target_apogee=self._args.target_apogee,
@@ -360,7 +350,6 @@ class AirbrakesApplication(App):
                 selected_launch=None,
                 real_launch_options=RealLaunchOptions(
                     mock_servo=self._args.mock_servo,
-                    mock_camera=self._args.mock_camera,
                     verbose=self._args.verbose,
                 ),
             )

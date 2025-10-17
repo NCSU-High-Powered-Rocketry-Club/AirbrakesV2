@@ -49,13 +49,11 @@ class MockArgs:
     mode = "mock"
     # "real" args:
     mock_servo = False
-    mock_camera = False
     verbose = False
     # "mock" args:
     real_servo = False
     keep_log_file = False
     fast_replay = False
-    real_camera = False
     bench = False
     target_apogee = None
     path = None

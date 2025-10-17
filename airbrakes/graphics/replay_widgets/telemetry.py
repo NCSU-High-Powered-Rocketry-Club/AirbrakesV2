@@ -137,7 +137,10 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
         )
         self.total_velocity = f"{self.context.data_processor.total_velocity:.2f}"
         self.max_total_velocity = f"{self.context.data_processor.max_total_velocity:.2f}"
-        self.apogee_prediction = f"{self.context.last_apogee_predictor_packet.predicted_apogee:.2f}"
+        if self.context.most_recent_apogee_predictor_packet is not None:
+            self.apogee_prediction = (
+                f"{self.context.most_recent_apogee_predictor_packet.predicted_apogee:.2f}"
+            )
         self.pressure_alt = f"{self.context.data_processor.current_pressure_altitude:.2f}"
         self.max_pressure_alt = f"{self.context.data_processor.max_pressure_altitude:.2f}"
         self.integrated_altitude = f"{self.context.data_processor.integrated_altitude:.2f}"
@@ -172,11 +175,10 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
     """
 
     state = var("Standby", init=False)
-    apogee = reactive(0.0, init=False)
+    apogee_convergence_time = reactive(0.0, init=False)
 
     __slots__ = (
         "alt_convergence_label",
-        "apogee_convergence_time",
         "coast_start_time",
         "convergence_time_label",
         "first_apogee_label",
@@ -216,7 +218,6 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
 
     def initialize_widgets(self, context: Context) -> None:
         super().initialize_widgets(context)
-        self.coast_start_time = 0
         self.apogee_convergence_time = 0.0
         self.replay_queue_size_telemetry.initialize_widgets(context)
 
@@ -231,21 +232,16 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
         self.first_apogee_label.update("0.0")
         self.coast_start_time = 0
 
-    def watch_state(self) -> None:
-        if self.state == "CoastState":
-            self.coast_start_time = self.context.state.start_time_ns
-
-    def watch_apogee(self) -> None:
-        if self.coast_start_time and not self.apogee_convergence_time:
-            self.apogee_convergence_time = (
-                self.context.data_processor.current_timestamp - self.coast_start_time
-            ) * 1e-9
+    def watch_apogee_convergence_time(self) -> None:
+        if self.apogee_convergence_time is not None:
             self.convergence_time_label.update(f"{self.apogee_convergence_time:.2f}")
-            self.alt_convergence_label.update(f"{self.context.data_processor.current_altitude:.2f}")
-            self.first_apogee_label.update(f"{self.apogee:.2f}")
+            self.alt_convergence_label.update(f"{self.context.convergence_height:.2f}")
+        self.first_apogee_label.update(f"{self.apogee:.2f}")
 
     def update_telemetry(self) -> None:
         super().update_telemetry()
-        self.apogee = self.context.last_apogee_predictor_packet.predicted_apogee
+        if self.context.most_recent_apogee_predictor_packet is not None:
+            self.apogee = self.context.most_recent_apogee_predictor_packet.predicted_apogee
+            self.apogee_convergence_time = self.context.convergence_time
         self.state = self.context.state.name
         self.replay_queue_size_telemetry.update_queue_sizes_telemetry()

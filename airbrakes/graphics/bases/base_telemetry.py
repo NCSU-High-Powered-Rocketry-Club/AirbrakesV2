@@ -367,14 +367,12 @@ class CPUUsage(Static):
         imu_process = self.context.imu._data_fetch_process
         log_process = self.context.logger._log_process
         apogee_process = self.context.apogee_predictor._prediction_process
-        # camera_process = self.context.camera.camera_control_process
         current_process = multiprocessing.current_process()
         process_dict = {
             "IMU": imu_process,
             "Log": log_process,
             "Main": current_process,
             "Ap": apogee_process,
-            # "Cam": camera_process,
         }
         for k, v in process_dict.items():
             # psutil allows us to monitor CPU usage of a process, along with low level information

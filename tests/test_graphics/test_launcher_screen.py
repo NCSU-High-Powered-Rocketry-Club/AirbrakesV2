@@ -26,9 +26,6 @@ class TestLauncherScreen:
             await pilot.press("s")
             assert mock_flight_app.screen.query_one("#real-servo-switch", Switch).value
 
-            await pilot.press("c")
-            assert mock_flight_app.screen.query_one("#real-camera-switch", Switch).value
-
             await pilot.press("l")
             assert mock_flight_app.screen.query_one("#keep-log-file-switch", Switch).value
 
@@ -53,7 +50,6 @@ class TestLauncherScreen:
             assert config.selected_launch == selected_file
             assert config.replay_launch_options is not None
             assert config.replay_launch_options.real_servo is True
-            assert config.replay_launch_options.real_camera is False
             assert config.replay_launch_options.keep_log_file is False
             assert config.replay_launch_options.fast_replay is False
             assert config.replay_launch_options.target_apogee is None
@@ -86,7 +82,6 @@ class TestLauncherScreen:
             assert config.benchmark_mode is True
             assert config.replay_launch_options is not None
             assert config.replay_launch_options.real_servo is False
-            assert config.replay_launch_options.real_camera is False
             assert config.replay_launch_options.keep_log_file is False
             assert config.replay_launch_options.fast_replay is True
             assert config.replay_launch_options.target_apogee is None

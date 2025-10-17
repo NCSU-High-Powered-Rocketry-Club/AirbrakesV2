@@ -300,7 +300,6 @@ class TestContext:
     #     assert not context.logger.is_running
     #     assert not context.apogee_predictor.is_running
     #     assert not context.imu._running.value
-    #     assert not context.camera.is_running
     #     assert not context.imu._data_fetch_process.is_alive()
     #     assert not context.logger._log_process.is_alive()
     #     assert not context.apogee_predictor._prediction_process.is_alive()

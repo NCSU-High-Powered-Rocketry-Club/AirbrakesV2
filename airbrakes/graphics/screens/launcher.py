@@ -44,12 +44,10 @@ class RealLaunchOptions(msgspec.Struct):
 
     Args:
         mock_servo (bool): Whether to use the mock servo.
-        mock_camera (bool): Whether to use the mock camera.
         verbose (bool): Whether to show extra information in the screen.
     """
 
     mock_servo: bool
-    mock_camera: bool
     verbose: bool
 
 
@@ -61,7 +59,6 @@ class ReplayLaunchOptions(msgspec.Struct):
         real_servo (bool): Whether to use the real servo.
         keep_log_file (bool): Whether to keep the log file.
         fast_replay (bool): Whether to use fast replay.
-        real_camera (bool): Whether to use the real camera.
         target_apogee (float | None): The target apogee in meters. If None, the target from the
             metadata is used.
     """
@@ -69,7 +66,6 @@ class ReplayLaunchOptions(msgspec.Struct):
     real_servo: bool
     keep_log_file: bool
     fast_replay: bool
-    real_camera: bool
     target_apogee: float | None = None
 
 
@@ -96,7 +92,9 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
 
     selected_file: reactive[Path] = reactive(AVAILABLE_FILES[0])
     launch_options: ReplayLaunchOptions = ReplayLaunchOptions(
-        real_servo=False, keep_log_file=False, fast_replay=False, real_camera=False
+        real_servo=False,
+        keep_log_file=False,
+        fast_replay=False,
     )
     all_metadata = MockIMU.read_all_metadata()
     file_metadata = reactive(all_metadata[AVAILABLE_FILES[0].name])
@@ -106,7 +104,6 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
         Binding("s", "change_launch_config('s')", "Enable or disable real servo", show=False),
         Binding("l", "change_launch_config('l')", "Enable or disable keep log file", show=False),
         Binding("f", "change_launch_config('f')", "Enable or disable fast simulation", show=False),
-        Binding("c", "change_launch_config('c')", "Enable or disable real camera", show=False),
         Binding("t", "change_launch_config('t')", "Change target apogee", show=False),
         Binding("r", "run_mock_simulation", "Run mock simulation", show=False),
         Binding("b", "run_benchmark", "Run benchmark", show=False),
@@ -194,8 +191,6 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
                 self.launch_options.keep_log_file = event.value
             case "fast-sim-switch":
                 self.launch_options.fast_replay = event.value
-            case "real-camera-switch":
-                self.launch_options.real_camera = event.value
 
     @on(Input.Changed)
     def target_apogee_changed(self, event: Input.Changed) -> None:
@@ -241,8 +236,6 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
                 self.query_one("#keep-log-file-switch", Switch).toggle()
             case "f":
                 self.query_one("#fast-sim-switch", Switch).toggle()
-            case "c":
-                self.query_one("#real-camera-switch", Switch).toggle()
             case "t":
                 self.query_one("#input-target-apogee", Input).focus()
 
@@ -271,7 +264,6 @@ class LauncherScreen(Screen[SelectedLaunchConfiguration]):
             real_servo=False,
             keep_log_file=False,
             fast_replay=False,
-            real_camera=False,
         )
 
 
@@ -373,8 +365,6 @@ class LaunchConfiguration(Widget):
             yield Switch(id="keep-log-file-switch", tooltip="Keep log file after mock replay?")
             yield Label("[u]F[/]ast Simulation", id="label-fast-sim")
             yield Switch(id="fast-sim-switch", tooltip="Run the replay as fast as possible")
-            yield Label("Real [u]C[/]amera", id="label-real-camera")
-            yield Switch(id="real-camera-switch", tooltip="Whether to use the real camera")
             yield Label("[u]T[/]arget Apogee", id="label-target-apogee")
             self.target_apogee_input = Input(
                 placeholder="",
