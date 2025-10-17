@@ -13,10 +13,9 @@ dependencies = [
     "faster-fifo",
     "textual",
     "textual-dev>=1.7.0",
-    "faster-fifo",
     "python-mscl>=67.0.0",
     "numpy-quaternion>=2024.0.10",
-    "polars>=1.32.0",
+    "polars>=1.33.0",
     "textual-plot>=0.8.0",
     "textual-hires-canvas>=0.10.1",
     "textual-image>=0.8.3",
@@ -26,17 +25,26 @@ dependencies = [
     "rpi-gpio>=0.7.1",
     "adafruit-circuitpython-servokit>=1.3.19",
     "textual-speedups>=0.2.0",
+    # Please see library docs for usage and installation on the Pi 4/5. You need to add 
+    # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
+    "rpi-hardware-pwm>=0.3.0",
+]
+
+[project.optional-dependencies]
+# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
+encoder = [
+    "swig>=4.3.0",
+    "lgpio>=0.2.2.0",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
     "pytest-cov",
-    "ruff>=0.12.7",
+    "ruff>=0.12.12",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
     "docformatter",
-    "ty>=0.0.1a18",
     "pytest-textual-snapshot>=1.1.0",
     "pytest-asyncio>=1.1.0",
 ]
@@ -44,19 +52,6 @@ dev = [
 profiling = [
     "pyinstrument>=5.0.1",
     "line-profiler>=4.2.0",
-]
-# Need to run `sudo apt install `libcap-dev`, `libcamera-dev`,
-# `libkms++-dev`, `libfmt-dev`, `libdrm-dev` to build and install everything camera related.
-#camera = [
-#"picamera2>=0.3.24",
-#"rpi-libcamera>=0.1a7",
-#"rpi-kms>=0.1a1",
-#]
-
-# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
-encoder = [
-    "swig>=4.3.0",
-    "lgpio>=0.2.2.0",
 ]
 
 [project.scripts]

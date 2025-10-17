@@ -15,7 +15,6 @@ import pytest
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.state import MotorBurnState
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
@@ -118,7 +117,9 @@ class TestIntegration:
                         ab.data_processor.average_vertical_acceleration
                     )
                     state_info.apogee_prediction.append(
-                        ab.last_apogee_predictor_packet.predicted_apogee
+                        ab.most_recent_apogee_predictor_packet.predicted_apogee
+                        if ab.most_recent_apogee_predictor_packet
+                        else 0.0
                     )
 
                 state_info.min_velocity = min(
@@ -144,7 +145,9 @@ class TestIntegration:
                 )
 
                 state_info.apogee_prediction.append(
-                    ab.last_apogee_predictor_packet.predicted_apogee
+                    ab.most_recent_apogee_predictor_packet.predicted_apogee
+                    if ab.most_recent_apogee_predictor_packet
+                    else 0.0
                 )
 
                 # Update the state information in the dictionary
@@ -288,7 +291,6 @@ class TestIntegration:
         """
         ab = context
 
-        ab.state = MotorBurnState(ab)  # Simulate start of camera recording
         TEST_TIME_SECONDS = 15  # Amount of time to keep testing
 
         # List to store all the fetched_packets from the imu

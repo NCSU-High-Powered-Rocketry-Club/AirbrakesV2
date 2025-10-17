@@ -71,6 +71,11 @@ class MockIMU(BaseIMU):
             root_dir = Path(__file__).parent.parent.parent
             log_file_path = next(iter(Path(root_dir / "launch_data").glob("*.csv")))
 
+        self._log_file_path: Path = typing.cast("Path", log_file_path)
+
+        if self._log_file_path == Path("launch_data/legacy_launch_2.csv"):
+            raise ValueError("There is no data for this flight, please choose another file.")
+
         # We don't specify a really big number for the maxsize, because we want to be able to
         # control the sim speed by throttling the packets in the queue.
         queued_imu_packets: Queue[IMUDataPacket] = Queue(
@@ -84,27 +89,10 @@ class MockIMU(BaseIMU):
             name="Mock IMU Process",
         )
 
-        self._log_file_path: Path = typing.cast("Path", log_file_path)
-
         self._sim_speed_factor = multiprocessing.Value("d", real_time_replay, lock=False)
 
-        # If we ever switch back to using "fork", the below line should be moved into `_scan_csv`.
-        self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
-        # Get the columns that are common between the data packet and the log file, since we only
-        # care about those (it's also faster to read few columns rather than all). This needs to
-        # be in the same order as the source definition:
-        # Get all field names from both packet types
-        raw_fields = list(RawDataPacket.__struct_fields__)
-        estimated_fields = list(EstimatedDataPacket.__struct_fields__)
-
-        # Combine fields in the desired order (raw first, then estimated)
-        all_fields_ordered = raw_fields + [f for f in estimated_fields if f not in raw_fields]
-
-        # The fields we need to read from the csv:
-        self._needed_fields = [field for field in all_fields_ordered if field in self._headers]
-
-        all_metadata: dict = MockIMU.read_all_metadata()
-        self.file_metadata = all_metadata.get(self._log_file_path.name, {})
+        file_metadata: dict = MockIMU.read_all_metadata()
+        self.file_metadata = file_metadata.get(self._log_file_path.name, {})
 
         super().__init__(data_fetch_process, queued_imu_packets)
 
@@ -131,6 +119,20 @@ class MockIMU(BaseIMU):
         :param kwargs: Additional keyword arguments to pass to pl.read_csv.
         :return: The DataFrame or TextFileReader object.
         """
+        self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
+        # Get the columns that are common between the data packet and the log file, since we only
+        # care about those (it's also faster to read few columns rather than all). This needs to
+        # be in the same order as the source definition:
+        # Get all field names from both packet types
+        raw_fields = list(RawDataPacket.__struct_fields__)
+        estimated_fields = list(EstimatedDataPacket.__struct_fields__)
+
+        # Combine fields in the desired order (raw first, then estimated)
+        all_fields_ordered = raw_fields + [f for f in estimated_fields if f not in raw_fields]
+
+        # The fields we need to read from the csv:
+        self._needed_fields = [field for field in all_fields_ordered if field in self._headers]
+
         # Read the csv, starting from the row after the log buffer, and using only the valid columns
         return pl.scan_csv(
             self._log_file_path,

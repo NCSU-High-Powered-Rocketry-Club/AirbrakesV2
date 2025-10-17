@@ -25,42 +25,46 @@ The amount of time to sleep while busy waiting in a loop.
 """
 
 # -------------------------------------------------------
-# Servo Configuration
+# Servo Configuration (DS3235 SG)
 # -------------------------------------------------------
 
-SERVO_1_CHANNEL = 7
-"""
-The channel on the PCA9685 that the first servo is connected to.
-
-The PCA9685 is a PWM driver that allows us to control the servo with the Raspberry Pi. The PCA9685
-has 16 channels, so the channels are numbered from 0 to 15.
-"""
-
-SERVO_2_CHANNEL = 4
-"""
-The channel on the PCA9685 that the second servo is connected to.
-
-The PCA9685 is a PWM driver that allows us to control the servo with the Raspberry Pi. The PCA9685
-has 16 channels, so the channels are numbered from 0 to 15.
-"""
-
-SERVO_MIN_PULSE_WIDTH = 500
+SERVO_MIN_PULSE_WIDTH_US = 500
 """
 The minimum pulse width in microseconds that the servo will accept.
 
 This is the pulse width that corresponds to the minimum rotation of the servo.
 """
 
-SERVO_MAX_PULSE_WIDTH = 2500
+SERVO_MAX_PULSE_WIDTH_US = 2500
 """
 The maximum pulse width in microseconds that the servo will accept.
 
 This is the pulse width that corresponds to the maximum rotation of the servo.
 """
 
-SERVO_MAX_ANGLE = 180
+SERVO_MIN_ANGLE_DEGREES = 0
+"""
+The minimum angle that the servo can rotate to.
+"""
+
+SERVO_MAX_ANGLE_DEGREES = 180
 """
 The maximum angle that the servo can rotate to.
+"""
+
+SERVO_OPERATING_FREQUENCY_HZ = 50
+"""
+The operating frequency of the servo in Hertz.
+
+It supports 50-330Hz.
+"""
+
+SERVO_CHANNEL = 2
+"""
+The PWM channel the servo is connected to on the Pi.
+
+Channel 2 corresponds to GPIO Pin 18.
+See https://pypi.org/project/rpi-hardware-pwm/ for more information.
 """
 
 SERVO_DELAY_SECONDS = 1.0
@@ -85,10 +89,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 125
-    MAX_EXTENSION = 15
-    MIN_NO_BUZZ = 116
-    MAX_NO_BUZZ = 25
+    MIN_EXTENSION = 25
+    MIN_NO_BUZZ = 37
+
+    MAX_EXTENSION = 125
+    MAX_NO_BUZZ = 116
 
 
 # -------------------------------------------------------
@@ -338,22 +343,6 @@ ATTITUDE_UNCERT_QUALIFIER = 5
 PRESSURE_ALT_QUALIFIER = 67
 AMBIENT_PRESSURE_QUALIFIER = 58
 
-# -------------------------------------------------------
-# Camera Configuration
-# -------------------------------------------------------
-
-CAMERA_SAVE_PATH = Path("logs/video.h264")
-"""
-The path that the output of the camera will save to.
-"""
-BYTES_PER_30_SECONDS = 9 * 1024 * 1024
-"""
-The number of bytes that the camera will write in 30 seconds.
-"""
-BYTES_PER_0_1_SECONDS = BYTES_PER_30_SECONDS / 300
-"""
-The number of bytes that the camera will write in 0.1 seconds.
-"""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -418,11 +407,12 @@ GROUND_ALTITUDE_METERS = 10.0
 The zeroed-out altitude (final altitude minus initial altitude) in meters that the rocket must be
 under before we consider it to have landed.
 """
-LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 50.0
+LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 30.0
 """
 The acceleration in m/s^2 that the rocket must be above before we consider it to have landed.
 
-Upon landing, the rocket has a large spike in acceleration that is used to detect landing.
+Upon landing, the rocket has a large spike in acceleration that is used to detect landing. Lowered
+from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 """
 
 # -------------------------------------------------------
@@ -466,4 +456,12 @@ UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.
 The uncertainty from the curve fit, below which we will say that our apogee has converged.
 
 This uncertainty corresponds to being off by +/- 5m.
+"""
+
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
 """

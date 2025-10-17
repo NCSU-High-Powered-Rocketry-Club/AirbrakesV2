@@ -2,7 +2,6 @@
 Module to test the main script.
 """
 
-import platform
 import sys
 from functools import partial
 
@@ -10,7 +9,6 @@ import gpiozero
 import pytest
 
 from airbrakes.constants import LOGS_PATH
-from airbrakes.hardware.camera import Camera
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.main import (
@@ -20,7 +18,6 @@ from airbrakes.main import (
     run_real_flight,
     run_sim_flight,
 )
-from airbrakes.mock.mock_camera import MockCamera
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
@@ -29,15 +26,6 @@ from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
-
-
-class MockedServoKit:
-    """
-    Mocked class for the real servo.
-    """
-
-    def __init__(self, channels: int, *_, **__):
-        self.servo = [MockedServo()] * channels
 
 
 class MockedServo:
@@ -75,33 +63,26 @@ def parsed_args(request, monkeypatch):
     return arg_parser()
 
 
-@pytest.mark.skipif(platform.machine() in ("arm64", "aarch64"), reason="arm64 ServoKit import fail")
 @pytest.mark.parametrize(
     "parsed_args",
     [
         (["main.py", "real"]),
         (["main.py", "real", "-s"]),
-        (["main.py", "real", "-c"]),
-        (["main.py", "real", "-s", "-c"]),
         (["main.py", "mock"]),
         (["main.py", "mock", "-s"]),
-        (["main.py", "mock", "-s", "-c"]),
-        (["main.py", "mock", "-s", "-c", "-l"]),
-        (["main.py", "mock", "-s", "-c", "-l", "-f"]),
-        (["main.py", "mock", "-s", "-c", "-l", "-f", "-p", "launch_data/shake_n_bake.csv"]),
+        (["main.py", "mock", "-s", "-l"]),
+        (["main.py", "mock", "-s", "-l", "-f"]),
+        (["main.py", "mock", "-s", "-l", "-f", "-p", "launch_data/shake_n_bake.csv"]),
         (["main.py", "sim", "sub-scale", "-s"]),
     ],
     ids=[
         "real flight default (all real)",
         "real with mock servo",
-        "real with mock camera",
-        "real with mock servo and camera",
         "mock default (all mock)",
         "mock with real servo",
-        "mock with real servo and camera",
-        "mock with real servo, camera, and log file kept",
-        "mock with real servo, camera, log file kept, and fast replay",
-        "mock with real servo, camera, log file kept, fast replay, and specific launch file",
+        "mock with real servo, and log file kept",
+        "mock with real servo, log file kept, and fast replay",
+        "mock with real servo, log file kept, fast replay, and specific launch file",
         "sim with real servo",
     ],
     indirect=True,
@@ -120,13 +101,12 @@ def test_create_components(parsed_args, monkeypatch):
         Servo class.
         """
 
-    monkeypatch.setattr("airbrakes.hardware.servo.ServoKit", MockedServoKit)
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
     monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
 
     created_components = create_components(parsed_args)
 
-    assert len(created_components) == 6
+    assert len(created_components) == 5
     assert isinstance(created_components[-1], ApogeePredictor)
     assert isinstance(created_components[-2], DataProcessor)
 
@@ -143,14 +123,8 @@ def test_create_components(parsed_args, monkeypatch):
         # IMU: always real in real mode (no option to mock it)
         assert type(created_components[1]) is IMU
 
-        # Camera: real by default, mock if --mock-camera is set
-        if parsed_args.mock_camera:
-            assert type(created_components[2]) is MockCamera
-        else:
-            assert type(created_components[2]) is Camera
-
         # Logger: always real in real mode
-        assert type(created_components[3]) is Logger
+        assert type(created_components[2]) is Logger
 
     elif parsed_args.mode in ("mock", "sim"):
         # Servo: mock by default, real if --real-servo is set
@@ -180,18 +154,12 @@ def test_create_components(parsed_args, monkeypatch):
         else:
             assert created_components[1]._data_fetch_process._args[0]
 
-        # Camera: mock by default, real if --real-camera is set
-        if parsed_args.real_camera:
-            assert type(created_components[2]) is Camera
-        else:
-            assert type(created_components[2]) is MockCamera
-
         # Logger: always mock in mock/sim, with keep_log_file option
-        assert type(created_components[3]) is MockLogger
+        assert type(created_components[2]) is MockLogger
         if parsed_args.keep_log_file:
-            assert created_components[3]._delete_log_file is False
+            assert created_components[2]._delete_log_file is False
         else:
-            assert created_components[3]._delete_log_file is True
+            assert created_components[2]._delete_log_file is True
 
 
 def test_run_real_flight(monkeypatch):
@@ -311,7 +279,7 @@ def test_run_flight(monkeypatch, mocked_args_parser):
     assert calls == ["Context", "FlightDisplay", "run_flight_loop"]
     assert len(called_args) == 2
     # For airbrakes context, we should have the components as arguments:
-    assert len(called_args[0]) == 6  # These are all the components
+    assert len(called_args[0]) == 5  # These are all the components
 
     # For the flight display, we should have the airbrakes, and the args:
     assert len(called_args[1]) == 2

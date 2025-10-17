@@ -46,6 +46,11 @@ def run_mock_flight() -> None:
 
 
 if __name__ == "__main__":
+    # This code isn't actually used when running `uv run ...` but is kept for
+    # backwards compatibility. In the `pyproject.toml` file, the entry points for
+    # `uvx` are set to the functions above: `run_real_flight`, `run_mock_flight`,
+    # and `run_sim_flight`.
+
     # Deprecated way to run the program:
     # python -m airbrakes.main [ARGS]
 
@@ -53,19 +58,16 @@ if __name__ == "__main__":
 
     # `uv run real [ARGS]`: Runs the flight with real hardware. Optional arguments:
     #     -s, --mock-servo   : Uses a mock servo instead of the real one.
-    #     -c, --mock-camera  : Uses a mock camera instead of the real one.
 
     # `uv run mock [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
     #   Optional arguments include:
     #     -s, --real-servo   : Uses the real servo instead of a mock one.
-    #     -c, --real-camera  : Uses the real camera instead of a mock one.
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
 
     # `uv run sim [ARGS]`: Runs a flight simulation alongside the mock replay.
     #   Optional arguments include:
     #     -s, --real-servo   : Uses the real servo instead of a mock one.
-    #     -c, --real-camera  : Uses the real camera instead of a mock one.
     #     -f, --fast-replay  : Runs the simulation at full speed instead of real-time.
     #     preset             : Specifies a preset (full-scale, sub-scale, etc).
 

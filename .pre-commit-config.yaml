@@ -10,14 +10,14 @@ repos:
       - id: docformatter
         args: [ --in-place, --recursive ]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.7
+    rev: v0.12.12
     hooks:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
   # Validate the metadata.json file against the JSON Schema
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.33.2
+    rev: 0.33.3
     hooks:
       - id: check-metaschema
         files: metadata.json
