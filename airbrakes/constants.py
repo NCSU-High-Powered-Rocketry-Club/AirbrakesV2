@@ -341,7 +341,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1402.08
+TARGET_APOGEE_METERS = 1136.90
 """
 The target apogee in meters that we want the rocket to reach.
 
