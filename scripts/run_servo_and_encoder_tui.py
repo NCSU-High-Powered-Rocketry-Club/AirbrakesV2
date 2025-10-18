@@ -53,10 +53,10 @@ class ServoControllerApp(App):
                 ),
                 Static("**Precise Positions**"),
                 Horizontal(
-                    Button(f"Min ({ServoExtension.MIN_EXTENSION})", id="min_btn", variant="primary"),
-                    Button(f"Min No Buzz ({ServoExtension.MIN_NO_BUZZ})", id="min_no_buzz_btn", variant="primary"),
-                    Button(f"Max ({ServoExtension.MAX_EXTENSION})", id="max_btn", variant="primary"),
-                    Button(f"Max No Buzz ({ServoExtension.MAX_NO_BUZZ})", id="max_no_buzz_btn", variant="primary"),
+                    Button(f"Min ({ServoExtension.MIN_EXTENSION.value})", id="min_btn", variant="primary"),
+                    Button(f"Min No Buzz ({ServoExtension.MIN_NO_BUZZ.value})", id="min_no_buzz_btn", variant="primary"),
+                    Button(f"Max ({ServoExtension.MAX_EXTENSION.value})", id="max_btn", variant="primary"),
+                    Button(f"Max No Buzz ({ServoExtension.MAX_NO_BUZZ.value})", id="max_no_buzz_btn", variant="primary"),
                 ),
                 # Added Servo Value Input Section
                 Static("**Set Servo Value (0 to 180)**"),
