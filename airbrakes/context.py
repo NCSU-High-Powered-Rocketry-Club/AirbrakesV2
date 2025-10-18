@@ -54,6 +54,9 @@ class Context:
         "servo_data_packet",
         "shutdown_requested",
         "state",
+        "altitude",
+        "airbrakes_extended",
+        "max_altitude",
     )
 
     def __init__(
@@ -105,6 +108,10 @@ class Context:
         # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_ns: int = 0
 
+        self.airbrakes_extended = False
+        self.altitude = 0
+        self.max_altitude = 0
+
     def start(self, wait_for_start: bool = False) -> None:
         """
         Starts the processes for the IMU, Logger, and ApogeePredictor.
@@ -120,18 +127,18 @@ class Context:
         # the Apogee Predictor. You can think of it basically like multithreading (even though it's
         # not), where each process runs independently and communicates via queues.
         set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
-        self.imu.start()
-        self.logger.start()
-        self.apogee_predictor.start()
+        # self.imu.start()
+        # self.logger.start()
+        # self.apogee_predictor.start()
 
-        if wait_for_start:
-            # Wait for all processes to start. It is assumed that once the IMU is running, all other
-            # processes are also running. Even if they aren't it's okay, since the queue will fill
-            # up with data and the other processes will start processing it when they wake up.
-            while True:
-                if self.imu.is_running:
-                    break
-                time.sleep(BUSY_WAIT_SECONDS)
+        # if wait_for_start:
+        #     # Wait for all processes to start. It is assumed that once the IMU is running, all other
+        #     # processes are also running. Even if they aren't it's okay, since the queue will fill
+        #     # up with data and the other processes will start processing it when they wake up.
+        #     while True:
+        #         if self.imu.is_running:
+        #             break
+        #         time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:
         """
@@ -143,10 +150,11 @@ class Context:
         if self.shutdown_requested:
             return
         self.retract_airbrakes()
-        self.imu.stop()
-        self.logger.stop()
-        self.apogee_predictor.stop()
+        # self.imu.stop()
+        # self.logger.stop()
+        # self.apogee_predictor.stop()
         self.shutdown_requested = True
+
 
     def update(self) -> None:
         """
@@ -157,6 +165,21 @@ class Context:
         This function retrieves the latest IMU data packets, processes them, updates the state
         machine, generates data packets for logging, and logs all relevant data.
         """
+        # Read altitude
+        self.altitude = 0-9
+
+        # If our current altitude is high and we are still going up, and airbrakes aren't extended, extend them
+        if self.altitude > 1000 and (not self.airbrakes_extended) and self.altitude >= self.max_altitude:
+            self.extend_airbrakes()
+            self.airbrakes_extended = True
+
+        # If our current altitude is low and less than our max and airbrakes are extended, retract them
+        if self.altitude < self.max_altitude and self.altitude < 1000 and self.airbrakes_extended:
+            self.retract_airbrakes()
+
+        time.sleep(.05)
+        return
+
         # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
         # *may* not be the most recent data. But we want continuous data for state, apogee,
         # and logging purposes, so we don't need to worry about that, as long as we're not too
