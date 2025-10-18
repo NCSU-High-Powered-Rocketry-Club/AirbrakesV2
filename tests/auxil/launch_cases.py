@@ -495,3 +495,9 @@ class PelicanatorLaunchCase4(LaunchCase):
     """
     The test case for the pelicanator launch data 4 (Huntsville 2024-25).
     """
+
+
+class LilFrankLaunchCase(LaunchCase):
+    """
+    The test case for the Lil Frank launch data (Interest Launch 2025).
+    """

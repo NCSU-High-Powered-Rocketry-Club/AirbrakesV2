@@ -53,15 +53,15 @@ class ServoControllerApp(App):
                 ),
                 Static("**Precise Positions**"),
                 Horizontal(
-                    Button("Min", id="min_btn", variant="primary"),
-                    Button("Min No Buzz", id="min_no_buzz_btn", variant="primary"),
-                    Button("Max", id="max_btn", variant="primary"),
-                    Button("Max No Buzz", id="max_no_buzz_btn", variant="primary"),
+                    Button(f"Min ({ServoExtension.MIN_EXTENSION.value})", id="min_btn", variant="primary"),
+                    Button(f"Min No Buzz ({ServoExtension.MIN_NO_BUZZ.value})", id="min_no_buzz_btn", variant="primary"),
+                    Button(f"Max ({ServoExtension.MAX_EXTENSION.value})", id="max_btn", variant="primary"),
+                    Button(f"Max No Buzz ({ServoExtension.MAX_NO_BUZZ.value})", id="max_no_buzz_btn", variant="primary"),
                 ),
                 # Added Servo Value Input Section
-                Static("**Set Servo Value (-1 to 1)**"),
+                Static("**Set Servo Value (0 to 180)**"),
                 Horizontal(
-                    Input(placeholder="Enter value between -1 and 1", id="servo_input"),
+                    Input(placeholder="Enter value between 0 and 180", id="servo_input"),
                 ),
                 Button("Set Value", id="set_value_btn", variant="primary"),
                 classes="control_section"
@@ -129,11 +129,10 @@ class ServoControllerApp(App):
             value = float(input_value)
             if not 0 <= value <= SERVO_MAX_ANGLE_DEGREES:
                 raise ValueError("Value out of range")
-            # Assuming the servo's set_position method accepts values from -1 to 1
             self.servo.servo.change_duty_cycle(Servo._angle_to_duty_cycle(value))
             self.status.update(f"Servo set to {value}")
         except ValueError:
-            self.status.update("Invalid input! Enter a number between -1 and 1.")
+            self.status.update("Invalid input! Enter a number between 0 and 180.")
 
     async def on_unmount(self) -> None:
         """
