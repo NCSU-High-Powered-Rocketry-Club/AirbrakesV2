@@ -344,13 +344,13 @@
             "log_buffer_index": 5000,
             "apogee_meters": 0.00,
             "landed_coordinates": {
-                "latitude": 34.04811560103679,
-                "longitude": -80.42347345289595
+                "latitude": null,
+                "longitude": null
             },
             "landed_coordinates_precision": "",
             "flight_length_seconds": 0.00,
             "target_apogee_meters": 1136.90
         },
-        "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area."
+        "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area. This launch was scrubbed because the secondary drogue system failed to arm, and we couldn't get it working in time."
     }
 }
