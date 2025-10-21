@@ -1,0 +1,108 @@
+(footprint "Servo"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 2.032 2.54 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "31c3975d-9652-4fce-87d9-9d8c61cece2d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "Servo"
+		(at 0 -6.096 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "39d9ecc6-be12-468f-806c-ac4f0aedb93d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "0eff5822-3732-48a4-b538-b732fbcfb66f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a3350b22-cecb-472c-989c-bbf7e14db306")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -3.81 -1.27)
+		(end 3.81 1.27)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "9e43d470-8218-47b7-9b8f-e91435905fc2")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -4.596 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "d1d9d8d9-ab0c-4a76-b81a-9c4a1c835e2a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole oval
+		(at -2.54 0)
+		(size 2 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "95fa48bc-84d2-49a7-b228-22d2013c9ba2")
+	)
+	(pad "2" thru_hole oval
+		(at 0 0)
+		(size 2 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "e74d4c7d-be39-4873-bda5-c8a52ea55b36")
+	)
+	(pad "3" thru_hole oval
+		(at 2.54 0)
+		(size 2 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "078a17b4-274a-4b53-9fca-61dbb99e68ca")
+	)
+	(embedded_fonts no)
+)
