@@ -16,7 +16,7 @@
 		)
 	)
 	(property "Value" "BigCapacitor"
-		(at 0.254 -5.31 0)
+		(at 0 -10 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "6c24261f-a05f-479f-a7f0-079b21bc2d14")
@@ -55,18 +55,18 @@
 	)
 	(attr through_hole)
 	(fp_rect
-		(start -8.001 2.032)
-		(end 8.001 33.528)
+		(start -8 -5)
+		(end 9 5)
 		(stroke
 			(width 0.1)
-			(type default)
+			(type solid)
 		)
 		(fill no)
 		(layer "F.SilkS")
 		(uuid "cfd33dd8-703b-4274-ba7a-c23c7eb3a5ca")
 	)
 	(fp_text user "${REFERENCE}"
-		(at 0.254 -3.81 0)
+		(at 0 -8 0)
 		(unlocked yes)
 		(layer "F.Fab")
 		(uuid "9057b6b0-4a37-4c34-bf2b-b187cc62f4c6")
@@ -78,7 +78,7 @@
 		)
 	)
 	(pad "1" thru_hole oval
-		(at -3.75 0)
+		(at -9 -3 270)
 		(size 2.54 2)
 		(drill 1)
 		(layers "*.Cu" "*.Mask")
@@ -87,7 +87,7 @@
 		(uuid "73cf59ed-4011-4bbf-9a6f-9392a8b3dd34")
 	)
 	(pad "2" thru_hole oval
-		(at 3.75 0)
+		(at -9 2.5 270)
 		(size 2.54 2)
 		(drill 1)
 		(layers "*.Cu" "*.Mask")

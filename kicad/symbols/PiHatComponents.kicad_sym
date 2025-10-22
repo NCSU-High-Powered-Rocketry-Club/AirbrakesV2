@@ -7,7 +7,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(property "Reference" "U"
-			(at 0 4.826 0)
+			(at 0 1.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -63,7 +63,7 @@
 			)
 		)
 		(symbol "5vVoltageRegulator_1_1"
-			(pin bidirectional line
+			(pin power_in line
 				(at -7.62 -2.54 0)
 				(length 2.54)
 				(name "VIN"
@@ -81,7 +81,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at -7.62 -5.08 0)
 				(length 2.54)
 				(name "GND"
@@ -99,7 +99,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_out line
 				(at 7.62 -2.54 180)
 				(length 2.54)
 				(name "VOUT"
@@ -117,7 +117,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_out line
 				(at 7.62 -5.08 180)
 				(length 2.54)
 				(name "GND"
@@ -199,7 +199,7 @@
 			)
 		)
 		(symbol "CurrentSensor_1_1"
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -3.81 0)
 				(length 2.54)
 				(name "VCC"
@@ -217,7 +217,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -6.35 0)
 				(length 2.54)
 				(name "GND"
@@ -271,7 +271,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 5.08 2.54 270)
 				(length 2.54)
 				(name "Vin"
@@ -289,7 +289,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 7.62 2.54 270)
 				(length 2.54)
 				(name "GND"
@@ -307,7 +307,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 10.16 2.54 270)
 				(length 2.54)
 				(name "Vout"
@@ -459,7 +459,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -11.43 0)
 				(length 2.54)
 				(name "Ground"
@@ -603,7 +603,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -31.75 0)
 				(length 2.54)
 				(name "Ground"
@@ -729,7 +729,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -49.53 0)
 				(length 2.54)
 				(name "Ground"
@@ -783,7 +783,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 27.94 -6.35 180)
 				(length 2.54)
 				(name "Ground"
@@ -855,7 +855,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 27.94 -16.51 180)
 				(length 2.54)
 				(name "Ground"
@@ -909,7 +909,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 27.94 -24.13 180)
 				(length 2.54)
 				(name "Ground"
@@ -999,7 +999,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 27.94 -36.83 180)
 				(length 2.54)
 				(name "Ground"
@@ -1035,7 +1035,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 27.94 -41.91 180)
 				(length 2.54)
 				(name "Ground"
@@ -1171,10 +1171,10 @@
 			)
 		)
 		(symbol "RotaryEncoderPinHeader_1_1"
-			(pin bidirectional line
+			(pin power_in line
 				(at 1.27 2.54 270)
 				(length 2.54)
-				(name "idk"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1189,10 +1189,10 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 3.81 2.54 270)
 				(length 2.54)
-				(name "idk2"
+				(name "+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1207,10 +1207,10 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin passive line
 				(at 6.35 2.54 270)
 				(length 2.54)
-				(name "idk3"
+				(name "DT"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1225,10 +1225,10 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin passive line
 				(at 8.89 2.54 270)
 				(length 2.54)
-				(name "idk4"
+				(name "CLK"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1307,17 +1307,17 @@
 			)
 		)
 		(symbol "ServoPinHeader_1_1"
-			(pin bidirectional line
+			(pin power_in line
 				(at 1.27 2.54 270)
 				(length 2.54)
-				(name "Ground"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
 						)
 					)
 				)
-				(number ""
+				(number "1"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1325,7 +1325,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 3.81 2.54 270)
 				(length 2.54)
 				(name "Vin"
@@ -1335,7 +1335,7 @@
 						)
 					)
 				)
-				(number ""
+				(number "2"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1343,7 +1343,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin input line
 				(at 6.35 2.54 270)
 				(length 2.54)
 				(name "Signal"
@@ -1353,7 +1353,7 @@
 						)
 					)
 				)
-				(number ""
+				(number "3"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1425,7 +1425,7 @@
 			)
 		)
 		(symbol "XT60_1_1"
-			(pin bidirectional line
+			(pin power_in line
 				(at -2.54 -1.27 0)
 				(length 2.54)
 				(name "Vin"
@@ -1443,7 +1443,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin power_in line
 				(at 13.97 -1.27 180)
 				(length 2.54)
 				(name "Ground"
