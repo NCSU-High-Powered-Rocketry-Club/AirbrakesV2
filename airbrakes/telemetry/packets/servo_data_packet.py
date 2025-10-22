@@ -23,3 +23,13 @@ class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     The position the encoder is currently reading.
     """
+
+    voltage: float
+    """
+    The voltage being supplied to the servo.
+    """
+
+    current: float
+    """
+    The current being drawn by the servo.
+    """

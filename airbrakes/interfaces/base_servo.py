@@ -71,6 +71,15 @@ class BaseServo(ABC):
         self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     @abstractmethod
+    def get_voltage_and_current(self) -> tuple[float, float]:
+        """
+        Gets the voltage and current being supplied to the servo.
+
+        :return: A tuple containing the voltage(V) and current(mA).
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the extension of the servo.

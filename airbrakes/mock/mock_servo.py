@@ -50,6 +50,15 @@ class MockServo(BaseServo):
 
         super().__init__(encoder=encoder, servo=servo)
 
+    def get_voltage_and_current(self) -> tuple[float, float]:
+        """
+        Gets the voltage and current being supplied to the servo.
+
+        :return: A tuple containing the voltage(V) and current(mA).
+        """
+        # Since this is a mock servo, we will just return dummy values.
+        return 0, 0
+
     def _set_extension(self, extension: ServoExtension) -> None:
         """
         Sets the servo to the specified extension.

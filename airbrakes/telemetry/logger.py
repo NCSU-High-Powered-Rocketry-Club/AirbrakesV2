@@ -158,6 +158,8 @@ class Logger:
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
                 encoder_position=servo_data_packet.encoder_position,
+                voltage=servo_data_packet.voltage,
+                current=servo_data_packet.current,
                 timestamp=imu_data_packet.timestamp,
                 invalid_fields=imu_data_packet.invalid_fields,
                 retrieved_imu_packets=context_data_packet.retrieved_imu_packets,

@@ -96,6 +96,16 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 84
 
 
+SHUNT_OHMS = 0.01
+"""
+The board uses a 10 mΩ (0.01 Ω) shunt resistor according to spec.
+
+:contentReference[oaicite:6]{index=6}
+"""
+MAX_EXPECTED_AMPS = 8.0  # Up to ±8A per spec. :contentReference[oaicite:7]{index=7}
+I2C_ADDRESS = 0x45  # Example address (check your board's DIP switch)
+I2C_BUS_NUMBER = 1  # On many Raspberry Pi boards I2C bus is 1
+
 # -------------------------------------------------------
 # Encoder Configuration
 # -------------------------------------------------------

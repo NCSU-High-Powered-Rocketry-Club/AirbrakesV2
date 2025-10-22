@@ -4,10 +4,15 @@ airbrakes, along with a rotary encoder to measure the servo's position.
 """
 
 import gpiozero
+from ina219 import INA219
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.constants import (
+    I2C_ADDRESS,
+    I2C_BUS_NUMBER,
+    MAX_EXPECTED_AMPS,
     SERVO_OPERATING_FREQUENCY_HZ,
+    SHUNT_OHMS,
     ServoExtension,
 )
 from airbrakes.interfaces.base_servo import BaseServo
@@ -24,7 +29,9 @@ class Servo(BaseServo):
     control the airbrakes, using hardware PWM on the Pi 5.
     """
 
-    __slots__ = ()
+    __slots__ = (  # noqa: PLC0205
+        "ina"
+    )
 
     def __init__(
         self,
@@ -43,6 +50,14 @@ class Servo(BaseServo):
         """
         servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
         servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+
+        self.ina = INA219(
+            shunt_ohms=SHUNT_OHMS,
+            max_expected_amps=MAX_EXPECTED_AMPS,
+            address=I2C_ADDRESS,
+            busnum=I2C_BUS_NUMBER,
+        )
+        self.ina.configure()
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
         from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
@@ -64,3 +79,11 @@ class Servo(BaseServo):
         super()._set_extension(extension)
         duty_cycle: float = self._angle_to_duty_cycle(extension.value)
         self.servo.change_duty_cycle(duty_cycle)
+
+    def get_voltage_and_current(self) -> tuple[float, float]:
+        """
+        Gets the voltage and current being supplied to the servo.
+
+        :return: A tuple containing the voltage(V) and current(mA).
+        """
+        return self.ina.voltage(), self.ina.current()

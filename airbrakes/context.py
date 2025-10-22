@@ -262,6 +262,8 @@ class Context:
         self.servo_data_packet = ServoDataPacket(
             set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
+            voltage=self.servo.get_voltage_and_current()[0],
+            current=self.servo.get_voltage_and_current()[1],
         )
 
     def _set_apogee_prediction_data(self) -> None:
