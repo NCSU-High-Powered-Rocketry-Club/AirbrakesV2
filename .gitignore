@@ -43,3 +43,13 @@ test_logs/
 
 # pytest cache
 .pytest_cache/
+
+# Don't commit some KiCAD files:
+kicad/**/*.zip
+kicad/**/*.kicad_prl
+kicad/**/*.bak
+kicad/**/*.kicad_sch-bak
+kicad/**/*.gbr
+kicad/**/*.gbrjob
+kicad/**/*.drl
+kicad/**/fp-info-cache

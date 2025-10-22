@@ -1,0 +1,99 @@
+(footprint "BigCapacitor"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 6.096 34.798 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "084071d7-18ff-4193-9401-5ec58064f5db")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "BigCapacitor"
+		(at 0 -10 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "6c24261f-a05f-479f-a7f0-079b21bc2d14")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "cc29e050-f1fd-42ae-8b42-0ace808ef6d2")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a0a56130-b9bb-4b71-aaa0-6f177a7733f6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_rect
+		(start -8 -5)
+		(end 9 5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "cfd33dd8-703b-4274-ba7a-c23c7eb3a5ca")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -8 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "9057b6b0-4a37-4c34-bf2b-b187cc62f4c6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole oval
+		(at -9 -3 270)
+		(size 2.54 2)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "73cf59ed-4011-4bbf-9a6f-9392a8b3dd34")
+	)
+	(pad "2" thru_hole oval
+		(at -9 2.5 270)
+		(size 2.54 2)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "7f7dbd5c-49e0-4afd-8c42-ecc1e995aaa0")
+	)
+	(embedded_fonts no)
+)
