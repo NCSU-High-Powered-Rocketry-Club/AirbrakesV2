@@ -19,9 +19,10 @@ dependencies = [
     # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
     # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
     "rpi-gpio>=0.7.1",
-    # Please see library docs for usage and installation on the Pi 4/5. You need to add 
+    # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
+    "pi-ina219>=1.4.1",
 ]
 
 [project.optional-dependencies]
