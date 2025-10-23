@@ -22,7 +22,7 @@ dependencies = [
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
-    "pi-ina219>=1.4.1",
+    "adafruit-circuitpython-ina219>=3.4.30",
 ]
 
 [project.optional-dependencies]
