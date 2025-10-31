@@ -12,7 +12,7 @@ from airbrakes.constants import (
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
-    TARGET_APOGEE_METERS,
+    # TARGET_APOGEE_METERS,
 )
 from airbrakes.utils import convert_ns_to_s
 
@@ -128,7 +128,7 @@ class CoastState(State):
     This is the state we actually control the air brakes extension.
     """
 
-    __slots__ = ("airbrakes_extended",)
+    __slots__ = ()
 
     def __init__(self, context: "Context") -> None:
         super().__init__(context)
