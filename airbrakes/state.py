@@ -12,7 +12,7 @@ from airbrakes.constants import (
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
-    # TARGET_APOGEE_METERS,
+    TARGET_APOGEE_METERS,  # noqa
 )
 from airbrakes.utils import convert_ns_to_s
 
