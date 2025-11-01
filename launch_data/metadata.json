@@ -320,5 +320,37 @@
             "target_apogee_meters": 1402.08
         },
         "flight_description": "This was the 2024-2025 Huntsville flight. The flight was relatively normal with except for some weather cocking, though this wasn't too crazy. The motor took a while to fully ignite and build up pressure, so a lot of it was spewed out before fulling launching which resulted in a lower apogee. For this flight, predicted apogee was significantly lower than actual apogee, likely due to converging too soon. The camera worked on the payload, and air brakes did not deploy. LandedState was triggered about ~5 seconds too late, because there was not a large enough acceleration spike, probably due to a higher horizontal velocity rather than vertical."
+    },
+    "lil_frank.csv": {
+        "date": "2025-10-18T14:31:10.931-05:00",
+        "launch_site": {
+            "air_temperature_celsius": 23.7,
+            "air_pressure_mb": 1016.2,
+            "wind_speed_kmh": 15.375,
+            "wind_direction": "NW",
+            "location": "Bayboro, NC",
+            "launch_coordinates": {
+                "latitude": 34.894610,
+                "longitude": -86.616470
+            },
+            "launch_rod_angle": 5.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 0.00,
+            "landed_coordinates": {
+                "latitude": null,
+                "longitude": null
+            },
+            "landed_coordinates_precision": "",
+            "flight_length_seconds": 0.00,
+            "target_apogee_meters": 1136.90
+        },
+        "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area. This launch was scrubbed because the secondary drogue system failed to arm, and we couldn't get it working in time."
     }
 }

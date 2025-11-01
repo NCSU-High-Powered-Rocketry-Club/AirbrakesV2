@@ -1,0 +1,109 @@
+(footprint "UBEC 5V Step Down"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 2.37 16.94 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "7a5a1dfd-513e-44a0-bfba-830a8a152a90")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" " UBEC 5V Step Down"
+		(at 0 -23.852 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "48fcbf79-2bfa-4cd5-8269-157d139b2792")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "c6a8d366-cae1-488a-ad6e-dc5158c9f8fe")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "3b41126e-094b-4614-a625-e3df25171fe7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -6.54 -15)
+		(end 6.47522 14.81478)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "551bf9dd-a86e-4290-942a-e4c4fb012b75")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -22.352 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "168d2f4c-b783-4e4c-944b-8cae6b6aace6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd oval
+		(at -5.33 -13.255)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "bc8d7cdc-2b8c-4073-9574-21205c7d46d0")
+	)
+	(pad "2" smd oval
+		(at -5.33 13.255)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "d31c0671-7d5b-4d4c-a39f-26cc10dc3dcc")
+	)
+	(pad "3" smd oval
+		(at 5.33 -13.255)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "04c09a64-f888-49d7-a33b-820b9052eea7")
+	)
+	(pad "4" smd oval
+		(at 5.33 13.255)
+		(size 2 3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "4f0d077c-76f7-4948-a9d8-6f4a0510d55d")
+	)
+	(embedded_fonts no)
+)

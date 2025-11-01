@@ -89,11 +89,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 25
-    MIN_NO_BUZZ = 37
+    MIN_EXTENSION = 39
+    MIN_NO_BUZZ = 43
 
-    MAX_EXTENSION = 125
-    MAX_NO_BUZZ = 116
+    MAX_EXTENSION = 88
+    MAX_NO_BUZZ = 84
 
 
 # -------------------------------------------------------
@@ -376,7 +376,7 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 1402.08
+TARGET_APOGEE_METERS = 1136.90
 """
 The target apogee in meters that we want the rocket to reach.
 
