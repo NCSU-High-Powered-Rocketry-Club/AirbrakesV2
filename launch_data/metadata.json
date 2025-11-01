@@ -352,5 +352,37 @@
             "target_apogee_meters": 1136.90
         },
         "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area. This launch was scrubbed because the secondary drogue system failed to arm, and we couldn't get it working in time."
+    },
+    "governmen't_work.csv": {
+        "date": "2025-11-01T12:23:00.000-05:00",
+        "launch_site": {
+            "air_temperature_celsius": 15.0,
+            "air_pressure_mb": 1016.25,
+            "wind_speed_kmh": 8.3,
+            "wind_direction": "W",
+            "location": "Bayboro, NC",
+            "launch_coordinates": {
+                "latitude": 34.894610,
+                "longitude": -86.616470
+            },
+            "launch_rod_angle": 5.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 1000.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 350.00,
+            "landed_coordinates": {
+                "latitude": null,
+                "longitude": null
+            },
+            "landed_coordinates_precision": null,
+            "flight_length_seconds": 45.00,
+            "target_apogee_meters": 360.00
+        },
+        "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off."
     }
 }

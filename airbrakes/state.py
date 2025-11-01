@@ -12,7 +12,7 @@ from airbrakes.constants import (
     MAX_FREE_FALL_SECONDS,
     MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
-    TARGET_APOGEE_METERS,
+    TARGET_APOGEE_METERS,  # noqa
 )
 from airbrakes.utils import convert_ns_to_s
 
@@ -128,11 +128,11 @@ class CoastState(State):
     This is the state we actually control the air brakes extension.
     """
 
-    __slots__ = ("airbrakes_extended",)
+    __slots__ = ()
 
     def __init__(self, context: "Context") -> None:
         super().__init__(context)
-        self.airbrakes_extended = False
+        self.context.extend_airbrakes()
 
     def update(self) -> None:
         """
@@ -148,19 +148,19 @@ class CoastState(State):
         # undershoot our target altitude, we retract the air brakes.
 
         # Gets the latest apogee prediction, or 0 if there is no prediction yet
-        apogee = (
-            self.context.most_recent_apogee_predictor_packet.predicted_apogee
-            if self.context.most_recent_apogee_predictor_packet
-            else 0.0
-        )
+        # apogee = (
+        #     self.context.most_recent_apogee_predictor_packet.predicted_apogee
+        #     if self.context.most_recent_apogee_predictor_packet
+        #     else 0.0
+        # )
 
-        if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
-            self.context.extend_airbrakes()
-            self.airbrakes_extended = True
-        elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
-            self.context.retract_airbrakes()
-            self.context.switch_altitude_back_to_pressure()
-            self.airbrakes_extended = False
+        # if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
+        #     self.context.extend_airbrakes()
+        #     self.airbrakes_extended = True
+        # elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
+        #     self.context.retract_airbrakes()
+        #     self.context.switch_altitude_back_to_pressure()
+        #     self.airbrakes_extended = False
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.
