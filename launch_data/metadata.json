@@ -322,7 +322,7 @@
         "flight_description": "This was the 2024-2025 Huntsville flight. The flight was relatively normal with except for some weather cocking, though this wasn't too crazy. The motor took a while to fully ignite and build up pressure, so a lot of it was spewed out before fulling launching which resulted in a lower apogee. For this flight, predicted apogee was significantly lower than actual apogee, likely due to converging too soon. The camera worked on the payload, and air brakes did not deploy. LandedState was triggered about ~5 seconds too late, because there was not a large enough acceleration spike, probably due to a higher horizontal velocity rather than vertical."
     },
     "lil_frank.csv": {
-        "date": "2025-10-18T14:31:10.931-05:00",
+        "date": "2025-10-18T14:31:10.931-04:00",
         "launch_site": {
             "air_temperature_celsius": 23.7,
             "air_pressure_mb": 1016.2,
@@ -330,8 +330,8 @@
             "wind_direction": "NW",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitude": 34.894610,
-                "longitude": -86.616470
+                "latitude": 35.175930,
+                "longitude": -76.827972
             },
             "launch_rod_angle": 5.0
         },
@@ -354,18 +354,18 @@
         "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area. This launch was scrubbed because the secondary drogue system failed to arm, and we couldn't get it working in time."
     },
     "government_work.csv": {
-        "date": "2025-11-01T12:23:00.000-05:00",
+        "date": "2025-11-01T14:53:21.171-04:00",
         "launch_site": {
-            "air_temperature_celsius": 15.0,
-            "air_pressure_mb": 1016.25,
-            "wind_speed_kmh": 8.3,
+            "air_temperature_celsius": 17.0,
+            "air_pressure_mb": 1018.10,
+            "wind_speed_kmh": 7.2,
             "wind_direction": "W",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitude": 34.894610,
-                "longitude": -86.616470
+                "latitude": 35.175930,
+                "longitude": -76.827972
             },
-            "launch_rod_angle": 5.0
+            "launch_rod_angle": 2.0
         },
         "imu_details": {
             "imu_model": "Parker-LORD 3DM-CX5-15",
@@ -374,15 +374,15 @@
         },
         "flight_data": {
             "log_buffer_index": 5000,
-            "apogee_meters": 350.00,
+            "apogee_meters": 496.16,
             "landed_coordinates": {
-                "latitude": null,
-                "longitude": null
+                "latitude": 35.175980,
+                "longitude": -76.828120
             },
-            "landed_coordinates_precision": null,
-            "flight_length_seconds": 45.00,
-            "target_apogee_meters": 360.00
+            "landed_coordinates_precision": "Precise to within +/- 2 meters",
+            "flight_length_seconds": 56.57,
+            "target_apogee_meters": 0.0
         },
-        "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off."
+        "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off. At the field, we had to dremmel 2 fins, halfway through its thickness (3mm). They worked as intended. This was the first launch with FIRM in the AB and nose cone."
     }
 }
