@@ -19,7 +19,7 @@
   // Update the lock files:
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["* 0-3 1 * *"],  // https://docs.renovatebot.com/presets-schedule/#schedulemonthly
+    "schedule": ["* 0-3 * * 1"],  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
     "automerge": true
   },
 
@@ -36,6 +36,12 @@
       "groupName": "Ruff"
     },
 
+    // Don't automatically upgrade python version:
+    {
+      "matchPackageNames": ["python"],
+      "enabled": false
+    },
+
     // Don't automerge major updates for project dependencies:
     {
       "matchUpdateTypes": ["major"],
@@ -45,6 +51,6 @@
   ],
 
   // schedule to allow PR's from Renovate:
-  "schedule": ["* * * * 0,6"]  // Every weekend
+  "schedule": ["* 0-3 * * 1"]  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
 
 }
