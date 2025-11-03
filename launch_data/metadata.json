@@ -330,8 +330,8 @@
             "wind_direction": "NW",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitude": 35.1762107,
-                "longitude": -76.8293647
+                "latitude": 35.175930,
+                "longitude": -76.827972
             },
             "launch_rod_angle": 5.0
         },
@@ -362,8 +362,8 @@
             "wind_direction": "W",
             "location": "Bayboro, NC",
             "launch_coordinates": {
-                "latitude": 35.1762107,
-                "longitude": -76.8293647
+                "latitude": 35.175930,
+                "longitude": -76.827972
             },
             "launch_rod_angle": 2.0
         },
