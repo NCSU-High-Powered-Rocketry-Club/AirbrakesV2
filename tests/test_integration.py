@@ -18,6 +18,7 @@ from airbrakes.constants import (
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
+    GovernmentWorkLaunchCase,
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
@@ -74,6 +75,8 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase2
         elif launch_name == "pelicanator_launch_4":
             launch_case = PelicanatorLaunchCase4
+        elif launch_name == "government_work":
+            launch_case = GovernmentWorkLaunchCase
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
@@ -199,7 +202,7 @@ class TestIntegration:
         )
         accel_str = str(accel)
         assert accel_str.count(".") == 1
-        assert len(accel_str.split(".")[1]) == 8
+        assert len(accel_str.split(".")[1]) in [7, 8]  # polars might drop trailing zeros
 
         # Check if the timestamp is valid and in nanoseconds
         timestamp = str(first_row["timestamp"])

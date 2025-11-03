@@ -501,3 +501,11 @@ class GovernmentWorkLaunchCase(LaunchCase):
     """
     The test case for the "governmen't work" launch data (Subscale 2025).
     """
+
+    def log_file_lines_test(self, lines_in_log_file: int) -> bool:
+        """
+        Tests the number of lines in the log file.
+
+        Data was perfect, this was a short flight.
+        """
+        return lines_in_log_file > 71_000

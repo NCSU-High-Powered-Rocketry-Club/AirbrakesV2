@@ -62,4 +62,4 @@ There is a video of the launch from the rocket's perspective in the `videos` fol
 ## Metadata
 
 We provide additional context about the launch in the metadata.json file. The date of the launch is
-calculated from the timestamp from the first motor burn packet.
+calculated from the timestamp of the first motor burn packet.
