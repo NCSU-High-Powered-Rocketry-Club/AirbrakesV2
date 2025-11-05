@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [ // See what config:best-practices does: https://docs.renovatebot.com/presets-config/#configbest-practices
+    "config:best-practices",
+    // Opt-in to updating the pre-commit-config.yaml file too:
+    ":enablePreCommit",
+    ":prConcurrentLimitNone"  // No limits on the number of open PRs.
+  ],
+
+  // Add pull request labels:
+  "labels": ["dependencies"],
+
+  // Bump even patch versions:
+  "bumpVersion": "patch",
+
+  // Let Renovate decide how to update. See docs: https://docs.renovatebot.com/configuration-options/#rangestrategy
+  "rangeStrategy": "auto",
+
+  // Update the lock files:
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 0-3 * * 1"],  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
+    "automerge": true
+  },
+
+  // Enable automerge globally:
+  "automerge": true,
+
+  // Group package updates together:
+  "packageRules": [
+    // Linting dependencies in pyproject.toml in sync with the pre-commit-config hooks:
+    // Unfortunately it seems we need to do this for every dependency group (https://github.com/python-telegram-bot/python-telegram-bot/pull/4887#discussion_r2272025832):
+    {
+      "description": "Group Ruff updates together",
+      "matchPackageNames": ["ruff", "astral-sh/ruff-pre-commit"],
+      "groupName": "Ruff"
+    },
+
+    // Don't automatically upgrade python version:
+    {
+      "matchPackageNames": ["python"],
+      "enabled": false
+    },
+
+    // Don't automerge major updates for project dependencies:
+    {
+      "matchUpdateTypes": ["major"],
+      "matchDepTypes": ["project.dependencies", "project.optional-dependencies"],
+      "automerge": false
+    }
+  ],
+
+  // schedule to allow PR's from Renovate:
+  "schedule": ["* 0-3 * * 1"]  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
+
+}
