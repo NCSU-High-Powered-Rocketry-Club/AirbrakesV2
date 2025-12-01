@@ -15,18 +15,11 @@ from faster_fifo import (  # ty: ignore[unresolved-import]  no type hints for th
     Empty,
     Queue,
 )
-from scipy.optimize import curve_fit
 
 from airbrakes.constants import (
-    APOGEE_PREDICTION_MIN_PACKETS,
     BUFFER_SIZE_IN_BYTES,
-    CURVE_FIT_INITIAL,
-    FLIGHT_LENGTH_SECONDS,
-    GRAVITY_METERS_PER_SECOND_SQUARED,
-    INTEGRATION_TIME_STEP_SECONDS,
     MAX_GET_TIMEOUT_SECONDS,
     STOP_SIGNAL,
-    UNCERTAINTY_THRESHOLD,
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -54,10 +47,8 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main process ------
-        self._processor_data_packet_queue: Queue[list[ProcessorDataPacket] | Literal["STOP"]] = (
-            Queue(
-                max_size_bytes=BUFFER_SIZE_IN_BYTES,
-            )
+        self._processor_data_packet_queue: Queue[ProcessorDataPacket | Literal["STOP"]] = Queue(
+            max_size_bytes=BUFFER_SIZE_IN_BYTES,
         )
         self._apogee_predictor_packet_queue: Queue[ApogeePredictorDataPacket] = Queue(
             max_size_bytes=BUFFER_SIZE_IN_BYTES,
@@ -113,21 +104,21 @@ class ApogeePredictor:
         self._processor_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_process.join()
 
-    def update(self, processor_data_packets: list[ProcessorDataPacket]) -> None:
+    def update(self, processor_data_packet: ProcessorDataPacket) -> None:
         """
-        Updates the apogee predictor to include the most recent processor data packets.
+        Updates the apogee predictor to include the most recent processor data packet.
 
         This method should only be called during the coast phase of the rocket's flight.
-        :param processor_data_packets: A list of ProcessorDataPacket objects to add to the queue.
+        :param processor_data_packet: The most recent processor data packet.
         """
-        self._processor_data_packet_queue.put_many(processor_data_packets)
+        self._processor_data_packet_queue.put(processor_data_packet)
 
-    def get_prediction_data_packets(self) -> list[ApogeePredictorDataPacket]:
+    def get_prediction_data_packet(self) -> ApogeePredictorDataPacket:
         """
         Gets *all* of the apogee prediction data packets from the queue.
 
         This operation is non-blocking.
-        :return: A deque containing the latest IMU data packets from the packet queue.
+        :return: A list of the most recent apogee prediction data packets.
         """
         total_packets = []
         # get_many doesn't actually get all of the packets, so we need to keep checking until
@@ -135,7 +126,18 @@ class ApogeePredictor:
         while self._apogee_predictor_packet_queue.qsize() > 0:
             new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
             total_packets.extend(new_packets)
-        return total_packets
+        return total_packets[-1]  # Return only the most recent packet
+        # TODO: qsize isn't necessarily reliable, so we may need to implement a different method:
+        # total_packets: list[ApogeePredictorDataPacket] = []
+        #     while True:
+        #         try:
+        #             new_packets = self._apogee_predictor_packet_queue.get_many(block=False)
+        #         except Empty:
+        #             break
+        #         if not new_packets:
+        #             break
+        #         total_packets.extend(new_packets)
+        #     return total_packets
 
     def _setup_queue_serialization_method(self) -> None:
         """
@@ -158,17 +160,6 @@ class ApogeePredictor:
         self._apogee_predictor_packet_queue.loads = msgpack_apg_data_packet_decoder.decode
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
-    @staticmethod
-    def _curve_fit_function(
-        t: npt.NDArray[np.float64], a: np.float64, b: np.float64
-    ) -> npt.NDArray:
-        """
-        The function which we fit the acceleration data to.
-
-        Used by scipy.optimize.curve_fit and while creating the lookup table.
-        """
-        return a * (1 - b * t) ** 4
-
     def _prediction_loop(self) -> None:
         """
         Responsible for fetching data packets, curve fitting, updating our lookup table, and finally
@@ -180,8 +171,6 @@ class ApogeePredictor:
 
         # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
         signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-
-        last_run_length = 0
 
         # Makes placeholder values for TODO
         apogee = 0.0
@@ -202,22 +191,22 @@ class ApogeePredictor:
             if STOP_SIGNAL in data_packets:
                 break
 
-            apogee = self._predict_apogee()
+            apogee = self._predict_apogee(data_packets[-1])
 
             # Get the most recent packet, predict apogee, and send it to the apogee predictor queue
-            self._apogee_predictor_packet_queue.put(
-                ApogeePredictorDataPacket(
-                    predicted_apogee=apogee,
-                    a_coefficient=curve_coefficients.A,
-                    b_coefficient=curve_coefficients.B,
-                    uncertainty_threshold_1=curve_coefficients.uncertainties[0],
-                    uncertainty_threshold_2=curve_coefficients.uncertainties[1],
-                )
-            )
+            # TODO: this is a placeholder until the apogee prediction is implemented
+            # self._apogee_predictor_packet_queue.put(
+            #     ApogeePredictorDataPacket(
+            #         predicted_apogee=apogee,
+            #         a_coefficient=curve_coefficients.A,
+            #         b_coefficient=curve_coefficients.B,
+            #         uncertainty_threshold_1=curve_coefficients.uncertainties[0],
+            #         uncertainty_threshold_2=curve_coefficients.uncertainties[1],
+            #     )
+            # )
 
-
-    def _predict_apogee(self) -> np.float64:
+    def _predict_apogee(self, most_recent_processor_data_packet: ProcessorDataPacket) -> np.float64:
         """
-        TODO
+        TODO.
         """
         # Use hprm

@@ -19,6 +19,16 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     In other words, the altitude relative to the ground from the launch pad (AGL).
     """
 
+    velocity_magnitude: float
+    """
+    The magnitude of the rocket's velocity in meters per second.
+    """
+
+    current_pitch_degrees: float
+    """
+    The current pitch of the rocket in degrees.
+    """
+
     vertical_velocity: float
     """
     The vertical velocity of the rocket in meters per second.

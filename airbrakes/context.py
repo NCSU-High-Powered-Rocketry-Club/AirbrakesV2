@@ -15,7 +15,7 @@ from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import convert_ns_to_s, set_process_priority
+from airbrakes.utils import set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
@@ -226,7 +226,8 @@ class Context:
         # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:
-            self.apogee_predictor.update(self.processor_data_packets)
+            # We pass in the most recent Processor Data Packet to the apogee predictor
+            self.apogee_predictor.update(self.processor_data_packets[-1])
 
     def generate_data_packets(self) -> None:
         """
@@ -249,4 +250,3 @@ class Context:
             set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
         )
-
