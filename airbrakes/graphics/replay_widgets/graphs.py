@@ -104,6 +104,8 @@ class FlightGraph(Widget):
             store.add_data_point("alt", self.context.data_processor.current_altitude)
             if (apg := self.context.most_recent_apogee_predictor_packet) is not None:
                 store.add_data_point("pred_apogee", apg.predicted_apogee)
+            else:
+                store.add_data_point("pred_apogee", 0.0)
         # Call the currently active tab's function:
         active_pane = self.tabbed_content.active_pane
         if active_pane.id == "accel-tab":
