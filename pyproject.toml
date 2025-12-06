@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
+# Need to run `sudo apt install liblgpio-dev swig` to build and install everything encoder related.
 encoder = [
     "swig>=4.3.0",
     "lgpio>=0.2.2.0",
