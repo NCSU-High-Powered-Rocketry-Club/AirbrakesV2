@@ -39,7 +39,7 @@ class State(ABC):
 
     __slots__ = ("context", "start_time_ns")
 
-    def __init__(self, context: "Context") -> None:
+    def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
         # At the very beginning of each state, we retract the air brakes
@@ -98,7 +98,7 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "Context"):
+    def __init__(self, context: Context):
         super().__init__(context)
         self.context.launch_time_ns = self.start_time_ns
 
@@ -130,7 +130,7 @@ class CoastState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "Context") -> None:
+    def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.context.extend_airbrakes()
 
@@ -183,7 +183,7 @@ class FreeFallState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: "Context") -> None:
+    def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.context.switch_altitude_back_to_pressure()
 

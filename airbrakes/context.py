@@ -6,12 +6,7 @@ import time
 from typing import TYPE_CHECKING
 
 from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
-from airbrakes.interfaces.base_imu import BaseIMU
-from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.state import StandbyState, State
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
@@ -19,6 +14,11 @@ from airbrakes.utils import convert_ns_to_s, set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
+    from airbrakes.interfaces.base_imu import BaseIMU
+    from airbrakes.interfaces.base_servo import BaseServo
+    from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+    from airbrakes.telemetry.data_processor import DataProcessor
+    from airbrakes.telemetry.logger import Logger
     from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )

@@ -8,8 +8,6 @@ import threading
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-import gpiozero
-
 from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
     SERVO_MAX_ANGLE_DEGREES,
@@ -21,6 +19,7 @@ from airbrakes.constants import (
 )
 
 if TYPE_CHECKING:
+    import gpiozero
     from rpi_hardware_pwm import HardwarePWM
 
     from airbrakes.mock.mock_servo import MockHardwarePWM
@@ -50,7 +49,7 @@ class BaseServo(ABC):
     def __init__(
         self,
         encoder: gpiozero.RotaryEncoder,
-        servo: "HardwarePWM | MockHardwarePWM",
+        servo: HardwarePWM | MockHardwarePWM,
     ) -> None:
         """
         Initializes the servo and the encoder.

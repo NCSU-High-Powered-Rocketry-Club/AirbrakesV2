@@ -4,7 +4,7 @@ Module for the ContextDataPacket class.
 
 import msgspec
 
-from airbrakes.state import State
+from airbrakes.state import State  # noqa: TC001 (doesn't work with msgspec)
 
 
 class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):

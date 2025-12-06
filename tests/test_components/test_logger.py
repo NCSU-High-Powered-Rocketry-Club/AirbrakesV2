@@ -5,6 +5,7 @@ import threading
 import time
 from collections import deque
 from functools import partial
+from typing import TYPE_CHECKING
 
 import faster_fifo
 import pytest
@@ -24,14 +25,7 @@ from airbrakes.state import (
     StandbyState,
 )
 from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import (
-    IMUDataPacket,
-)
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
     context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
@@ -42,6 +36,15 @@ from tests.auxil.utils import (
     make_servo_data_packet,
 )
 from tests.conftest import LOG_PATH
+
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+    from airbrakes.telemetry.packets.imu_data_packet import (
+        IMUDataPacket,
+    )
+    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 
 def patched_stop(self):

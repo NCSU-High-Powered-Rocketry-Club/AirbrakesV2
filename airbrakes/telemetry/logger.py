@@ -8,7 +8,6 @@ import os
 import signal
 import typing
 from collections import deque
-from pathlib import Path
 from typing import Any, Literal
 
 import msgspec
@@ -27,16 +26,20 @@ from airbrakes.constants import (
     STOP_SIGNAL,
 )
 from airbrakes.state import LandedState, StandbyState
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
+
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 
 DecodedLoggerDataPacket = list[int | float | str]
 """

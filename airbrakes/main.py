@@ -4,11 +4,10 @@ The main file which will be run on the Raspberry Pi.
 It will create the Context object and run the main loop.
 """
 
-import argparse
 import multiprocessing as mp
 import sys
 import warnings
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
@@ -20,8 +19,6 @@ from airbrakes.constants import (
 from airbrakes.context import Context
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
-from airbrakes.interfaces.base_imu import BaseIMU
-from airbrakes.interfaces.base_servo import BaseServo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
@@ -31,6 +28,12 @@ from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
+
+if TYPE_CHECKING:
+    import argparse
+
+    from airbrakes.interfaces.base_imu import BaseIMU
+    from airbrakes.interfaces.base_servo import BaseServo
 
 
 def run_real_flight() -> None:

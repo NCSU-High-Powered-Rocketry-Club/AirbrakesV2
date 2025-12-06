@@ -71,7 +71,7 @@ packages = ["airbrakes"]
 # RUFF:
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 show-fixes = true
 exclude = ["scripts"]
 

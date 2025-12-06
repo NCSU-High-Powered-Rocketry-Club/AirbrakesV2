@@ -4,9 +4,11 @@ Module containing config settings for randomness in the simulation.
 
 from copy import deepcopy
 from enum import Enum
+from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
 
 
 class RandomType(Enum):

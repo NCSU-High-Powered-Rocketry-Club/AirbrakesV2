@@ -2,7 +2,6 @@
 File to handle the display of real-time flight data in the terminal.
 """
 
-import argparse
 import multiprocessing
 import threading
 import time
@@ -15,6 +14,8 @@ from airbrakes.constants import DisplayEndingType
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
+    import argparse
+
     from airbrakes.context import Context
 
 
@@ -50,7 +51,7 @@ class FlightDisplay:
         "end_mock_natural",
     )
 
-    def __init__(self, context: "Context", args: argparse.Namespace) -> None:
+    def __init__(self, context: Context, args: argparse.Namespace) -> None:
         """
         Initializes the FlightDisplay object.
 
