@@ -128,9 +128,7 @@ class Context:
             # Wait for all processes to start. It is assumed that once the IMU is running, all other
             # processes are also running. Even if they aren't it's okay, since the queue will fill
             # up with data and the other processes will start processing it when they wake up.
-            while True:
-                if self.imu.is_running:
-                    break
+            while not self.imu.is_running:
                 time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:

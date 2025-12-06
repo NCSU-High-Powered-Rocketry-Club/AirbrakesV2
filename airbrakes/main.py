@@ -168,14 +168,10 @@ def run_flight_loop(
         context.start(wait_for_start=True)
         flight_display.start()
 
-        while True:
+        # Run the main loop until shutdown is requested:
+        while not context.shutdown_requested:
             # Update the state machine
             context.update()
-
-            # See https://github.com/python/cpython/issues/130279 for why this is here and not
-            # in the loop condition.
-            if context.shutdown_requested:
-                break
 
             # Stop the replay when the data is exhausted
             if is_mock and not context.imu.is_running:
