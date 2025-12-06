@@ -4,13 +4,14 @@
 #   autoupdate_schedule: "monthly"
 
 repos:
-  - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.7
-    hooks:
-      - id: docformatter
-        args: [ --in-place, --recursive ]
+  # This is incompatible with Python 3.14: https://github.com/PyCQA/docformatter/issues/327
+  # - repo: https://github.com/PyCQA/docformatter
+  #   rev: v1.7.7
+  #   hooks:
+  #     - id: docformatter
+  #       args: [ --in-place, --recursive ]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
+    rev: v0.14.8
     hooks:
       - id: ruff-check
         args: [ --fix ]
