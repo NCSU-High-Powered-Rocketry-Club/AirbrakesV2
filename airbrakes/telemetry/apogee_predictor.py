@@ -76,10 +76,12 @@ class ApogeePredictor:
 
     def __init__(self):
         # ------ Variables which can referenced in the main thread ------
-        self._processor_data_packet_queue: queue.Queue[ProcessorDataPacket | Literal["STOP"]] = (
-            queue.Queue()
+        self._processor_data_packet_queue: queue.SimpleQueue[
+            ProcessorDataPacket | Literal["STOP"]
+        ] = queue.SimpleQueue()
+        self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
+            queue.SimpleQueue()
         )
-        self._apogee_predictor_packet_queue: queue.Queue[ApogeePredictorDataPacket] = queue.Queue()
 
         self._prediction_thread = threading.Thread(
             target=self._prediction_loop, name="Apogee Prediction Thread"

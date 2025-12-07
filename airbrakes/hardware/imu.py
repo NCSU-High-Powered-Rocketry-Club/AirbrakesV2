@@ -37,7 +37,7 @@ class IMU(BaseIMU):
         :param port: the port that the IMU is connected to
         """
         # Shared Queue which contains the latest data from the IMU.
-        _queued_imu_packets: queue.Queue[IMUDataPacket] = queue.Queue()
+        _queued_imu_packets: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
         # Initialize the thread that fetches data from the IMU
         data_fetch_thread = threading.Thread(
             target=self._query_imu_for_data_packets, args=(port,), name="IMU Thread"

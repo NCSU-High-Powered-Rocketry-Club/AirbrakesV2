@@ -30,7 +30,7 @@ class BaseIMU:
         "_running",
     )
 
-    def __init__(self, data_fetch_thread: threading.Thread, queued_imu_packets: queue.Queue):
+    def __init__(self, data_fetch_thread: threading.Thread, queued_imu_packets: queue.SimpleQueue):
         """
         Initialises object using arguments passed by the constructors of the subclasses.
 

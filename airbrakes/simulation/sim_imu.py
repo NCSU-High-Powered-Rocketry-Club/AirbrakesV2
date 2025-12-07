@@ -16,7 +16,7 @@ from airbrakes.simulation.sim_utils import update_timestamp
 if TYPE_CHECKING:
     from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
 
-from airbrakes.constants import MAX_FETCHED_PACKETS, ServoExtension
+from airbrakes.constants import ServoExtension
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.simulation.data_generator import DataGenerator
 
@@ -39,7 +39,7 @@ class SimIMU(BaseIMU):
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
-        data_queue: queue.Queue[IMUDataPacket] = queue.Queue(maxsize=MAX_FETCHED_PACKETS)
+        data_queue: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
 
         # Starts the process that fetches the generated data
         data_fetch_thread = threading.Thread(

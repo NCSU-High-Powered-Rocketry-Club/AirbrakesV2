@@ -12,7 +12,7 @@ import msgspec
 import msgspec.json
 import polars as pl
 
-from airbrakes.constants import MAX_FETCHED_PACKETS, STOP_SIGNAL
+from airbrakes.constants import STOP_SIGNAL
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
@@ -67,13 +67,7 @@ class MockIMU(BaseIMU):
         if self._log_file_path == Path("launch_data/legacy_launch_2.csv"):
             raise ValueError("There is no data for this flight, please choose another file.")
 
-        # If it's not a real time replay, we limit how big the queue gets when doing an integration
-        # test, because we read the file much faster than update(), sometimes resulting thousands
-        # of data packets in the queue, which will obviously mess up data processing calculations.
-        # We limit it to 15 packets, which is more realistic for a real flight.
-        queued_imu_packets: queue.Queue[IMUDataPacket] = queue.Queue(
-            maxsize=0 if real_time_replay else MAX_FETCHED_PACKETS * 10,
-        )
+        queued_imu_packets: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
         # Starts the thread that fetches data from the log file
         data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,

@@ -92,7 +92,7 @@ class Logger:
             writer = csv.writer(file_writer)
             writer.writerow(headers)
 
-        self._log_queue: queue.Queue[LoggerDataPacket | Literal["STOP"]] = queue.Queue()
+        self._log_queue: queue.SimpleQueue[LoggerDataPacket | Literal["STOP"]] = queue.SimpleQueue()
 
         # Start the logging thread
         self._log_thread = threading.Thread(target=self._logging_loop, name="Logger Thread")

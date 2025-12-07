@@ -227,11 +227,6 @@ The period at which the IMU sends estimated data packets.
 This is the reciprocal of the frequency.
 """
 
-MAX_FETCHED_PACKETS = 15
-"""
-This is used to limit how many packets we fetch from the packet queue at once.
-"""
-
 IMU_TIMEOUT_SECONDS = 3.0
 """
 The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a

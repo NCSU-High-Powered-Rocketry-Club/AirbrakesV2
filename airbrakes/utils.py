@@ -40,7 +40,7 @@ def convert_s_to_ns(seconds: float) -> float:
     return seconds * 1e9
 
 
-def get_all_packets_from_queue(packet_queue: queue.Queue, block: bool) -> list[Any]:
+def get_all_packets_from_queue(packet_queue: queue.SimpleQueue, block: bool) -> list[Any]:
     """
     Empties the queue and returns all the items in a list.
 
