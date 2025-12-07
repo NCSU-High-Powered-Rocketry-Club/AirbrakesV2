@@ -10,7 +10,6 @@ dependencies = [
     "msgspec",
     "numpy",
     "colorama",
-    "psutil",
     "scipy",
     "textual",
     "mscl-rs",
