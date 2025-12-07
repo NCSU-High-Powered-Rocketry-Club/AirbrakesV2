@@ -47,7 +47,7 @@ class Logger:
     """
     A class that logs data to a CSV file.
 
-    Similar to the IMU class, it runs in a separate thread. This is because the logging process is
+    Similar to the IMU class, it runs in a separate thread. This is because the logging thread is
     I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
     running it in a separate thread, we can continue to log data while the main loop is running. It
     uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our
@@ -95,12 +95,14 @@ class Logger:
         self._log_queue: queue.SimpleQueue[LoggerDataPacket | Literal["STOP"]] = queue.SimpleQueue()
 
         # Start the logging thread
-        self._log_thread = threading.Thread(target=self._logging_loop, name="Logger Thread")
+        self._log_thread = threading.Thread(
+            target=self._logging_loop, name="Logger Thread", daemon=True
+        )
 
     @property
     def is_running(self) -> bool:
         """
-        Returns whether the logging process is running.
+        Returns whether the logging thread is running.
         """
         return self._log_thread.is_alive()
 

@@ -8,7 +8,6 @@ from collections import deque
 from typing import TYPE_CHECKING, Literal
 
 import msgspec
-import msgspec.msgpack
 import numpy as np
 import numpy.typing as npt
 from scipy.optimize import curve_fit
@@ -84,7 +83,7 @@ class ApogeePredictor:
         )
 
         self._prediction_thread = threading.Thread(
-            target=self._prediction_loop, name="Apogee Prediction Thread"
+            target=self._prediction_loop, name="Apogee Prediction Thread", daemon=True
         )
 
         self._cumulative_time_differences: npt.NDArray[np.float64] = np.array([])
@@ -274,7 +273,7 @@ class ApogeePredictor:
 
                 last_run_length = len(self._accelerations)
 
-                # Send the apogee prediction to the main process
+                # Send the apogee prediction to the main thread
                 self._apogee_predictor_packet_queue.put(
                     ApogeePredictorDataPacket(
                         predicted_apogee=apogee,

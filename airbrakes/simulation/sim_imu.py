@@ -41,7 +41,7 @@ class SimIMU(BaseIMU):
 
         data_queue: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
 
-        # Starts the process that fetches the generated data
+        # Starts the thread that fetches the generated data
         data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,
             name="Sim IMU Thread",

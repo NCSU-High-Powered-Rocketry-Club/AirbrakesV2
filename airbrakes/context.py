@@ -136,11 +136,11 @@ class Context:
         """
         if self.shutdown_requested:
             return
+        self.shutdown_requested = True
         self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.shutdown_requested = True
 
     def update(self) -> None:
         """

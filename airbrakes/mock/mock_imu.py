@@ -73,6 +73,7 @@ class MockIMU(BaseIMU):
             target=self._fetch_data_loop,
             args=(real_time_replay, start_after_log_buffer),
             name="Mock IMU Thread",
+            daemon=True,
         )
 
         file_metadata: dict = MockIMU.read_file_metadata()
@@ -212,6 +213,6 @@ class MockIMU(BaseIMU):
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.clear()
-        # If we don't put the STOP_SIGNAL in the queue, the main process will wait till IMU_TIMEOUT
+        # If we don't put the STOP_SIGNAL in the queue, the main thread will wait till IMU_TIMEOUT
         # seconds before exiting, which is not what we want.
         self._queued_imu_packets.put(STOP_SIGNAL)

@@ -9,14 +9,6 @@ from pathlib import Path
 # Main Configuration
 # -------------------------------------------------------
 
-MAIN_PROCESS_PRIORITY = -11
-"""
-The priority of the Main process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't want to stay behind on processing the packets from the IMU.
-"""
-
 BUSY_WAIT_SECONDS = 0.1
 """
 The amount of time to sleep while busy waiting in a loop.

@@ -11,6 +11,7 @@ from airbrakes.constants import (
     MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
+from airbrakes.context import Context
 from airbrakes.state import (
     CoastState,
     FreeFallState,
@@ -474,17 +475,22 @@ class TestLandedState:
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
 
-    def test_update(self, landed_state, context):
+    def test_update(self, data_processor, logger, random_data_mock_imu, servo, apogee_predictor):
         # Test that calling update before shutdown delay does not shut down the system:
+        context = Context(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
         context.start(wait_for_start=True)
-        landed_state.update()
+        ls = LandedState(context)
+        ls.context.state = ls
+        ls.update()
         assert context.logger.is_running
         assert context.imu.is_running
+        assert context.imu._data_fetch_thread.is_alive()
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
-        landed_state.update()
+        assert context.imu._data_fetch_thread.is_alive()
+        ls.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
         assert not context.imu.requested_to_run

@@ -3,6 +3,7 @@ Module defining the base class (BaseIMU) for interacting with the IMU (Inertial 
 the rocket.
 """
 
+import queue
 import threading
 from typing import TYPE_CHECKING
 
@@ -86,10 +87,10 @@ class BaseIMU:
         """
         self._requested_to_run.clear()
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
-        # stuck (i.e. deadlocks) waiting for the thread to finish. A more technical explanation:
-        # Case 1: .put() is blocking and if the queue is full, it keeps waiting for the queue to
-        # be empty, and thus the thread never .joins().
+        # stuck (i.e. deadlocks) waiting for the thread to finish.
         self.get_imu_data_packets(block=False)
+        self._queued_imu_packets.put(STOP_SIGNAL)  # signal the main thread to stop waiting
+
         self._data_fetch_thread.join(timeout=IMU_TIMEOUT_SECONDS)
         if self._data_fetch_thread.is_alive():
             raise RuntimeError("IMU data fetch thread did not terminate in time.")
@@ -123,11 +124,7 @@ class BaseIMU:
         :return: A list containing the latest IMU data packets from the IMU packet queue.
         """
         packets = []
-
-        if block:
-            packets.append(self.get_imu_data_packet(block=True))
-
-        packets.extend(get_all_packets_from_queue(self._queued_imu_packets, block=False))
+        packets.extend(get_all_packets_from_queue(self._queued_imu_packets, block=block))
         if STOP_SIGNAL in packets:  # only used by the MockIMU
             return []  # Makes the main update() loop exit early.
         return packets

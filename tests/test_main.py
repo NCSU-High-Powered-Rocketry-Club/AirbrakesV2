@@ -150,9 +150,9 @@ def test_create_components(parsed_args, monkeypatch):
 
         # Fast replay check
         if parsed_args.fast_replay:
-            assert not created_components[1]._data_fetch_process._args[0]
+            assert not created_components[1]._data_fetch_thread._args[0]
         else:
-            assert created_components[1]._data_fetch_process._args[0]
+            assert created_components[1]._data_fetch_thread._args[0]
 
         # Logger: always mock in mock/sim, with keep_log_file option
         assert type(created_components[2]) is MockLogger

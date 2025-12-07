@@ -40,7 +40,10 @@ class IMU(BaseIMU):
         _queued_imu_packets: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
         # Initialize the thread that fetches data from the IMU
         data_fetch_thread = threading.Thread(
-            target=self._query_imu_for_data_packets, args=(port,), name="IMU Thread"
+            target=self._query_imu_for_data_packets,
+            args=(port,),
+            name="IMU Thread",
+            daemon=True,
         )
         super().__init__(data_fetch_thread, _queued_imu_packets)
 
