@@ -1,6 +1,7 @@
 [project]
 name = "AirbrakesV2"
 description = "Logic for air brakes as a part of the NASA Student Launch Competition"
+# We use Python 3.14t only! There is currently no way to specify this in pyproject.toml
 requires-python = ">=3.14, <3.15"
 version = "1.7.0"
 readme = "README.md"
@@ -11,7 +12,6 @@ dependencies = [
     "colorama",
     "psutil",
     "scipy",
-    "faster-fifo",
     "textual",
     "mscl-rs",
     "numpy-quaternion>=2024.0.10",
@@ -93,10 +93,8 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 filterwarnings = [
     "error", # treat warnings as errors
     "ignore:Could not import LGPIOFactory", # ignore warning about LGPIO
-    "ignore:This process:DeprecationWarning", # ignore warning about fork()
     "ignore:To reduce servo jitter", # ignore warning about pigpio
     "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
-    "ignore:Could not set process priority"  # ignore warning about process priority
 ]
 addopts = "--benchmark-skip"  # skip benchmarks by default:
 markers = [
@@ -132,7 +130,6 @@ exclude_also = [
     "@overload",
     "@abstractmethod",
     "if TYPE_CHECKING:",
-    "from multiprocessing import Queue",
     "from queue import Empty",
 ]
 show_missing = true

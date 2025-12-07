@@ -3,12 +3,12 @@ Module for simulating the IMU on the rocket using generated data.
 """
 
 import contextlib
-import multiprocessing
+import queue
+import threading
 import time
 from typing import TYPE_CHECKING
 
 import numpy as np
-from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
 from airbrakes.simulation.sim_config import SimulationConfig, get_configuration
 from airbrakes.simulation.sim_utils import update_timestamp
@@ -16,7 +16,7 @@ from airbrakes.simulation.sim_utils import update_timestamp
 if TYPE_CHECKING:
     from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
 
-from airbrakes.constants import MAX_FETCHED_PACKETS, MAX_QUEUE_SIZE, ServoExtension
+from airbrakes.constants import MAX_FETCHED_PACKETS, ServoExtension
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.simulation.data_generator import DataGenerator
 
@@ -39,21 +39,19 @@ class SimIMU(BaseIMU):
         # Gets the configuration for the simulation
         config = get_configuration(sim_type)
 
-        data_queue: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS
-        )
+        data_queue: queue.Queue[IMUDataPacket] = queue.Queue(maxsize=MAX_FETCHED_PACKETS)
 
         # Starts the process that fetches the generated data
-        data_fetch_process = multiprocessing.Process(
+        data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,
-            name="Sim IMU Process",
+            name="Sim IMU Thread",
             args=(config, real_time_replay),
         )
 
-        super().__init__(data_fetch_process, data_queue)
+        super().__init__(data_fetch_thread, data_queue)
         # Makes boolean values that are shared between processes
-        self._running = multiprocessing.Value("b", False, lock=False)
-        self._airbrakes_extended = multiprocessing.Value("b", False, lock=False)
+        self._running = threading.Event()
+        self._airbrakes_extended = threading.Event()
 
     def set_airbrakes_status(self, servo_extension: ServoExtension) -> None:
         """

@@ -2,9 +2,8 @@
 Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket.
 """
 
-import contextlib
-import multiprocessing
-import signal
+import queue
+import threading
 import time
 import typing
 from pathlib import Path
@@ -12,14 +11,8 @@ from pathlib import Path
 import msgspec
 import msgspec.json
 import polars as pl
-from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
-from airbrakes.constants import (
-    BUFFER_SIZE_IN_BYTES,
-    MAX_FETCHED_PACKETS,
-    MAX_QUEUE_SIZE,
-    STOP_SIGNAL,
-)
+from airbrakes.constants import MAX_FETCHED_PACKETS, STOP_SIGNAL
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
@@ -52,8 +45,8 @@ class MockIMU(BaseIMU):
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log
         file.
 
-        We don't call the parent constructor as the IMU class has different     parameters, so we
-        manually start the process that fetches data from the log file.
+        We don't call the parent constructor as the IMU class has different parameters, so we
+        manually start the thread that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
@@ -78,21 +71,20 @@ class MockIMU(BaseIMU):
         # test, because we read the file much faster than update(), sometimes resulting thousands
         # of data packets in the queue, which will obviously mess up data processing calculations.
         # We limit it to 15 packets, which is more realistic for a real flight.
-        queued_imu_packets: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE if real_time_replay else MAX_FETCHED_PACKETS * 10,
-            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+        queued_imu_packets: queue.Queue[IMUDataPacket] = queue.Queue(
+            maxsize=0 if real_time_replay else MAX_FETCHED_PACKETS * 10,
         )
-        # Starts the process that fetches data from the log file
-        data_fetch_process = multiprocessing.Process(
+        # Starts the thread that fetches data from the log file
+        data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,
             args=(real_time_replay, start_after_log_buffer),
-            name="Mock IMU Process",
+            name="Mock IMU Thread",
         )
 
         file_metadata: dict = MockIMU.read_file_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
 
-        super().__init__(data_fetch_process, queued_imu_packets)
+        super().__init__(data_fetch_thread, queued_imu_packets)
 
     @staticmethod
     def read_file_metadata() -> dict:
@@ -102,7 +94,7 @@ class MockIMU(BaseIMU):
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
 
-    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
 
     def _scan_csv(
         self,
@@ -179,7 +171,7 @@ class MockIMU(BaseIMU):
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in collected_data.iter_rows(named=True):
             # Check if the loop should stop:
-            if not self._requested_to_run.value:
+            if not self._requested_to_run.is_set():
                 break
 
             start_time = time.time()
@@ -221,17 +213,11 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
-        self._running.value = True  # Specify that the process is running
-        self._setup_queue_serialization_method()
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-        # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
-        # function in a context manager to suppress the KeyboardInterrupt
-        with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(real_time_replay, start_after_log_buffer)
+        self._running.set()  # Specify that the thread is running
+        self._read_file(real_time_replay, start_after_log_buffer)
 
         # For the mock, once we're done reading the file, we say it is no longer running
-        self._running.value = False
+        self._running.clear()
         # If we don't put the STOP_SIGNAL in the queue, the main process will wait till IMU_TIMEOUT
         # seconds before exiting, which is not what we want.
         self._queued_imu_packets.put(STOP_SIGNAL)

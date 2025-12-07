@@ -4,12 +4,9 @@ command line arguments.
 """
 
 import argparse
-import sys
-import warnings
+import queue
 from pathlib import Path
 from typing import Any
-
-import psutil
 
 
 def convert_unknown_type_to_float(obj_type: Any) -> float:
@@ -43,24 +40,28 @@ def convert_s_to_ns(seconds: float) -> float:
     return seconds * 1e9
 
 
-def set_process_priority(priority: int) -> None:
+def get_all_packets_from_queue(packet_queue: queue.Queue, block: bool) -> list[Any]:
     """
-    Sets the priority of the calling process to the specified nice value.
+    Empties the queue and returns all the items in a list.
 
-    Only works on Linux.
-    :param priority: The nice value to set the process to. This ranges from -20 to 19, with -20
-        being the highest priority and 19 being the lowest.
+    :param packet_queue: The queue to empty.
+    :param block: Whether to block when getting items from the queue.
+
+    :return: A list of all the items in the queue.
     """
-    if sys.platform != "win32":
-        p = psutil.Process()
+    items = []
+
+    if block:
+        # Block until at least one item is available
+        items.append(packet_queue.get(block=True))
+
+    # Drain the rest of the queue, non-blocking
+    while not packet_queue.empty():
         try:
-            p.nice(priority)
-        except psutil.AccessDenied:
-            warnings.warn(
-                f"Could not set process priority to {priority}. Please run the program as root "
-                "to set process priority.",
-                stacklevel=2,
-            )
+            items.append(packet_queue.get(block=False))
+        except queue.Empty:
+            break
+    return items
 
 
 def deadband(input_value: float, threshold: float) -> float:

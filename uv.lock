@@ -8,7 +8,6 @@ version = "1.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "colorama" },
-    { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "mscl-rs" },
     { name = "msgspec" },
@@ -45,7 +44,6 @@ profiling = [
 [package.metadata]
 requires-dist = [
     { name = "colorama" },
-    { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
     { name = "mscl-rs" },
@@ -149,12 +147,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/96/8e/709914eb2b5749865
 wheels = [
     { url = "https://files.pythonhosted.org/packages/33/6b/e0547afaf41bf2c42e52430072fa5658766e3d65bd4b03a563d1b6336f57/distlib-0.4.0-py2.py3-none-any.whl", hash = "sha256:9659f7d87e46584a30b5780e43ac7a2143098441670ff0a49d5f9034c54a6c16", size = 469047, upload-time = "2025-07-17T16:51:58.613Z" },
 ]
-
-[[package]]
-name = "faster-fifo"
-version = "1.5.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2f/f0/8747adf39f3f337b09217ceebb6e415ef874e360718d0e52837c889cc217/faster_fifo-1.5.2.tar.gz", hash = "sha256:a2a544fef4d6e31ebd4bb4c7bbfced315d741c3b7ccad23fe0a359d7b408527e", size = 11743, upload-time = "2024-12-28T11:18:42.505Z" }
 
 [[package]]
 name = "filelock"

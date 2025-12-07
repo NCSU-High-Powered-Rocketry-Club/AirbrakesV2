@@ -2,12 +2,10 @@
 File to handle the display of real-time flight data in the terminal.
 """
 
-import multiprocessing
 import threading
 import time
 from typing import TYPE_CHECKING
 
-import psutil
 from colorama import Fore, Style, init
 
 from airbrakes.constants import DisplayEndingType
@@ -15,6 +13,8 @@ from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     import argparse
+
+    import psutil
 
     from airbrakes.context import Context
 
@@ -72,9 +72,9 @@ class FlightDisplay:
         self._thread_target = threading.Thread(
             target=self.update_display, daemon=True, name="Real Time Display Thread"
         )
-        self._cpu_thread = threading.Thread(
-            target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread"
-        )
+        # self._cpu_thread = threading.Thread(
+        #     target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread"
+        # )
         # Create events to signal the end of the replay.
         self.end_mock_natural = threading.Event()
         self.end_mock_interrupted = threading.Event()
@@ -96,9 +96,9 @@ class FlightDisplay:
         context.start() is called, because we need the process IDs.
         """
         self._running = True
-        self._processes = self.prepare_process_dict()
-        self._cpu_usages = dict.fromkeys(self._processes, 0.0)
-        self._cpu_thread.start()
+        # self._processes = self.prepare_process_dict()
+        # self._cpu_usages = dict.fromkeys(self._processes, 0.0)
+        # self._cpu_thread.start()
         self._thread_target.start()
 
     def stop(self) -> None:
@@ -109,27 +109,27 @@ class FlightDisplay:
         from raising a NoSuchProcess exception.
         """
         self._running = False
-        self._cpu_thread.join()
+        # self._cpu_thread.join()
         self._thread_target.join()
 
-    def update_cpu_usage(self, interval: float = 0.3) -> None:
-        """
-        Update CPU usage for each monitored process every `interval` seconds.
+    # def update_cpu_usage(self, interval: float = 0.3) -> None:
+    #     """
+    #     Update CPU usage for each monitored process every `interval` seconds.
 
-        This is run in another thread because polling for CPU usage is a blocking operation.
-        :param interval: time in seconds between polling CPU usage.
-        """
-        cpu_count = psutil.cpu_count()
-        while self._running:
-            for name, process in self._processes.items():
-                # interval=None is not recommended and can be inaccurate.
-                # We normalize the CPU usage by the number of CPUs to get average cpu usage,
-                # otherwise it's usually > 100%.
-                try:
-                    self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
-                except psutil.NoSuchProcess:
-                    # The process has ended, so we set the CPU usage to 0.
-                    self._cpu_usages[name] = 0.0
+    #     This is run in another thread because polling for CPU usage is a blocking operation.
+    #     :param interval: time in seconds between polling CPU usage.
+    #     """
+    #     cpu_count = psutil.cpu_count()
+    #     while self._running:
+    #         for name, process in self._processes.items():
+    #             # interval=None is not recommended and can be inaccurate.
+    #             # We normalize the CPU usage by the number of CPUs to get average cpu usage,
+    #             # otherwise it's usually > 100%.
+    #             try:
+    #                 self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
+    #             except psutil.NoSuchProcess:
+    #                 # The process has ended, so we set the CPU usage to 0.
+    #                 self._cpu_usages[name] = 0.0
 
     def sound_alarm_if_imu_is_having_issues(self) -> None:
         """
@@ -276,14 +276,14 @@ class FlightDisplay:
             )
 
             # Add CPU usage data with color coding
-            for name, cpu_usage in self._cpu_usages.items():
-                if cpu_usage < 50:
-                    cpu_color = G
-                elif cpu_usage < 75:
-                    cpu_color = Y
-                else:
-                    cpu_color = R
-                output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
+            # for name, cpu_usage in self._cpu_usages.items():
+            #     if cpu_usage < 50:
+            #         cpu_color = G
+            #     elif cpu_usage < 75:
+            #         cpu_color = Y
+            #     else:
+            #         cpu_color = R
+            #     output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
 
         # Print the output
         print("\n".join(output))
@@ -301,19 +301,19 @@ class FlightDisplay:
             case DisplayEndingType.TAKEOFF:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
 
-    def prepare_process_dict(self) -> dict[str, psutil.Process]:
-        """
-        Prepares a dictionary of processes to monitor CPU usage for.
+    # def prepare_process_dict(self) -> dict[str, psutil.Process]:
+    #     """
+    #     Prepares a dictionary of processes to monitor CPU usage for.
 
-        :return: A dictionary of process names and their corresponding psutil.Process objects.
-        """
-        all_processes = {}
-        imu_process = self._context.imu._data_fetch_process
-        log_process = self._context.logger._log_process
-        apogee_process = self._context.apogee_predictor._prediction_process
-        current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process]:
-            # psutil allows us to monitor CPU usage of a process, along with low level information
-            # which we are not using.
-            all_processes[p.name] = psutil.Process(p.pid)
-        return all_processes
+    #     :return: A dictionary of process names and their corresponding psutil.Process objects.
+    #     """
+    #     all_processes = {}
+    #     imu_process = self._context.imu._data_fetch_process
+    #     log_process = self._context.logger._log_process
+    #     apogee_process = self._context.apogee_predictor._prediction_process
+    #     current_process = multiprocessing.current_process()
+    #     for p in [imu_process, log_process, current_process, apogee_process]:
+    #         # psutil allows us to monitor CPU usage of a process, along with low level information
+    #         # which we are not using.
+    #         all_processes[p.name] = psutil.Process(p.pid)
+    #     return all_processes

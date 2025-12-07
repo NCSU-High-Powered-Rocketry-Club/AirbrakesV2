@@ -15,8 +15,6 @@ The priority of the Main process.
 
 This is a really high priority so the OS knows to give it priority over other processes. This is
 because we want to make sure we don't want to stay behind on processing the packets from the IMU.
-It's a bit lower than the IMU process because we want to make sure the IMU process is always running
-and getting data.
 """
 
 BUSY_WAIT_SECONDS = 0.1
@@ -180,8 +178,8 @@ file.
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue to
-stop the processes.
+The signal to stop the IMU, Logger, and ApogeePredictor thread, this will be put in the queue to
+stop the threads.
 """
 
 # Formula for converting number of packets to seconds and vice versa:
@@ -216,14 +214,6 @@ This is typically the default port where the IMU connects to the Raspberry Pi. "
 corresponds to the first USB-serial device recognized by the system in Linux.
 """
 
-IMU_PROCESS_PRIORITY = -15
-"""
-The priority of the IMU process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't miss any data packets from the IMU.
-"""
-
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends raw data packets.
@@ -242,41 +232,13 @@ MAX_FETCHED_PACKETS = 15
 This is used to limit how many packets we fetch from the packet queue at once.
 """
 
-MAX_GET_TIMEOUT_SECONDS = 100
-"""
-The maximum amount of time in seconds to wait for a get operation on the queue.
-"""
-
-BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
-"""
-The maximum number of bytes to put or get from the queue at once.
-
-This is an increase from the default value of 1Mb, which is too small sometimes for our data
-packets, e.g. when logging the entire buffer, which is 5000 packets.
-"""
-
-MAX_QUEUE_SIZE = 100_000
-"""
-The maximum size of the queue that holds the data packets.
-
-This is to prevent the queue from" growing too large and taking up too much memory. This is a very
-large number, so it should not be reached in normal operation.
-"""
-
 IMU_TIMEOUT_SECONDS = 3.0
 """
-The maximum amount of time in seconds the IMU process is allowed to do something (e.g. read a
+The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
 packet) before it is considered to have timed out.
 
 This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
 used as the max timeout to read from the serial port.
-"""
-
-CHUNK_SIZE = LOG_BUFFER_SIZE + 1
-"""
-The size of the chunk to read from the log file at a time.
-
-This has 2 benefits. Less memory usage and faster initial read of the file.
 """
 
 # -------------------------------------------------------

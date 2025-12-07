@@ -4,9 +4,8 @@ The main file which will be run on the Raspberry Pi.
 It will create the Context object and run the main loop.
 """
 
-import multiprocessing as mp
 import sys
-import warnings
+import sysconfig
 from typing import TYPE_CHECKING, cast
 
 from airbrakes.constants import (
@@ -44,7 +43,6 @@ def run_real_flight() -> None:
     `uv run real` or `uvx --from git+... real`.
     """
     # Modify sys.argv to include real as the first argument:
-    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "real")
     args = arg_parser()
     run_flight(args)
@@ -57,10 +55,7 @@ def run_mock_flight() -> None:
     Entered when run with
     `uvx --from git+... mock` or `uv run mock`.
     """
-    # Silence process priority warning for when running mock on WSL
-    warnings.filterwarnings("ignore", "Could not set process priority*", UserWarning)
     # Modify sys.argv to include mock as the first argument:
-    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "mock")
     args = arg_parser()
     run_flight(args)
@@ -74,7 +69,6 @@ def run_sim_flight() -> None:
     `uvx --from git+... sim` or `uv run sim`.
     """
     # Modify sys.argv to include sim as the first argument:
-    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "sim")
     args = arg_parser()
     run_flight(args)
@@ -87,6 +81,15 @@ def run_flight(args: argparse.Namespace) -> None:
     :param args: Command line arguments determining the program configuration.
     """
     servo, imu, logger, data_processor, apogee_predictor = create_components(args)
+
+    # Assert that we are running in the free-threaded build, and the GIL is disabled:
+    if not bool(sysconfig.get_config_var("Py_GIL_DISABLED")) or sys._is_gil_enabled():
+        raise RuntimeError(
+            "The Airbrakes program must be run with the GIL disabled for performance reasons. "
+            "Make sure you are using Python 3.14t, and set the environment variable `PYTHON_GIL=0`"
+            " before running the program."
+        )
+
     # Initialize the Airbrakes Context and display
     context = Context(servo, imu, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(context, args)
@@ -230,6 +233,5 @@ if __name__ == "__main__":
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.
     #     -v, --verbose : Enables a detailed display with more flight data.
 
-    mp.set_start_method("spawn", force=True)
     args = arg_parser()
     run_flight(args)
