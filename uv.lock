@@ -49,7 +49,7 @@ requires-dist = [
     { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
-    { name = "mscl-rs" },
+    { name = "mscl-rs", specifier = "==0.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = ">=2024.0.10" },
@@ -316,12 +316,12 @@ wheels = [
 
 [[package]]
 name = "mscl-rs"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c8/94/9fe96db7e6b7e95665b65c6c7297c97c9de2a0ed765694558d9bda208d7d/mscl_rs-0.1.0.tar.gz", hash = "sha256:88e3a0b79f436c6a408ef58236e0025ea3a4a0eaf31ebf03433514518d9e48c8", size = 611772, upload-time = "2025-12-06T11:08:03.886Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/3c/e44f1be703b1de8b61127953779a1a4d45b74575cb6a6f118ba577d385dc/mscl_rs-0.2.0.tar.gz", hash = "sha256:08627bb22dcb0cecaf16858b4e3102aa2eaed962eab7c61bc13d6534beaa6a60", size = 621090, upload-time = "2025-12-08T09:20:24.333Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/3e/e8a5fd7041dee391370db11b029727951d93dacf4a64f16691663f2befcc/mscl_rs-0.1.0-cp313-cp313-manylinux_2_31_aarch64.whl", hash = "sha256:4f5e83fa39a218fb65dca90ad6d73f6b21c3e65b59b35708d3e8a2978daf5bb8", size = 327029, upload-time = "2025-12-06T11:07:36.718Z" },
-    { url = "https://files.pythonhosted.org/packages/c8/f4/88d7b26f0ea46a0a8852870c59d7c10f752eb7b6a5013dbf13433a03996d/mscl_rs-0.1.0-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:d27d507e5315e4f8044afedd5547bcd8f8039e82aa7ddfd5a74868a824a1c1ca", size = 382807, upload-time = "2025-12-06T11:07:44.58Z" },
+    { url = "https://files.pythonhosted.org/packages/d3/3b/0257995887c9f083335d0053ed8c7279600ba0dc3c11b42672873752ea92/mscl_rs-0.2.0-cp313-cp313-manylinux_2_31_aarch64.whl", hash = "sha256:ff57bb61d50a6cec101b1ebd6a525d6ae1da01c4c73cc4f8302e8d87682fa031", size = 329247, upload-time = "2025-12-08T09:20:17.212Z" },
+    { url = "https://files.pythonhosted.org/packages/43/b4/c22c52eeceff2c7d60e733b0aabf3e02c48b25c282b1d2447cc723c7ab1c/mscl_rs-0.2.0-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:23c1b98f49bbaaf9a47baa2927cebdb5a4dd9f167dd91550b1b5b629231c2ded", size = 386499, upload-time = "2025-12-08T09:18:26.253Z" },
 ]
 
 [[package]]

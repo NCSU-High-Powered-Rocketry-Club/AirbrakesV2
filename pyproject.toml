@@ -13,7 +13,7 @@ dependencies = [
     "scipy",
     "faster-fifo",
     "textual",
-    "mscl-rs",
+    "mscl-rs==0.2.0",
     "numpy-quaternion>=2024.0.10",
     "polars>=1.33.0",
     # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
