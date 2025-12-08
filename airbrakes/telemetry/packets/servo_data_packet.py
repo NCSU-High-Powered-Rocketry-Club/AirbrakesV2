@@ -4,7 +4,7 @@ Module for the ServoDataPacket class.
 
 import msgspec
 
-from airbrakes.constants import ServoExtension
+from airbrakes.constants import ServoExtension  # noqa: TC001 (doesn't work with msgspec)
 
 
 class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):

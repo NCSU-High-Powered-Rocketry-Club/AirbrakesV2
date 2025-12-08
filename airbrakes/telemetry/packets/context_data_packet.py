@@ -4,7 +4,7 @@ Module for the ContextDataPacket class.
 
 import msgspec
 
-from airbrakes.state import State
+from airbrakes.state import State  # noqa: TC001 (doesn't work with msgspec)
 
 
 class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
@@ -21,29 +21,29 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
 
     retrieved_imu_packets: int
     """
-    This is the number of packets we got from the IMU process, in the main process.
+    This is the number of packets we got from the IMU thread, in the main thread.
 
     This number will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high
-    end, it indicates some performance issues with the main process.
+    end, it indicates some performance issues with the main thread.
     """
 
     queued_imu_packets: int
     """
-    The number of IMU data packets in the IMU multiprocessing queue, waiting to be fetched, by the
-    main process.
+    The number of IMU data packets in the IMU queue, waiting to be fetched, by the
+    main thread.
     """
 
     apogee_predictor_queue_size: int
     """
     The number of apogee predictor data packets in the apogee predictor queue, waiting to be fetched
-    by the main process.
+    by the main thread.
     """
 
     imu_packets_per_cycle: int
     """
-    The number of packets we directly fetch from the LORD IMU in the IMU process.
+    The number of packets we directly fetch from the LORD IMU in the IMU thread.
 
-    This is before we put the packets in the multiprocessing queue to the main process.
+    This is before we put the packets in the queue to the main thread.
     """
 
     update_timestamp_ns: int

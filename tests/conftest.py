@@ -2,7 +2,6 @@
 Module where fixtures are shared between all test files.
 """
 
-import multiprocessing
 import time
 from pathlib import Path
 
@@ -34,8 +33,6 @@ LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
 LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 # Use the filenames as the ids for the fixtures:
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-
-multiprocessing.set_start_method("spawn", force=True)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -87,8 +84,8 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def context(imu, logger, servo, data_processor, apogee_predictor):
-    ab = Context(servo, imu, logger, data_processor, apogee_predictor)
+def context(idle_mock_imu, logger, servo, data_processor, apogee_predictor):
+    ab = Context(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
     if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
@@ -200,7 +197,7 @@ class RandomDataIMU(IMU):
         """
         Output Est and Raw Data packets at the sampling rate we use for the IMU.
         """
-        self._running.value = True
+        self._running.set()
         # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
         EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
         RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
@@ -209,7 +206,7 @@ class RandomDataIMU(IMU):
         next_estimated = time.time_ns() + EST_INTERVAL_NS
         next_raw = time.time_ns() + RAW_INTERVAL_NS
 
-        while self._requested_to_run.value:
+        while self.requested_to_run:
             now = time.time_ns()
 
             # Generate all raw packets due since last iteration
@@ -229,7 +226,7 @@ class RandomDataIMU(IMU):
             # Only sleep if we're ahead of schedule
             if sleep_time > 0.0001:  # 100μs buffer for precision
                 time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing
-        self._running.value = False
+        self._running.clear()
 
 
 class IdleIMU(IMU):

@@ -4,6 +4,7 @@ Module that creates randomly generated data to sent to the simulation IMU.
 
 import csv
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -14,13 +15,15 @@ from airbrakes.constants import (
     MAX_VELOCITY_THRESHOLD,
 )
 from airbrakes.simulation.rotation_manager import RotationManager
-from airbrakes.simulation.sim_config import SimulationConfig
 from airbrakes.simulation.sim_utils import get_random_value
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     RawDataPacket,
 )
 from airbrakes.utils import deadband
+
+if TYPE_CHECKING:
+    from airbrakes.simulation.sim_config import SimulationConfig
 
 
 class DataGenerator:

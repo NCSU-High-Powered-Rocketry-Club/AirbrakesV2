@@ -95,7 +95,7 @@ class TestIntegration:
         ab.start(wait_for_start=True)
 
         # Run until the patched method in our IMU has finished (i.e. the data is exhausted)
-        while ab.imu._data_fetch_process.is_alive():
+        while ab.imu.is_running:
             ab.update()
             if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
@@ -308,7 +308,7 @@ class TestIntegration:
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert not context.imu._running.value
-        assert not context.imu._data_fetch_process.is_alive()
-        assert not context.logger._log_process.is_alive()
-        assert not context.apogee_predictor._prediction_process.is_alive()
+        assert not context.imu._data_fetch_thread.is_alive()
+        assert not context.logger._log_thread.is_alive()
+        assert not context.apogee_predictor._prediction_thread.is_alive()
         assert sum(imu_packets_per_cycle_list) / len(imu_packets_per_cycle_list) <= 10

@@ -9,16 +9,6 @@ from pathlib import Path
 # Main Configuration
 # -------------------------------------------------------
 
-MAIN_PROCESS_PRIORITY = -11
-"""
-The priority of the Main process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't want to stay behind on processing the packets from the IMU.
-It's a bit lower than the IMU process because we want to make sure the IMU process is always running
-and getting data.
-"""
-
 BUSY_WAIT_SECONDS = 0.1
 """
 The amount of time to sleep while busy waiting in a loop.
@@ -180,8 +170,8 @@ file.
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue to
-stop the processes.
+The signal to stop the IMU, Logger, and ApogeePredictor thread, this will be put in the queue to
+stop the threads.
 """
 
 # Formula for converting number of packets to seconds and vice versa:
@@ -216,14 +206,6 @@ This is typically the default port where the IMU connects to the Raspberry Pi. "
 corresponds to the first USB-serial device recognized by the system in Linux.
 """
 
-IMU_PROCESS_PRIORITY = -15
-"""
-The priority of the IMU process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't miss any data packets from the IMU.
-"""
-
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends raw data packets.
@@ -237,77 +219,14 @@ The period at which the IMU sends estimated data packets.
 This is the reciprocal of the frequency.
 """
 
-ESTIMATED_DESCRIPTOR_SET = 130
-"""
-The ID of the estimated data packet that the IMU sends.
-"""
-RAW_DESCRIPTOR_SET = 128
-"""
-The ID of the raw data packet that the IMU sends.
-"""
-
-MAX_FETCHED_PACKETS = 15
-"""
-This is used to limit how many packets we fetch from the packet queue at once.
-"""
-
-MAX_GET_TIMEOUT_SECONDS = 100
-"""
-The maximum amount of time in seconds to wait for a get operation on the queue.
-"""
-
-BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
-"""
-The maximum number of bytes to put or get from the queue at once.
-
-This is an increase from the default value of 1Mb, which is too small sometimes for our data
-packets, e.g. when logging the entire buffer, which is 5000 packets.
-"""
-
-MAX_QUEUE_SIZE = 100_000
-"""
-The maximum size of the queue that holds the data packets.
-
-This is to prevent the queue from" growing too large and taking up too much memory. This is a very
-large number, so it should not be reached in normal operation.
-"""
-
 IMU_TIMEOUT_SECONDS = 3.0
 """
-The maximum amount of time in seconds the IMU process is allowed to do something (e.g. read a
+The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
 packet) before it is considered to have timed out.
 
-This is used to prevent the program from deadlocking if the IMU stops sending data.
+This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
+used as the max timeout to read from the serial port.
 """
-
-CHUNK_SIZE = LOG_BUFFER_SIZE + 1
-"""
-The size of the chunk to read from the log file at a time.
-
-This has 2 benefits. Less memory usage and faster initial read of the file.
-"""
-
-# Constants for IMU field names and quantifiers
-DELTA_THETA_FIELD = 32775
-DELTA_VEL_FIELD = 32776
-SCALED_ACCEL_FIELD = 32772
-SCALED_GYRO_FIELD = 32773
-SCALED_AMBIENT_PRESSURE_FIELD = 32791
-EST_ANGULAR_RATE_FIELD = 33294
-EST_ATTITUDE_UNCERT_FIELD = 33298
-EST_COMPENSATED_ACCEL_FIELD = 33308
-EST_GRAVITY_VECTOR_FIELD = 33299
-EST_LINEAR_ACCEL_FIELD = 33293
-EST_ORIENT_QUATERNION_FIELD = 33283
-EST_PRESSURE_ALT_FIELD = 33313
-
-X_QUALIFIER = 1
-Y_QUALIFIER = 2
-Z_QUALIFIER = 3
-ATTITUDE_UNCERT_QUALIFIER = 5
-PRESSURE_ALT_QUALIFIER = 67
-AMBIENT_PRESSURE_QUALIFIER = 58
-
 
 # -------------------------------------------------------
 # State Machine Configuration
