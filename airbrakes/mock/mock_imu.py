@@ -123,7 +123,8 @@ class MockIMU(BaseIMU):
             self._log_file_path,
             has_header=True,
             skip_rows_after_header=start_index,
-            infer_schema_length=10,
+            infer_schema=False,
+            # infer_schema_length=10,
             **kwargs,
         ).select(self._needed_fields)
 
@@ -161,7 +162,52 @@ class MockIMU(BaseIMU):
 
         launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
 
-        collected_data: pl.DataFrame = self._scan_csv(start_index=start_index).collect()
+        # I somehow messed up compiling polars for arm64 linux, so it infers the column types as
+        # strings instead of floats. So we have to do this workaround:
+        # TODO: Remove this workaround once polars has proper arm64 linux wheels for 3.14t
+        # if platform.machine().lower() == "arm64":
+        schema_overrides = {
+            "timestamp": pl.Int64,
+            "invalid_fields": pl.String,
+            "scaledAccelX": pl.Float64,
+            "scaledAccelY": pl.Float64,
+            "scaledAccelZ": pl.Float64,
+            "scaledGyroX": pl.Float64,
+            "scaledGyroY": pl.Float64,
+            "scaledGyroZ": pl.Float64,
+            "deltaVelX": pl.Float64,
+            "deltaVelY": pl.Float64,
+            "deltaVelZ": pl.Float64,
+            "deltaThetaX": pl.Float64,
+            "deltaThetaY": pl.Float64,
+            "deltaThetaZ": pl.Float64,
+            "scaledAmbientPressure": pl.Float64,
+            "estPressureAlt": pl.Float64,
+            "estOrientQuaternionW": pl.Float64,
+            "estOrientQuaternionX": pl.Float64,
+            "estOrientQuaternionY": pl.Float64,
+            "estOrientQuaternionZ": pl.Float64,
+            "estAttitudeUncertQuaternionW": pl.Float64,
+            "estAttitudeUncertQuaternionX": pl.Float64,
+            "estAttitudeUncertQuaternionY": pl.Float64,
+            "estAttitudeUncertQuaternionZ": pl.Float64,
+            "estAngularRateX": pl.Float64,
+            "estAngularRateY": pl.Float64,
+            "estAngularRateZ": pl.Float64,
+            "estCompensatedAccelX": pl.Float64,
+            "estCompensatedAccelY": pl.Float64,
+            "estCompensatedAccelZ": pl.Float64,
+            "estLinearAccelX": pl.Float64,
+            "estLinearAccelY": pl.Float64,
+            "estLinearAccelZ": pl.Float64,
+            "estGravityVectorX": pl.Float64,
+            "estGravityVectorY": pl.Float64,
+            "estGravityVectorZ": pl.Float64,
+        }
+
+        collected_data: pl.DataFrame = self._scan_csv(
+            start_index=start_index, schema_overrides=schema_overrides
+        ).collect()
 
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in collected_data.iter_rows(named=True):
