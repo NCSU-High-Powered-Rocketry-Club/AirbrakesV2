@@ -15,7 +15,7 @@ dependencies = [
     "mscl-rs",
     "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
-    "polars==1.36.0b2",
+    "polars==1.36.0",
     "polars-runtime-32",
     # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
     # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
@@ -28,10 +28,9 @@ dependencies = [
 # TODO: Remove this once polars has official wheels for python 3.14t
 [tool.uv.sources]
 polars-runtime-32 = [
-    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl", marker = "platform_machine == 'x86_64'" },
-    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl", marker = "platform_machine == 'aarch64'" }
+	{ url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl", marker = "platform_machine == 'aarch64'" },
+	{ url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl", marker = "platform_machine == 'x86_64'" }
 ]
-
 [project.optional-dependencies]
 # Need to run `sudo apt install liblgpio-dev swig` to build and install everything encoder related.
 encoder = [

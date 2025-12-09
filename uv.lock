@@ -20,9 +20,9 @@ dependencies = [
     { name = "numpy" },
     { name = "numpy-quaternion" },
     { name = "polars" },
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
     { name = "rpi-gpio" },
     { name = "rpi-hardware-pwm" },
     { name = "scipy" },
@@ -58,10 +58,10 @@ requires-dist = [
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = ">=2024.0.10" },
-    { name = "polars", specifier = "==1.36.0b2" },
+    { name = "polars", specifier = "==1.36.0" },
     { name = "polars-runtime-32", marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
-    { name = "polars-runtime-32", marker = "platform_machine == 'aarch64'", url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl" },
-    { name = "polars-runtime-32", marker = "platform_machine == 'x86_64'", url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl" },
+    { name = "polars-runtime-32", marker = "platform_machine == 'aarch64'", url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl" },
+    { name = "polars-runtime-32", marker = "platform_machine == 'x86_64'", url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl" },
     { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "rpi-hardware-pwm", specifier = ">=0.3.0" },
     { name = "scipy" },
@@ -387,56 +387,56 @@ wheels = [
 
 [[package]]
 name = "polars"
-version = "1.36.0b2"
+version = "1.36.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
-    { name = "polars-runtime-32", version = "1.36.0b2", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
+    { name = "polars-runtime-32", version = "1.36.0", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/32/e9/900e6af585ed5ac7e80292dd13570eb85a8527aef64bbd21c85fcbd72405/polars-1.36.0b2.tar.gz", hash = "sha256:97cf02c6a078c9de739b7421c0b3a71bb0c6e8c89ec5fb936395be929501d033", size = 706994, upload-time = "2025-12-02T12:42:14.782Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/ce/285beb40d17c4fc846aea8781d11e8031a3d8e51cedc94858977333e1f0c/polars-1.36.0.tar.gz", hash = "sha256:68af01d0c2dd2a4d95a1ddcd9d34d34587b77222434b824d3827282c0ac39941", size = 711540, upload-time = "2025-12-08T17:11:50.34Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/a0/e01130cf1b8b1a9e3bc022e6b5243e0da7e0e0388b727e60eac6c2d51aaa/polars-1.36.0b2-py3-none-any.whl", hash = "sha256:f7ce9bd8780fbdfa8bbe56362ba8af2ce96f80b3d940825265e3d5e295a1b0dc", size = 797280, upload-time = "2025-12-02T12:41:01.15Z" },
+    { url = "https://files.pythonhosted.org/packages/24/d8/71544ade68423f75c1ffc0fc31022aa71e4bc2522005db16a4461597d382/polars-1.36.0-py3-none-any.whl", hash = "sha256:32d6f0a033420122874fff8f3d7cb2c0d758624d4def8e1ff2023b061c2ad70e", size = 801937, upload-time = "2025-12-08T17:10:54.619Z" },
 ]
 
 [[package]]
 name = "polars-runtime-32"
-version = "1.36.0b2"
+version = "1.36.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "platform_machine == 'arm64'",
     "platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'x86_64'",
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/c6/fbdfa43bfae6971a121bd9c5efb2ccd80f05bfefc21bfdbc53b83625c153/polars_runtime_32-1.36.0b2.tar.gz", hash = "sha256:094a4848a25406444613c1d59d0a55b93db98866d14b6b178883936dcd2d30a5", size = 2753526, upload-time = "2025-12-02T12:42:16.78Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/0b/7e3b4c3845a994f8bd471b66ec505f053f88cad47a1d6aec2a16dc15707b/polars_runtime_32-1.36.0.tar.gz", hash = "sha256:29d3b3282f3c6ca54b147053d8c0da9c7ae23a7cd80c08ecbefa4f1c266310d3", size = 2786015, upload-time = "2025-12-08T17:11:51.78Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/63/6a80779810ed420a638114e75e18da5de20faad32c829863da563aad337f/polars_runtime_32-1.36.0b2-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:58e3ef6ce36f4c839813d827f2e3f8618106ac2d73b37c4bae1de290b9ceb535", size = 42208380, upload-time = "2025-12-02T12:41:03.68Z" },
-    { url = "https://files.pythonhosted.org/packages/18/63/f456cea0bda40cc4b8f5aea68fe78839098186a86fdeafcb73f38ff3385b/polars_runtime_32-1.36.0b2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ed47cf109af1f33a48c2a1b16149b4cec3467ccd8924ea46316aa1d27ef127cc", size = 38051614, upload-time = "2025-12-02T12:41:07.366Z" },
-    { url = "https://files.pythonhosted.org/packages/ab/fc/c3d9c505f4512bbdf6aca5a827189db8befda4cd50058480d7a51b38ccd9/polars_runtime_32-1.36.0b2-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:17434410a6a5f9ad3b16e582e4d7205e825ee8ff4c6bb7952a8d5f9befd1c9e4", size = 43160599, upload-time = "2025-12-02T12:41:11.013Z" },
-    { url = "https://files.pythonhosted.org/packages/34/aa/8e9ba6f0f6d2febe8eb710daa7b63b8bfe03a81ce2532252e8eff6d48f1c/polars_runtime_32-1.36.0b2-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:80a3afc949c60e2da20106254dbd94b38e7ac698ae0c437ed4d41a5cec78430f", size = 39376308, upload-time = "2025-12-02T12:41:14.735Z" },
-    { url = "https://files.pythonhosted.org/packages/7b/20/2a486af2c07172798d794c5283d9affa0eb852c3457e3a9cff44dcba2b16/polars_runtime_32-1.36.0b2-cp39-abi3-win_amd64.whl", hash = "sha256:f0991a6592eb900d0c8e0c1ea65ff5fbbca81209e14bf991b704639ca0727a1c", size = 43192081, upload-time = "2025-12-02T12:41:20.02Z" },
-    { url = "https://files.pythonhosted.org/packages/40/53/72507dec8b8db1a4ab5bd0b46c3f63ef1680505931a7ba1b81cc911cfe41/polars_runtime_32-1.36.0b2-cp39-abi3-win_arm64.whl", hash = "sha256:72bd16694f9d43a1cf1dbef9fb62735d45b6ccf969a19e2cc67a9f59154f0beb", size = 38605857, upload-time = "2025-12-02T12:41:24.544Z" },
+    { url = "https://files.pythonhosted.org/packages/98/06/f18703120e8656f0852710a70f301204c8531f5dd7aa4b57e3e4498c1b04/polars_runtime_32-1.36.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:6060d6ca990ee76d7f56aa5377c323e842b2c5f2a3eb98422670e393908a3569", size = 42514626, upload-time = "2025-12-08T17:10:56.601Z" },
+    { url = "https://files.pythonhosted.org/packages/73/51/96a4129d8754a49c1a3aae550a25859432338899ed522e7bd34902c6493d/polars_runtime_32-1.36.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ab2f15b9de1b2ea78d421703b829a9ffb0b65889a4e6e1dec75c785cebef45f9", size = 38370421, upload-time = "2025-12-08T17:10:59.639Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/d2/3d47a9904ac4d71fa1110594dd99de7c298e5bd6f6a602a42f35c81bebf5/polars_runtime_32-1.36.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be0aedf1e2c37b2463923f356d688459843e9436fc47e55fa281ce474ddefacc", size = 43489077, upload-time = "2025-12-08T17:11:02.273Z" },
+    { url = "https://files.pythonhosted.org/packages/00/45/ebd063d4d41500cf8140feb49fce9f3b2386103df2ff2cc34569273b9196/polars_runtime_32-1.36.0-cp39-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:2cf5dee05322394fbff6b1e66e9f2653abee1c067a94a3ac5bd1ea389df28b40", size = 39710563, upload-time = "2025-12-08T17:11:04.956Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/30/ddcce6b988f88b445f365ec793e54bc8f843a175eb3b580aebfa6c732976/polars_runtime_32-1.36.0-cp39-abi3-win_amd64.whl", hash = "sha256:cf2be8e2fe2a89e8985845cf25a67e233211c7b6a29256b647df6a261b987374", size = 43547512, upload-time = "2025-12-08T17:11:08.286Z" },
+    { url = "https://files.pythonhosted.org/packages/92/4f/b2350a98a767de31b7872bd1511530cb7eefe68132f64ba1105679346ca4/polars_runtime_32-1.36.0-cp39-abi3-win_arm64.whl", hash = "sha256:b21cb377c86fe5d0b4de6010dfc3f62c65c4b3b34dcbca77cd1a47548f0f1cba", size = 38938352, upload-time = "2025-12-08T17:11:10.922Z" },
 ]
 
 [[package]]
 name = "polars-runtime-32"
-version = "1.36.0b2"
-source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl" }
+version = "1.36.0"
+source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl" }
 resolution-markers = [
     "platform_machine == 'aarch64'",
 ]
 wheels = [
-    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:f535f00f8de344eb9bad054ddbf5c8a4ef6052d288dca5d8b54043520a24437a" },
+    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_aarch64.whl", hash = "sha256:fbd7940ff56acc656585ec61ca982f947bc66917867878ed0b0a0482e5fc439e" },
 ]
 
 [[package]]
 name = "polars-runtime-32"
-version = "1.36.0b2"
-source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl" }
+version = "1.36.0"
+source = { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl" }
 resolution-markers = [
     "platform_machine == 'x86_64'",
 ]
 wheels = [
-    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0b2-cp314-cp314t-manylinux_2_39_x86_64.whl", hash = "sha256:f90283f32a4beb6b863229ddf8e4eabbdd5fd83a62c829d01833c812ef240386" },
+    { url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.0-cp314-cp314t-manylinux_2_39_x86_64.whl", hash = "sha256:8e8a4d24dde70161f3ba0c0304bb931081d46ddfde42b9ec8f87529b8281864e" },
 ]
 
 [[package]]
