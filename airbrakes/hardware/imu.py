@@ -2,17 +2,13 @@
 Module for interacting with the IMU (Inertial measurement unit) on the rocket.
 """
 
-import contextlib
-import multiprocessing
+import queue
+import threading
 
 import mscl_rs
-from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
 from airbrakes.constants import (
-    BUFFER_SIZE_IN_BYTES,
-    IMU_PROCESS_PRIORITY,
     IMU_TIMEOUT_SECONDS,
-    MAX_QUEUE_SIZE,
 )
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -20,7 +16,6 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
-from airbrakes.utils import set_process_priority
 
 
 class IMU(BaseIMU):
@@ -41,30 +36,24 @@ class IMU(BaseIMU):
 
         :param port: the port that the IMU is connected to
         """
-        # Shared Queue which contains the latest data from the IMU. The MAX_QUEUE_SIZE is there
-        # to prevent memory issues. Realistically, the queue size never exceeds 50 packets when
-        # it's being logged.
-        _queued_imu_packets: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_QUEUE_SIZE,
-            max_size_bytes=BUFFER_SIZE_IN_BYTES,
+        # Shared Queue which contains the latest data from the IMU.
+        _queued_imu_packets: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
+        # Initialize the thread that fetches data from the IMU
+        data_fetch_thread = threading.Thread(
+            target=self._query_imu_for_data_packets,
+            args=(port,),
+            name="IMU Thread",
+            daemon=True,
         )
-        # Starts the process that fetches data from the IMU
-        data_fetch_process = multiprocessing.Process(
-            target=self._query_imu_for_data_packets, args=(port,), name="IMU Process"
-        )
-        super().__init__(data_fetch_process, _queued_imu_packets)
+        super().__init__(data_fetch_thread, _queued_imu_packets)
 
-    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
     def _fetch_data_loop(self, port: str) -> None:  # pragma: no cover
         """
         Continuously fetch data packets from the IMU and process them.
 
         :param port: The serial port to connect to the IMU.
         """
-        # Set the process priority really high, as we want to get the data from the IMU as fast as
-        # possible:
-        set_process_priority(IMU_PROCESS_PRIORITY)
-
         # Connect to the IMU and initialize the parser used for getting data packets
         parser = mscl_rs.SerialParser(port, timeout=IMU_TIMEOUT_SECONDS)
         parser.start()
@@ -74,13 +63,12 @@ class IMU(BaseIMU):
         # - using no functions inside the loop (this is typically 2x faster per packet)
         # - if-elif statements instead of a `match` / `setattr` / `hasattr` (2x-5x faster / packet)
         # - Using msgspec to serialize and deserialize the packets, which is faster than pickle
-        # - High priority for the process
-        while self._requested_to_run.value:
+        # - High priority for the main process
+        while self._requested_to_run.is_set():
             # Retrieve data packets from the IMU.
             packets = parser.get_data_packets(block=True)
 
-            self._imu_packets_per_cycle.value = len(packets)
-            messages = []
+            self._imu_packets_per_cycle = len(packets)
 
             for packet in packets:
                 if packet.packet_type == "raw":
@@ -131,9 +119,7 @@ class IMU(BaseIMU):
                 else:
                     continue  # We never actually reach here, but keeping it just in case
 
-                messages.append(imu_data_packet)
-
-            self._queued_imu_packets.put_many(messages)
+                self._queued_imu_packets.put_nowait(imu_data_packet)
 
         parser.stop()
 
@@ -144,8 +130,6 @@ class IMU(BaseIMU):
         It runs in parallel with the main loop.
         :param port: the port that the IMU is connected to
         """
-        self._running.value = True
-        self._setup_queue_serialization_method()
-        with contextlib.suppress(KeyboardInterrupt):
-            self._fetch_data_loop(port)
-        self._running.value = False
+        self._running.set()
+        self._fetch_data_loop(port)
+        self._running.clear()

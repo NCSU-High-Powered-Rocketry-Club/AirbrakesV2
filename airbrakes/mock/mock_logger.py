@@ -33,7 +33,7 @@ class MockLogger(Logger):
         """
         super().__init__(log_file_path)
         self._delete_log_file = delete_log_file
-        self._log_process.name = "Mock Logger Process"
+        self._log_thread.name = "Mock Logger Thread"
 
     def stop(self) -> None:
         """

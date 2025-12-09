@@ -5,12 +5,12 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
+from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.state import StandbyState, State
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import convert_ns_to_s, set_process_priority
+from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
@@ -107,19 +107,15 @@ class Context:
 
     def start(self, wait_for_start: bool = False) -> None:
         """
-        Starts the processes for the IMU, Logger, and ApogeePredictor.
+        Starts the threads for the IMU, Logger, and ApogeePredictor.
 
         This is called before the main loop starts.
 
-        :param wait_for_start: If True, waits for all the processes to have actually started. This
-            matters because starting processes via the "spawn"/"forkserver" method is slow, and we
-            want to prevent data races where the main loop tries to access data before the processes
+        :param wait_for_start: If True, waits for all the threads to have actually started. This
+            matters because starting threads via the "spawn"/"forkserver" method is slow, and we
+            want to prevent data races where the main loop tries to access data before the threads
             have started.
         """
-        # We have multiple processes that we run, one for the IMU, one for the Logger, and one for
-        # the Apogee Predictor. You can think of it basically like multithreading (even though it's
-        # not), where each process runs independently and communicates via queues.
-        set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
@@ -140,15 +136,15 @@ class Context:
         """
         if self.shutdown_requested:
             return
+        self.shutdown_requested = True
         self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.shutdown_requested = True
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main process. This is essentially the "brain" of the
+        Called every loop iteration from the main thread. This is essentially the "brain" of the
         air brakes system, where all the data is collected, processed, and logged, and the state
         machine is updated.
 

@@ -1,13 +1,11 @@
 import csv
-import multiprocessing
-import multiprocessing.sharedctypes
+import queue
 import threading
 import time
 from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING
 
-import faster_fifo
 import pytest
 from msgspec.structs import asdict
 
@@ -53,7 +51,7 @@ def patched_stop(self):
     """
     # Make sure the rest of the code is the same as the original method!
     self._log_queue.put(STOP_SIGNAL)
-    self._log_process.join()
+    self._log_thread.join()
 
 
 def extract_state_letter(value) -> str:
@@ -110,7 +108,7 @@ def threaded_logger(monkeypatch):
     # Cannot use signals from child threads, so we need to monkeypatch it:
     monkeypatch.setattr("signal.signal", lambda _, __: None)
     target = threading.Thread(target=logger._logging_loop)
-    logger._log_process = target
+    logger._log_thread = target
     yield logger
     logger.stop()
 
@@ -154,12 +152,12 @@ class TestLogger:
         assert logger.log_path.parent.name == "logs"
 
         # Test if all attributes are created correctly
-        assert isinstance(logger._log_queue, faster_fifo.Queue)
-        assert isinstance(logger._log_process, multiprocessing.Process)
+        assert isinstance(logger._log_queue, queue.SimpleQueue)
+        assert isinstance(logger._log_thread, threading.Thread)
 
-        # Test that the process is not running
+        # Test that the thread is not running
         assert not logger.is_running
-        assert not logger._log_process.is_alive()
+        assert not logger._log_thread.is_alive()
 
     def test_init_sets_log_path_correctly(self):
         # assert no files exist:
@@ -202,7 +200,7 @@ class TestLogger:
         logger._log_queue.put(STOP_SIGNAL)
         time.sleep(0.4)
         assert not logger.is_running
-        assert not logger._log_process.is_alive()
+        assert not logger._log_thread.is_alive()
         logger.stop()
 
     def test_logging_loop_start_stop(self, logger):
@@ -211,7 +209,6 @@ class TestLogger:
 
         logger.stop()
         assert not logger.is_running
-        assert logger._log_process.exitcode == 0
 
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
@@ -232,32 +229,11 @@ class TestLogger:
     def test_logging_loop_add_to_queue(self, logger):
         logger.start()
         logger._log_queue.put(self.sample_ldp)
-        assert logger._log_queue.qsize() == 1
-        time.sleep(0.4)  # Give the process time to log to file
+        time.sleep(0.1)  # Give the thread time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                row: dict[str]
-            # Only fetch non-empty values:
-            row_dict = {k: v for k, v in row.items() if v}
-
-            assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), truncation=False)
-
-    def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
-        """
-        Tests whether the logger continues to log after a timeout.
-        """
-        monkeypatch.setattr("airbrakes.telemetry.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
-        logger.start()
-        time.sleep(0.05)
-        logger._log_queue.put(self.sample_ldp)
-        logger.stop()
-        # Let's check the contents of the file:
-        with logger.log_path.open() as f:
-            reader = csv.DictReader(f)
-            row = {}
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
@@ -425,7 +401,7 @@ class TestLogger:
             processor_data_packets.copy(),
             apogee_predictor_data_packets.copy(),
         )
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
         logger.stop()
 
         # Let's check the contents of the file:
@@ -506,7 +482,7 @@ class TestLogger:
             apogee_predictor_data_packets,
         )
 
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
@@ -582,7 +558,7 @@ class TestLogger:
             apogee_predictor_data_packets,
         )
 
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
 
         assert len(logger._log_buffer) == LOG_BUFFER_SIZE
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
@@ -652,7 +628,7 @@ class TestLogger:
             processor_data_packets * (IDLE_LOG_CAPACITY + 10),
             apogee_predictor_data_packets,
         )
-        time.sleep(0.1)  # Give the process time to log to file
+        time.sleep(0.1)  # Give the thread time to log to file
 
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
@@ -995,7 +971,7 @@ class TestLogger:
                 apogee_predictor_data_packets=[],
             )
 
-        # Give the process time to process the queue
+        # Give the thread time to process the queue
         time.sleep(0.1)
 
         # Verify the number of flush calls before stop():

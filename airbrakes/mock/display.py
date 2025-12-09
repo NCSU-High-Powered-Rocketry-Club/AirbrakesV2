@@ -2,12 +2,11 @@
 File to handle the display of real-time flight data in the terminal.
 """
 
-import multiprocessing
+import os
 import threading
 import time
 from typing import TYPE_CHECKING
 
-import psutil
 from colorama import Fore, Style, init
 
 from airbrakes.constants import DisplayEndingType
@@ -37,16 +36,13 @@ class FlightDisplay:
     __slots__ = (
         "_args",
         "_context",
-        "_cpu_thread",
-        "_cpu_usages",
+        "_current_pid",
         "_display_header",
+        "_display_update_thread",
         "_launch_file",
         "_pitch_at_startup",
-        "_processes",
         "_running",
         "_start_time",
-        "_thread_target",
-        "_verbose",
         "end_mock_interrupted",
         "end_mock_natural",
     )
@@ -65,16 +61,11 @@ class FlightDisplay:
         self._args = args
         self._pitch_at_startup: float = 0.0  # The calculated pitch in degrees in StandbyState
 
-        # Prepare the processes for monitoring in the replay:
-        self._processes: dict[str, psutil.Process] | None = None
-        self._cpu_usages: dict[str, float] | None = None
         # daemon threads are killed when the main thread exits.
-        self._thread_target = threading.Thread(
+        self._display_update_thread = threading.Thread(
             target=self.update_display, daemon=True, name="Real Time Display Thread"
         )
-        self._cpu_thread = threading.Thread(
-            target=self.update_cpu_usage, daemon=True, name="CPU Usage Thread"
-        )
+        self._current_pid = os.getpid()
         # Create events to signal the end of the replay.
         self.end_mock_natural = threading.Event()
         self.end_mock_interrupted = threading.Event()
@@ -93,43 +84,17 @@ class FlightDisplay:
         Starts the display and cpu monitoring thread.
 
         Also prepares the processes for monitoring in the replay. This should only be done *after*
-        context.start() is called, because we need the process IDs.
+        context.start() is called, because we need the thread IDs.
         """
         self._running = True
-        self._processes = self.prepare_process_dict()
-        self._cpu_usages = dict.fromkeys(self._processes, 0.0)
-        self._cpu_thread.start()
-        self._thread_target.start()
+        self._display_update_thread.start()
 
     def stop(self) -> None:
         """
         Stops the display thread.
-
-        Similar to start(), this must be called *before* context.stop() is called to prevent psutil
-        from raising a NoSuchProcess exception.
         """
         self._running = False
-        self._cpu_thread.join()
-        self._thread_target.join()
-
-    def update_cpu_usage(self, interval: float = 0.3) -> None:
-        """
-        Update CPU usage for each monitored process every `interval` seconds.
-
-        This is run in another thread because polling for CPU usage is a blocking operation.
-        :param interval: time in seconds between polling CPU usage.
-        """
-        cpu_count = psutil.cpu_count()
-        while self._running:
-            for name, process in self._processes.items():
-                # interval=None is not recommended and can be inaccurate.
-                # We normalize the CPU usage by the number of CPUs to get average cpu usage,
-                # otherwise it's usually > 100%.
-                try:
-                    self._cpu_usages[name] = process.cpu_percent(interval=interval) / cpu_count
-                except psutil.NoSuchProcess:
-                    # The process has ended, so we set the CPU usage to 0.
-                    self._cpu_usages[name] = 0.0
+        self._display_update_thread.join()
 
     def sound_alarm_if_imu_is_having_issues(self) -> None:
         """
@@ -193,6 +158,8 @@ class FlightDisplay:
                 if self._context.state.name == "MotorBurnState":
                     self._update_display(DisplayEndingType.TAKEOFF)
                     break
+
+            time.sleep(0.01)  # Don't hog the CPU
 
         # The program has ended, so we print the final display, depending on how it ended:
         if self.end_mock_natural.is_set():
@@ -271,19 +238,10 @@ class FlightDisplay:
                     f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._context.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
-                    f"{Y}{'=' * 13} REAL TIME CPU LOAD {'=' * 14}{RESET}",
+                    # Use htop -H -p <PID> to see thread CPU usage
+                    f"Current process ID:              {G}{self._current_pid:<10}{RESET} ",
                 ]
             )
-
-            # Add CPU usage data with color coding
-            for name, cpu_usage in self._cpu_usages.items():
-                if cpu_usage < 50:
-                    cpu_color = G
-                elif cpu_usage < 75:
-                    cpu_color = Y
-                else:
-                    cpu_color = R
-                output.append(f"{name:<25}    {cpu_color}CPU Usage: {cpu_usage:>6.2f}% {RESET}")
 
         # Print the output
         print("\n".join(output))
@@ -300,20 +258,3 @@ class FlightDisplay:
                 print(f"{R}{'=' * 12} INTERRUPTED REPLAY {'=' * 13}{RESET}")
             case DisplayEndingType.TAKEOFF:
                 print(f"{R}{'=' * 13} ROCKET LAUNCHED {'=' * 14}{RESET}")
-
-    def prepare_process_dict(self) -> dict[str, psutil.Process]:
-        """
-        Prepares a dictionary of processes to monitor CPU usage for.
-
-        :return: A dictionary of process names and their corresponding psutil.Process objects.
-        """
-        all_processes = {}
-        imu_process = self._context.imu._data_fetch_process
-        log_process = self._context.logger._log_process
-        apogee_process = self._context.apogee_predictor._prediction_process
-        current_process = multiprocessing.current_process()
-        for p in [imu_process, log_process, current_process, apogee_process]:
-            # psutil allows us to monitor CPU usage of a process, along with low level information
-            # which we are not using.
-            all_processes[p.name] = psutil.Process(p.pid)
-        return all_processes
