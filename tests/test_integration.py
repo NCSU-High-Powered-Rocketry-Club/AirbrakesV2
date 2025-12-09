@@ -6,8 +6,10 @@ launch and manually verifying the data output by the code. This test will run at
 CI. To run it in real time, see `main.py` or instructions in the `README.md`.
 """
 
+import queue
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
@@ -28,7 +30,35 @@ from tests.auxil.launch_cases import (
     StateInformation,
 )
 
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
+
 SNAPSHOT_INTERVAL = 0.001  # seconds
+
+
+def get_some_packets(
+    packet_queue: queue.SimpleQueue, block: bool, max_packets_to_fetch: int = 15
+) -> list[IMUDataPacket]:
+    """
+    Keep this the same as the one in utils.py! This is here because we need to limit the number of
+    packets received for the integration test, so it doesn't skip over data and fails test cases.
+    :param max_packets_to_fetch: The maximum number of packets to fetch. 0 means no limit.
+    """
+    items = []
+
+    if block:
+        # Block until at least one item is available
+        items.append(packet_queue.get(block=True))
+
+    # Drain the rest of the queue, non-blocking
+    while not packet_queue.empty() and (
+        max_packets_to_fetch == 0 or len(items) < max_packets_to_fetch
+    ):
+        try:
+            items.append(packet_queue.get(block=False))
+        except queue.Empty:
+            break
+    return items
 
 
 class TestIntegration:
@@ -85,6 +115,7 @@ class TestIntegration:
         # here, and not in the actual state module.
 
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", target_altitude)
+        monkeypatch.setattr("airbrakes.utils.get_all_packets_from_queue", get_some_packets)
 
         states_dict: dict[str, StateInformation] = {}
 
@@ -95,7 +126,7 @@ class TestIntegration:
         ab.start(wait_for_start=True)
 
         # Run until the patched method in our IMU has finished (i.e. the data is exhausted)
-        while ab.imu.is_running:
+        while ab.imu.is_running or ab.imu.queued_imu_packets > 0:
             ab.update()
             if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:

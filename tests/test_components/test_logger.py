@@ -229,6 +229,7 @@ class TestLogger:
     def test_logging_loop_add_to_queue(self, logger):
         logger.start()
         logger._log_queue.put(self.sample_ldp)
+        time.sleep(0.001)  # Give the thread time to add to the queue
         assert logger._log_queue.qsize() == 1
         time.sleep(0.4)  # Give the thread time to log to file
         logger.stop()
