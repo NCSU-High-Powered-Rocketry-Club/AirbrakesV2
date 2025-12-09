@@ -1,5 +1,6 @@
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -9,7 +10,6 @@ from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
-from airbrakes.context import Context
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, StandbyState
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
@@ -23,6 +23,9 @@ from tests.auxil.utils import (
     make_processor_data_packet,
     make_raw_data_packet,
 )
+
+if TYPE_CHECKING:
+    from airbrakes.context import Context
 
 
 class TestContext:

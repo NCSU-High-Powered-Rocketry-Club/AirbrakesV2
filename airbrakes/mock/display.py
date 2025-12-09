@@ -2,7 +2,6 @@
 File to handle the display of real-time flight data in the terminal.
 """
 
-import argparse
 import multiprocessing
 import threading
 import time
@@ -15,6 +14,8 @@ from airbrakes.constants import DisplayEndingType
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
+    import argparse
+
     from airbrakes.context import Context
 
 
@@ -50,7 +51,7 @@ class FlightDisplay:
         "end_mock_natural",
     )
 
-    def __init__(self, context: "Context", args: argparse.Namespace) -> None:
+    def __init__(self, context: Context, args: argparse.Namespace) -> None:
         """
         Initializes the FlightDisplay object.
 
@@ -174,11 +175,10 @@ class FlightDisplay:
 
         # Wait till we processed a data packet. This is to prevent the display from updating
         # before we have any data to display.
-        while True:
-            # See https://github.com/python/cpython/issues/130279 for why this is here and not
-            # in the loop condition.
-            if self._context.context_data_packet and self._context.data_processor._last_data_packet:
-                break
+        while not (
+            self._context.context_data_packet and self._context.data_processor._last_data_packet
+        ):
+            pass
 
         self._start_time = time.time()
 

@@ -2,7 +2,7 @@
 
 If you don't want to use `uv`, you can set up the project using Python.
 
-**This project uses Python 3.13. Using an older version may not work since we use newer language features**
+**This project uses Python 3.14. Using an older version may not work since we use newer language features**
 
 
 ### 1. Clone the repository:

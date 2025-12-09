@@ -4,9 +4,12 @@ Mock Logger class for testing purposes.
 Currently only used to delete the log file.
 """
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from airbrakes.telemetry.logger import Logger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class MockLogger(Logger):

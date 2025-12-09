@@ -1,7 +1,7 @@
 [project]
 name = "AirbrakesV2"
 description = "Logic for air brakes as a part of the NASA Student Launch Competition"
-requires-python = ">=3.13, <3.14"
+requires-python = ">=3.14, <3.15"
 version = "1.7.0"
 readme = "README.md"
 dependencies = [
@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Need to run `sudo apt install liblgpio-dev` to build and install everything encoder related.
+# Need to run `sudo apt install liblgpio-dev swig` to build and install everything encoder related.
 encoder = [
     "swig>=4.3.0",
     "lgpio>=0.2.2.0",
@@ -38,7 +38,7 @@ dev = [
     "ruff>=0.12.12",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
-    "docformatter",
+    # "docformatter",
     "ty>=0.0.1a20",
 ]
 
@@ -71,7 +71,7 @@ packages = ["airbrakes"]
 # RUFF:
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py314"
 show-fixes = true
 exclude = ["scripts"]
 

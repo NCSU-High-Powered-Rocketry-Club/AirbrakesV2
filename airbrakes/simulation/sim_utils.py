@@ -3,11 +3,13 @@ File which contains utility functions which can be reused in the simulation.
 """
 
 import random
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from airbrakes.simulation.random_config import RandomAttribute
-from airbrakes.simulation.sim_config import SimulationConfig
+if TYPE_CHECKING:
+    from airbrakes.simulation.random_config import RandomAttribute
+    from airbrakes.simulation.sim_config import SimulationConfig
 
 
 def update_timestamp(current_timestamp: np.float64, config: SimulationConfig) -> np.float64:
