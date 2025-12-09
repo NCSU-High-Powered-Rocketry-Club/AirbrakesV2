@@ -6,10 +6,7 @@ command line arguments.
 import argparse
 import queue
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
+from typing import Any
 
 
 def convert_unknown_type_to_float(obj_type: Any) -> float:
@@ -43,7 +40,7 @@ def convert_s_to_ns(seconds: float) -> float:
     return seconds * 1e9
 
 
-def get_all_packets_from_queue(packet_queue: queue.SimpleQueue, block: bool) -> list[IMUDataPacket]:
+def get_all_packets_from_queue(packet_queue: queue.SimpleQueue, block: bool) -> list[Any]:
     """
     Empties the queue and returns all the items in a list.
 
