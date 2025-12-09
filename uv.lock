@@ -10,12 +10,12 @@ dependencies = [
     { name = "colorama" },
     { name = "faster-fifo" },
     { name = "gpiozero" },
+    { name = "mscl-rs" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion" },
     { name = "polars" },
     { name = "psutil" },
-    { name = "python-mscl" },
     { name = "rpi-gpio" },
     { name = "rpi-hardware-pwm" },
     { name = "scipy" },
@@ -49,12 +49,12 @@ requires-dist = [
     { name = "faster-fifo" },
     { name = "gpiozero" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
+    { name = "mscl-rs", specifier = "==0.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = ">=2024.0.10" },
     { name = "polars", specifier = ">=1.33.0" },
     { name = "psutil" },
-    { name = "python-mscl", specifier = ">=67.0.0" },
     { name = "rpi-gpio", specifier = ">=0.7.1" },
     { name = "rpi-hardware-pwm", specifier = ">=0.3.0" },
     { name = "scipy" },
@@ -315,6 +315,16 @@ wheels = [
 ]
 
 [[package]]
+name = "mscl-rs"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/42/3c/e44f1be703b1de8b61127953779a1a4d45b74575cb6a6f118ba577d385dc/mscl_rs-0.2.0.tar.gz", hash = "sha256:08627bb22dcb0cecaf16858b4e3102aa2eaed962eab7c61bc13d6534beaa6a60", size = 621090, upload-time = "2025-12-08T09:20:24.333Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d3/3b/0257995887c9f083335d0053ed8c7279600ba0dc3c11b42672873752ea92/mscl_rs-0.2.0-cp313-cp313-manylinux_2_31_aarch64.whl", hash = "sha256:ff57bb61d50a6cec101b1ebd6a525d6ae1da01c4c73cc4f8302e8d87682fa031", size = 329247, upload-time = "2025-12-08T09:20:17.212Z" },
+    { url = "https://files.pythonhosted.org/packages/43/b4/c22c52eeceff2c7d60e733b0aabf3e02c48b25c282b1d2447cc723c7ab1c/mscl_rs-0.2.0-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:23c1b98f49bbaaf9a47baa2927cebdb5a4dd9f167dd91550b1b5b629231c2ded", size = 386499, upload-time = "2025-12-08T09:18:26.253Z" },
+]
+
+[[package]]
 name = "msgspec"
 version = "0.19.0"
 source = { registry = "https://pypi.org/simple" }
@@ -550,18 +560,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/f7/c933acc76f5208b3b00089573cf6a2bc26dc80a8aece8f52bb7d6b1855ca/pytest_cov-7.0.0.tar.gz", hash = "sha256:33c97eda2e049a0c5298e91f519302a1334c26ac65c1a483d6206fd458361af1", size = 54328, upload-time = "2025-09-09T10:57:02.113Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl", hash = "sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861", size = 22424, upload-time = "2025-09-09T10:57:00.695Z" },
-]
-
-[[package]]
-name = "python-mscl"
-version = "67.1.0.0"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/95/3bb292bd1ea82afca9165f00330e5d7d2a93233a8321eb5e47b9f904a44c/python_mscl-67.1.0.0-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:6371de0349b3feeca1acc56702ffc01f6fc98f95947a127ec0f918b38a6d5081", size = 4044869, upload-time = "2025-06-11T11:35:15.66Z" },
-    { url = "https://files.pythonhosted.org/packages/bf/a3/043970c6bfcda52d85b525099fbc5e9cf8b4072544bffdb782832c8e77b3/python_mscl-67.1.0.0-cp313-cp313-manylinux2014_armv7l.whl", hash = "sha256:789b7a4537ad71cba41aa6fb6accf9d37c2845cc9546dcbfa5e672d2080c20cb", size = 3886029, upload-time = "2025-06-11T11:35:19.425Z" },
-    { url = "https://files.pythonhosted.org/packages/07/7b/544a3ef58979b4d286350f47b9a93fe0541b81d43772b6bc0877c5ba89ab/python_mscl-67.1.0.0-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:4d70871dc92a16bb867bdf5b50e813544ffaa03106247337d782597271927104", size = 4393326, upload-time = "2025-06-11T11:35:23.188Z" },
-    { url = "https://files.pythonhosted.org/packages/71/72/5967aee8021f6c0391d29ea1f4dd81fe29c0a5d616539ef764eb174bb7e5/python_mscl-67.1.0.0-cp313-cp313-win32.whl", hash = "sha256:6725bc630142abad3eb9f5766546a9f0701c40bd50a263ea3577de0004adbab1", size = 3140969, upload-time = "2025-06-11T11:35:27.464Z" },
-    { url = "https://files.pythonhosted.org/packages/d5/51/405cc42ce82af2cc26708bf7d44fca6570c7d15453a77f37454c671df624/python_mscl-67.1.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:0c8b3642134984ead5f0db124435d292e7d3827e04bf13185f0c960a1215e8bf", size = 4162789, upload-time = "2025-06-11T11:35:31.812Z" },
 ]
 
 [[package]]
