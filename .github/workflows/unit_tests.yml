@@ -37,4 +37,4 @@
         - name: Run tests with coverage
           run: |
             # Run tests with coverage except for the integration tests
-            PYTHON_JIT=1 uv run pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
+            PYTHON_GIL=0 PYTHON_JIT=1 uv run pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
