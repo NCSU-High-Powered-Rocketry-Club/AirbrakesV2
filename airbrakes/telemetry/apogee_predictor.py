@@ -91,7 +91,6 @@ class ApogeePredictor:
 
     def get_prediction_data_packet(self) -> ApogeePredictorDataPacket | None:
         """
-        TODO: do we actually want this to return multiple packets?
         Gets the most recent apogee prediction data packet from the queue.
 
         This operation is non-blocking: it drains everything currently in the

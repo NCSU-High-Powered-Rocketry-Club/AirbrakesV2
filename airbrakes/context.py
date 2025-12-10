@@ -36,7 +36,6 @@ class Context:
 
     __slots__ = (
         "apogee_predictor",
-        "apogee_predictor_data_packet",
         "context_data_packet",
         "data_processor",
         "est_data_packets",
@@ -44,6 +43,7 @@ class Context:
         "imu_data_packets",
         "launch_time_ns",
         "logger",
+        "most_recent_apogee_predictor_data_packet",
         "processor_data_packets",
         "servo",
         "servo_data_packet",
@@ -87,7 +87,7 @@ class Context:
         self.imu_data_packets: list[IMUDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
-        self.apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
+        self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
 
@@ -170,7 +170,9 @@ class Context:
         # Gets the most recent Apogee Predictor Data Packets, this will only have new data if we are
         # in coast and have called predict_apogee(), and the apogee predictor has had time to
         # process the data and predict the apogee.
-        self.apogee_predictor_data_packet = self.apogee_predictor.get_prediction_data_packet()
+        apogee_prediction_packet = self.apogee_predictor.get_prediction_data_packet()
+        if apogee_prediction_packet:
+            self.most_recent_apogee_predictor_data_packet = apogee_prediction_packet
 
         # Update the state machine based on the latest processed data
         self.state.update()
@@ -184,7 +186,7 @@ class Context:
             self.servo_data_packet,
             self.imu_data_packets,
             self.processor_data_packets,
-            self.apogee_predictor_data_packet,
+            self.most_recent_apogee_predictor_data_packet,
         )
 
     def extend_airbrakes(self) -> None:
