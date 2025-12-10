@@ -7,8 +7,8 @@ import queue
 import threading
 from typing import TYPE_CHECKING
 
+from airbrakes import utils
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, STOP_SIGNAL
-from airbrakes.utils import get_all_packets_from_queue
 
 if TYPE_CHECKING:
     import queue
@@ -88,7 +88,7 @@ class BaseIMU:
         self._requested_to_run.clear()
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
         # stuck (i.e. deadlocks) waiting for the thread to finish.
-        self.get_imu_data_packets(block=False)
+        # self.get_imu_data_packets(block=False)
         self._queued_imu_packets.put(STOP_SIGNAL)  # signal the main thread to stop waiting
 
         self._data_fetch_thread.join(timeout=IMU_TIMEOUT_SECONDS)
@@ -124,7 +124,7 @@ class BaseIMU:
         :return: A list containing the latest IMU data packets from the IMU packet queue.
         """
         packets = []
-        packets.extend(get_all_packets_from_queue(self._queued_imu_packets, block=block))
+        packets.extend(utils.get_all_packets_from_queue(self._queued_imu_packets, block=block))
         if STOP_SIGNAL in packets:  # only used by the MockIMU
             return []  # Makes the main update() loop exit early.
         return packets

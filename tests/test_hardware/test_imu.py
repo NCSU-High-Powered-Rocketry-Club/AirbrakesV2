@@ -124,8 +124,8 @@ class TestIMU:
         assert not imu._running.is_set()
         assert not imu.is_running
         assert not imu._data_fetch_thread.is_alive()
-        # Tests that all packets were fetched while stopping (except the STOP_SIGNAL):
-        assert imu.queued_imu_packets == 1
+        # Test that packets are waiting in the queue before stopping (including the STOP_SIGNAL):
+        assert imu.queued_imu_packets == 2
 
     def test_imu_stop_when_queue_is_full(self):
         """
@@ -133,14 +133,12 @@ class TestIMU:
         """
         imu = PacketsIMU(port=IMU_PORT)
         imu.start()
-        time.sleep(0.4)  # Sleep a bit to let the thread start and put the data
+        time.sleep(0.2)  # Sleep a bit to let the thread start and put the data
         assert imu._queued_imu_packets.qsize() >= 10
         imu.stop()
         assert not imu.is_running
         assert not imu._data_fetch_thread.is_alive()
-        # Tests that all packets were fetched while stopping:
-        # There is still one packet, since the thread is stopped after the put()
-        assert imu.queued_imu_packets == 1
+        assert imu.queued_imu_packets > 1000
 
     def test_imu_stop_signal(self):
         """
