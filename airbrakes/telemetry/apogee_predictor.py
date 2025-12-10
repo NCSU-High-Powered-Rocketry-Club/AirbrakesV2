@@ -4,9 +4,10 @@ Module for predicting apogee.
 
 import queue
 import threading
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
+from hprm import Rocket, ModelType, OdeMethod, AdaptiveTimeStep
 
-from airbrakes.constants import STOP_SIGNAL
+from airbrakes.constants import STOP_SIGNAL, ROCKET_MASS_KG, ROCKET_CROSS_SECTIONAL_AREA_M2
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
 )
@@ -23,16 +24,9 @@ class ApogeePredictor:
     """
 
     __slots__ = (
-        "_accelerations",
         "_apogee_predictor_packet_queue",
-        "_cumulative_time_differences",
-        "_current_altitude",
-        "_current_velocity",
-        "_has_apogee_converged",
-        "_initial_velocity",
         "_prediction_thread",
         "_processor_data_packet_queue",
-        "_time_differences",
     )
 
     def __init__(self) -> None:
@@ -127,8 +121,17 @@ class ApogeePredictor:
 
         Runs in a separate thread.
         """
-        # Placeholder for last computed apogee
-        apogee: float | np.float64 = 0.0
+
+        rocket = Rocket(
+            ROCKET_MASS_KG,
+            ROCKET_MASS_KG,
+            ROCKET_CROSS_SECTIONAL_AREA_M2,
+            # Rest of these are unused for 1D modeling
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        )
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
@@ -148,17 +151,19 @@ class ApogeePredictor:
             if STOP_SIGNAL in processor_data_packets:
                 break
 
+            most_recent_packet = cast(ProcessorDataPacket, processor_data_packets[-1])
+
             # Compute apogee given the latest state and history
-            apogee = self._predict_apogee(processor_data_packets[-1])  # Use the most recent packet
+            apogee = rocket.predict_apogee(
+                most_recent_packet.current_altitude,
+                most_recent_packet.velocity_magnitude,
+                ModelType.OneDOF,
+                OdeMethod.RK45,
+                AdaptiveTimeStep(),
+            )
 
             # Push a prediction packet back to the main thread.
             # TODO: add more stuff to the packet
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(predicted_apogee=apogee)
             )
-
-    def _predict_apogee(self, most_recent_processor_data_packet: ProcessorDataPacket) -> np.float64:
-        """
-        TODO.
-        """
-        # Use hprm

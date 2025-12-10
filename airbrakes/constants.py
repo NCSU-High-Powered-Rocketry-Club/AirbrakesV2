@@ -303,49 +303,9 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-# This needs to be checked/changed before flights
-FLIGHT_LENGTH_SECONDS = 22.0
-"""
-When we do apogee prediction, we do stepwise integration of our fitted curve to predict the
-acceleration, velocity, and altitude curve of the rocket versus time.
+ROCKET_MASS_KG = 10.0
 
-This is the total time in seconds that we will integrate over. This is a rough estimate of the time
-from coast state to freefall with some extra room for error.
-"""
+ROCKET_CD = 0.3
 
-INTEGRATION_TIME_STEP_SECONDS = 1.0 / 500.0
-"""
-This is the delta time that we use for the stepwise integration of our fitted curve.
+ROCKET_CROSS_SECTIONAL_AREA_M2 = 0.005
 
-It could be any value and just corresponds to the precision of our prediction.
-"""
-
-GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
-"""
-This is the standard gravity on Earth for the launch location of the rocket.
-"""
-
-CURVE_FIT_INITIAL = [-10.5, 0.03]
-"""
-The initial guess for the coefficients for curve fit of the acceleration curve.
-"""
-
-APOGEE_PREDICTION_MIN_PACKETS = 10
-"""
-The minimum number of processor data packets required to update the predicted apogee.
-"""
-
-UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.1, 0.75]
-"""
-The uncertainty from the curve fit, below which we will say that our apogee has converged.
-
-This uncertainty corresponds to being off by +/- 5m.
-"""
-
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
-"""
-The number of packets to use for zeroing the pressure altitude at the launch pad.
-
-This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
-altitude.
-"""
