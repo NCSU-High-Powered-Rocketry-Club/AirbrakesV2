@@ -234,10 +234,11 @@ class Logger:
             if apogee_predictor_data_packets:
                 apogee_packet = apogee_predictor_data_packets.pop(0)
                 logger_packet.predicted_apogee = apogee_packet.predicted_apogee  # ty: ignore[invalid-assignment]
-                logger_packet.a_coefficient = apogee_packet.a_coefficient  # ty: ignore[invalid-assignment]
-                logger_packet.b_coefficient = apogee_packet.b_coefficient  # ty: ignore[invalid-assignment]
-                logger_packet.uncertainty_threshold_1 = apogee_packet.uncertainty_threshold_1  # ty: ignore[invalid-assignment]
-                logger_packet.uncertainty_threshold_2 = apogee_packet.uncertainty_threshold_2  # ty: ignore[invalid-assignment]
+                logger_packet.height_used_for_prediction = apogee_packet.height_used_for_prediction  # ty: ignore[invalid-assignment]
+                logger_packet.velocity_used_for_prediction = (
+                    apogee_packet.velocity_used_for_prediction
+                )  # ty: ignore[invalid-assignment]
+                # logger_packet.pitch_used_for_prediction = apogee_packet.pitch_used_for_prediction
 
             logger_data_packets.append(logger_packet)
 

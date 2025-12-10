@@ -5,16 +5,15 @@ Module for predicting apogee.
 import queue
 import threading
 from typing import TYPE_CHECKING, Literal, cast
-from hprm import Rocket, ModelType, OdeMethod, AdaptiveTimeStep
 
-from airbrakes.constants import STOP_SIGNAL, ROCKET_MASS_KG, ROCKET_CROSS_SECTIONAL_AREA_M2
+from hprm import AdaptiveTimeStep, ModelType, OdeMethod, Rocket
+
+from airbrakes.constants import ROCKET_CROSS_SECTIONAL_AREA_M2, ROCKET_MASS_KG, STOP_SIGNAL
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
 )
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 
 
@@ -121,7 +120,6 @@ class ApogeePredictor:
 
         Runs in a separate thread.
         """
-
         rocket = Rocket(
             ROCKET_MASS_KG,
             ROCKET_MASS_KG,
@@ -130,7 +128,7 @@ class ApogeePredictor:
             0.0,
             0.0,
             0.0,
-            0.0
+            0.0,
         )
 
         # Keep checking for new data packets until the stop signal is received:
@@ -151,7 +149,7 @@ class ApogeePredictor:
             if STOP_SIGNAL in processor_data_packets:
                 break
 
-            most_recent_packet = cast(ProcessorDataPacket, processor_data_packets[-1])
+            most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
 
             # Compute apogee given the latest state and history
             apogee = rocket.predict_apogee(
@@ -165,5 +163,9 @@ class ApogeePredictor:
             # Push a prediction packet back to the main thread.
             # TODO: add more stuff to the packet
             self._apogee_predictor_packet_queue.put(
-                ApogeePredictorDataPacket(predicted_apogee=apogee)
+                ApogeePredictorDataPacket(
+                    apogee,
+                    most_recent_packet.current_altitude,
+                    most_recent_packet.velocity_magnitude,
+                )
             )

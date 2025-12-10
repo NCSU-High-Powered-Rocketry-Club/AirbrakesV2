@@ -71,10 +71,9 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     # These fields are "str" because they were numpy.float64, which is converted to a string
     # when encoded in the logger. Encoding directly to string with 8 decimal places truncation.
     predicted_apogee: str | None = None
-    a_coefficient: str | None = None
-    b_coefficient: str | None = None
-    uncertainty_threshold_1: str | None = None
-    uncertainty_threshold_2: str | None = None
+    height_used_for_prediction: str | None = None
+    velocity_used_for_prediction: str | None = None
+    # pitch_used_for_prediction: str | None = None
 
     # Other fields in ContextDataPacket
     retrieved_imu_packets: int | None

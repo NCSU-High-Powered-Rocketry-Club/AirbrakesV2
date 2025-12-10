@@ -8,9 +8,6 @@ import msgspec
 class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     Represents a packet of data from the apogee predictor.
-
-    This packet is used to communicate the apogee prediction and the uncertainty thresholds to the
-    state machine.
     """
 
     predicted_apogee: float
@@ -18,22 +15,15 @@ class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     The predicted apogee of the rocket in meters.
     """
 
-    a_coefficient: float
+    height_used_for_prediction: float
     """
-    The 'a' coefficient used in the apogee prediction curve fit.
-    """
-
-    b_coefficient: float
-    """
-    The 'b' coefficient used in the apogee prediction curve fit.
+    The altitude used for the apogee prediction in meters.
     """
 
-    uncertainty_threshold_1: float
+    velocity_used_for_prediction: float
     """
-    The first uncertainty threshold for apogee prediction in meters.
+    The vertical velocity used for the apogee prediction in meters per second.
     """
 
-    uncertainty_threshold_2: float
-    """
-    The second uncertainty threshold for apogee prediction in meters.
-    """
+    # TODO: implement once apogee prediction uses 3DOF
+    # pitch_used_for_prediction: float
