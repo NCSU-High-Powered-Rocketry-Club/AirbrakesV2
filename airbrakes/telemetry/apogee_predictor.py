@@ -8,10 +8,16 @@ from typing import TYPE_CHECKING, Literal, cast
 
 from hprm import AdaptiveTimeStep, ModelType, OdeMethod, Rocket
 
-from airbrakes.constants import ROCKET_CROSS_SECTIONAL_AREA_M2, ROCKET_MASS_KG, STOP_SIGNAL
+from airbrakes.constants import (
+    ROCKET_CD,
+    ROCKET_CROSS_SECTIONAL_AREA_M2,
+    ROCKET_MASS_KG,
+    STOP_SIGNAL,
+)
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
 )
+from airbrakes.utils import get_all_packets_from_queue
 
 if TYPE_CHECKING:
     from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
@@ -99,17 +105,11 @@ class ApogeePredictor:
 
         :return: The most recent ApogeePredictorDataPacket, or None.
         """
-        last_packet: ApogeePredictorDataPacket | None = None
+        apogee_predictor_packets = get_all_packets_from_queue(
+            self._apogee_predictor_packet_queue, block=False
+        )
 
-        while True:
-            try:
-                packet = self._apogee_predictor_packet_queue.get_nowait()
-            except queue.Empty:
-                break
-            else:
-                last_packet = packet
-
-        return last_packet
+        return apogee_predictor_packets[-1] if apogee_predictor_packets else None
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
     def _prediction_loop(self) -> None:
@@ -121,7 +121,7 @@ class ApogeePredictor:
         """
         rocket = Rocket(
             ROCKET_MASS_KG,
-            ROCKET_MASS_KG,
+            ROCKET_CD,
             ROCKET_CROSS_SECTIONAL_AREA_M2,
             # Rest of these are unused for 1D modeling
             0.0,
@@ -132,17 +132,9 @@ class ApogeePredictor:
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
-            # Block until at least one item (data packet or STOP_SIGNAL) is available
-            first_item = self._processor_data_packet_queue.get()
-
-            processor_data_packets: list[ProcessorDataPacket | Literal["STOP"]] = [first_item]
-
-            # Drain any other items that have accumulated so we process a batch at once
-            while True:
-                try:
-                    processor_data_packets.append(self._processor_data_packet_queue.get_nowait())
-                except queue.Empty:
-                    break
+            processor_data_packets = get_all_packets_from_queue(
+                self._processor_data_packet_queue, block=True
+            )
 
             # If we got a stop signal in this batch, exit the loop
             if STOP_SIGNAL in processor_data_packets:
