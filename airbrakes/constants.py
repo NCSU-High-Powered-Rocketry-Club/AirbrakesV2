@@ -303,8 +303,18 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
+"""
+
 ROCKET_MASS_KG = 10.0
 
 ROCKET_CD = 0.3
 
 ROCKET_CROSS_SECTIONAL_AREA_M2 = 0.005
+
+# TODO: delete this and simulation/
+GRAVITY_METERS_PER_SECOND_SQUARED = 9.81

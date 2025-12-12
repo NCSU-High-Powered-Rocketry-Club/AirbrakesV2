@@ -24,11 +24,6 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     The magnitude of the rocket's velocity in meters per second.
     """
 
-    current_pitch_degrees: float
-    """
-    The current pitch of the rocket in degrees.
-    """
-
     vertical_velocity: float
     """
     The vertical velocity of the rocket in meters per second.
@@ -37,6 +32,11 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     vertical_acceleration: float
     """
     The vertical acceleration of the rocket in meters per second squared.
+    """
+
+    current_pitch_degrees: float
+    """
+    The current pitch of the rocket in degrees.
     """
 
     time_since_last_data_packet: float

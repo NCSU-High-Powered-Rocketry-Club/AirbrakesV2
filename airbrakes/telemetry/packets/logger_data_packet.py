@@ -64,8 +64,10 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Processor Data Packet Fields
     current_altitude: float | None = None
+    velocity_magnitude: float | None = None
     vertical_velocity: float | None = None
     vertical_acceleration: float | None = None
+    current_pitch_degrees: float | None = None
 
     # Apogee Predictor Data Packet Fields
     # These fields are "str" because they were numpy.float64, which is converted to a string

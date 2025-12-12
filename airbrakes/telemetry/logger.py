@@ -130,7 +130,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packet: ApogeePredictorDataPacket,
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -205,6 +205,10 @@ class Logger:
                 logger_packet.vertical_acceleration = processor_data_packets[
                     index
                 ].vertical_acceleration
+                logger_packet.velocity_magnitude = processor_data_packets[index].velocity_magnitude
+                logger_packet.current_pitch_degrees = processor_data_packets[
+                    index
+                ].current_pitch_degrees
 
                 # Add index:
                 index += 1
@@ -271,7 +275,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packet: ApogeePredictorDataPacket,
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
