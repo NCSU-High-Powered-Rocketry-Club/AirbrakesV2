@@ -151,8 +151,8 @@ class TestIntegration:
                         ab.data_processor.average_vertical_acceleration
                     )
                     state_info.apogee_prediction.append(
-                        ab.most_recent_apogee_predictor_packet.predicted_apogee
-                        if ab.most_recent_apogee_predictor_packet
+                        ab.most_recent_apogee_predictor_data_packet.predicted_apogee
+                        if ab.most_recent_apogee_predictor_data_packet
                         else 0.0
                     )
 
@@ -179,8 +179,8 @@ class TestIntegration:
                 )
 
                 state_info.apogee_prediction.append(
-                    ab.most_recent_apogee_predictor_packet.predicted_apogee
-                    if ab.most_recent_apogee_predictor_packet
+                    ab.most_recent_apogee_predictor_data_packet.predicted_apogee
+                    if ab.most_recent_apogee_predictor_data_packet
                     else 0.0
                 )
 
@@ -260,9 +260,16 @@ class TestIntegration:
             .get_column("predicted_apogee")
             .to_list()
         )
-        uncertainities_in_coast = (
-            coast_df.filter(pl.col("uncertainty_threshold_1").is_not_null())
-            .get_column("uncertainty_threshold_1")
+
+        heights_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("height_used_for_prediction").is_not_null())
+            .get_column("height_used_for_prediction")
+            .to_list()
+        )
+
+        velocities_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("velocity_used_for_prediction").is_not_null())
+            .get_column("velocity_used_for_prediction")
             .to_list()
         )
 
@@ -289,10 +296,10 @@ class TestIntegration:
         # Check if we have a lot of lines in the log file
         assert launch_case_init.log_file_lines_test(line_number)
 
-        # Predicted apogees and uncertainties should be logged in CoastState
+        # Predicted apogees and values used for prediction should be present in coast state
         assert len(pred_apogees_in_coast) > 0
-        assert len(uncertainities_in_coast) > 0
-        assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
+        assert len(heights_used_for_prediction_in_coast) > 0
+        assert len(velocities_used_for_prediction_in_coast) > 0
 
         # Check if all states were logged
         assert launch_case_init.log_file_states_logged(state_list)
