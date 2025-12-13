@@ -13,7 +13,7 @@ from tests.auxil.utils import make_processor_data_packet
 
 class TestApogeePredictor:
     """
-    Tests the IMUDataProcessor class.
+    Tests the ApogeePredictor class.
     """
 
     def test_slots(self):
@@ -98,13 +98,13 @@ class TestApogeePredictor:
                     )
                     for i in range(70)
                 ],
-                1189.6919165089682,
+                1272.556161741228,
             ),
         ],
         ids=["at_apogee", "start_of_coast_phase"],
     )
     def test_prediction_loop_no_mock(
-        self, apogee_predictor, processor_data_packets, expected_apogee
+        self, apogee_predictor, processor_data_packets, expected_apogee, monkeypatch
     ):
         """
         Integration-ish test of the apogee predictor using the real HPRM call. These tests assume
@@ -118,6 +118,9 @@ class TestApogeePredictor:
             * The height/velocity used in the prediction come from the last packet.
             * The predicted apogee matches an expected (precomputed) value.
         """
+        monkeypatch.setattr("airbrakes.constants.ROCKET_DRY_MASS_KG", 4.937)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_CD", 0.45)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2", 0.00810731966)
         apogee_predictor.start()
 
         # Feed all packets into the predictor, one by one

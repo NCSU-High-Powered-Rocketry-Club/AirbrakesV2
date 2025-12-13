@@ -2,6 +2,7 @@
 Contains the constants used in the Airbrakes module.
 """
 
+import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
@@ -143,6 +144,13 @@ class DisplayEndingType(StrEnum):
 # Data Processor Configuration
 # -------------------------------------------------------
 
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
+"""
+
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """
 After airbrakes retract, it takes some time for the pressure to stabilize.
@@ -260,13 +268,6 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 360.0
-"""
-The target apogee in meters that we want the rocket to reach.
-
-This is used with our bang-bang controller to determine when to extend and retract the air brakes.
-"""
-
 MAX_ALTITUDE_THRESHOLD = 0.95
 """
 We don't care too much about accurately changing to the freefall state, so we just check if the
@@ -303,18 +304,29 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+TARGET_APOGEE_METERS = 518.16  # 518.16 meters is 1700 feet
 """
-The number of packets to use for zeroing the pressure altitude at the launch pad.
-This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
-altitude.
+The target apogee in meters that we want the rocket to reach.
+
+This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-ROCKET_MASS_KG = 10.0
+ROCKET_DRY_MASS_KG = 4.937
+"""
+The mass of the entire rocket without propellant in kilograms.
+"""
 
-ROCKET_CD = 0.3
+ROCKET_CD = 0.45
+"""
+The drag coefficient of the rocket with airbrakes all the way retracted.
+"""
 
-ROCKET_CROSS_SECTIONAL_AREA_M2 = 0.005
+# This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
+# calculate cross-sectional area.
+ROCKET_CROSS_SECTIONAL_AREA_M2 = math.pi * (4.0 * 0.0254 / 2) ** 2
+"""
+The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
+"""
 
 # TODO: delete this and simulation/
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81

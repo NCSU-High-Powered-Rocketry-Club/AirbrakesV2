@@ -8,10 +8,8 @@ from typing import TYPE_CHECKING, Literal, cast
 
 from hprm import AdaptiveTimeStep, ModelType, OdeMethod, Rocket
 
+from airbrakes import constants
 from airbrakes.constants import (
-    ROCKET_CD,
-    ROCKET_CROSS_SECTIONAL_AREA_M2,
-    ROCKET_MASS_KG,
     STOP_SIGNAL,
 )
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
@@ -120,9 +118,9 @@ class ApogeePredictor:
         Runs in a separate thread.
         """
         rocket = Rocket(
-            ROCKET_MASS_KG,
-            ROCKET_CD,
-            ROCKET_CROSS_SECTIONAL_AREA_M2,
+            constants.ROCKET_DRY_MASS_KG,
+            constants.ROCKET_CD,
+            constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
             # Rest of these are unused for 1D modeling
             0.0,
             0.0,
@@ -142,13 +140,16 @@ class ApogeePredictor:
 
             most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
 
+            adaptive_time_step = AdaptiveTimeStep()
+            adaptive_time_step.dt_max = 1
+
             # Compute apogee given the latest state and history
             apogee = rocket.predict_apogee(
                 most_recent_packet.current_altitude,
                 most_recent_packet.velocity_magnitude,
                 ModelType.OneDOF,
                 OdeMethod.RK45,
-                AdaptiveTimeStep(),
+                adaptive_time_step,
             )
 
             # Push a prediction packet back to the main thread.
