@@ -408,7 +408,7 @@
         },
         "flight_description": "Interest Launch 2025. This flight had a airbrakes redesign to increase surface area. This launch was scrubbed because the secondary drogue system failed to arm, and we couldn't get it working in time."
     },
-    "government_work.csv": {
+    "government_work_1.csv": {
         "date": "2025-11-01T14:53:21.171-04:00",
         "rocket": {
             "rocket_Cd": 0.45,
@@ -429,7 +429,7 @@
         },
         "imu_details": {
             "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
+            "raw_packet_frequency": 500.0,
             "est_packet_frequency": 500.0
         },
         "flight_data": {
@@ -444,5 +444,42 @@
             "target_apogee_meters": 0.0
         },
         "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off. At the field, we had to dremmel 2 fins, halfway through its thickness (3mm). They worked as intended. This was the first launch with FIRM in the AB and nose cone."
+    },
+    "government_work_2.csv": {
+        "date": "2025-11-01T14:53:21.171-04:00",
+        "rocket": {
+            "rocket_Cd": 0.45,
+            "rocket_mass_kg": 4.67,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
+        "launch_site": {
+            "air_temperature_celsius": 10.0,
+            "air_pressure_mb": 1020.10,
+            "wind_speed_kmh": 13.8,
+            "wind_direction": "SSW",
+            "location": "Bayboro, NC",
+            "launch_coordinates": {
+                "latitude": 35.175930,
+                "longitude": -76.827972
+            },
+            "launch_rod_angle": 2.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 500.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": null,
+            "landed_coordinates": {
+                "latitude": null,
+                "longitude": null 
+            },
+            "landed_coordinates_precision": "",
+            "flight_length_seconds": 0.0,
+            "target_apogee_meters": 518.16
+        },
+        "flight_description": ""
     }
 }

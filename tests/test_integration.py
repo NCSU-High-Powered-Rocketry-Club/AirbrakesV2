@@ -20,7 +20,8 @@ from airbrakes.constants import (
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
-    GovernmentWorkLaunchCase,
+    GovernmentWorkLaunchCase1,
+    GovernmentWorkLaunchCase2,
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
@@ -105,8 +106,10 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase2
         elif launch_name == "pelicanator_launch_4":
             launch_case = PelicanatorLaunchCase4
-        elif launch_name == "government_work":
-            launch_case = GovernmentWorkLaunchCase
+        elif launch_name == "government_work_1":
+            launch_case = GovernmentWorkLaunchCase1
+        elif launch_name == "government_work_2":
+            launch_case = GovernmentWorkLaunchCase2
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
