@@ -23,7 +23,7 @@ dependencies = [
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
-    "hprm>=0.1.5",
+    "hprm>=0.1.6",
 ]
 
 # TODO: Remove this once polars has official wheels for python 3.14t
