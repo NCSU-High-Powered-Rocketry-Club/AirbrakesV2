@@ -2,6 +2,11 @@
     "$schema": "metadata_schema.json",
     "purple_launch.csv": {
         "date": "2023-12-16T17:11:35.000-05:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": null,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 16.11,  
             "air_pressure_mb": 1031.49,
@@ -34,6 +39,11 @@
     },
     "shake_n_bake.csv": {
         "date": "2024-09-28T14:51:21.437-04:00",
+        "rocket": {
+            "rocket_Cd": 0.41,
+            "rocket_mass_kg": 13.44,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
         "launch_site": {
             "air_temperature_celsius": 30.0,
             "air_pressure_mb": 1012.19,
@@ -66,6 +76,11 @@
     },
     "genesis_launch_1.csv": {
         "date": "2024-11-16T13:54:22.792-05:00",
+        "rocket": {
+            "rocket_Cd": 0.46,
+            "rocket_mass_kg": 6.622449,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 16.0,
             "air_pressure_mb": 1016.18,
@@ -99,6 +114,11 @@
     },
     "genesis_launch_2.csv": {
         "date": "2024-11-16T16:55:20.731-05:00",
+        "rocket": {
+            "rocket_Cd": 0.46,
+            "rocket_mass_kg": 6.622449,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 15.5,
             "air_pressure_mb": 1015.53,
@@ -131,6 +151,11 @@
     },
     "legacy_launch_1.csv": {
         "date": "2025-01-25T13:39:19.385-05:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": 5.1,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 6.667,  
             "air_pressure_mb": 1029.3,
@@ -163,6 +188,11 @@
     },
     "legacy_launch_2.csv": {
         "date": "2025-01-25T16:13:17.074-05:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": 5.1,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 6.11,  
             "air_pressure_mb": 1028.4,
@@ -195,6 +225,11 @@
     },
     "pelicanator_launch_1.csv": {
         "date": "2025-02-22T15:42:17.202-05:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": null,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
         "launch_site": {
             "air_temperature_celsius": 8.89,  
             "air_pressure_mb": 1026.4,
@@ -227,6 +262,11 @@
     },
     "pelicanator_launch_2.csv": {
         "date": "2025-03-08T14:19:33.411-05:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": null,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
         "launch_site": {
             "air_temperature_celsius": 25.6,  
             "air_pressure_mb": 999.45,
@@ -259,6 +299,11 @@
     },
     "pelicanator_launch_3.csv": {
         "date": "2025-04-05T14:38:37.408-04:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": null,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
         "launch_site": {
             "air_temperature_celsius": 31.0,  
             "air_pressure_mb": 1019.10,
@@ -291,6 +336,11 @@
     },
     "pelicanator_launch_4.csv": {
         "date": "2025-05-04T09:45:10.931-06:00",
+        "rocket": {
+            "rocket_Cd": 0.425,
+            "rocket_mass_kg": 14.5,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
         "launch_site": {
             "air_temperature_celsius": 16.7,
             "air_pressure_mb": 983.2,
@@ -323,6 +373,11 @@
     },
     "lil_frank.csv": {
         "date": "2025-10-18T14:31:10.931-04:00",
+        "rocket": {
+            "rocket_Cd": null,
+            "rocket_mass_kg": null,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 23.7,
             "air_pressure_mb": 1016.2,
@@ -355,6 +410,11 @@
     },
     "government_work.csv": {
         "date": "2025-11-01T14:53:21.171-04:00",
+        "rocket": {
+            "rocket_Cd": 0.45,
+            "rocket_mass_kg": 4.67,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
         "launch_site": {
             "air_temperature_celsius": 17.0,
             "air_pressure_mb": 1018.10,
