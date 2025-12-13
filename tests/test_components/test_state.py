@@ -183,8 +183,7 @@ class TestMotorBurnState:
         motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        # TODO: re-enable once airbrakes controls logic is added
-        # assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestCoastState:
@@ -199,7 +198,7 @@ class TestCoastState:
 
     def test_init(self, coast_state, context):
         assert coast_state.context == context
-        # assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert issubclass(coast_state.__class__, State)
 
     def test_name(self, coast_state):
@@ -215,10 +214,10 @@ class TestCoastState:
             "airbrakes_ext",
         ),
         [
-            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MAX_EXTENSION),
+            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_EXTENSION),
             (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_EXTENSION),
-            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MAX_EXTENSION),
-            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MAX_EXTENSION),
+            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MIN_EXTENSION),
+            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MIN_EXTENSION),
             (
                 200.1 * MAX_ALTITUDE_THRESHOLD,
                 200.1,
@@ -265,7 +264,6 @@ class TestCoastState:
         )
         assert coast_state.context.servo.current_extension == airbrakes_ext
 
-    @pytest.mark.skip(reason="Controls logic currently disabled")
     @pytest.mark.parametrize(
         (
             "target_altitude",
@@ -292,8 +290,10 @@ class TestCoastState:
     def test_update_with_controls(
         self, coast_state, monkeypatch, target_altitude, predicted_apogee, expected_airbrakes
     ):
-        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
-            predicted_apogee=predicted_apogee,
+        coast_state.context.most_recent_apogee_predictor_data_packet = (
+            make_apogee_predictor_data_packet(
+                predicted_apogee=predicted_apogee,
+            )
         )
 
         # set a dummy value to prevent state changes:
@@ -302,7 +302,6 @@ class TestCoastState:
         coast_state.update()
         assert coast_state.context.servo.current_extension == expected_airbrakes
 
-    @pytest.mark.skip(reason="Controls logic currently disabled")
     def test_update_control_only_once(self, coast_state, monkeypatch):
         """
         Check that we only tell the airbrakes to extend once, and not send the command repeatedly.
@@ -317,8 +316,10 @@ class TestCoastState:
         monkeypatch.setattr(coast_state.context.__class__, "extend_airbrakes", extend_airbrakes)
 
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 900.0)
-        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
-            predicted_apogee=1000.0,
+        coast_state.context.most_recent_apogee_predictor_data_packet = (
+            make_apogee_predictor_data_packet(
+                predicted_apogee=1000.0,
+            )
         )
 
         coast_state.update()
@@ -334,7 +335,6 @@ class TestCoastState:
         coast_state.update()
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
-    @pytest.mark.skip(reason="Controls logic currently disabled")
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
         """
         Check that if we are extended, and the predicted apogee is less than the target altitude, we
@@ -345,8 +345,10 @@ class TestCoastState:
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", 1000.0)
 
         # set the airbrakes to be extended:
-        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
-            predicted_apogee=1100.0,
+        coast_state.context.most_recent_apogee_predictor_data_packet = (
+            make_apogee_predictor_data_packet(
+                predicted_apogee=1100.0,
+            )
         )
         # If the airbrakes have been extended, it means we've been integrating for altitude
         coast_state.context.data_processor._integrating_for_altitude = True
@@ -357,8 +359,10 @@ class TestCoastState:
 
         # set the predicted apogee to be less than the target altitude, to test that we retract the
         # airbrakes:
-        coast_state.context.most_recent_apogee_predictor_packet = make_apogee_predictor_data_packet(
-            predicted_apogee=900.0,
+        coast_state.context.most_recent_apogee_predictor_data_packet = (
+            make_apogee_predictor_data_packet(
+                predicted_apogee=900.0,
+            )
         )
 
         coast_state.update()

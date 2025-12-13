@@ -181,8 +181,10 @@ def target_altitude(request):
         return 1110.6  # actual apogee was about 1160.6m
     if launch_name == "pelicanator_launch_4":
         return 1200.0  # actual apogee was about 1293.72m
-    if launch_name == "governmen't_work":
+    if launch_name == "government_work_1":
         return 360.0  # actual apogee was about 400m
+    if launch_name == "government_work_2":
+        return 468.16  # actual apogee was about 518.16m
     return 1000.0  # Default altitude
 
 
