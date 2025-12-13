@@ -323,7 +323,7 @@ The drag coefficient of the rocket with airbrakes all the way retracted.
 
 # This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
 # calculate cross-sectional area.
-ROCKET_CROSS_SECTIONAL_AREA_M2 = math.pi * (4.0 * 0.0254 / 2) ** 2
+ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 """
 The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
 """

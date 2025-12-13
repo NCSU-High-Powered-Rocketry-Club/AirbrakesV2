@@ -122,7 +122,7 @@ class MockIMU(BaseIMU):
         return RocketParameters(
             rocket_Cd=rocket_data.get("rocket_Cd"),
             rocket_mass_kg=rocket_data.get("rocket_mass_kg"),
-            rocket_cross_sectional_area_m2=rocket_data.get("rocket_diameter_m"),
+            rocket_cross_sectional_area_m2=rocket_data.get("rocket_cross_sectional_area_m2"),
         )
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
