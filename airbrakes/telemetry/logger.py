@@ -130,7 +130,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -140,7 +140,7 @@ class Logger:
         :param imu_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log. This is always the same
         length as the number of EstimatedDataPackets present in the `imu_data_packets`.
-        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
+        :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         :return: A deque of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
@@ -205,6 +205,10 @@ class Logger:
                 logger_packet.vertical_acceleration = processor_data_packets[
                     index
                 ].vertical_acceleration
+                logger_packet.velocity_magnitude = processor_data_packets[index].velocity_magnitude
+                logger_packet.current_pitch_degrees = processor_data_packets[
+                    index
+                ].current_pitch_degrees
 
                 # Add index:
                 index += 1
@@ -231,13 +235,15 @@ class Logger:
             # if the length of the IMU data packets is less than the length of the apogee predictor
             # data packets. However, this is unlikely to happen in practice. This particular case
             # is NOT covered by tests.
-            if apogee_predictor_data_packets:
-                apogee_packet = apogee_predictor_data_packets.pop(0)
-                logger_packet.predicted_apogee = apogee_packet.predicted_apogee  # ty: ignore[invalid-assignment]
-                logger_packet.a_coefficient = apogee_packet.a_coefficient  # ty: ignore[invalid-assignment]
-                logger_packet.b_coefficient = apogee_packet.b_coefficient  # ty: ignore[invalid-assignment]
-                logger_packet.uncertainty_threshold_1 = apogee_packet.uncertainty_threshold_1  # ty: ignore[invalid-assignment]
-                logger_packet.uncertainty_threshold_2 = apogee_packet.uncertainty_threshold_2  # ty: ignore[invalid-assignment]
+            if apogee_predictor_data_packet:
+                logger_packet.predicted_apogee = apogee_predictor_data_packet.predicted_apogee  # ty: ignore[invalid-assignment]
+                logger_packet.height_used_for_prediction = (
+                    apogee_predictor_data_packet.height_used_for_prediction
+                )  # ty: ignore[invalid-assignment]
+                logger_packet.velocity_used_for_prediction = (
+                    apogee_predictor_data_packet.velocity_used_for_prediction
+                )  # ty: ignore[invalid-assignment]
+                # logger_packet.pitch_used_for_prediction = apogee_packet.pitch_used_for_prediction
 
             logger_data_packets.append(logger_packet)
 
@@ -269,7 +275,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
         """
         Logs the current state, extension, and IMU data to the CSV file.
@@ -278,7 +284,7 @@ class Logger:
         :param servo_data_packet: The Servo Data Packet to log.
         :param imu_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log.
-        :param apogee_predictor_data_packets: The apogee predictor data packets to log.
+        :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         """
         # We are populating a list with the fields of the logger data packet
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
@@ -286,7 +292,7 @@ class Logger:
             servo_data_packet,
             imu_data_packets,
             processor_data_packets,
-            apogee_predictor_data_packets,
+            apogee_predictor_data_packet,
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:

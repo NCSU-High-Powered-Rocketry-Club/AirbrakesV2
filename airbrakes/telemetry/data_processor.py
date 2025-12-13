@@ -197,6 +197,10 @@ class DataProcessor:
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
+                # TODO: calculate the actual velocity magnitude rather than using vertical velocity
+                velocity_magnitude=float(self._vertical_velocities[i]),
+                # TODO: check if this pitch is good
+                current_pitch_degrees=self.average_pitch,
                 vertical_velocity=float(self._vertical_velocities[i]),
                 vertical_acceleration=float(self._rotated_accelerations[i]),
                 time_since_last_data_packet=float(self._time_differences[i]),

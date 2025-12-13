@@ -249,7 +249,7 @@ class TestLogger:
             "servo_packet",
             "imu_data_packets",
             "processor_data_packets",
-            "apogee_predictor_data_packets",
+            "apogee_predictor_data_packet",
             "file_lines",
             "expected_output",
         ),
@@ -339,7 +339,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MAX_NO_BUZZ),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
                 2,
                 [
                     {
@@ -364,6 +364,7 @@ class TestLogger:
                             )
                         ),
                         **convert_dict_vals_to_str(asdict(make_est_data_packet())),
+                        **convert_dict_vals_to_str(asdict(make_apogee_predictor_data_packet())),
                         **only_logged_pdp_fields(
                             convert_dict_vals_to_str(asdict(make_processor_data_packet()))
                         ),
@@ -385,7 +386,7 @@ class TestLogger:
         servo_packet,
         imu_data_packets,
         processor_data_packets,
-        apogee_predictor_data_packets,
+        apogee_predictor_data_packet,
         file_lines,
         expected_output: list[dict],
     ):
@@ -399,7 +400,7 @@ class TestLogger:
             servo_packet,
             imu_data_packets.copy(),
             processor_data_packets.copy(),
-            apogee_predictor_data_packets.copy(),
+            apogee_predictor_data_packet,
         )
         time.sleep(0.01)  # Give the thread time to log to file
         logger.stop()
@@ -449,7 +450,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -518,7 +519,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -596,7 +597,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -750,7 +751,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
-                [],
+                None,
                 [
                     LoggerDataPacket(
                         **context_packet_to_logger_kwargs(
@@ -823,7 +824,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
                 [
                     LoggerDataPacket(
                         **context_packet_to_logger_kwargs(
@@ -847,6 +848,7 @@ class TestLogger:
                             )
                         ),
                         **asdict(make_est_data_packet()),
+                        **asdict(make_apogee_predictor_data_packet()),
                         **only_logged_pdp_fields(asdict(make_processor_data_packet())),
                     ),
                 ],
@@ -968,7 +970,7 @@ class TestLogger:
                 servo_packet,
                 imu_data_packets.copy(),
                 processor_data_packets=[],
-                apogee_predictor_data_packets=[],
+                apogee_predictor_data_packet=None,
             )
 
         # Give the thread time to process the queue
@@ -1018,7 +1020,7 @@ class TestLogger:
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []
-        apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
+        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
 
         benchmark(
             logger.log,
@@ -1037,7 +1039,7 @@ class TestLogger:
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []
-        apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
+        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
 
         benchmark(
             logger._prepare_logger_packets,

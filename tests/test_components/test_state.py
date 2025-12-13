@@ -250,11 +250,11 @@ class TestCoastState:
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
-        coast_state.context.apogee_predictor_data_packets = [
+        coast_state.context.most_recent_apogee_predictor_data_packet = (
             make_apogee_predictor_data_packet(
                 predicted_apogee=predicted_apogee,
             )
-        ]
+        )
 
         # Just set the target altitude to the predicted apogee, since we are not testing the
         # controls logic in this test:
@@ -330,7 +330,7 @@ class TestCoastState:
         """
         Check that if we don't have an apogee prediction, we don't extend the airbrakes.
         """
-        assert not coast_state.context.most_recent_apogee_predictor_packet
+        assert not coast_state.context.most_recent_apogee_predictor_data_packet
         coast_state.update()
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 

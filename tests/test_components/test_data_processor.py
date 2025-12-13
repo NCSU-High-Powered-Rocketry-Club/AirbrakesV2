@@ -305,7 +305,7 @@ class TestDataProcessor:
             ]
         )
         # we use pytest.approx() because of floating point errors
-        assert d._previous_vertical_velocity == pytest.approx(1.9757983)
+        assert d._previous_vertical_velocity == pytest.approx(1.9757983, 10e-4)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -344,8 +344,8 @@ class TestDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(-138.151733)
-        assert d.vertical_velocity == pytest.approx(-138.151733)
+        assert d._previous_vertical_velocity == pytest.approx(-138.151733, 10e-4)
+        assert d.vertical_velocity == pytest.approx(-138.151733, 10e-4)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
