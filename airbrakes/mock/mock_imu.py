@@ -12,6 +12,7 @@ import msgspec
 import msgspec.json
 import polars as pl
 
+import airbrakes.constants
 from airbrakes.constants import STOP_SIGNAL
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
@@ -19,6 +20,16 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     IMUDataPacket,
     RawDataPacket,
 )
+
+
+class RocketParameters(msgspec.Struct):
+    """
+    Rocket parameters needed for IMU processing.
+    """
+
+    rocket_Cd: float | None
+    rocket_mass_kg: float | None
+    rocket_cross_sectional_area_m2: float | None
 
 
 class MockIMU(BaseIMU):
@@ -33,6 +44,7 @@ class MockIMU(BaseIMU):
         "_log_file_path",
         "_needed_fields",
         "file_metadata",
+        "rocket_parameters",
     )
 
     def __init__(
@@ -78,6 +90,16 @@ class MockIMU(BaseIMU):
 
         file_metadata: dict = MockIMU.read_file_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
+        self.rocket_parameters: RocketParameters = self._get_rocket_parameters(self.file_metadata)
+
+        if self.rocket_parameters.rocket_mass_kg is not None:
+            airbrakes.constants.ROCKET_DRY_MASS_KG = self.rocket_parameters.rocket_mass_kg
+        if self.rocket_parameters.rocket_Cd is not None:
+            airbrakes.constants.ROCKET_CD = self.rocket_parameters.rocket_Cd
+        if self.rocket_parameters.rocket_cross_sectional_area_m2 is not None:
+            airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2 = (
+                self.rocket_parameters.rocket_cross_sectional_area_m2
+            )
 
         super().__init__(data_fetch_thread, queued_imu_packets)
 
@@ -88,6 +110,20 @@ class MockIMU(BaseIMU):
         """
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
+
+    def _get_rocket_parameters(self, metadata: dict) -> RocketParameters:
+        """
+        Extracts the rocket parameters from the metadata dictionary.
+
+        :param metadata: The metadata dictionary.
+        :return: The RocketParameters object.
+        """
+        rocket_data = metadata.get("rocket", {})
+        return RocketParameters(
+            rocket_Cd=rocket_data.get("rocket_Cd"),
+            rocket_mass_kg=rocket_data.get("rocket_mass_kg"),
+            rocket_cross_sectional_area_m2=rocket_data.get("rocket_diameter_m"),
+        )
 
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
 
