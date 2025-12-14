@@ -1,66 +1,60 @@
-# TODO: Uncomment the benchmark workflow after the repo is public again
-name: Benchmark-invalid
-on: [push]
+name: Benchmarks
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: ["main"]
+
+permissions:
+  deployments: write
+  contents: write
+  pull-requests: write
+
 jobs:
-  noop:
-    runs-on: ubuntu-latest
-    steps: []
+  pytest-benchmark:
+    name: pytest-benchmark
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
 
-# on:
-#   pull_request:
-#     branches:
-#       - '**'  # Matches all branch names, for PRs
-#   push:
-#     branches:
-#       - 'main'  # Run tests on main branch
+    # Don't try to push/comment for PRs coming from forks.
+    # Pushes to main are always in-repo, so those are fine.
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
 
-# permissions:
-#   # deployments permission to deploy GitHub pages website
-#   deployments: write
-#   # contents permission to update benchmark contents in gh-pages branch
-#   contents: write
-#   # allow posting comments on PRs
-#   pull-requests: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-# jobs:
-#   pytest-benchmark:
-#     name: pytest-benchmark
-#     runs-on: ubuntu-24.04-arm
-#     timeout-minutes: 5
-#     strategy:
-#       fail-fast: False
-#     steps:
-#       - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          enable-cache: true
+          version: "0.9.16"
 
-#       - name: Install uv
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           enable-cache: true
-#           version: "0.7.13"
-#       - name: Set up Python
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version-file: "pyproject.toml"
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version-file: "pyproject.toml"
 
-#       - name: Install the project
-#         run: uv sync --verbose --group dev
+      - name: Install the project
+        run: uv sync --verbose --group dev
 
-#       - name: Run benchmarking tests
-#         run: |
-#           PYTHON_JIT=1 uv run -v pytest --benchmark-only --benchmark-json output.json -v tests/
+      - name: Run benchmarking tests
+        run: |
+          PYTHON_JIT=1 uv run -v pytest --benchmark-only --benchmark-json output.json -v tests/
 
-#       - name: Store benchmark result
-#         uses: benchmark-action/github-action-benchmark@v1
-#         with:
-#           tool: 'pytest'
-#           output-file-path: output.json
-#           github-token: ${{ secrets.GITHUB_TOKEN }}
-#           # Show alert with commit comment on detecting possible performance regression
-#           alert-threshold: '160%'
-#           comment-on-alert: true
-#           fail-on-alert: true
-#           alert-comment-cc-users: '@harshil21'
-#           summary-always: true  # Job summary in github PRs
-#           gh-pages-branch: gh-pages
-#           auto-push: true
-#           benchmark-data-dir-path: 'bench/${{ github.head_ref }}'
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "pytest"
+          output-file-path: output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          alert-threshold: "160%"
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: "@harshil21"
+          summary-always: true
+          gh-pages-branch: gh-pages
+          auto-push: true
+          benchmark-data-dir-path: bench/${{ github.head_ref || github.ref_name }}
