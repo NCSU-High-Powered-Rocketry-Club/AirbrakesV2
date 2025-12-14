@@ -6,7 +6,7 @@ It will create the Context object and run the main loop.
 
 import sys
 import sysconfig
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
