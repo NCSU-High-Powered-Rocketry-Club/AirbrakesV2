@@ -17,8 +17,11 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
 
-    # Don't try to push/comment for PRs coming from forks.
-    # Pushes to main are always in-repo, so those are fine.
+    # Disable the GIL for the whole job
+    env:
+      PYTHON_GIL: "0"
+      PYTHON_JIT: "1"
+
     if: >
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
@@ -42,7 +45,7 @@ jobs:
 
       - name: Run benchmarking tests
         run: |
-          PYTHON_JIT=1 uv run -v pytest --benchmark-only --benchmark-json output.json -v tests/
+          uv run -v pytest --benchmark-only --benchmark-json output.json -v tests/
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
