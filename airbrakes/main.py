@@ -6,7 +6,7 @@ It will create the Context object and run the main loop.
 
 import sys
 import sysconfig
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
@@ -22,7 +22,6 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -61,19 +60,6 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
-def run_sim_flight() -> None:
-    """
-    Entry point for the application to run the sim flight.
-
-    Entered when run with
-    `uvx --from git+... sim` or `uv run sim`.
-    """
-    # Modify sys.argv to include sim as the first argument:
-    sys.argv.insert(1, "sim")
-    args = arg_parser()
-    run_flight(args)
-
-
 def run_flight(args: argparse.Namespace) -> None:
     """
     Initializes the Airbrakes components and starts the main loop.
@@ -95,7 +81,7 @@ def run_flight(args: argparse.Namespace) -> None:
     flight_display = FlightDisplay(context, args)
 
     # Run the main flight loop
-    run_flight_loop(context, flight_display, args.mode == "mock", args.mode == "sim")
+    run_flight_loop(context, flight_display, args.mode == "mock")
 
 
 def create_components(
@@ -104,21 +90,19 @@ def create_components(
     """
     Creates the system components needed for the air brakes system.
 
-    Depending on its arguments, it will return either mock, sim, or real components.
+    Depending on its arguments, it will return either mock, or real components.
     :param args: Command line arguments determining the program configuration.
     :return: A tuple containing the Servo, IMU, Logger, IMUDataProcessor, and ApogeePredictor
         objects.
     """
-    if args.mode in ("mock", "sim"):
+    # TODO: this looks ugly but eventually we will use HPRM to run sims
+    if args.mode in ("mock"):
         if args.mode == "mock":
             # Replace hardware with mock objects for simulation
             imu = MockIMU(
                 real_time_replay=not args.fast_replay,
                 log_file_path=args.path,
             )
-        else:
-            # Use simulation IMU
-            imu = SimIMU(sim_type=args.preset, real_time_replay=not args.fast_replay)
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
@@ -148,7 +132,7 @@ def create_components(
             servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
 
     # the mock replay, simulation, and real Airbrakes program configuration will all
-    # use the IMUDataProcessor class and the ApogeePredictor class. There are no mock versions of
+    # use the DataProcessor class and the ApogeePredictor class. There are no mock versions of
     # these classes.
     data_processor = DataProcessor()
     apogee_predictor = ApogeePredictor()
@@ -159,7 +143,6 @@ def run_flight_loop(
     context: Context,
     flight_display: FlightDisplay,
     is_mock: bool,
-    is_sim: bool,
 ) -> None:
     """
     Main flight control loop that runs until shutdown is requested or interrupted.
@@ -167,7 +150,6 @@ def run_flight_loop(
     :param context: The AirbrakesContext managing the state machine.
     :param flight_display: Display interface for flight data.
     :param is_mock: Whether running in mock replay mode.
-    :param is_sim: Whether running in simulation mode.
     """
     try:
         # Starts the air brakes system and display
@@ -182,11 +164,6 @@ def run_flight_loop(
             # Stop the replay when the data is exhausted
             if is_mock and not context.imu.is_running:
                 break
-            # This allows the simulation to know whether air brakes are deployed or not, and
-            # change the drag coefficient and reference area used
-            if is_sim:
-                sim_imu = cast("SimIMU", context.imu)
-                sim_imu.set_airbrakes_status(context.servo.current_extension)
 
     # Handle user interrupt gracefully
     except KeyboardInterrupt:
@@ -206,8 +183,7 @@ def run_flight_loop(
 if __name__ == "__main__":
     # This code isn't actually used when running `uv run ...` but is kept for
     # backwards compatibility. In the `pyproject.toml` file, the entry points for
-    # `uvx` are set to the functions above: `run_real_flight`, `run_mock_flight`,
-    # and `run_sim_flight`.
+    # `uvx` are set to the functions above: `run_real_flight` or `run_mock_flight`
 
     # Deprecated way to run the program:
     # python -m airbrakes.main [ARGS]
@@ -222,12 +198,6 @@ if __name__ == "__main__":
     #     -s, --real-servo   : Uses the real servo instead of a mock one.
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
-
-    # `uv run sim [ARGS]`: Runs a flight simulation alongside the mock replay.
-    #   Optional arguments include:
-    #     -s, --real-servo   : Uses the real servo instead of a mock one.
-    #     -f, --fast-replay  : Runs the simulation at full speed instead of real-time.
-    #     preset             : Specifies a preset (full-scale, sub-scale, etc).
 
     # Global options for all modes:
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.

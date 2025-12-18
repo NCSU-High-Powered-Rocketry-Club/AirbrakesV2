@@ -15,8 +15,7 @@
       timeout-minutes: 5
       strategy:
         matrix:
-          # TODO: Add back ubuntu-24.04-arm once the repo is public again
-          os: [ubuntu-latest]
+          os: [ubuntu-latest, ubuntu-24.04-arm]
         fail-fast: False
       steps:
         - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6

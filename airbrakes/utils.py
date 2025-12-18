@@ -87,14 +87,12 @@ def arg_parser() -> argparse.Namespace:
     # We require ONE and only one of the 3 positional arguments to be passed:
     # - real: Run the real flight with all the real hardware.
     # - mock: Run in mock replay mode with mock data.
-    # - sim: Runs the flight simulation alongside the mock replay, with an optional preset
-    #   selection.
     global_parser = argparse.ArgumentParser(add_help=False)
 
     # Global mutually exclusive group, for the `--debug` and `--verbose` options:
     global_group = global_parser.add_mutually_exclusive_group()
 
-    # These are global options, available to `mock`, `real`, and `sim` modes:
+    # These are global options, available to `real` or `mock` modes:
     global_group.add_argument(
         "-d",
         "--debug",
@@ -118,7 +116,7 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],
     )
 
-    # Subparsers for `real`, `mock`, and `sim`
+    # Subparsers for `real` or `mock`
     subparsers = main_parser.add_subparsers(
         title="modes", description="Valid modes of operation", dest="mode", required=True
     )
@@ -147,36 +145,19 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],  # Include the global options
         prog="mock",  # Program name in help messages
     )
-    add_common_arguments(mock_replay_parser, is_mock=True)
-
-    # Sim parser
-    sim_parser = subparsers.add_parser(
-        "sim",
-        help="Runs the flight simulation alongside the mock replay.",
-        description="Configuration for the flight simulation alongside the mock replay.",
-        parents=[global_parser],  # Include the global options
-        prog="sim",  # Program name in help messages
-    )
-    sim_parser.add_argument(
-        "preset",
-        help="Selects the preset to use for the simulation.",
-        choices=["full-scale", "sub-scale", "legacy", "pelicanator"],
-        nargs="?",  # Optional
-        default="full-scale",
-    )
-    add_common_arguments(sim_parser, is_mock=False)
+    add_common_arguments(mock_replay_parser)
 
     return main_parser.parse_args()
 
 
-def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
+def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     """
-    Adds the arguments common to the mock replay and the sim to the parser.
+    Adds the arguments common to the mock replay.
 
-    :param parser: the mock replay or sim subparser.
-    :param is_mock: Whether running in mock replay mode.
+    :param parser: the mock replay subparser.
     """
-    _type = "mock replay" if is_mock else "sim"
+    # TODO: add sim back with HPRM
+    _type = "mock replay"
 
     parser.add_argument(
         "-s",
@@ -202,12 +183,11 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         default=False,
     )
 
-    if is_mock:
-        parser.add_argument(
-            "-p",
-            "--path",
-            help="Define the pathname of flight data to use in the mock replay. The first file"
-            " found in the launch_data directory will be used if not specified.",
-            type=Path,
-            default=None,
-        )
+    parser.add_argument(
+        "-p",
+        "--path",
+        help="Define the pathname of flight data to use in the mock replay. The first file"
+        " found in the launch_data directory will be used if not specified.",
+        type=Path,
+        default=None,
+    )
