@@ -16,12 +16,10 @@ from airbrakes.main import (
     run_flight,
     run_mock_flight,
     run_real_flight,
-    run_sim_flight,
 )
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.simulation.sim_imu import SimIMU
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
@@ -73,7 +71,6 @@ def parsed_args(request, monkeypatch):
         (["main.py", "mock", "-s", "-l"]),
         (["main.py", "mock", "-s", "-l", "-f"]),
         (["main.py", "mock", "-s", "-l", "-f", "-p", "launch_data/shake_n_bake.csv"]),
-        (["main.py", "sim", "sub-scale", "-s"]),
     ],
     ids=[
         "real flight default (all real)",
@@ -83,7 +80,6 @@ def parsed_args(request, monkeypatch):
         "mock with real servo, and log file kept",
         "mock with real servo, log file kept, and fast replay",
         "mock with real servo, log file kept, fast replay, and specific launch file",
-        "sim with real servo",
     ],
     indirect=True,
 )
@@ -126,7 +122,8 @@ def test_create_components(parsed_args, monkeypatch):
         # Logger: always real in real mode
         assert type(created_components[2]) is Logger
 
-    elif parsed_args.mode in ("mock", "sim"):
+    # TODO: once we use HPRM for sim, add tests
+    elif parsed_args.mode in ("mock"):
         # Servo: mock by default, real if --real-servo is set
         # TODO: Maybe use MagicMock?
         if parsed_args.real_servo:
@@ -145,8 +142,6 @@ def test_create_components(parsed_args, monkeypatch):
             else:
                 # First file in the launch_data directory:
                 assert "launch_data" in str(created_components[1]._log_file_path)
-        else:  # sim
-            assert type(created_components[1]) is SimIMU
 
         # Fast replay check
         if parsed_args.fast_replay:
@@ -218,35 +213,6 @@ def test_run_mock_flight(monkeypatch):
     assert calls == ["parsed arguments", "run_flight"]
     # Test that we modified sys.argv to include "mock":
     assert sys.argv[1] == "mock"
-
-
-def test_run_sim_flight(monkeypatch):
-    """
-    Tests the run_sim_flight function.
-    """
-    arg_parser_kwargs = []
-    calls = []
-
-    def mock_arg_parser(*args, **kwargs):
-        nonlocal arg_parser_kwargs, calls
-        arg_parser_kwargs = kwargs
-        calls.append("parsed arguments")
-
-    def patched_run_flight(*args, **kwargs):
-        calls.append("run_flight")
-
-    monkeypatch.setattr("airbrakes.main.arg_parser", mock_arg_parser)
-    monkeypatch.setattr("airbrakes.main.run_flight", patched_run_flight)
-
-    run_sim_flight()
-
-    assert len(calls) == 2
-    # i.e. test that we passed no arguments to the arg_parser:
-    assert not arg_parser_kwargs
-    # test that we called the arg parser and the run_flight functions
-    assert calls == ["parsed arguments", "run_flight"]
-    # Test that we modified sys.argv to include "sim":
-    assert sys.argv[1] == "sim"
 
 
 def test_run_flight(monkeypatch, mocked_args_parser):

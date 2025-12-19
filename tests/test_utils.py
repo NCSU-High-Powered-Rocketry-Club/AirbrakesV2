@@ -71,32 +71,6 @@ class TestArgumentParsing:
         assert args.verbose is False
         assert args.debug is False
 
-    def test_sim_mode(self, monkeypatch):
-        """
-        Tests the 'sim' mode arguments.
-        """
-        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "sub-scale", "-s", "-l", "-f"])
-
-        args = arg_parser()
-        # This is to ensure that all the arguments are correctly parsed, and to make sure that
-        # if you make a change, you update the test.
-        assert args.__dict__.keys() == {
-            "mode",
-            "preset",
-            "real_servo",
-            "keep_log_file",
-            "fast_replay",
-            "verbose",
-            "debug",
-        }
-
-        assert args.mode == "sim"
-        assert args.preset == "sub-scale"
-        assert args.real_servo is True
-        assert args.keep_log_file is True
-        assert args.fast_replay is True
-        assert not hasattr(args, "path")  # `--path` should not be available in `sim` mode
-
     def test_verbose_and_debug_exclusivity(self, monkeypatch, capsys):
         """
         Tests that the `-v` and `-d` flags are mutually exclusive.
@@ -124,7 +98,7 @@ class TestArgumentParsing:
     )
     def test_invalid_args_in_real_mode(self, monkeypatch, mode, args, capsys):
         """
-        Tests that 'real' mode does not accept arguments meant for 'mock' or 'sim'.
+        Tests that 'real' mode does not accept arguments meant for 'mock'.
         """
         monkeypatch.setattr(sys, "argv", ["main.py", mode, *args])
 
@@ -138,41 +112,18 @@ class TestArgumentParsing:
         "args",
         [
             ["mock", "-p", "mock/data/path"],
-            ["sim", "-s", "-l", "-f"],
-            ["sim", "legacy", "-s"],
         ],
-        ids=["mock_with_path", "sim_with_common_args", "sim_with_preset_and_common_args"],
+        ids=["mock_with_path"],
     )
     def test_shared_arguments(self, monkeypatch, args):
         """
-        Tests that shared arguments are correctly parsed across 'mock' and 'sim'.
+        Tests that shared arguments are correctly parsed across 'mock'.
         """
         monkeypatch.setattr(sys, "argv", ["main.py", *args])
 
         args = arg_parser()
         if "mock" in args.mode:
             assert args.path == Path("mock/data/path")
-        elif "sim" in args.mode:
-            assert args.preset
-            assert not hasattr(args, "path")
-            if args.preset == "legacy":
-                assert args.real_servo is True
-                assert args.keep_log_file is False
-                assert args.fast_replay is False
-            else:
-                assert args.real_servo is True
-                assert args.keep_log_file is True
-                assert args.fast_replay is True
-
-    def test_sim_default_preset(self, monkeypatch):
-        """
-        Tests that the 'sim' mode defaults to 'full-scale' if no preset is provided.
-        """
-        monkeypatch.setattr(sys, "argv", ["main.py", "sim"])
-
-        args = arg_parser()
-        assert args.mode == "sim"
-        assert args.preset == "full-scale"
 
     def test_help_output(self, monkeypatch, capsys):
         """
@@ -199,17 +150,6 @@ class TestArgumentParsing:
         assert "-d, --debug" in captured.out
         assert "--real-servo" in captured.out
         assert "--path" in captured.out
-
-        monkeypatch.setattr(sys, "argv", ["main.py", "sim", "-h"])
-
-        with pytest.raises(SystemExit):
-            arg_parser()
-
-        captured = capsys.readouterr()
-        assert "-v, --verbose" in captured.out
-        assert "-d, --debug" in captured.out
-        assert "--real-servo" in captured.out
-        assert "--path" not in captured.out  # `--path` should not be in `sim` help
 
     def test_real_mode_defaults(self, monkeypatch):
         """
