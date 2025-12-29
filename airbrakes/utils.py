@@ -4,12 +4,9 @@ command line arguments.
 """
 
 import argparse
-import sys
-import warnings
+import queue
 from pathlib import Path
 from typing import Any
-
-import psutil
 
 
 def convert_unknown_type_to_float(obj_type: Any) -> float:
@@ -76,24 +73,28 @@ def convert_s_to_ns(seconds: float) -> float:
     return seconds * 1e9
 
 
-def set_process_priority(priority: int) -> None:
+def get_all_packets_from_queue(packet_queue: queue.SimpleQueue, block: bool) -> list[Any]:
     """
-    Sets the priority of the calling process to the specified nice value.
+    Empties the queue and returns all the items in a list.
 
-    Only works on Linux.
-    :param priority: The nice value to set the process to. This ranges from -20 to 19, with -20
-        being the highest priority and 19 being the lowest.
+    :param packet_queue: The queue to empty.
+    :param block: Whether to block when getting items from the queue.
+
+    :return: A list of all the items in the queue.
     """
-    if sys.platform != "win32":
-        p = psutil.Process()
+    items = []
+
+    if block:
+        # Block until at least one item is available
+        items.append(packet_queue.get(block=True))
+
+    # Drain the rest of the queue, non-blocking
+    while not packet_queue.empty():
         try:
-            p.nice(priority)
-        except psutil.AccessDenied:
-            warnings.warn(
-                f"Could not set process priority to {priority}. Please run the program as root "
-                "to set process priority.",
-                stacklevel=2,
-            )
+            items.append(packet_queue.get(block=False))
+        except queue.Empty:
+            break
+    return items
 
 
 def deadband(input_value: float, threshold: float) -> float:
@@ -119,8 +120,6 @@ def arg_parser() -> argparse.Namespace:
     # We require ONE and only one of the 3 positional arguments to be passed:
     # - real: Run the real flight with all the real hardware.
     # - mock: Run in mock replay mode with mock data.
-    # - sim: Runs the flight simulation alongside the mock replay, with an optional preset
-    #   selection.
     global_parser = argparse.ArgumentParser(add_help=False)
 
     # Top-level parser for the main script:
@@ -129,7 +128,7 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],
     )
 
-    # Subparsers for `real`, `mock`, and `sim`
+    # Subparsers for `real` or `mock`
     subparsers = main_parser.add_subparsers(
         title="modes", description="Valid modes of operation", dest="mode", required=True
     )
@@ -158,24 +157,7 @@ def arg_parser() -> argparse.Namespace:
         parents=[global_parser],  # Include the global options
         prog="mock",  # Program name in help messages
     )
-    add_common_arguments(mock_replay_parser, is_mock=True)
-
-    # Sim parser
-    sim_parser = subparsers.add_parser(
-        "sim",
-        help="Runs the flight simulation alongside the mock replay.",
-        description="Configuration for the flight simulation alongside the mock replay.",
-        parents=[global_parser],  # Include the global options
-        prog="sim",  # Program name in help messages
-    )
-    sim_parser.add_argument(
-        "preset",
-        help="Selects the preset to use for the simulation.",
-        choices=["full-scale", "sub-scale", "legacy", "pelicanator"],
-        nargs="?",  # Optional
-        default="full-scale",
-    )
-    add_common_arguments(sim_parser, is_mock=False)
+    add_common_arguments(mock_replay_parser)
 
     parsed_args = main_parser.parse_args()
     # If benchmark mode is enabled, set fast replay to True
@@ -185,14 +167,14 @@ def arg_parser() -> argparse.Namespace:
     return parsed_args
 
 
-def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) -> None:
+def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     """
-    Adds the arguments common to the mock replay and the sim to the parser.
+    Adds the arguments common to the mock replay.
 
-    :param parser: the mock replay or sim subparser.
-    :param is_mock: Whether running in mock replay mode.
+    :param parser: the mock replay subparser.
     """
-    _type = "mock replay" if is_mock else "sim"
+    # TODO: add sim back with HPRM
+    _type = "mock replay"
 
     parser.add_argument(
         "-s",
@@ -236,12 +218,11 @@ def add_common_arguments(parser: argparse.ArgumentParser, is_mock: bool = True) 
         default=None,
     )
 
-    if is_mock:
-        parser.add_argument(
-            "-p",
-            "--path",
-            help="Define the pathname of flight data to use in the mock replay. The first file"
-            " found in the launch_data directory will be used if not specified.",
-            type=Path,
-            default=None,
-        )
+    parser.add_argument(
+        "-p",
+        "--path",
+        help="Define the pathname of flight data to use in the mock replay. The first file"
+        " found in the launch_data directory will be used if not specified.",
+        type=Path,
+        default=None,
+    )

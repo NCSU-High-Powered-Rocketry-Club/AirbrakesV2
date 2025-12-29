@@ -3,12 +3,14 @@ Utility functions for the graphics module.
 """
 
 import bisect
-from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
-from textual.widget import Widget
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from textual.widget import Widget
 
 
 class InformationStore:

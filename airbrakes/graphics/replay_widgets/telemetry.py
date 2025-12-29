@@ -2,17 +2,22 @@
 Module which has the 2 telemetry panels for the flight display.
 """
 
-from textual.app import ComposeResult
+from typing import TYPE_CHECKING
+
 from textual.containers import Grid
 from textual.reactive import reactive, var
 from textual.widgets import Label, Static
 
-from airbrakes.context import Context
 from airbrakes.graphics.bases.base_telemetry import (
     BaseDebugTelemetry,
     BaseFlightTelemetry,
     BaseQueueSizesTelemetry,
 )
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class ReplayFlightTelemetry(BaseFlightTelemetry):
@@ -137,9 +142,9 @@ class ReplayFlightTelemetry(BaseFlightTelemetry):
         )
         self.total_velocity = f"{self.context.data_processor.total_velocity:.2f}"
         self.max_total_velocity = f"{self.context.data_processor.max_total_velocity:.2f}"
-        if self.context.most_recent_apogee_predictor_packet is not None:
+        if self.context.most_recent_apogee_predictor_data_packet is not None:
             self.apogee_prediction = (
-                f"{self.context.most_recent_apogee_predictor_packet.predicted_apogee:.2f}"
+                f"{self.context.most_recent_apogee_predictor_data_packet.predicted_apogee:.2f}"
             )
         self.pressure_alt = f"{self.context.data_processor.current_pressure_altitude:.2f}"
         self.max_pressure_alt = f"{self.context.data_processor.max_pressure_altitude:.2f}"
@@ -175,11 +180,9 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
     """
 
     state = var("Standby", init=False)
-    apogee_convergence_time = reactive(0.0, init=False)
 
     __slots__ = (
         "alt_convergence_label",
-        "coast_start_time",
         "convergence_time_label",
         "first_apogee_label",
         "replay_queue_size_telemetry",
@@ -214,11 +217,8 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
         self.replay_queue_size_telemetry = ReplayQueueSizesTelemetry(id="queue-sizes-telemetry")
         yield self.replay_queue_size_telemetry
 
-        yield from self._compose_cpu_usage_widget()
-
     def initialize_widgets(self, context: Context) -> None:
         super().initialize_widgets(context)
-        self.apogee_convergence_time = 0.0
         self.replay_queue_size_telemetry.initialize_widgets(context)
 
     def reset_widgets(self) -> None:
@@ -226,22 +226,19 @@ class ReplayDebugTelemetry(BaseDebugTelemetry):
         Resets the widgets to their initial state.
         """
         # Reinitialize class variables in case we are restarting a flight:
-        self.apogee_convergence_time = 0.0
         self.convergence_time_label.update("0.0")
         self.alt_convergence_label.update("0.0")
         self.first_apogee_label.update("0.0")
-        self.coast_start_time = 0
 
-    def watch_apogee_convergence_time(self) -> None:
-        if self.apogee_convergence_time is not None:
-            self.convergence_time_label.update(f"{self.apogee_convergence_time:.2f}")
-            self.alt_convergence_label.update(f"{self.context.convergence_height:.2f}")
+    def update_first_apogee(self) -> None:
+        self.alt_convergence_label.update(f"{self.context.data_processor.current_altitude:.2f}")
         self.first_apogee_label.update(f"{self.apogee:.2f}")
 
     def update_telemetry(self) -> None:
         super().update_telemetry()
-        if self.context.most_recent_apogee_predictor_packet is not None:
-            self.apogee = self.context.most_recent_apogee_predictor_packet.predicted_apogee
-            self.apogee_convergence_time = self.context.convergence_time
+        if self.context.most_recent_apogee_predictor_data_packet is not None:
+            self.apogee = self.context.most_recent_apogee_predictor_data_packet.predicted_apogee
+            if self.first_apogee_label.renderable == "0.0":
+                self.update_first_apogee()
         self.state = self.context.state.name
         self.replay_queue_size_telemetry.update_queue_sizes_telemetry()

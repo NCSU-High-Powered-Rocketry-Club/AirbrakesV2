@@ -3,8 +3,8 @@ Module for simulating interacting with the IMU (Inertial measurement unit) on th
 """
 
 import contextlib
-import multiprocessing
-import signal
+import queue
+import threading
 import time
 import typing
 from pathlib import Path
@@ -12,15 +12,9 @@ from pathlib import Path
 import msgspec
 import msgspec.json
 import polars as pl
-from faster_fifo import Queue  # ty: ignore[unresolved-import]  no type hints for this library
 
-from airbrakes.constants import (
-    BUFFER_SIZE_IN_BYTES,
-    BUSY_WAIT_SECONDS,
-    MAX_FETCHED_PACKETS,
-    REALTIME_PLAYBACK_SPEED,
-    STOP_SIGNAL,
-)
+import airbrakes.constants
+from airbrakes.constants import BUSY_WAIT_SECONDS, REALTIME_PLAYBACK_SPEED, STOP_SIGNAL
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
@@ -28,6 +22,16 @@ from airbrakes.telemetry.packets.imu_data_packet import (
     RawDataPacket,
 )
 from airbrakes.utils import convert_to_nanoseconds
+
+
+class RocketParameters(msgspec.Struct):
+    """
+    Rocket parameters needed for IMU processing.
+    """
+
+    rocket_Cd: float | None
+    rocket_mass_kg: float | None
+    rocket_cross_sectional_area_m2: float | None
 
 
 class MockIMU(BaseIMU):
@@ -43,6 +47,7 @@ class MockIMU(BaseIMU):
         "_needed_fields",
         "_sim_speed_factor",
         "file_metadata",
+        "rocket_parameters",
     )
 
     def __init__(
@@ -56,7 +61,7 @@ class MockIMU(BaseIMU):
         file.
 
         We don't call the parent constructor as the IMU class has different parameters, so we
-        manually start the process that fetches data from the log file.
+        manually start the thread that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.
         :param log_file_path: The path of the log file to read data from.
@@ -76,25 +81,31 @@ class MockIMU(BaseIMU):
         if self._log_file_path == Path("launch_data/legacy_launch_2.csv"):
             raise ValueError("There is no data for this flight, please choose another file.")
 
-        # We don't specify a really big number for the maxsize, because we want to be able to
-        # control the sim speed by throttling the packets in the queue.
-        queued_imu_packets: Queue[IMUDataPacket] = Queue(
-            maxsize=MAX_FETCHED_PACKETS,
-            max_size_bytes=BUFFER_SIZE_IN_BYTES,
-        )
-        # Starts the process that fetches data from the log file
-        data_fetch_process = multiprocessing.Process(
+        queued_imu_packets: queue.SimpleQueue[IMUDataPacket] = queue.SimpleQueue()
+        # Starts the thread that fetches data from the log file
+        data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,
             args=(start_after_log_buffer,),
-            name="Mock IMU Process",
+            name="Mock IMU Thread",
+            daemon=True,
         )
 
-        self._sim_speed_factor = multiprocessing.Value("d", real_time_replay, lock=False)
+        self._sim_speed_factor = real_time_replay
 
         file_metadata: dict = MockIMU.read_all_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
+        self.rocket_parameters: RocketParameters = self._get_rocket_parameters(self.file_metadata)
 
-        super().__init__(data_fetch_process, queued_imu_packets)
+        if self.rocket_parameters.rocket_mass_kg is not None:
+            airbrakes.constants.ROCKET_DRY_MASS_KG = self.rocket_parameters.rocket_mass_kg
+        if self.rocket_parameters.rocket_Cd is not None:
+            airbrakes.constants.ROCKET_CD = self.rocket_parameters.rocket_Cd
+        if self.rocket_parameters.rocket_cross_sectional_area_m2 is not None:
+            airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2 = (
+                self.rocket_parameters.rocket_cross_sectional_area_m2
+            )
+
+        super().__init__(data_fetch_thread, queued_imu_packets)
 
     @staticmethod
     def read_all_metadata() -> dict:
@@ -104,7 +115,21 @@ class MockIMU(BaseIMU):
         metadata = Path("launch_data/metadata.json")
         return msgspec.json.decode(metadata.read_text())
 
-    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
+    def _get_rocket_parameters(self, metadata: dict) -> RocketParameters:
+        """
+        Extracts the rocket parameters from the metadata dictionary.
+
+        :param metadata: The metadata dictionary.
+        :return: The RocketParameters object.
+        """
+        rocket_data = metadata.get("rocket", {})
+        return RocketParameters(
+            rocket_Cd=rocket_data.get("rocket_Cd"),
+            rocket_mass_kg=rocket_data.get("rocket_mass_kg"),
+            rocket_cross_sectional_area_m2=rocket_data.get("rocket_cross_sectional_area_m2"),
+        )
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
 
     def _scan_csv(
         self,
@@ -181,7 +206,7 @@ class MockIMU(BaseIMU):
         # Iterate over the rows of the dataframe and put the data packets in the queue
         for row in collected_data.iter_rows(named=True):
             # Check if the loop should stop:
-            if not self._requested_to_run.value:
+            if not self._requested_to_run.is_set():
                 break
 
             start_time = time.time()
@@ -209,7 +234,7 @@ class MockIMU(BaseIMU):
             if not raw_packet:
                 continue
 
-            sim_speed = self._sim_speed_factor.value
+            sim_speed = self._sim_speed_factor
             if sim_speed > 0:
                 execution_time = time.time() - start_time
                 sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
@@ -219,7 +244,7 @@ class MockIMU(BaseIMU):
                 if adjusted_sleep_time:
                     time.sleep(adjusted_sleep_time)
             else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
-                while not self._sim_speed_factor.value and self._requested_to_run.value:
+                while not self._sim_speed_factor and self._requested_to_run.is_set():
                     time.sleep(BUSY_WAIT_SECONDS)
 
     def _fetch_data_loop(
@@ -232,17 +257,12 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
-        self._running.value = True  # Specify that the process is running
-        self._setup_queue_serialization_method()
-        # Ignore the SIGINT (Ctrl+C) signal, because we only want the main process to handle it
-        signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ignores the interrupt signal
-        # Unfortunately, doing the signal handling isn't always reliable, so we need to wrap the
-        # function in a context manager to suppress the KeyboardInterrupt
-        with contextlib.suppress(KeyboardInterrupt):
-            self._read_file(start_after_log_buffer)
+        self._running.set()  # Specify that the thread is running
+        self._read_file(start_after_log_buffer)
+
         # For the mock, once we're done reading the file, we say it is no longer running
-        self._running.value = False
-        # If we don't put the STOP_SIGNAL in the queue, the main process will wait till IMU_TIMEOUT
+        self._running.clear()
+        # If we don't put the STOP_SIGNAL in the queue, the main thread will wait till IMU_TIMEOUT
         # seconds before exiting, which is not what we want.
         self._queued_imu_packets.put(STOP_SIGNAL)
 

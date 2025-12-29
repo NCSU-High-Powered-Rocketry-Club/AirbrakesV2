@@ -1,12 +1,11 @@
 import csv
-import multiprocessing
-import multiprocessing.sharedctypes
+import queue
 import threading
 import time
 from collections import deque
 from functools import partial
+from typing import TYPE_CHECKING
 
-import faster_fifo
 import pytest
 from msgspec.structs import asdict
 
@@ -24,14 +23,7 @@ from airbrakes.state import (
     StandbyState,
 )
 from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import (
-    IMUDataPacket,
-)
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import (
     context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
@@ -43,6 +35,15 @@ from tests.auxil.utils import (
 )
 from tests.conftest import LOG_PATH
 
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+    from airbrakes.telemetry.packets.imu_data_packet import (
+        IMUDataPacket,
+    )
+    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+
 
 def patched_stop(self):
     """
@@ -50,7 +51,7 @@ def patched_stop(self):
     """
     # Make sure the rest of the code is the same as the original method!
     self._log_queue.put(STOP_SIGNAL)
-    self._log_process.join()
+    self._log_thread.join()
 
 
 def extract_state_letter(value) -> str:
@@ -107,7 +108,7 @@ def threaded_logger(monkeypatch):
     # Cannot use signals from child threads, so we need to monkeypatch it:
     monkeypatch.setattr("signal.signal", lambda _, __: None)
     target = threading.Thread(target=logger._logging_loop)
-    logger._log_process = target
+    logger._log_thread = target
     yield logger
     logger.stop()
 
@@ -151,12 +152,12 @@ class TestLogger:
         assert logger.log_path.parent.name == "logs"
 
         # Test if all attributes are created correctly
-        assert isinstance(logger._log_queue, faster_fifo.Queue)
-        assert isinstance(logger._log_process, multiprocessing.Process)
+        assert isinstance(logger._log_queue, queue.SimpleQueue)
+        assert isinstance(logger._log_thread, threading.Thread)
 
-        # Test that the process is not running
+        # Test that the thread is not running
         assert not logger.is_running
-        assert not logger._log_process.is_alive()
+        assert not logger._log_thread.is_alive()
 
     def test_init_sets_log_path_correctly(self):
         # assert no files exist:
@@ -199,7 +200,7 @@ class TestLogger:
         logger._log_queue.put(STOP_SIGNAL)
         time.sleep(0.4)
         assert not logger.is_running
-        assert not logger._log_process.is_alive()
+        assert not logger._log_thread.is_alive()
         logger.stop()
 
     def test_logging_loop_start_stop(self, logger):
@@ -208,7 +209,6 @@ class TestLogger:
 
         logger.stop()
         assert not logger.is_running
-        assert logger._log_process.exitcode == 0
 
     def test_logger_stop_logs_the_buffer(self, logger):
         logger.start()
@@ -229,32 +229,11 @@ class TestLogger:
     def test_logging_loop_add_to_queue(self, logger):
         logger.start()
         logger._log_queue.put(self.sample_ldp)
-        assert logger._log_queue.qsize() == 1
-        time.sleep(0.4)  # Give the process time to log to file
+        time.sleep(0.1)  # Give the thread time to log to file
         logger.stop()
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                row: dict[str]
-            # Only fetch non-empty values:
-            row_dict = {k: v for k, v in row.items() if v}
-
-            assert row_dict == convert_dict_vals_to_str(asdict(self.sample_ldp), truncation=False)
-
-    def test_queue_hits_timeout_and_continues(self, logger, monkeypatch):
-        """
-        Tests whether the logger continues to log after a timeout.
-        """
-        monkeypatch.setattr("airbrakes.telemetry.logger.MAX_GET_TIMEOUT_SECONDS", 0.01)
-        logger.start()
-        time.sleep(0.05)
-        logger._log_queue.put(self.sample_ldp)
-        logger.stop()
-        # Let's check the contents of the file:
-        with logger.log_path.open() as f:
-            reader = csv.DictReader(f)
-            row = {}
             for row in reader:
                 row: dict[str]
             # Only fetch non-empty values:
@@ -270,7 +249,7 @@ class TestLogger:
             "servo_packet",
             "imu_data_packets",
             "processor_data_packets",
-            "apogee_predictor_data_packets",
+            "apogee_predictor_data_packet",
             "file_lines",
             "expected_output",
         ),
@@ -360,7 +339,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MAX_NO_BUZZ),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
                 2,
                 [
                     {
@@ -385,6 +364,7 @@ class TestLogger:
                             )
                         ),
                         **convert_dict_vals_to_str(asdict(make_est_data_packet())),
+                        **convert_dict_vals_to_str(asdict(make_apogee_predictor_data_packet())),
                         **only_logged_pdp_fields(
                             convert_dict_vals_to_str(asdict(make_processor_data_packet()))
                         ),
@@ -406,7 +386,7 @@ class TestLogger:
         servo_packet,
         imu_data_packets,
         processor_data_packets,
-        apogee_predictor_data_packets,
+        apogee_predictor_data_packet,
         file_lines,
         expected_output: list[dict],
     ):
@@ -420,9 +400,9 @@ class TestLogger:
             servo_packet,
             imu_data_packets.copy(),
             processor_data_packets.copy(),
-            apogee_predictor_data_packets.copy(),
+            apogee_predictor_data_packet,
         )
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
         logger.stop()
 
         # Let's check the contents of the file:
@@ -470,7 +450,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -503,7 +483,7 @@ class TestLogger:
             apogee_predictor_data_packets,
         )
 
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
@@ -539,7 +519,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -579,7 +559,7 @@ class TestLogger:
             apogee_predictor_data_packets,
         )
 
-        time.sleep(0.01)  # Give the process time to log to file
+        time.sleep(0.01)  # Give the thread time to log to file
 
         assert len(logger._log_buffer) == LOG_BUFFER_SIZE
         logger.stop()  # We must stop because otherwise the values are not flushed to the file
@@ -617,7 +597,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
@@ -649,7 +629,7 @@ class TestLogger:
             processor_data_packets * (IDLE_LOG_CAPACITY + 10),
             apogee_predictor_data_packets,
         )
-        time.sleep(0.1)  # Give the process time to log to file
+        time.sleep(0.1)  # Give the thread time to log to file
 
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
@@ -771,7 +751,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
                 deque([make_raw_data_packet()]),
                 [],
-                [],
+                None,
                 [
                     LoggerDataPacket(
                         **context_packet_to_logger_kwargs(
@@ -844,7 +824,7 @@ class TestLogger:
                 make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
                 deque([make_raw_data_packet(), make_est_data_packet()]),
                 [make_processor_data_packet()],
-                [make_apogee_predictor_data_packet()],
+                make_apogee_predictor_data_packet(),
                 [
                     LoggerDataPacket(
                         **context_packet_to_logger_kwargs(
@@ -868,6 +848,7 @@ class TestLogger:
                             )
                         ),
                         **asdict(make_est_data_packet()),
+                        **asdict(make_apogee_predictor_data_packet()),
                         **only_logged_pdp_fields(asdict(make_processor_data_packet())),
                     ),
                 ],
@@ -989,10 +970,10 @@ class TestLogger:
                 servo_packet,
                 imu_data_packets.copy(),
                 processor_data_packets=[],
-                apogee_predictor_data_packets=[],
+                apogee_predictor_data_packet=None,
             )
 
-        # Give the process time to process the queue
+        # Give the thread time to process the queue
         time.sleep(0.1)
 
         # Verify the number of flush calls before stop():
@@ -1039,7 +1020,7 @@ class TestLogger:
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []
-        apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
+        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
 
         benchmark(
             logger.log,
@@ -1058,7 +1039,7 @@ class TestLogger:
         servo_packet = make_servo_data_packet(set_extension="0.1")
         imu_data_packets = deque([make_raw_data_packet()])
         processor_data_packets = []
-        apogee_predictor_data_packet = [make_apogee_predictor_data_packet()]
+        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
 
         benchmark(
             logger._prepare_logger_packets,

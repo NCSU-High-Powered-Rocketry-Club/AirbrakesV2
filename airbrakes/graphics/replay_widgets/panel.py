@@ -2,13 +2,18 @@
 Module which contains the 5 panels for the flight display.
 """
 
-from textual.app import ComposeResult
+from typing import TYPE_CHECKING
+
 from textual.widgets import Static
 
-from airbrakes.context import Context
 from airbrakes.graphics.replay_widgets.graphs import FlightGraph
 from airbrakes.graphics.replay_widgets.telemetry import ReplayFlightTelemetry
 from airbrakes.graphics.replay_widgets.visualization import Visualization
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class FlightInformation(Static):

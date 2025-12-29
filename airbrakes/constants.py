@@ -2,22 +2,13 @@
 Contains the constants used in the Airbrakes module.
 """
 
+import math
 from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
 # Main Configuration
 # -------------------------------------------------------
-
-MAIN_PROCESS_PRIORITY = -11
-"""
-The priority of the Main process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't want to stay behind on processing the packets from the IMU.
-It's a bit lower than the IMU process because we want to make sure the IMU process is always running
-and getting data.
-"""
 
 BUSY_WAIT_SECONDS = 0.1
 """
@@ -89,11 +80,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 46
-    MIN_NO_BUZZ = 49
+    MIN_EXTENSION = 74
+    MIN_NO_BUZZ = 78
 
-    MAX_EXTENSION = 96
-    MAX_NO_BUZZ = 92
+    MAX_EXTENSION = 124
+    MAX_NO_BUZZ = 121
 
 
 # -------------------------------------------------------
@@ -188,6 +179,13 @@ METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 # Data Processor Configuration
 # -------------------------------------------------------
 
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
+"""
+The number of packets to use for zeroing the pressure altitude at the launch pad.
+This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
+altitude.
+"""
+
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """
 After airbrakes retract, it takes some time for the pressure to stabilize.
@@ -215,8 +213,8 @@ file.
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor process, this will be put in the queue to
-stop the processes.
+The signal to stop the IMU, Logger, and ApogeePredictor thread, this will be put in the queue to
+stop the threads.
 """
 
 # Formula for converting number of packets to seconds and vice versa:
@@ -251,14 +249,6 @@ This is typically the default port where the IMU connects to the Raspberry Pi. "
 corresponds to the first USB-serial device recognized by the system in Linux.
 """
 
-IMU_PROCESS_PRIORITY = -15
-"""
-The priority of the IMU process.
-
-This is a really high priority so the OS knows to give it priority over other processes. This is
-because we want to make sure we don't miss any data packets from the IMU.
-"""
-
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends raw data packets.
@@ -272,47 +262,13 @@ The period at which the IMU sends estimated data packets.
 This is the reciprocal of the frequency.
 """
 
-ESTIMATED_DESCRIPTOR_SET = 130
-"""
-The ID of the estimated data packet that the IMU sends.
-"""
-RAW_DESCRIPTOR_SET = 128
-"""
-The ID of the raw data packet that the IMU sends.
-"""
-
-MAX_FETCHED_PACKETS = 15
-"""
-This is used to limit how many packets we fetch from the packet queue at once.
-"""
-
-MAX_GET_TIMEOUT_SECONDS = 100
-"""
-The maximum amount of time in seconds to wait for a get operation on the queue.
-"""
-
-BUFFER_SIZE_IN_BYTES = 1000 * 1000 * 20  # 20 Mb
-"""
-The maximum number of bytes to put or get from the queue at once.
-
-This is an increase from the default value of 1Mb, which is too small sometimes for our data
-packets, e.g. when logging the entire buffer, which is 5000 packets.
-"""
-
-MAX_QUEUE_SIZE = 100_000
-"""
-The maximum size of the queue that holds the data packets.
-
-This is to prevent the queue from" growing too large and taking up too much memory. This is a very
-large number, so it should not be reached in normal operation.
-"""
-
 IMU_TIMEOUT_SECONDS = 3.0
 """
-The maximum amount of time in seconds the IMU process is allowed to do something (e.g. read a
+The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
 packet) before it is considered to have timed out.
 
-This is used to prevent the program from deadlocking if the IMU stops sending data.
+This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
+used as the max timeout to read from the serial port.
 """
 
 REALTIME_PLAYBACK_SPEED: float = 1.0
@@ -321,28 +277,6 @@ The speed at which the Mock IMU plays back the data.
 
 1.0 means real-time playback, 2.0 means maximum speed.
 """
-
-# Constants for IMU field names and quantifiers
-DELTA_THETA_FIELD = 32775
-DELTA_VEL_FIELD = 32776
-SCALED_ACCEL_FIELD = 32772
-SCALED_GYRO_FIELD = 32773
-SCALED_AMBIENT_PRESSURE_FIELD = 32791
-EST_ANGULAR_RATE_FIELD = 33294
-EST_ATTITUDE_UNCERT_FIELD = 33298
-EST_COMPENSATED_ACCEL_FIELD = 33308
-EST_GRAVITY_VECTOR_FIELD = 33299
-EST_LINEAR_ACCEL_FIELD = 33293
-EST_ORIENT_QUATERNION_FIELD = 33283
-EST_PRESSURE_ALT_FIELD = 33313
-
-X_QUALIFIER = 1
-Y_QUALIFIER = 2
-Z_QUALIFIER = 3
-ATTITUDE_UNCERT_QUALIFIER = 5
-PRESSURE_ALT_QUALIFIER = 67
-AMBIENT_PRESSURE_QUALIFIER = 58
-
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -376,13 +310,6 @@ less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------
-TARGET_APOGEE_METERS = 360.0
-"""
-The target apogee in meters that we want the rocket to reach.
-
-This is used with our bang-bang controller to determine when to extend and retract the air brakes.
-"""
-
 MAX_ALTITUDE_THRESHOLD = 0.95
 """
 We don't care too much about accurately changing to the freefall state, so we just check if the
@@ -419,49 +346,28 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-# This needs to be checked/changed before flights
-FLIGHT_LENGTH_SECONDS = 22.0
+TARGET_APOGEE_METERS = 518.16  # 518.16 meters is 1700 feet
 """
-When we do apogee prediction, we do stepwise integration of our fitted curve to predict the
-acceleration, velocity, and altitude curve of the rocket versus time.
+The target apogee in meters that we want the rocket to reach.
 
-This is the total time in seconds that we will integrate over. This is a rough estimate of the time
-from coast state to freefall with some extra room for error.
+This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-INTEGRATION_TIME_STEP_SECONDS = 1.0 / 500.0
+ROCKET_DRY_MASS_KG: float = 4.937
 """
-This is the delta time that we use for the stepwise integration of our fitted curve.
-
-It could be any value and just corresponds to the precision of our prediction.
+The mass of the entire rocket without propellant in kilograms.
 """
 
-GRAVITY_METERS_PER_SECOND_SQUARED = 9.798
+ROCKET_CD: float = 0.45
 """
-This is the standard gravity on Earth for the launch location of the rocket.
-"""
-
-CURVE_FIT_INITIAL = [-10.5, 0.03]
-"""
-The initial guess for the coefficients for curve fit of the acceleration curve.
+The drag coefficient of the rocket with airbrakes all the way retracted.
 """
 
-APOGEE_PREDICTION_MIN_PACKETS = 10
+# This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
+# calculate cross-sectional area.
+ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 """
-The minimum number of processor data packets required to update the predicted apogee.
-"""
-
-UNCERTAINTY_THRESHOLD = [3, 0.001]  # For near quick convergence times, use: [0.1, 0.75]
-"""
-The uncertainty from the curve fit, below which we will say that our apogee has converged.
-
-This uncertainty corresponds to being off by +/- 5m.
+The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
 """
 
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
-"""
-The number of packets to use for zeroing the pressure altitude at the launch pad.
-
-This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
-altitude.
-"""
+GRAVITY_METERS_PER_SECOND_SQUARED = 9.81

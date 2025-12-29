@@ -2,12 +2,14 @@
 Textual snapshot tests for the LauncherScreen, i.e. uv run mock.
 """
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from textual.widgets import Input, Switch
 
-from airbrakes.graphics.application import AirbrakesApplication
 from airbrakes.graphics.screens.launcher import LauncherScreen, SelectedLaunchConfiguration
+
+if TYPE_CHECKING:
+    from airbrakes.graphics.application import AirbrakesApplication
 
 
 class TestLauncherScreen:

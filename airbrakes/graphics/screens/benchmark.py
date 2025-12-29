@@ -2,16 +2,19 @@
 Module which has the benchmark screen for the flight display.
 """
 
-from pathlib import Path
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
-from airbrakes.context import Context
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class BenchmarkScreen(ModalScreen[None]):

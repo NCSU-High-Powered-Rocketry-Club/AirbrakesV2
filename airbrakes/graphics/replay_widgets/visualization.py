@@ -2,10 +2,11 @@
 Module to handle the 2D rocket visualization.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from textual import on
 from textual._box_drawing import combine_quads
-from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual_hires_canvas import Canvas
@@ -25,7 +26,11 @@ from airbrakes.constants import (
     TICK_INTERVAL,
     ServoExtension,
 )
-from airbrakes.context import Context
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class Visualization(Widget):

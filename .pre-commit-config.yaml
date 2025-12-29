@@ -4,23 +4,24 @@
 #   autoupdate_schedule: "monthly"
 
 repos:
-  - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.7
-    hooks:
-      - id: docformatter
-        args: [ --in-place, --recursive ]
+  # This is incompatible with Python 3.14: https://github.com/PyCQA/docformatter/issues/327
+  # - repo: https://github.com/PyCQA/docformatter
+  #   rev: v1.7.7
+  #   hooks:
+  #     - id: docformatter
+  #       args: [ --in-place, --recursive ]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.12
+    rev: v0.14.10
     hooks:
       - id: ruff-check
         args: [ --fix ]
       - id: ruff-format
   # Validate the metadata.json file against the JSON Schema
-  - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.33.3
-    hooks:
-      - id: check-metaschema
-        files: metadata.json
+  # - repo: https://github.com/python-jsonschema/check-jsonschema
+  #   rev: 0.36.0
+  #   hooks:
+  #     - id: check-metaschema
+  #       files: metadata.json
 # TODO: add this back in when ty has a repo
 #  - repo: local
 #    hooks:

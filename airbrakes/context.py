@@ -5,20 +5,19 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS, MAIN_PROCESS_PRIORITY
-from airbrakes.interfaces.base_imu import BaseIMU
-from airbrakes.interfaces.base_servo import BaseServo
+from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.state import StandbyState, State
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.logger import Logger
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
 from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
-from airbrakes.utils import convert_ns_to_s, set_process_priority
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
+    from airbrakes.interfaces.base_imu import BaseIMU
+    from airbrakes.interfaces.base_servo import BaseServo
+    from airbrakes.telemetry.apogee_predictor import ApogeePredictor
+    from airbrakes.telemetry.data_processor import DataProcessor
+    from airbrakes.telemetry.logger import Logger
     from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
@@ -37,18 +36,14 @@ class Context:
 
     __slots__ = (
         "apogee_predictor",
-        "apogee_predictor_data_packets",
         "context_data_packet",
-        "convergence_height",
-        "convergence_time",
         "data_processor",
         "est_data_packets",
-        "first_converged_apogee",
         "imu",
         "imu_data_packets",
         "launch_time_ns",
         "logger",
-        "most_recent_apogee_predictor_packet",
+        "most_recent_apogee_predictor_data_packet",
         "processor_data_packets",
         "servo",
         "servo_data_packet",
@@ -91,35 +86,25 @@ class Context:
         self.shutdown_requested = False
         self.imu_data_packets: list[IMUDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
-        self.apogee_predictor_data_packets: list[ApogeePredictorDataPacket] = []
         self.est_data_packets: list[EstimatedDataPacket] = []
+        self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
-        self.most_recent_apogee_predictor_packet: ApogeePredictorDataPacket | None = None
-
-        # The first apogee prediction packet with a valid prediction, used mostly for the display
-        self.first_converged_apogee: float | None = None
-        self.convergence_time: float | None = None
-        self.convergence_height: float | None = None
 
         # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_ns: int = 0
 
     def start(self, wait_for_start: bool = False) -> None:
         """
-        Starts the processes for the IMU, Logger, and ApogeePredictor.
+        Starts the threads for the IMU, Logger, and ApogeePredictor.
 
         This is called before the main loop starts.
 
-        :param wait_for_start: If True, waits for all the processes to have actually started. This
-            matters because starting processes via the "spawn"/"forkserver" method is slow, and we
-            want to prevent data races where the main loop tries to access data before the processes
+        :param wait_for_start: If True, waits for all the threads to have actually started. This
+            matters because starting threads via the "spawn"/"forkserver" method is slow, and we
+            want to prevent data races where the main loop tries to access data before the threads
             have started.
         """
-        # We have multiple processes that we run, one for the IMU, one for the Logger, and one for
-        # the Apogee Predictor. You can think of it basically like multithreading (even though it's
-        # not), where each process runs independently and communicates via queues.
-        set_process_priority(MAIN_PROCESS_PRIORITY)  # Higher than normal priority
         self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
@@ -128,9 +113,7 @@ class Context:
             # Wait for all processes to start. It is assumed that once the IMU is running, all other
             # processes are also running. Even if they aren't it's okay, since the queue will fill
             # up with data and the other processes will start processing it when they wake up.
-            while True:
-                if self.imu.is_running:
-                    break
+            while not self.imu.is_running:
                 time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:
@@ -142,15 +125,15 @@ class Context:
         """
         if self.shutdown_requested:
             return
+        self.shutdown_requested = True
         self.retract_airbrakes()
         self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
-        self.shutdown_requested = True
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main process. This is essentially the "brain" of the
+        Called every loop iteration from the main thread. This is essentially the "brain" of the
         air brakes system, where all the data is collected, processed, and logged, and the state
         machine is updated.
 
@@ -184,14 +167,12 @@ class Context:
             self.data_processor.update(self.est_data_packets)
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
-        # Gets the Apogee Predictor Data Packets, this will only have new data if we are in
-        # coast and have called predict_apogee(), and the apogee predictor has had time to process
-        # the data and predict the apogee.
-        self.apogee_predictor_data_packets = self.apogee_predictor.get_prediction_data_packets()
-
-        # Update the first and most recent Apogee Predictor Data Packet
-        if self.apogee_predictor_data_packets:
-            self._set_apogee_prediction_data()
+        # Gets the most recent Apogee Predictor Data Packets, this will only have new data if we are
+        # in coast and have called predict_apogee(), and the apogee predictor has had time to
+        # process the data and predict the apogee.
+        apogee_prediction_packet = self.apogee_predictor.get_prediction_data_packet()
+        if apogee_prediction_packet:
+            self.most_recent_apogee_predictor_data_packet = apogee_prediction_packet
 
         # Update the state machine based on the latest processed data
         self.state.update()
@@ -205,7 +186,7 @@ class Context:
             self.servo_data_packet,
             self.imu_data_packets,
             self.processor_data_packets,
-            self.apogee_predictor_data_packets,
+            self.most_recent_apogee_predictor_data_packet,
         )
 
     def extend_airbrakes(self) -> None:
@@ -239,7 +220,8 @@ class Context:
         # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.est_data_packets:
-            self.apogee_predictor.update(self.processor_data_packets)
+            # We pass in the most recent Processor Data Packet to the apogee predictor
+            self.apogee_predictor.update(self.processor_data_packets[-1])
 
     def generate_data_packets(self) -> None:
         """
@@ -262,21 +244,3 @@ class Context:
             set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
         )
-
-    def _set_apogee_prediction_data(self) -> None:
-        """
-        Sets the last and first apogee prediction data packets.
-
-        This is called every loop iteration if there are new apogee predictor data packets.
-        """
-        self.most_recent_apogee_predictor_packet = self.apogee_predictor_data_packets[-1]
-
-        # Set the first apogee prediction packet if it hasn't been set yet, and only if we have a
-        # converged valid prediction.
-        if (
-            self.first_converged_apogee is None
-            and self.most_recent_apogee_predictor_packet.predicted_apogee > 0
-        ):
-            self.first_converged_apogee = self.most_recent_apogee_predictor_packet.predicted_apogee
-            self.convergence_time = convert_ns_to_s(self.state.start_time_ns - self.launch_time_ns)
-            self.convergence_height = self.processor_data_packets[-1].current_altitude

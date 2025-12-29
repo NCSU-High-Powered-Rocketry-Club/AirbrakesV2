@@ -88,9 +88,9 @@ flowchart TD
     LandedState((Landed)):::circular --> State
     
     %% Connections with Labels
-    Airbrakes ---|Child Process| Logger((Logger)):::circular
-    Airbrakes ---|Child Process| IMU((IMU)):::circular
-    Airbrakes ---|Child Process| Apogee_Predictor((Apogee Predictor)):::circular
+    Airbrakes ---|Child Thread| Logger((Logger)):::circular
+    Airbrakes ---|Child Thread| IMU((IMU)):::circular
+    Airbrakes ---|Child Thread| Apogee_Predictor((Apogee Predictor)):::circular
     IMU((IMU)):::circular ---|Fetch Packets| IMUDataPacket[(IMU Data Packet)]:::outputSquare
 
     %% Data Processing
@@ -221,12 +221,12 @@ git push -u origin branch-name
 
 ## Advanced Local Usage
 
-For performance improvements, we recommend turning on the experimental Python JIT compiler. To do this, export `PYTHON_JIT=1` in your shell (preferably in your `.bashrc` or `.zshrc` file).
-Additionally, we also recommend exporting `TEXTUAL_SPEEDUPS=1` to enable speedups in the Textual library, which uses some Rust under the hood.
+For performance improvements, we _highly_ recommend switching off the Global Interpreter Lock (GIL),
+and turning on the experimental Python Just-In-Time (JIT) compiler. To do this, export `PYTHON_JIT=1`, and `PYTHON_GIL=0` in your shell (preferably in your `.bashrc` or `.zshrc` file).
 
 ```bash
 export PYTHON_JIT=1
-export TEXTUAL_SPEEDUPS=1
+export PYTHON_GIL=0
 ```
 
 ### Running Mock Launches
@@ -288,7 +288,7 @@ To run a performance benchmark with the real IMU on the raspberry pi:
 sudo $(which uv) run pytest -m imu_benchmark
 ```
 
-Note that the use of `sudo` is required to set process priorities for the IMU and main process,
+Note that the use of `sudo` is required to set process priorities for the main process,
 which is critical for accurate benchmarking.
 
 If you make a change to the code, please make sure to update or add the necessary tests.

@@ -3,6 +3,7 @@ Module for processing IMU data on a higher level.
 """
 
 from collections import deque
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -14,9 +15,11 @@ from airbrakes.constants import (
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
     WINDOW_SIZE_FOR_PRESSURE_ZEROING,
 )
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import convert_ns_to_s
+
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 
 
 class DataProcessor:
@@ -197,6 +200,10 @@ class DataProcessor:
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
+                # TODO: calculate the actual velocity magnitude rather than using vertical velocity
+                velocity_magnitude=float(self._vertical_velocities[i]),
+                # TODO: check if this pitch is good
+                current_pitch_degrees=self.average_pitch,
                 vertical_velocity=float(self._vertical_velocities[i]),
                 vertical_acceleration=float(self._rotated_accelerations[:, 2][i]),
                 time_since_last_data_packet=float(self._time_differences[i]),

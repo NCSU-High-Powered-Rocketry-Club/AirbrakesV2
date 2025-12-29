@@ -3,11 +3,10 @@ The launch file selection screen displayed on startup.
 """
 
 from pathlib import Path
-from typing import ClassVar, Literal, cast
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import msgspec
 from textual import on
-from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Center, Grid, Vertical
 from textual.message import Message
@@ -34,6 +33,9 @@ from airbrakes.graphics.utils import (
     get_time_from_iso_string,
 )
 from airbrakes.mock.mock_imu import MockIMU
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
 
 AVAILABLE_FILES = list(Path("launch_data").glob("*.csv"))
 

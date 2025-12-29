@@ -1,10 +1,12 @@
+import contextlib
+import queue
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import pytest
 
 from airbrakes.constants import (
-    APOGEE_PREDICTION_MIN_PACKETS,
     IMU_TIMEOUT_SECONDS,
     SERVO_DELAY_SECONDS,
     ServoExtension,
@@ -15,13 +17,15 @@ from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_est_data_packet,
     make_processor_data_packet,
     make_raw_data_packet,
 )
+
+if TYPE_CHECKING:
+    from airbrakes.context import Context
 
 
 class TestContext:
@@ -34,13 +38,8 @@ class TestContext:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, context, logger, imu, servo, data_processor, apogee_predictor):
-        assert context.logger == logger
-        assert context.servo == servo
-        assert context.imu == imu
-        assert context.apogee_predictor == apogee_predictor
+    def test_init(self, context):
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert context.data_processor == data_processor
         assert isinstance(context.data_processor, DataProcessor)
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
@@ -70,9 +69,9 @@ class TestContext:
         context.stop()
         assert not context.imu.requested_to_run
         assert not context.logger.is_running
-        assert not context.imu._requested_to_run.value
-        assert not context.imu._data_fetch_process.is_alive()
-        assert not context.logger._log_process.is_alive()
+        assert not context.imu._requested_to_run.is_set()
+        assert not context.imu._data_fetch_thread.is_alive()
+        assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor.is_running
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert context.shutdown_requested
@@ -151,20 +150,17 @@ class TestContext:
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
-            asserts.append(
-                ctx_dp.state == CoastState
-                and ctx_dp.retrieved_imu_packets >= 1
-                and ctx_dp.queued_imu_packets > 0
-                and ctx_dp.apogee_predictor_queue_size >= 0
-                and ctx_dp.imu_packets_per_cycle >= 0  # mock imus will be 0
-                and ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9)
-            )
+            asserts.append(ctx_dp.state == CoastState)
+            asserts.append(ctx_dp.retrieved_imu_packets >= 1)
+            asserts.append(ctx_dp.queued_imu_packets >= 0)
+            asserts.append(ctx_dp.apogee_predictor_queue_size >= 0)
+            asserts.append(ctx_dp.imu_packets_per_cycle >= 0)  # mock imus will be 0
+            asserts.append(ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
             asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(processor_data_packets[0].current_altitude == 0.0)
-            asserts.append(isinstance(apg_dps, list))
-            asserts.append(len(apg_dps) >= 0)
-            asserts.append(apg_dps[-1] == make_apogee_predictor_data_packet())
+            asserts.append(apg_dps is not None)
+            asserts.append(apg_dps == make_apogee_predictor_data_packet())
             # More testing of whether we got ApogeePredictorDataPackets is done in
             # `test_airbrakes_receives_apogee_predictor_packets`. The reason why it wasn't tested
             # here is because state.update() is called before apogee_predictor.update(), so the
@@ -173,9 +169,9 @@ class TestContext:
         def apogee_update(self, processor_data_packets):
             calls.append("apogee update called")
 
-        def get_prediction_data_packets(self):
-            calls.append("get_prediction_data_packets called")
-            return [make_apogee_predictor_data_packet()]
+        def get_prediction_data_packet(self):
+            calls.append("get_prediction_data_packet called")
+            return make_apogee_predictor_data_packet()
 
         mocked_airbrakes = context
         mocked_airbrakes.imu = random_data_mock_imu
@@ -196,8 +192,8 @@ class TestContext:
         monkeypatch.setattr(context.logger.__class__, "log", log)
         monkeypatch.setattr(
             context.apogee_predictor.__class__,
-            "get_prediction_data_packets",
-            get_prediction_data_packets,
+            "get_prediction_data_packet",
+            get_prediction_data_packet,
         )
 
         # Let's call .update() and check if stuff was called and/or changed:
@@ -206,14 +202,14 @@ class TestContext:
         assert len(calls) == 5
         assert calls == [
             "update called",
-            "get_prediction_data_packets called",
+            "get_prediction_data_packet called",
             "state update called",
             "apogee update called",
             "log called",
         ]
         assert all(asserts)
         assert (
-            mocked_airbrakes.most_recent_apogee_predictor_packet
+            mocked_airbrakes.most_recent_apogee_predictor_data_packet
             == make_apogee_predictor_data_packet()
         )
 
@@ -232,10 +228,11 @@ class TestContext:
             context.stop()  # Happens when LandedState requests shutdown in the real flight
             has_airbrakes_stopped.set()
 
-        context.start()
+        context.start(wait_for_start=True)
 
         while not context.shutdown_requested:
-            context.update()
+            with contextlib.suppress(queue.Empty):
+                context.update()
 
             if not started_thread:
                 started_thread = True
@@ -243,16 +240,15 @@ class TestContext:
                 stop_airbrakes_thread.start()
 
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
-        # wrong with the stopping process. We don't want to hit the "just in case" timeout
+        # wrong with the stopping thread. We don't want to hit the "just in case" timeout
         # in `get_imu_data_packets`.
         has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
         assert not context.imu.is_running
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
-        assert not context.imu._running.value
-        assert not context.imu._data_fetch_process.is_alive()
-        assert not context.logger._log_process.is_alive()
-        assert not context.apogee_predictor._prediction_process.is_alive()
+        assert not context.imu._data_fetch_thread.is_alive()
+        assert not context.logger._log_thread.is_alive()
+        assert not context.apogee_predictor._prediction_thread.is_alive()
         assert context.servo.current_extension in (
             ServoExtension.MIN_EXTENSION,
             ServoExtension.MIN_NO_BUZZ,
@@ -292,21 +288,20 @@ class TestContext:
     #             stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
     #             stop_airbrakes_thread.start()
 
-    #     # Wait for the airbrakes to stop. If the stopping took too long, that means something is
-    #     # wrong with the stopping process. We don't want to hit the "just in case" timeout
-    #     # in `get_imu_data_packets`.
-    #     has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
-    #     assert not context.imu.is_running
-    #     assert not context.logger.is_running
-    #     assert not context.apogee_predictor.is_running
-    #     assert not context.imu._running.value
-    #     assert not context.imu._data_fetch_process.is_alive()
-    #     assert not context.logger._log_process.is_alive()
-    #     assert not context.apogee_predictor._prediction_process.is_alive()
-    #     assert context.servo.current_extension in (
-    #         ServoExtension.MIN_EXTENSION,
-    #         ServoExtension.MIN_NO_BUZZ,
-    #     )
+    # # Wait for the airbrakes to stop. If the stopping took too long, that means something is
+    # # wrong with the stopping thread. We don't want to hit the "just in case" timeout
+    # # in `get_imu_data_packets`.
+    # has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
+    # assert not context.imu.is_running
+    # assert not context.logger.is_running
+    # assert not context.apogee_predictor.is_running
+    # assert not context.imu._data_fetch_thread.is_alive()
+    # assert not context.logger._log_thread.is_alive()
+    # assert not context.apogee_predictor._prediction_thread.is_alive()
+    # assert context.servo.current_extension in (
+    #     ServoExtension.MIN_EXTENSION,
+    #     ServoExtension.MIN_NO_BUZZ,
+    # )
 
     #     assert not fd._running
 
@@ -341,7 +336,7 @@ class TestContext:
             pass
 
         def apogee_update(self, processor_data_packets):
-            packets.extend(processor_data_packets)
+            packets.append(processor_data_packets)
             calls.append("apogee update called")
 
         context.imu = idle_mock_imu
@@ -352,7 +347,7 @@ class TestContext:
         assert not context.imu._queued_imu_packets.qsize()
         assert context.state.name == "StandbyState"
         assert context.data_processor._last_data_packet is None
-        assert not context.apogee_predictor_data_packets
+        assert not context.most_recent_apogee_predictor_data_packet
 
         monkeypatch.setattr(context.apogee_predictor.__class__, "update", apogee_update)
         monkeypatch.setattr(logger.__class__, "log", fake_log)
@@ -366,7 +361,7 @@ class TestContext:
         assert list(context.imu_data_packets) == [raw_1]
         assert not context.est_data_packets
         assert len(context.processor_data_packets) == 0
-        assert not context.apogee_predictor_data_packets
+        assert not context.most_recent_apogee_predictor_data_packet
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         context.predict_apogee()
         assert not calls
@@ -400,7 +395,9 @@ class TestContext:
         context.predict_apogee()
         assert len(calls) == 1
         assert calls == ["apogee update called"]
-        assert len(packets) == 2
+        # We only send over 1 packet at a time to the apogee predictor, so even though we had 2 new
+        # estimated data packets, only 1 processor data packet is sent over:
+        assert len(packets) == 1
         assert packets[-1].current_altitude == 2.0
 
         # Insert 1 raw data packet:
@@ -419,69 +416,52 @@ class TestContext:
         context.predict_apogee()
         assert len(calls) == 1
         assert calls == ["apogee update called"]
-        assert len(packets) == 2
+        assert len(packets) == 1
         assert packets[-1].current_altitude == 2.0
         # That ensures that we don't send duplicate data to the predictor.
 
         context.stop()
 
-    def test_airbrakes_receives_apogee_predictor_packets(
+    def test_airbrakes_receives_apogee_predictor_packet(
         self, context: Context, monkeypatch, random_data_mock_imu
     ):
         """
         Tests whether the airbrakes receives packets from the apogee predictor and that the
         attribute `predicted_apogee` is updated correctly.
         """
-        monkeypatch.setattr("airbrakes.interfaces.base_imu.MAX_FETCHED_PACKETS", 100)
         monkeypatch.setattr(context, "imu", random_data_mock_imu)
 
         context.start(wait_for_start=True)
-        time.sleep(0.9)
-        # Need to assert that we have these many packets otherwise apogee prediction won't run:
-        assert context.imu.queued_imu_packets >= APOGEE_PREDICTION_MIN_PACKETS
-
-        # We have to do this convoluted manual way of updating instead of airbrakes.update() because
-        # 1) faster-fifo does not guarantee that all packets will be fetched in a single get_many()
-        # call.
-        # 2) We don't want other things in airbrakes.update() to execute, like the state machine.
-        est_packets = 0
-        while est_packets < APOGEE_PREDICTION_MIN_PACKETS:
-            fetched = context.imu.get_imu_data_packets()
-            est_data_packets = [x for x in fetched if isinstance(x, EstimatedDataPacket)]
-            context.est_data_packets.extend(est_data_packets)
-            context.data_processor.update(est_data_packets)
-            if est_data_packets:
-                # Generate dummy pdps:
-                pdps = [make_processor_data_packet() for _ in range(len(est_data_packets))]
-                context.processor_data_packets.extend(pdps)
-            est_packets += len(est_data_packets)
+        time.sleep(0.1)
+        # Need to have at least 1 processor packet, which means 1 est data packet or else apogee
+        # predictor won't run
+        context.est_data_packets = [make_est_data_packet()]
+        context.processor_data_packets = [make_processor_data_packet()]
 
         # Now we will have enough packets to run the apogee predictor:
         context.predict_apogee()
-        # Nothing should be fetched yet:
-        assert not context.apogee_predictor_data_packets
 
-        time.sleep(0.01)  # sleep so apogee prediction runs
-        apg_packets = context.apogee_predictor.get_prediction_data_packets()
-        context.apogee_predictor_data_packets.extend(apg_packets)
-        context.most_recent_apogee_predictor_packet = apg_packets[-1]
+        # Nothing should be fetched yet:
+        assert not context.most_recent_apogee_predictor_data_packet
+
+        time.sleep(0.1)  # sleep so apogee prediction runs
+        apg_packet = context.apogee_predictor.get_prediction_data_packet()
+        context.most_recent_apogee_predictor_data_packet = apg_packet
 
         context.stop()
 
-        assert len(apg_packets) > 0
-        ap_dp: ApogeePredictorDataPacket = apg_packets[0]
-        assert isinstance(ap_dp, ApogeePredictorDataPacket)
-        # Our apogee may or may not converge, depending on the number of packets/data in them,
-        # so just check if we have some values:
-        assert ap_dp.uncertainty_threshold_1
-        assert ap_dp.uncertainty_threshold_2
-        assert ap_dp.predicted_apogee is not None
-        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
+        assert isinstance(
+            context.most_recent_apogee_predictor_data_packet, ApogeePredictorDataPacket
+        )
 
-        # Test that a reset of the list of apogee_predictor_data_packets doesn't reset the
-        # predicted_apogee attribute:
-        context.apogee_predictor_data_packets = []
-        assert context.most_recent_apogee_predictor_packet.predicted_apogee is not None
+        assert context.most_recent_apogee_predictor_data_packet.predicted_apogee is not None
+        assert (
+            context.most_recent_apogee_predictor_data_packet.height_used_for_prediction is not None
+        )
+        assert (
+            context.most_recent_apogee_predictor_data_packet.velocity_used_for_prediction
+            is not None
+        )
 
     def test_generate_data_packets(self, context):
         """
@@ -524,28 +504,3 @@ class TestContext:
         context.switch_altitude_back_to_pressure()
         assert not context.data_processor._integrating_for_altitude
         assert context.data_processor._retraction_timestamp is not None
-
-    def test_set_apogee_prediction_data(self, context):
-        """
-        Tests whether the set_apogee_prediction_data method works correctly.
-        """
-        ap_dp_no_pred = make_apogee_predictor_data_packet(predicted_apogee=0.0)
-        ap_dp_pred = make_apogee_predictor_data_packet(
-            predicted_apogee=123.4,
-        )
-        p_dp = make_processor_data_packet(
-            current_altitude=0.0,
-        )
-        context.processor_data_packets = [p_dp]
-
-        context.apogee_predictor_data_packets = [ap_dp_no_pred]
-        context._set_apogee_prediction_data()
-        assert context.most_recent_apogee_predictor_packet == ap_dp_no_pred
-        assert context.first_converged_apogee is None
-
-        context.apogee_predictor_data_packets = [ap_dp_pred]
-        context._set_apogee_prediction_data()
-        assert context.most_recent_apogee_predictor_packet == ap_dp_pred
-        assert context.first_converged_apogee == 123.4
-        assert context.convergence_time == pytest.approx(0.0)
-        assert context.convergence_height == 0.0

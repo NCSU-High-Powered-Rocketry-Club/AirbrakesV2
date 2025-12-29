@@ -2,8 +2,9 @@
 File to handle the downrange distance graphics.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from textual.app import ComposeResult
 from textual.containers import Center, Horizontal
 from textual.reactive import reactive
 from textual.widget import Widget
@@ -11,8 +12,12 @@ from textual.widgets import Label
 from textual_hires_canvas import HiResMode
 from textual_plot import PlotWidget
 
-from airbrakes.context import Context
 from airbrakes.graphics.utils import InformationStore
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class DownrangeMap(Widget):

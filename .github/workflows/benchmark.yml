@@ -1,4 +1,4 @@
-# TODO: Uncomment the benchmark workflow after the repo is public again
+# TODO: Uncomment the benchmark workflow after polars stops being bad
 name: Benchmark-invalid
 on: [push]
 jobs:

@@ -6,8 +6,10 @@ launch and manually verifying the data output by the code. This test will run at
 CI. To run it in real time, see `main.py` or instructions in the `README.md`.
 """
 
+import queue
 import threading
 import time
+from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
@@ -18,7 +20,8 @@ from airbrakes.constants import (
 from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
-    GovernmentWorkLaunchCase,
+    GovernmentWorkLaunchCase1,
+    GovernmentWorkLaunchCase2,
     LegacyLaunchCase,
     PelicanatorLaunchCase1,
     PelicanatorLaunchCase2,
@@ -28,7 +31,35 @@ from tests.auxil.launch_cases import (
     StateInformation,
 )
 
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
+
 SNAPSHOT_INTERVAL = 0.001  # seconds
+
+
+def get_some_packets(
+    packet_queue: queue.SimpleQueue, block: bool, max_packets_to_fetch: int = 15
+) -> list[IMUDataPacket]:
+    """
+    Keep this the same as the one in utils.py! This is here because we need to limit the number of
+    packets received for the integration test, so it doesn't skip over data and fails test cases.
+    :param max_packets_to_fetch: The maximum number of packets to fetch. 0 means no limit.
+    """
+    items = []
+
+    if block:
+        # Block until at least one item is available
+        items.append(packet_queue.get(block=True))
+
+    # Drain the rest of the queue, non-blocking
+    while not packet_queue.empty() and (
+        max_packets_to_fetch == 0 or len(items) < max_packets_to_fetch
+    ):
+        try:
+            items.append(packet_queue.get(block=False))
+        except queue.Empty:
+            break
+    return items
 
 
 class TestIntegration:
@@ -75,8 +106,10 @@ class TestIntegration:
             launch_case = PelicanatorLaunchCase2
         elif launch_name == "pelicanator_launch_4":
             launch_case = PelicanatorLaunchCase4
-        elif launch_name == "government_work":
-            launch_case = GovernmentWorkLaunchCase
+        elif launch_name == "government_work_1":
+            launch_case = GovernmentWorkLaunchCase1
+        elif launch_name == "government_work_2":
+            launch_case = GovernmentWorkLaunchCase2
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 
@@ -85,6 +118,7 @@ class TestIntegration:
         # here, and not in the actual state module.
 
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", target_altitude)
+        monkeypatch.setattr("airbrakes.utils.get_all_packets_from_queue", get_some_packets)
 
         states_dict: dict[str, StateInformation] = {}
 
@@ -95,7 +129,7 @@ class TestIntegration:
         ab.start(wait_for_start=True)
 
         # Run until the patched method in our IMU has finished (i.e. the data is exhausted)
-        while ab.imu.is_running:
+        while ab.imu.is_running or ab.imu.queued_imu_packets > 0:
             ab.update()
             if ab.data_processor.current_timestamp - snap_start_timer >= SNAPSHOT_INTERVAL:
                 if ab.state.name not in states_dict:
@@ -120,8 +154,8 @@ class TestIntegration:
                         ab.data_processor.average_vertical_acceleration
                     )
                     state_info.apogee_prediction.append(
-                        ab.most_recent_apogee_predictor_packet.predicted_apogee
-                        if ab.most_recent_apogee_predictor_packet
+                        ab.most_recent_apogee_predictor_data_packet.predicted_apogee
+                        if ab.most_recent_apogee_predictor_data_packet
                         else 0.0
                     )
 
@@ -148,8 +182,8 @@ class TestIntegration:
                 )
 
                 state_info.apogee_prediction.append(
-                    ab.most_recent_apogee_predictor_packet.predicted_apogee
-                    if ab.most_recent_apogee_predictor_packet
+                    ab.most_recent_apogee_predictor_data_packet.predicted_apogee
+                    if ab.most_recent_apogee_predictor_data_packet
                     else 0.0
                 )
 
@@ -233,11 +267,16 @@ class TestIntegration:
             .to_series()
             .to_list()
         )
-        uncertainities_in_coast = (
-            coast_df.filter(pl.col("uncertainty_threshold_1").is_not_null())
-            .select(pl.col("uncertainty_threshold_1"))
-            .collect()
-            .to_series()
+
+        heights_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("height_used_for_prediction").is_not_null())
+            .get_column("height_used_for_prediction")
+            .to_list()
+        )
+
+        velocities_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("velocity_used_for_prediction").is_not_null())
+            .get_column("velocity_used_for_prediction")
             .to_list()
         )
 
@@ -277,10 +316,10 @@ class TestIntegration:
         # Check if we have a lot of lines in the log file
         assert launch_case_init.log_file_lines_test(lines_in_log_file)
 
-        # Predicted apogees and uncertainties should be logged in CoastState
+        # Predicted apogees and values used for prediction should be present in coast state
         assert len(pred_apogees_in_coast) > 0
-        assert len(uncertainities_in_coast) > 0
-        assert len(uncertainities_in_coast) >= len(pred_apogees_in_coast)
+        assert len(heights_used_for_prediction_in_coast) > 0
+        assert len(velocities_used_for_prediction_in_coast) > 0
 
         # Check if all states were logged
         assert launch_case_init.log_file_states_logged(state_list)
@@ -327,7 +366,7 @@ class TestIntegration:
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert not context.imu._running.value
-        assert not context.imu._data_fetch_process.is_alive()
-        assert not context.logger._log_process.is_alive()
-        assert not context.apogee_predictor._prediction_process.is_alive()
+        assert not context.imu._data_fetch_thread.is_alive()
+        assert not context.logger._log_thread.is_alive()
+        assert not context.apogee_predictor._prediction_thread.is_alive()
         assert sum(imu_packets_per_cycle_list) / len(imu_packets_per_cycle_list) <= 10

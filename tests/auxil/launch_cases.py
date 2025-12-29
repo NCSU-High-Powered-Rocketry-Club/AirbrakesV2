@@ -497,10 +497,21 @@ class PelicanatorLaunchCase4(LaunchCase):
     """
 
 
-class GovernmentWorkLaunchCase(LaunchCase):
+class GovernmentWorkLaunchCase1(LaunchCase):
     """
     The test case for the "governmen't work" launch data (Subscale 2025).
     """
+
+    def coast_case_test(self) -> CaseResult:
+        case_result = super().coast_case_test()
+
+        # Airbrakes were programmed to deploy instantly, target apogee was 0m.
+        case_result.consider_case(
+            "max_altitude",
+            str(self.coast_case.max_altitude),
+            self.coast_case.max_altitude <= 600.0,
+        )
+        return case_result
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
         """
@@ -509,3 +520,9 @@ class GovernmentWorkLaunchCase(LaunchCase):
         Data was perfect, this was a short flight.
         """
         return lines_in_log_file > 71_000
+
+
+class GovernmentWorkLaunchCase2(LaunchCase):
+    """
+    The test case for the "government work 2" launch data (Subscale Launch 2).
+    """

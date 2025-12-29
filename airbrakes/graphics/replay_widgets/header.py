@@ -3,10 +3,9 @@ Module which has the header panel for the flight display.
 """
 
 from time import monotonic_ns
-from typing import ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 from textual import on
-from textual.app import ComposeResult
 from textual.containers import Center, Horizontal
 from textual.message import Message
 from textual.reactive import reactive
@@ -16,10 +15,14 @@ from textual_pyfiglet import FigletWidget
 import airbrakes
 import airbrakes.constants
 from airbrakes.constants import LEFT_TRIANGLE, RIGHT_TRIANGLE
-from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
 from airbrakes.graphics.utils import set_only_class
 from airbrakes.utils import convert_ns_to_s
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class SimulationSpeed(Static, can_focus=True):
@@ -192,7 +195,7 @@ class ReplayFlightHeader(Static):
         Initializes the widgets with the context.
         """
         self.context = context
-        self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor.value
+        self.query_one(SimulationSpeed).sim_speed = self.context.imu._sim_speed_factor
         self.takeoff_time_ns = 0
 
         file_name = self.query_one("#launch-file-name", Label)

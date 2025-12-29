@@ -4,24 +4,27 @@ Real-time flight data display screen.
 Super light weight for use in real-time flight.
 """
 
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from textual import on
-from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid
 from textual.screen import Screen
 from textual.widgets import Button, Footer
 
 from airbrakes.constants import DARK_THEME, LIGHT_THEME, REALTIME_DISPLAY_UPDATE_RATE
-from airbrakes.context import Context
 from airbrakes.graphics.real_widgets.header import MotorBurnSignal, RealFlightHeader
 from airbrakes.graphics.real_widgets.telemetry import (
     BadDataSignal,
     GoodDataSignal,
     RealFlightTelemetry,
 )
-from airbrakes.graphics.screens.launcher import RealLaunchOptions
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
+    from airbrakes.graphics.screens.launcher import RealLaunchOptions
 
 
 class RealFlightScreen(Screen[None]):
@@ -63,14 +66,11 @@ class RealFlightScreen(Screen[None]):
         Start updating the screen by setting a timer.
         """
         self.update_timer = self.set_interval(REALTIME_DISPLAY_UPDATE_RATE, self.update_telemetry)
-        if self.launch_options.verbose:
-            self.flight_telemetry.debug_telemetry.start()
 
     def stop(self) -> None:
         """
         Stop updating the screen by stopping the timer.
         """
-        self.flight_telemetry.debug_telemetry.stop()
         self.bell_timer.stop()
         self.update_timer.stop()
         # self.dismiss()

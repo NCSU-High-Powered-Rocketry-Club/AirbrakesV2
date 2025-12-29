@@ -12,11 +12,6 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     All of these fields are the processed values of the IMU's estimated data.
     """
 
-    # current_timestamp: int
-    """
-    The timestamp of the data packet in nanoseconds since epoch.
-    """
-
     current_altitude: float
     """
     The zeroed-out altitude of the rocket in meters.
@@ -24,9 +19,9 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     In other words, the altitude relative to the ground from the launch pad (AGL).
     """
 
-    # max_altitude: float
+    velocity_magnitude: float
     """
-    The maximum altitude recorded so far of the rocket in meters.
+    The magnitude of the rocket's velocity in meters per second.
     """
 
     vertical_velocity: float
@@ -34,19 +29,14 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     The vertical velocity of the rocket in meters per second.
     """
 
-    # max_vertical_velocity: float
-    """
-    The maximum vertical velocity recorded so far of the rocket in meters per second.
-    """
-
-    # average_vertical_acceleration: float
-    """
-    The average vertical acceleration of the rocket in meters per second squared.
-    """
-
     vertical_acceleration: float
     """
     The vertical acceleration of the rocket in meters per second squared.
+    """
+
+    current_pitch_degrees: float
+    """
+    The current pitch of the rocket in degrees.
     """
 
     time_since_last_data_packet: float

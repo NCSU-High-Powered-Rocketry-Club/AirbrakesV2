@@ -4,8 +4,7 @@ Module to show the terminal GUI for the airbrakes system.
 
 import gc
 import time
-from argparse import Namespace
-from typing import ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 from textual import on
 from textual.app import App
@@ -40,6 +39,9 @@ from airbrakes.mock.mock_servo import MockServo
 from airbrakes.telemetry.apogee_predictor import ApogeePredictor
 from airbrakes.telemetry.data_processor import DataProcessor
 from airbrakes.telemetry.logger import Logger
+
+if TYPE_CHECKING:
+    from argparse import Namespace
 
 
 class AirbrakesApplication(App):
@@ -107,13 +109,11 @@ class AirbrakesApplication(App):
         blocking when running in benchmark mode and for real flights.
         """
         # Initialize the airbrakes context and display
-        with self.suspend():  # This is very important if you want it to work with "spawn"
-            self.context.start(wait_for_start=True)
+        self.context.start(wait_for_start=True)
 
         # Run normally, updating the display:
-        if self.flight_type in ["mock", "sim"]:
+        if self.flight_type == "mock":
             if not self.launch_config.benchmark_mode:
-                self.get_screen("replay_screen").start()
                 self.run_worker(
                     self.run_replay_flight_loop, name="Flight Loop", exclusive=True, thread=True
                 )
@@ -124,7 +124,6 @@ class AirbrakesApplication(App):
             # Real flight mode - the main loop is blocking, and the display is updated in a thread.
             # The display is updated at a lower frequency, so the flight loop can run in the main
             # thread.
-            self.get_screen("real_screen").start()
             self.run_worker(
                 self.run_real_flight_loop, name="Real Flight Loop", exclusive=True, thread=True
             )
@@ -137,13 +136,13 @@ class AirbrakesApplication(App):
             return
 
         self.context.stop()
-        if self.screen_stack:
-            if self.flight_type == "mock" and not self.launch_config.benchmark_mode:
-                # Stop the display and the flight loop:
-                self.get_screen("replay_screen").stop()
-            elif self.flight_type == "real":
-                # Stop the display and the flight loop:
-                self.get_screen("real_screen").stop()
+        # if self.screen_stack:
+        #     if self.flight_type == "mock" and not self.launch_config.benchmark_mode:
+        #         # Stop the display and the flight loop:
+        #         self.get_screen("replay_screen").stop()
+        #     elif self.flight_type == "real":
+        #         # Stop the display and the flight loop:
+        #         self.get_screen("real_screen").stop()
 
     def show_benchmark_results(self) -> None:
         """
@@ -179,7 +178,6 @@ class AirbrakesApplication(App):
         2. Mock replay mode without launch selector screen - used when the path is
             specified. Purely uses command line arguments.
         3. Real flight mode - There is no launch selector screen.
-        4. Sim mode - WIP, will take a long time to implement, since it is barely used.
         """
         if self.flight_type != "real":
             imu = MockIMU(
@@ -233,12 +231,6 @@ class AirbrakesApplication(App):
 
         This is used for the mock replay and sim modes.
         """
-        # TODO: The below should be in the sim loop:
-        # # This allows the simulation to know whether air brakes are deployed or not, and
-        # # change the drag coefficient and reference area used
-        # if is_sim:
-        #     context.imu.set_airbrakes_status(context.servo.current_extension)
-
         start_time = time.monotonic()
         replay_screen: ReplayScreen = self.get_screen("replay_screen")
         while True:
@@ -359,8 +351,7 @@ class AirbrakesApplication(App):
         """
         Common setup code for initializing widgets and starting the application.
         """
-        with self.suspend():  # This is very important if you want it to work with "spawn"
-            self.create_components()
+        self.create_components()
 
         if self.flight_type != "real":
             self._assign_target_apogee()

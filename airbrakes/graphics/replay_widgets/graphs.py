@@ -2,8 +2,9 @@
 Module to show various graphs, e.g. altitude, velocity, acceleration, etc.
 """
 
+from typing import TYPE_CHECKING
+
 from textual import on
-from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import TabbedContent, TabPane
@@ -11,10 +12,14 @@ from textual_hires_canvas import HiResMode
 from textual_plot import PlotWidget
 
 from airbrakes.constants import GRAPH_DATA_STORE_INTERVAL_SECONDS
-from airbrakes.context import Context
 from airbrakes.graphics.replay_widgets.downrange import DownrangeMap
 from airbrakes.graphics.utils import InformationStore
 from airbrakes.utils import convert_ns_to_s
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class FlightGraph(Widget):
@@ -102,7 +107,7 @@ class FlightGraph(Widget):
             store.add_data_point("accel", self.context.data_processor.vertical_acceleration)
             store.add_data_point("vel", self.context.data_processor.vertical_velocity)
             store.add_data_point("alt", self.context.data_processor.current_altitude)
-            if (apg := self.context.most_recent_apogee_predictor_packet) is not None:
+            if (apg := self.context.most_recent_apogee_predictor_data_packet) is not None:
                 store.add_data_point("pred_apogee", apg.predicted_apogee)
             else:
                 store.add_data_point("pred_apogee", 0.0)

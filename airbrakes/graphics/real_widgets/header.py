@@ -3,8 +3,8 @@ UI Header for when you are running a real flight.
 """
 
 import time
+from typing import TYPE_CHECKING
 
-from textual.app import ComposeResult
 from textual.containers import Center, Grid
 from textual.message import Message
 from textual.reactive import reactive
@@ -12,10 +12,14 @@ from textual.widgets import Label, Static
 from textual_pyfiglet import FigletWidget
 
 from airbrakes.constants import TARGET_APOGEE_METERS
-from airbrakes.context import Context
 from airbrakes.graphics.custom_widgets import TimeDisplay
-from airbrakes.graphics.screens.launcher import RealLaunchOptions
 from airbrakes.graphics.utils import set_only_class
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
+    from airbrakes.graphics.screens.launcher import RealLaunchOptions
 
 
 class MotorBurnSignal(Message):

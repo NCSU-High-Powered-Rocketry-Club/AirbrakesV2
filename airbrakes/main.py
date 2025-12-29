@@ -4,12 +4,19 @@ The main file which will be run on the Raspberry Pi.
 It will create the Context object and run the main loop.
 """
 
-import multiprocessing as mp
 import sys
-import warnings
+import sysconfig
 
 from airbrakes.graphics.application import AirbrakesApplication
 from airbrakes.utils import arg_parser
+
+# Assert that we are running in the free-threaded build, and the GIL is disabled:
+if not bool(sysconfig.get_config_var("Py_GIL_DISABLED")) or sys._is_gil_enabled():
+    raise RuntimeError(
+        "The Airbrakes program must be run with the GIL disabled for performance reasons. "
+        "Make sure you are using Python 3.14t, and set the environment variable `PYTHON_GIL=0`"
+        " before running the program."
+    )
 
 
 def run_real_flight() -> None:
@@ -19,9 +26,7 @@ def run_real_flight() -> None:
     Entered when run with
     `uv run real` or `uvx --from git+... real`.
     """
-    mp.set_start_method("spawn", force=True)
     # Modify sys.argv to include real as the first argument:
-    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "real")
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
@@ -35,10 +40,7 @@ def run_mock_flight() -> None:
     Entered when run with
     `uvx --from git+... mock` or `uv run mock`.
     """
-    # Silence process priority warning for when running mock on WSL
-    warnings.filterwarnings("ignore", "Could not set process priority*", UserWarning)
     # Modify sys.argv to include mock as the first argument:
-    mp.set_start_method("spawn", force=True)
     sys.argv.insert(1, "mock")
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
@@ -48,8 +50,7 @@ def run_mock_flight() -> None:
 if __name__ == "__main__":
     # This code isn't actually used when running `uv run ...` but is kept for
     # backwards compatibility. In the `pyproject.toml` file, the entry points for
-    # `uvx` are set to the functions above: `run_real_flight`, `run_mock_flight`,
-    # and `run_sim_flight`.
+    # `uvx` are set to the functions above: `run_real_flight` or `run_mock_flight`
 
     # Deprecated way to run the program:
     # python -m airbrakes.main [ARGS]
@@ -65,17 +66,10 @@ if __name__ == "__main__":
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
 
-    # `uv run sim [ARGS]`: Runs a flight simulation alongside the mock replay.
-    #   Optional arguments include:
-    #     -s, --real-servo   : Uses the real servo instead of a mock one.
-    #     -f, --fast-replay  : Runs the simulation at full speed instead of real-time.
-    #     preset             : Specifies a preset (full-scale, sub-scale, etc).
-
     # Global options for all modes:
     #     -d, --debug   : Runs without a display, allowing inspection of print statements.
     #     -v, --verbose : Enables a detailed display with more flight data.
 
-    mp.set_start_method("spawn", force=True)
     args = arg_parser()
     app = AirbrakesApplication(cmd_args=args)
     app.run()

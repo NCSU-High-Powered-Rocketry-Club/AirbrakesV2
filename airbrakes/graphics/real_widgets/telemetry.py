@@ -2,21 +2,25 @@
 Telemetry widget to show real time data from the sensors.
 """
 
-from textual.app import ComposeResult
+from typing import TYPE_CHECKING
+
 from textual.containers import Grid
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button, Label, Static
 
-from airbrakes.context import Context
 from airbrakes.graphics.bases.base_telemetry import (
     BaseDebugTelemetry,
     BaseFlightTelemetry,
     BaseQueueSizesTelemetry,
-    CPUUsage,
 )
-from airbrakes.graphics.screens.launcher import RealLaunchOptions
 from airbrakes.graphics.utils import set_only_class
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
+    from airbrakes.graphics.screens.launcher import RealLaunchOptions
 
 
 class BadDataSignal(Message):
@@ -134,29 +138,14 @@ class RealDebugTelemetry(BaseDebugTelemetry):
         self.queue_sizes_widget = RealQueueSizesTelemetry(id="real-queue-size-telemetry")
         yield self.queue_sizes_widget
 
-        yield from self._compose_cpu_usage_widget()
-
-    def start(self) -> None:
-        """
-        Starts updating the CPU usage panel.
-        """
-        self.query_one(CPUUsage).start()
-
-    def stop(self) -> None:
-        """
-        Stops updating the CPU usage panel.
-        """
-        self.query_one(CPUUsage).stop()
-
     def initialize_widgets(self, context: Context, launch_options: RealLaunchOptions) -> None:
         """
         Supplies the airbrakes context and related objects to the widgets for proper operation.
         """
         super().initialize_widgets(context)
         self.queue_sizes_widget.initialize_widgets(context)
-        # Disable the CPU usage monitor and buttons if not running with -v:
+        # Disable the buttons if not running with -v:
         if not launch_options.verbose:
-            self.query_one(CPUUsage).disabled = True
             self.extend_airbrakes_button.disabled = True
             self.retract_airbrakes_button.disabled = True
 

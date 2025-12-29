@@ -2,11 +2,15 @@
 Module for the ExtendedDataProcessor class.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import numpy.typing as npt
 
 from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+
+if TYPE_CHECKING:
+    from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
 
 
 class ExtendedDataProcessor(DataProcessor):

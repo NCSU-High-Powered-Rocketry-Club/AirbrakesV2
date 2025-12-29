@@ -2,15 +2,19 @@
 The main top level screen which displays all the information about the flight.
 """
 
-from textual.app import ComposeResult
+from typing import TYPE_CHECKING
+
 from textual.containers import Grid
 from textual.screen import Screen
 from textual.widgets import Footer
 
-from airbrakes.context import Context
-from airbrakes.graphics.bases.base_telemetry import CPUUsage
 from airbrakes.graphics.replay_widgets.header import ReplayFlightHeader
 from airbrakes.graphics.replay_widgets.panel import FlightInformation
+
+if TYPE_CHECKING:
+    from textual.app import ComposeResult
+
+    from airbrakes.context import Context
 
 
 class ReplayScreen(Screen[None]):
@@ -22,17 +26,9 @@ class ReplayScreen(Screen[None]):
 
     __slots__ = ("context", "flight_header", "flight_information")
 
-    def start(self) -> None:
-        """
-        Responsible for starting the CPU usage monitor.
-        """
-        self.query_one(CPUUsage).start()
+    def start(self) -> None: ...
 
-    def stop(self) -> None:
-        """
-        Responsible for stopping the CPU usage monitor.
-        """
-        self.query_one(CPUUsage).stop()
+    def stop(self) -> None: ...
 
     def compose(self) -> ComposeResult:
         """
@@ -76,7 +72,7 @@ class ReplayScreen(Screen[None]):
         self.flight_information.update_flight_information()
 
     def _change_sim_speed(self, sim_speed: float) -> None:
-        self.context.imu._sim_speed_factor.value = sim_speed
+        self.context.imu._sim_speed_factor = sim_speed
 
     def _monitor_flight_time(self, flight_time_ns: int) -> None:
         """
