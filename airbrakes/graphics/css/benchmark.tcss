@@ -1,0 +1,21 @@
+BenchmarkScreen {
+    align: center middle;
+}
+
+#vertical-container {
+    width: 40%;
+    content-align: center middle;
+    height: auto;
+    # height: 30%;
+    background: $surface;
+    border: round $background 80%;
+
+    #button-container {
+        align: center middle;
+        height: auto;
+
+        #exit-button {
+            margin-left: 1;
+        }
+    }
+}

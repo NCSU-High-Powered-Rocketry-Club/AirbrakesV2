@@ -44,6 +44,13 @@ test_logs/
 # pytest cache
 .pytest_cache/
 
+<<<<<<< HEAD
+# Repomix (Code for AI)
+repomix-output.xml
+
+# Textual snapshot testing reports:
+snapshot_report.html
+=======
 # Don't commit some KiCAD files:
 kicad/**/*.zip
 kicad/**/*.kicad_prl
@@ -53,3 +60,4 @@ kicad/**/*.gbr
 kicad/**/*.gbrjob
 kicad/**/*.drl
 kicad/**/fp-info-cache
+>>>>>>> main

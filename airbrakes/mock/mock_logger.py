@@ -41,4 +41,4 @@ class MockLogger(Logger):
         """
         super().stop()
         if self._delete_log_file:
-            self.log_path.unlink()
+            self.log_path.unlink(missing_ok=True)

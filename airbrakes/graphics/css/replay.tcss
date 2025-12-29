@@ -1,0 +1,309 @@
+#main-grid {
+    layout: grid;
+    grid-size: 1;
+    grid-rows: auto 1fr;
+    # background: green;
+}
+
+#flight-header {
+    layout: grid;
+    overflow-y: auto;
+    grid-size: 3; /* 3 columns */
+    grid-rows: auto;
+    # grid-gutter: 1;
+
+    #launch-file-name {
+        background: $primary-muted;
+        color: $text-primary;
+        text-style: bold;
+        width: auto;
+        # width: 100%;
+    }
+
+    #normal-sim-time {
+        text-align: center;
+        width: 100%;
+    }
+
+    Button {
+        min-width: 0;
+        border: none;
+        background: $surface 50%;
+        margin-left: 1;
+        margin-right: 1;
+    }
+
+    #launch-clock {
+        color: $primary;
+        text-align: center;
+        content-align: center middle;
+        height: 100%;
+
+        &.blink {
+            visibility: hidden;
+        }
+    }
+
+    #state {
+        width: 100%;
+        padding-top: 1;
+        color: $primary 80%;
+        text-style: bold;
+    }
+
+    #target-apogee-label {
+        text-align: center;
+        width: 100%;
+        text-style: underline;
+    }
+
+    #sim-speed-panel {
+        max-height: 1;
+        Horizontal {
+            align: center middle;
+        }
+    }
+
+    #flight-progress-bar {
+        column-span: 3;
+        width: 100%;
+
+        Bar {
+            width: 1fr;
+
+            &.standby {
+                .bar--bar {
+                    color: orange;
+                }
+            }
+
+            &.motorburn {
+                .bar--bar {
+                    color: red;
+                }
+            }
+
+            &.coast {
+                .bar--bar {
+                    color: yellow;
+                }
+            }
+
+            &.freefall {
+                .bar--bar {
+                    color: green;
+                }
+            }
+
+            &.landed {
+                .bar--bar {
+                    color: indigo;
+                }
+            }
+        }
+    }
+}
+
+#flight-information-panel {
+    layout: grid;
+    grid-size: 3;  /* 3 columns */
+    grid-rows: 1fr;
+    height: 100%;
+    overflow: auto;
+
+    #flight-data-panel {
+        border: round $border 80%;
+        border-title-align: center;
+        border-title-style: bold;
+        overflow-y: auto;
+        background: $surface 30%;
+        height: 100%;
+
+        /* TODO: Other widgets are overridiing this color */
+        &:hover {
+            background: $surface 50%;
+        }
+
+        /* style the unit labels */
+        .units {
+            color: $secondary;
+        }
+
+        #flight-telemetry-grid{
+            grid-size: 5;  /* 5 columns */
+            grid-columns: auto 10 auto 7 auto;
+            grid-rows: auto;
+            grid-gutter: 0 1;
+            height: auto;
+
+            /* assign the color for the numbers in the telemetry grid */
+            Label {
+                color: $text-accent;
+            }
+        }
+
+        #debug-telemetry {
+            overflow: auto;
+            border-top: round $border 80%;
+            border-title-align: center;
+            border-title-style: bold;
+
+            #debug-telemetry-grid{
+                grid-size: 3;  /* 3 columns */
+                grid-columns: auto 1fr 1fr;
+                grid-rows: auto;
+                grid-gutter: 0 1;
+                height: auto;
+
+                #invalid-fields-label{
+                    column-span: 2;
+                }
+
+                /* assign the color for the numbers in the debug telemetry grid */
+                Label {
+                    color: $text-accent;
+                    &.bad-data {
+                        color: $error 80%;
+                    }
+                }
+            }
+
+            #packet-grid {
+                align: center middle;
+                text-align: center;
+                grid-size: 4;  /* 3 columns */
+                grid-columns: 1fr;
+                border-top: round $border 80%;
+                grid-rows: auto;
+                padding-top: 1;
+                margin-bottom: 1;
+                grid-gutter: 0 1;
+                height: auto;
+
+                /* aligning the text in the center of the grid */
+                Label {
+                    text-align: center;
+                    color: $text-accent;
+                    width: 100%;
+                }
+
+                Static {
+                    text-align: center;
+                    width: 100%;
+                }
+            }
+
+
+            #cpu-usage-widget {
+                layout: grid;
+                border-top: round $border 80%;
+                /* 4 Processes = 4 columns */
+                grid-size: 4 3;
+                overflow: auto;
+                grid-gutter: 1;
+                grid-columns: 1fr;
+                grid-rows: auto;
+                padding-top: 1;
+
+                CPUBars {
+                    max-height: 10;
+                    content-align: center middle;
+                }
+
+                CPUBar {
+                    color: grey 50%;
+                    margin: 0;
+                    padding: 0;
+                    text-align: center;
+
+                    &.active {
+                        &.low {
+                            color: $primary 80%;
+                        }
+
+                        &.medium {
+                            color: yellow 80%;
+                        }
+
+                        &.high {
+                            color: red 80%;
+                        }
+                    }
+                }
+
+                Label {
+                    content-align: center middle;
+                    text-align: center;
+                }
+            }
+        }
+    }
+
+    #flight-graph-panel {
+        border: round $border 80%;
+        border-title-style: bold;
+        border-title-align: center;
+
+        #tabbed-content {
+            margin-top: 1;
+        }
+        
+    
+        PlotWidget {
+            height: 35vh;
+            margin-top: -1;
+            margin-right: 3;
+        }
+
+        TabbedContent #--content-tab-accel-tab {
+            color: red;
+        }
+        TabbedContent #--content-tab-vel-tab {
+            color: blue;
+        }
+        TabbedContent #--content-tab-alt-tab {
+            color: green;
+        }
+        TabbedContent #--content-tab-pred-apogee-tab {
+            color: purple;
+        }
+
+        #downrange-map-panel {
+            border-top: solid $border 80%;
+            border-title-style: bold;
+            border-title-align: center;
+            height: 50h;
+
+            #downrange-map-widget {
+            }
+
+            #x-distance-label {
+                margin-left: 4;
+                color: orange;
+            }
+
+            #y-distance-label {
+                color: orange;
+                margin-left: 4;
+                margin-right: 4;
+            }
+
+            #horizontal-range-label {
+                color: green;
+            }
+        }
+    }
+
+    #rocket-visualization-panel {
+        border: round $border 80%;
+        border-title-style: bold;
+        border-title-align: center;
+        height: 100%;
+    }
+}
+
+
+Placeholder {
+    width: auto;
+    height: auto;
+}
