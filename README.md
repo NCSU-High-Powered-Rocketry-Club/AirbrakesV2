@@ -187,26 +187,39 @@ _Note: We will continue using `uv` for the rest of this README, if you don't wan
 If you want to contribute to the project, you will need to set up the project locally. Luckily, 
 the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
-### 1. Clone the repository:
+### 1. Clone the repository and open in VSC:
 
+Run the following in a WSL terminal in a new directory:
 ```
 git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
+
 cd AirbrakesV2
+
+code .
 ```
 
-### 2. Install the project:
+### 3. Install the project:
 ```bash
 uv run mock
 ```
 
 This will install the project, including development dependencies, activate the virtual environment and run the mock replay.
 
+Potential Issues:
+* command 'cc' failed: No such file or directory
+  * This means your environment doesn't have a C compiler. Install using:
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y build-essential
+  ```
+* Make sure you are on Python 3.14.
+
 _Note: It is important to use `uv run` instead of `uvx` since the `uvx` environment is isolated from
 the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools/#relationship-to-uv-run) for more information._
 
 _Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock replay._
 
-### 3. Install the pre-commit hook:
+### 4. Install the pre-commit hook:
 ```
 uv run pre-commit install
 ```
