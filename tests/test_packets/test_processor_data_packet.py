@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 @pytest.fixture

@@ -19,9 +19,9 @@ from airbrakes.context import Context
 from airbrakes.hardware.imu import IMU
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.logger import Logger
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.logger import Logger
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")

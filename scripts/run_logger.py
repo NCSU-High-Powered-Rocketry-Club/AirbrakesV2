@@ -5,10 +5,10 @@ Module for testing how the logger module runs.
 import time
 from collections import deque
 
-from airbrakes.telemetry.data_processor import DataProcessor
+from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.constants import TEST_LOGS_PATH
-from airbrakes.telemetry.packets.imu_data_packet import RawDataPacket
-from airbrakes.telemetry.logger import Logger
+from airbrakes.data_handling.packets.imu_data_packet import RawDataPacket
+from airbrakes.data_handling.logger import Logger
 
 
 def main():

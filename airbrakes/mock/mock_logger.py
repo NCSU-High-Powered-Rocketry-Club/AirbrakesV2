@@ -6,7 +6,7 @@ Currently only used to delete the log file.
 
 from typing import TYPE_CHECKING
 
-from airbrakes.telemetry.logger import Logger
+from airbrakes.data_handling.logger import Logger
 
 if TYPE_CHECKING:
     from pathlib import Path

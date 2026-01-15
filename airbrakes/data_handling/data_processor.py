@@ -15,11 +15,11 @@ from airbrakes.constants import (
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
     WINDOW_SIZE_FOR_PRESSURE_ZEROING,
 )
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+    from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 
 class DataProcessor:

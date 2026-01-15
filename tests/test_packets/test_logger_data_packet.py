@@ -1,11 +1,11 @@
 import pytest
 
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import make_logger_data_packet
 
 

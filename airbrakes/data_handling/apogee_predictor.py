@@ -12,13 +12,13 @@ from airbrakes import constants
 from airbrakes.constants import (
     STOP_SIGNAL,
 )
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
 )
 from airbrakes.utils import get_all_packets_from_queue
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 class ApogeePredictor:

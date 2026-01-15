@@ -22,16 +22,16 @@ from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.logger import Logger
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.logger import Logger
 from airbrakes.utils import arg_parser
 
 if TYPE_CHECKING:
     import argparse
 
-    from airbrakes.interfaces.base_imu import BaseIMU
-    from airbrakes.interfaces.base_servo import BaseServo
+    from airbrakes.base_classes.base_imu import BaseIMU
+    from airbrakes.base_classes.base_servo import BaseServo
 
 
 def run_real_flight() -> None:

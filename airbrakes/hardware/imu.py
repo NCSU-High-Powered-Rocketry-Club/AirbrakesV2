@@ -10,8 +10,8 @@ import mscl_rs
 from airbrakes.constants import (
     IMU_TIMEOUT_SECONDS,
 )
-from airbrakes.interfaces.base_imu import BaseIMU
-from airbrakes.telemetry.packets.imu_data_packet import (
+from airbrakes.base_classes.base_imu import BaseIMU
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

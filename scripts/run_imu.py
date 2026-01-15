@@ -5,7 +5,7 @@ command: `python -m scripts.run_imu` For the pi, you will have to use python3.
 
 from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
-from airbrakes.telemetry.packets.imu_data_packet import RawDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import RawDataPacket
 from airbrakes.utils import convert_ns_to_s
 
 

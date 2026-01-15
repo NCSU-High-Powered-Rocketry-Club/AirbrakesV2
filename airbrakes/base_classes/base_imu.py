@@ -13,7 +13,7 @@ from airbrakes.constants import IMU_TIMEOUT_SECONDS, STOP_SIGNAL
 if TYPE_CHECKING:
     import queue
 
-    from airbrakes.telemetry.packets.imu_data_packet import (
+    from airbrakes.data_handling.packets.imu_data_packet import (
         IMUDataPacket,
     )
 

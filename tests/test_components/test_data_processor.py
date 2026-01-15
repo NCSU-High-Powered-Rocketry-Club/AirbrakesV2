@@ -9,8 +9,8 @@ import pytest
 import quaternion
 
 from airbrakes.constants import WINDOW_SIZE_FOR_PRESSURE_ZEROING
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_est_data_packet
 
 

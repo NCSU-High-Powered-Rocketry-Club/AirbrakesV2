@@ -10,7 +10,7 @@ from airbrakes.constants import (
     SERVO_OPERATING_FREQUENCY_HZ,
     ServoExtension,
 )
-from airbrakes.interfaces.base_servo import BaseServo
+from airbrakes.base_classes.base_servo import BaseServo
 
 
 class Servo(BaseServo):

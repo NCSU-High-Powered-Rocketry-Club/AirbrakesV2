@@ -22,8 +22,8 @@ from airbrakes.state import (
     MotorBurnState,
     StandbyState,
 )
-from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.utils import (
     context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
@@ -36,13 +36,13 @@ from tests.auxil.utils import (
 from tests.conftest import LOG_PATH
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-    from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-    from airbrakes.telemetry.packets.imu_data_packet import (
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+    from airbrakes.data_handling.packets.imu_data_packet import (
         IMUDataPacket,
     )
-    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-    from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
 def patched_stop(self):

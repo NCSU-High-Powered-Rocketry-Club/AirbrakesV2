@@ -20,7 +20,7 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_apogee_predictor_data_packet
 
 

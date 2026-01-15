@@ -7,21 +7,21 @@ from typing import TYPE_CHECKING
 
 from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.state import StandbyState, State
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 if TYPE_CHECKING:
     from airbrakes.hardware.imu import IMUDataPacket
-    from airbrakes.interfaces.base_imu import BaseIMU
-    from airbrakes.interfaces.base_servo import BaseServo
-    from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-    from airbrakes.telemetry.data_processor import DataProcessor
-    from airbrakes.telemetry.logger import Logger
-    from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+    from airbrakes.base_classes.base_imu import BaseIMU
+    from airbrakes.base_classes.base_servo import BaseServo
+    from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+    from airbrakes.data_handling.data_processor import DataProcessor
+    from airbrakes.data_handling.logger import Logger
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
-    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 class Context:

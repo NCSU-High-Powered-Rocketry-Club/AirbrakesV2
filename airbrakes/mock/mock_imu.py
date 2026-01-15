@@ -14,8 +14,8 @@ import polars as pl
 
 import airbrakes.constants
 from airbrakes.constants import STOP_SIGNAL
-from airbrakes.interfaces.base_imu import BaseIMU
-from airbrakes.telemetry.packets.imu_data_packet import (
+from airbrakes.base_classes.base_imu import BaseIMU
+from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,

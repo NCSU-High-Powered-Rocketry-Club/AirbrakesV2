@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from airbrakes.constants import STOP_SIGNAL
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_processor_data_packet
 
 

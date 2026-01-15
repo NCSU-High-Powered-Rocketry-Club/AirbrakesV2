@@ -17,7 +17,7 @@ import pytest
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
     GovernmentWorkLaunchCase1,
@@ -32,7 +32,7 @@ from tests.auxil.launch_cases import (
 )
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
+    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 
