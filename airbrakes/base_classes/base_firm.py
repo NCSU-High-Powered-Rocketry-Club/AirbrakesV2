@@ -1,3 +1,4 @@
+from firm_client import FIRMClient, FIRMData
 from abc import ABC, abstractmethod
 
 
@@ -15,7 +16,7 @@ class BaseFIRM(ABC):
         """
 
     @abstractmethod
-    def get_data_packets(self) -> list[FIRMDataPacket]:
+    def get_data_packets(self) -> list[FIRMData]:
         """
         Returns all available FIRM data packets from the queued FIRM packets.
 

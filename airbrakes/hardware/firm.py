@@ -1,3 +1,4 @@
+from firm_client import FIRMClient, FIRMData
 from airbrakes.base_classes.base_firm import BaseFIRM
 
 
@@ -26,4 +27,4 @@ class FIRM(BaseFIRM):
 
         :return: A list containing the latest FIRM data packets from the FIRM packet queue.
         """
-        return firm_client.get_data_packets()
+        return self.firm_client.get_data_packets()
