@@ -146,19 +146,19 @@ class DataProcessor:
         """
         The timestamp of the last data packet in nanoseconds.
 
-        :return: the current timestamp of the most recent EstimatedDataPacket.
+        :return: the current timestamp of the most recent FIRMDataPacket.
         """
         try:
-            return self._last_data_packet.timestamp
+            return self._last_data_packet.timestamp_seconds
         except AttributeError:  # If we don't have a last data packet
             return 0
 
-    def update(self, data_packets: list[EstimatedDataPacket]) -> None:
+    def update(self, data_packets: list[FIRMDataPacket]) -> None:
         """
         Updates the data points to process.
 
         This will recompute all information such as altitude, velocity, etc.
-        :param data_packets: A list of EstimatedDataPacket objects to process
+        :param data_packets: A list of FIRMDataPacket objects to process
         """
         # If the data points are empty, we don't want to try to process anything
         if not data_packets:
@@ -235,7 +235,7 @@ class DataProcessor:
         """
         # Zero out the altitude based on the average of recent altitudes
         self._pressure_alt_buffer.extend(
-            [data_packet.estPressureAlt for data_packet in self._data_packets],
+            [data_packet.est_position_y_meters for data_packet in self._data_packets],
         )
 
         # Avoid division by zero:
@@ -255,7 +255,7 @@ class DataProcessor:
 
         # This is us getting the rocket's initial altitude from the mean of the first data packets
         self._initial_altitude = np.mean(
-            [data_packet.estPressureAlt for data_packet in self._data_packets],
+            [data_packet.est_position_y_meters for data_packet in self._data_packets],
         )
 
         # This is us getting the rocket's initial orientation
@@ -264,10 +264,10 @@ class DataProcessor:
         self._current_orientation_quaternions = quaternion.from_float_array(
             np.array(
                 [
-                    self._last_data_packet.estOrientQuaternionW,
-                    self._last_data_packet.estOrientQuaternionX,
-                    self._last_data_packet.estOrientQuaternionY,
-                    self._last_data_packet.estOrientQuaternionZ,
+                    self._last_data_packet.est_quaternion_w,
+                    self._last_data_packet.est_quaternion_x,
+                    self._last_data_packet.est_quaternion_y,
+                    self._last_data_packet.est_quaternion_z,
                 ]
             ),
         )
@@ -313,7 +313,7 @@ class DataProcessor:
         else:
             altitudes = np.array(
                 [
-                    data_packet.estPressureAlt - self._initial_altitude
+                    data_packet.est_position_y_meters - self._initial_altitude
                     for data_packet in self._data_packets
                 ],
             )
@@ -346,16 +346,16 @@ class DataProcessor:
         # list comprehensions. This would change if it was say 1000 data packets in a single update.
         for i, data_packet in enumerate(self._data_packets):
             # Extract accelerations in m/s^2
-            x_accel = data_packet.estCompensatedAccelX
-            y_accel = data_packet.estCompensatedAccelY
-            z_accel = data_packet.estCompensatedAccelZ
+            x_accel = data_packet.est_acceleration_x_gs
+            y_accel = data_packet.est_acceleration_y_gs
+            z_accel = data_packet.est_acceleration_z_gs
 
             # It's about 6x faster to just multiply the dt here rather than outside the loop
             # using numpy vectorization.
             dt = self._time_differences[i]
-            x_gyro = data_packet.estAngularRateX
-            y_gyro = data_packet.estAngularRateY
-            z_gyro = data_packet.estAngularRateZ
+            x_gyro = data_packet.est_angular_rate_x_rad_per_s
+            y_gyro = data_packet.est_angular_rate_y_rad_per_s
+            z_gyro = data_packet.est_angular_rate_z_rad_per_s
 
             # Initializing the quaternion here directly is faster than using
             # quaternion.from_float_array
@@ -427,7 +427,7 @@ class DataProcessor:
 
         timestamps_in_seconds = np.array(
             [
-                convert_ns_to_s(data_packet.timestamp)
+                convert_ns_to_s(data_packet.timestamp_seconds)
                 for data_packet in [self._last_data_packet, *self._data_packets]
             ]
         )

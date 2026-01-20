@@ -330,3 +330,9 @@ The cross-sectional area of the rocket in square meters, with airbrakes all the 
 
 # TODO: delete this and simulation/
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
+
+TIMEOUT_SECONDS: float = 5.0
+
+BAUD_RATE: int = 2_000_000
+
+TIMEOUT: float = 0.1
