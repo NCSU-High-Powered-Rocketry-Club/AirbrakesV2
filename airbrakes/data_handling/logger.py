@@ -18,19 +18,21 @@ from airbrakes.constants import (
     NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
-from airbrakes.state import LandedState, StandbyState
 from airbrakes.data_handling.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.state import LandedState, StandbyState
 from airbrakes.utils import get_all_packets_from_queue
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
 
-    from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket

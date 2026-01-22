@@ -5,8 +5,8 @@ Module which contains the MockServo class and doesn't use the adafruit circuitpy
 from gpiozero import RotaryEncoder
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
-from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
 from airbrakes.base_classes.base_servo import BaseServo
+from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
 
 
 class MockServo(BaseServo):

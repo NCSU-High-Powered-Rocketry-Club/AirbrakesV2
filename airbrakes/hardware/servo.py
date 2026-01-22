@@ -6,11 +6,11 @@ airbrakes, along with a rotary encoder to measure the servo's position.
 import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
+from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
     SERVO_OPERATING_FREQUENCY_HZ,
     ServoExtension,
 )
-from airbrakes.base_classes.base_servo import BaseServo
 
 
 class Servo(BaseServo):

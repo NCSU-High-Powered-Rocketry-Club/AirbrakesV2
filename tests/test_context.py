@@ -11,12 +11,12 @@ from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
-from airbrakes.mock.display import FlightDisplay
-from airbrakes.state import CoastState, StandbyState
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.mock.display import FlightDisplay
+from airbrakes.state import CoastState, StandbyState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_est_data_packet,

@@ -16,15 +16,15 @@ from airbrakes.constants import (
     SERVO_CHANNEL,
 )
 from airbrakes.context import Context
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.data_handling.apogee_predictor import ApogeePredictor
-from airbrakes.data_handling.data_processor import DataProcessor
-from airbrakes.data_handling.logger import Logger
 from airbrakes.utils import arg_parser
 
 if TYPE_CHECKING:

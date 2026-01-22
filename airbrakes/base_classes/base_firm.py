@@ -1,5 +1,6 @@
-from firm_client import FIRMClient, FIRMData
 from abc import ABC, abstractmethod
+
+from firm_client import FIRMData
 
 
 class BaseFIRM(ABC):

@@ -12,6 +12,7 @@ from airbrakes.constants import (
     ServoExtension,
 )
 from airbrakes.context import Context
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,
@@ -20,7 +21,6 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from tests.auxil.utils import make_apogee_predictor_data_packet
 
 

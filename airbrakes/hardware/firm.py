@@ -1,9 +1,9 @@
 from firm_client import FIRMClient, FIRMData
+
 from airbrakes.base_classes.base_firm import BaseFIRM
 
 
 class FIRM(BaseFIRM):
-
     __slots__ = ("firm_client",)
 
     def __init__(self):

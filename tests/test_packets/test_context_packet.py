@@ -1,7 +1,7 @@
 import pytest
 
-from airbrakes.state import StandbyState
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.state import StandbyState
 
 
 @pytest.fixture

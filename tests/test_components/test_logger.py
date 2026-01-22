@@ -16,14 +16,14 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     ServoExtension,
 )
+from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import (
     CoastState,
     LandedState,
     MotorBurnState,
     StandbyState,
 )
-from airbrakes.data_handling.logger import Logger
-from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.utils import (
     context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
@@ -36,7 +36,9 @@ from tests.auxil.utils import (
 from tests.conftest import LOG_PATH
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
+    )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
     from airbrakes.data_handling.packets.imu_data_packet import (
         IMUDataPacket,
