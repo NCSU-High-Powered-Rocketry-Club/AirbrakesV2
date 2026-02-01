@@ -36,13 +36,14 @@ from tests.auxil.utils import (
 from tests.conftest import LOG_PATH
 
 if TYPE_CHECKING:
+    from airbrakes.data_handling.packets.imu_data_packet import (
+        IMUDataPacket,
+    )
+
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-    from airbrakes.data_handling.packets.imu_data_packet import (
-        IMUDataPacket,
-    )
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 

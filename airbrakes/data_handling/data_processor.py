@@ -3,7 +3,6 @@ Module for processing IMU data on a higher level.
 """
 
 from collections import deque
-from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -252,9 +251,11 @@ class DataProcessor:
         self._last_data_packet = self._data_packets[0]
 
         # This is us getting the rocket's initial altitude from the mean of the first data packets
-        self._initial_altitude = np.float64(np.mean(
-            [data_packet.est_position_z_meters for data_packet in self._data_packets],
-        ))
+        self._initial_altitude = np.float64(
+            np.mean(
+                [data_packet.est_position_z_meters for data_packet in self._data_packets],
+            )
+        )
 
         # This is us getting the rocket's initial orientation
         # Convert initial orientation quaternion array to a scipy Rotation object

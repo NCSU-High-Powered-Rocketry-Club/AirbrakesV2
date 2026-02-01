@@ -3,7 +3,7 @@ from pathlib import Path
 from firm_client import FIRMClient, FIRMDataPacket
 
 from airbrakes.base_classes.base_firm import BaseFIRM
-from airbrakes.constants import FIRM_PORT, FIRM_BAUD_RATE, FIRM_SERIAL_TIMEOUT_SECONDS
+from airbrakes.constants import FIRM_BAUD_RATE, FIRM_PORT, FIRM_SERIAL_TIMEOUT_SECONDS
 
 
 class FIRM(BaseFIRM):

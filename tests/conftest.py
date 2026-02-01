@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 
 import pytest
+from airbrakes.hardware.imu import IMU
+from airbrakes.mock.mock_imu import MockIMU
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
@@ -19,8 +21,6 @@ from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.hardware.imu import IMU
-from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_servo import MockServo
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
