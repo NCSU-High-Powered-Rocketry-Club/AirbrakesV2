@@ -47,7 +47,6 @@ dev = [
     "ruff>=0.12.12",
     "pre-commit",
     "pytest-benchmark>=5.1.0",
-    # "docformatter",
     "ty>=0.0.1a20",
 ]
 
@@ -105,10 +104,6 @@ filterwarnings = [
     "ignore:To reduce servo jitter", # ignore warning about pigpio
     "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
 ]
-addopts = "--benchmark-skip"  # skip benchmarks by default:
-markers = [
-    "imu_benchmark",
-]
 
 [tool.coverage.run]
 branch = true
@@ -152,11 +147,3 @@ root = ["./airbrakes"]
 
 [tool.ty.src]
 exclude = ["tests", "scripts"]
-
-[tool.docformatter]
-wrap-summaries = 100
-wrap-descriptions = 100
-pre-summary-newline = true
-make-summary-multi-line = true
-recursive = true
-in-place = true

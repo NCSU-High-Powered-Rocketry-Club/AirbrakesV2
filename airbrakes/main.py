@@ -117,7 +117,12 @@ def create_components(
 
     else:
         # Use real hardware components
-        firm = FIRM()
+        if args.pretend_firm:
+            firm = FIRM(is_pretend=True, log_file_path=args.pretend_firm)
+        else:
+            # Use real hardware components
+            firm = FIRM()
+
         logger = Logger(LOGS_PATH)
 
         # Maybe use mock components as specified by the command line arguments:
@@ -177,30 +182,3 @@ def run_flight_loop(
         # Stops the display and the Airbrakes program
         flight_display.stop()
         context.stop()
-
-
-if __name__ == "__main__":
-    # This code isn't actually used when running `uv run ...` but is kept for
-    # backwards compatibility. In the `pyproject.toml` file, the entry points for
-    # `uvx` are set to the functions above: `run_real_flight` or `run_mock_flight`
-
-    # Deprecated way to run the program:
-    # python -m airbrakes.main [ARGS]
-
-    # The main Airbrakes program can be run in different modes:
-
-    # `uv run real [ARGS]`: Runs the flight with real hardware. Optional arguments:
-    #     -s, --mock-servo   : Uses a mock servo instead of the real one.
-
-    # `uv run mock [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
-    #   Optional arguments include:
-    #     -s, --real-servo   : Uses the real servo instead of a mock one.
-    #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
-    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
-
-    # Global options for all modes:
-    #     -d, --debug   : Runs without a display, allowing inspection of print statements.
-    #     -v, --verbose : Enables a detailed display with more flight data.
-
-    args = arg_parser()
-    run_flight(args)

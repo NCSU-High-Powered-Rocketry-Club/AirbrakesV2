@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from firm_client import FIRMClient, FIRMDataPacket
 
 from airbrakes.base_classes.base_firm import BaseFIRM
@@ -5,10 +7,12 @@ from airbrakes.constants import FIRM_PORT, FIRM_BAUD_RATE, FIRM_SERIAL_TIMEOUT_S
 
 
 class FIRM(BaseFIRM):
-    __slots__ = ("firm_client",)
+    __slots__ = ("_log_file_path", "firm_client", "is_pretend")
 
-    def __init__(self):
+    def __init__(self, is_pretend=False, log_file_path: Path = None):
         super().__init__()
+        self.is_pretend = is_pretend
+        self._log_file_path = log_file_path
         self.firm_client = FIRMClient(FIRM_PORT, FIRM_BAUD_RATE, FIRM_SERIAL_TIMEOUT_SECONDS)
 
     def start(self) -> None:
@@ -16,6 +20,9 @@ class FIRM(BaseFIRM):
         Starts the FIRM client for fetching data packets.
         """
         self.firm_client.start()
+
+        if self.is_pretend:
+            self.firm_client.start_mock_log_stream(self._log_file_path)
         super().start()
 
     def stop(self) -> None:
@@ -31,4 +38,9 @@ class FIRM(BaseFIRM):
 
         :return: A list containing the latest FIRM data packets from the FIRM packet queue.
         """
+        # Throws out any packets collected before FIRM responds that it's in mock mode
+        if self.is_pretend and not self.firm_client.is_mock_running():
+            return []
+
+        # Otherwise we just return the data packets like normal
         return self.firm_client.get_data_packets()
