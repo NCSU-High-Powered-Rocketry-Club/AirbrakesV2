@@ -53,7 +53,7 @@ profiling = [
 requires-dist = [
     { name = "colorama" },
     { name = "gpiozero" },
-    { name = "hprm", specifier = ">=0.1.6" },
+    { name = "hprm", specifier = ">=0.1.7" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
     { name = "mscl-rs", specifier = "==0.2.0" },
     { name = "msgspec" },
@@ -182,16 +182,14 @@ wheels = [
 
 [[package]]
 name = "hprm"
-version = "0.1.6"
+version = "0.1.7"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/15/37/cc1ee607c5c26fa188874a17a7e60cfd8582dd434c8675756cbc8dbdbcfc/hprm-0.1.6.tar.gz", hash = "sha256:b5da2c2dcf76f14b97f9902b963bab8fd8e0a67f781514d74dcb2d8527b38ce9", size = 122232, upload-time = "2025-12-13T04:17:03.723Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/9a/22e70ad216b6a8d303c75ac78aed1800bdd682cee25d211754a68b25f31a/hprm-0.1.7.tar.gz", hash = "sha256:70f1ff1547fbd10277da156a970b8abce1acf7724aef3f435240b5e81219198f", size = 161285, upload-time = "2026-01-26T08:46:01.595Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/6f/870564cca08821eaec21b70fda3d0aaa6417d70bfbf52319a11ea66f22b4/hprm-0.1.6-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:edfd6b1ba04f5698724380a946c0507af29a38f83a321b78526d34bc5a280c00", size = 282268, upload-time = "2025-12-12T01:08:21.124Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/6f/112c5c2d171351266113de622921f9c292453f068a6f3748052f2445e4f5/hprm-0.1.6-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:409423b9d7876ec383ea4caf6390c761eaac804596d97739f408b6aec54e7731", size = 327160, upload-time = "2025-12-13T04:16:25.526Z" },
-    { url = "https://files.pythonhosted.org/packages/82/5c/87cad02e4699dfde03314312e9e5a47fef71f917edf027744afe6b498b0f/hprm-0.1.6-cp314-cp314-win_amd64.whl", hash = "sha256:00874f5fe788195db1c4856e2636753b7821687aafd8b70c0f64c8d05758fdca", size = 177099, upload-time = "2025-12-12T01:08:23.351Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/a6/bf6ef7ce081190eb02657fa03e33044592b251ee57f339cb393f543649c2/hprm-0.1.6-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:09ceb368353c3b8cab8e921c242449bf8ede3ea0a76ef53669db6faeefa79051", size = 281793, upload-time = "2025-12-12T01:08:25.153Z" },
-    { url = "https://files.pythonhosted.org/packages/bb/41/93d399dd66bab9e21134a7aeaa0f29fdf463841d0497591d86783ddd0b5e/hprm-0.1.6-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:394f9a5a723e58ce505fa81c768eeae68bb69a45465ca6008e851855640c5399", size = 327537, upload-time = "2025-12-13T04:16:07.274Z" },
-    { url = "https://files.pythonhosted.org/packages/27/55/7336163638f7da605835029dd8b8500bac1de9ed15cc12ac229ef3e3aa21/hprm-0.1.6-cp314-cp314t-win_amd64.whl", hash = "sha256:4b484f0dfe92c085572a0d7e87a5e4a68fa15f4e749e7a6eeaaebad859a11492", size = 177427, upload-time = "2025-12-12T01:08:27.014Z" },
+    { url = "https://files.pythonhosted.org/packages/84/f6/fc306c918716253e117501d9a87a05d995cd010e4b26c3e2b3bedaffa7ef/hprm-0.1.7-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:b56d61d24f3e4707c4722d210e1b0a6b7d91ff3c0f595f9d81670ca8c3552c54", size = 284081, upload-time = "2026-01-26T08:45:56.937Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/2d/7c5357878b6575e90c3211bf3ffe895778d33bcadaf83eff6fcb223460a6/hprm-0.1.7-cp314-cp314-win_amd64.whl", hash = "sha256:4d437748e2ebb329a0e337596d0b16b614ec06edf5b1acac66fa068450817270", size = 393426, upload-time = "2026-01-26T08:45:58.143Z" },
+    { url = "https://files.pythonhosted.org/packages/46/7c/f8a607ac42e037ebbe6d73a6556debf5d991e0c88d998f456a9de18c9316/hprm-0.1.7-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:a48a8de06fa03df9cf9a2972b07d249d1c1c6f6fa6b96014eff7bd72eca476fa", size = 283536, upload-time = "2026-01-26T08:45:59.442Z" },
+    { url = "https://files.pythonhosted.org/packages/67/cd/9f3b4360864fe15c430d76ef9cb66d42588e1913454aa7c8e8f8fc6e54ad/hprm-0.1.7-cp314-cp314t-win_amd64.whl", hash = "sha256:7bd1f5657480c40f2a910a11c329f42eb10d40c8aa970fc75e4acd42e3d1a41b", size = 179313, upload-time = "2026-01-26T08:46:00.434Z" },
 ]
 
 [[package]]

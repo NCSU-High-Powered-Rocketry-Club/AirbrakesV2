@@ -140,7 +140,7 @@ class ApogeePredictor:
 
             most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
 
-            adaptive_time_step = AdaptiveTimeStep()
+            adaptive_time_step = AdaptiveTimeStep.default()
             adaptive_time_step.dt_max = 1
 
             # Compute apogee given the latest state and history
