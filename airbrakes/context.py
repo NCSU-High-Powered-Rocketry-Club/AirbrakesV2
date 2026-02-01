@@ -5,10 +5,14 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
+from firm_client import FIRMDataPacket
+
+from airbrakes.base_classes.base_firm import BaseFIRM
 from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.hardware.firm import FIRM
 from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
@@ -52,21 +56,21 @@ class Context:
     def __init__(
         self,
         servo: BaseServo,
-        firm: FirmClient,
+        firm: BaseFIRM,
         logger: Logger,
         data_processor: DataProcessor,
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes AirbrakesContext with the specified hardware objects, Logger, DataProcessor, and
+        Initializes Context with the specified hardware objects, Logger, DataProcessor, and
         ApogeePredictor.
 
         The state machine starts in StandbyState, which is the initial state of the air brakes
         system.
         :param servo: The servo object that controls the extension of the air brakes. This can be a
             real servo or a mocked servo.
-        :param imu: The IMU object that reads data from the rocket's IMU. This can be a real IMU,
-            mock IMU, or simulation IMU.
+        :param firm: The FIRM object that reads data from the rocket's FIRM device. This can be a
+            real FIRM or mock FIRM.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
             a mock logger.
         :param data_processor: The DataProcessor object that processes IMU data on a higher level.
@@ -74,7 +78,7 @@ class Context:
             rocket will be based on the processed data.
         """
         self.servo: BaseServo = servo
-        self.firm: FirmClient = firm
+        self.firm: BaseFIRM = firm
         self.logger: Logger = logger
         self.data_processor: DataProcessor = data_processor
         self.apogee_predictor: ApogeePredictor = apogee_predictor
@@ -84,7 +88,6 @@ class Context:
         self.shutdown_requested = False
         self.firm_data_packets: list[FIRMDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
-        self.est_data_packets: list[EstimatedDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
@@ -94,7 +97,7 @@ class Context:
 
     def start(self, wait_for_start: bool = False) -> None:
         """
-        Starts the threads for the IMU, Logger, and ApogeePredictor.
+        Starts the threads for the FIRM device, Logger, and ApogeePredictor.
 
         This is called before the main loop starts.
 
@@ -108,9 +111,10 @@ class Context:
         self.apogee_predictor.start()
 
         if wait_for_start:
-            # Wait for all processes to start. It is assumed that once the IMU is running, all other
+            # Wait for all processes to start. It is assumed that once FIRM is running, all other
             # processes are also running. Even if they aren't it's okay, since the queue will fill
             # up with data and the other processes will start processing it when they wake up.
+            time.sleep(BUSY_WAIT_SECONDS)
             while not self.firm.is_running:
                 time.sleep(BUSY_WAIT_SECONDS)
 
@@ -135,27 +139,15 @@ class Context:
         air brakes system, where all the data is collected, processed, and logged, and the state
         machine is updated.
 
-        This function retrieves the latest IMU data packets, processes them, updates the state
+        This function retrieves the latest FIRM data packets, processes them, updates the state
         machine, generates data packets for logging, and logs all relevant data.
         """
-        # get_imu_data_packets() gets from the "first" item in the queue, i.e, the set of data
-        # *may* not be the most recent data. But we want continuous data for state, apogee,
-        # and logging purposes, so we don't need to worry about that, as long as we're not too
-        # behind on processing
         self.firm_data_packets = self.firm.get_data_packets()
 
-        # This should not happen generally, since we wait for IMU packets. Only happens at the end
+        # This should not happen generally, since we wait for FIRM packets. Only happens at the end
         # of the flight in a mock replay.
         if not self.firm_data_packets:
             return
-
-        # Split the data packets into estimated and raw data packets for use in processing and
-        # logging.
-        self.est_data_packets: list[EstimatedDataPacket] = [  # type: ignore
-            data_packet
-            for data_packet in self.imu_data_packets
-            if type(data_packet) is EstimatedDataPacket  # type() is ~55% faster than isinstance()
-        ]
 
         # Update the data processor with the new data packets.
         self.data_processor.update(self.firm_data_packets)

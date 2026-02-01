@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 import quaternion
+from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
@@ -17,9 +18,6 @@ from airbrakes.constants import (
 )
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import convert_ns_to_s
-
-if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 
 class DataProcessor:
@@ -64,10 +62,10 @@ class DataProcessor:
         self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._initial_altitude: np.float64 | None = None
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
-        self._last_data_packet: EstimatedDataPacket | None = None
+        self._last_data_packet: FIRMDataPacket | None = None
         self._current_orientation_quaternions: quaternion.quaternion | None = None
         self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
-        self._data_packets: list[EstimatedDataPacket] = []
+        self._data_packets: list[FIRMDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
         self._retraction_timestamp: int | None = None
@@ -254,9 +252,9 @@ class DataProcessor:
         self._last_data_packet = self._data_packets[0]
 
         # This is us getting the rocket's initial altitude from the mean of the first data packets
-        self._initial_altitude = np.mean(
-            [data_packet.est_position_y_meters for data_packet in self._data_packets],
-        )
+        self._initial_altitude = np.float64(np.mean(
+            [data_packet.est_position_z_meters for data_packet in self._data_packets],
+        ))
 
         # This is us getting the rocket's initial orientation
         # Convert initial orientation quaternion array to a scipy Rotation object
@@ -272,6 +270,7 @@ class DataProcessor:
             ),
         )
 
+        # TODO: what do we need to change for this
         # Get the longitudinal axis the IMU is on:
         gravity_vector = np.array(
             [

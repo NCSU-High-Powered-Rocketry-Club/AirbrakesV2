@@ -203,38 +203,15 @@ Once the state changes, this buffer will be logged to make sure we don't lose da
 
 
 # -------------------------------------------------------
-# IMU Configuration
+# FIRM Configuration
 # -------------------------------------------------------
 
-IMU_PORT = "/dev/ttyACM0"
-"""
-The port that the IMU is connected to.
+FIRM_PORT = "/dev/ttyACM0"
 
-This is typically the default port where the IMU connects to the Raspberry Pi. "/dev/ttyACM0"
-corresponds to the first USB-serial device recognized by the system in Linux.
-"""
+FIRM_BAUD_RATE = 2_000_000
 
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
-"""
-The period at which the IMU sends raw data packets.
+FIRM_SERIAL_TIMEOUT_SECONDS = 1.0
 
-This is the reciprocal of the frequency.
-"""
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
-"""
-The period at which the IMU sends estimated data packets.
-
-This is the reciprocal of the frequency.
-"""
-
-IMU_TIMEOUT_SECONDS = 3.0
-"""
-The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
-packet) before it is considered to have timed out.
-
-This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
-used as the max timeout to read from the serial port.
-"""
 
 # -------------------------------------------------------
 # State Machine Configuration
