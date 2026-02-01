@@ -20,47 +20,35 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     set_extension: str | None
     encoder_position: int | None
 
-    # IMU Data Packet Fields
-    timestamp: int
-    invalid_fields: str | None
-
-    # Raw Data Packet Fields
-    scaledAccelX: float | None = None
-    scaledAccelY: float | None = None
-    scaledAccelZ: float | None = None
-    scaledGyroX: float | None = None
-    scaledGyroY: float | None = None
-    scaledGyroZ: float | None = None
-    deltaVelX: float | None = None
-    deltaVelY: float | None = None
-    deltaVelZ: float | None = None
-    deltaThetaX: float | None = None
-    deltaThetaY: float | None = None
-    deltaThetaZ: float | None = None
-    scaledAmbientPressure: float | None = None
-
-    # Estimated Data Packet Fields
-    estPressureAlt: float | None = None
-    estOrientQuaternionW: float | None = None
-    estOrientQuaternionX: float | None = None
-    estOrientQuaternionY: float | None = None
-    estOrientQuaternionZ: float | None = None
-    estAttitudeUncertQuaternionW: float | None = None
-    estAttitudeUncertQuaternionX: float | None = None
-    estAttitudeUncertQuaternionY: float | None = None
-    estAttitudeUncertQuaternionZ: float | None = None
-    estAngularRateX: float | None = None
-    estAngularRateY: float | None = None
-    estAngularRateZ: float | None = None
-    estCompensatedAccelX: float | None = None
-    estCompensatedAccelY: float | None = None
-    estCompensatedAccelZ: float | None = None
-    estLinearAccelX: float | None = None
-    estLinearAccelY: float | None = None
-    estLinearAccelZ: float | None = None
-    estGravityVectorX: float | None = None
-    estGravityVectorY: float | None = None
-    estGravityVectorZ: float | None = None
+    # FIRMDataPacket Fields
+    timestamp_seconds: float | None = None
+    est_acceleration_x_gs: float | None = None
+    est_acceleration_y_gs: float | None = None
+    est_acceleration_z_gs: float | None = None
+    est_angular_rate_x_rad_per_s: float | None = None
+    est_angular_rate_y_rad_per_s: float | None = None
+    est_angular_rate_z_rad_per_s: float | None = None
+    est_position_x_meters: float | None = None
+    est_position_y_meters: float | None = None
+    est_position_z_meters: float | None = None
+    est_quaternion_w: float | None = None
+    est_quaternion_x: float | None = None
+    est_quaternion_y: float | None = None
+    est_quaternion_z: float | None = None
+    est_velocity_x_meters_per_s: float | None = None
+    est_velocity_y_meters_per_s: float | None = None
+    est_velocity_z_meters_per_s: float | None = None
+    magnetic_field_x_microteslas: float | None = None
+    magnetic_field_y_microteslas: float | None = None
+    magnetic_field_z_microteslas: float | None = None
+    pressure_pascals: float | None = None
+    raw_acceleration_x_gs: float | None = None
+    raw_acceleration_y_gs: float | None = None
+    raw_acceleration_z_gs: float | None = None
+    raw_angular_rate_x_deg_per_s: float | None = None
+    raw_angular_rate_y_deg_per_s: float | None = None
+    raw_angular_rate_z_deg_per_s: float | None = None
+    temperature_celsius: float | None = None
 
     # Processor Data Packet Fields
     current_altitude: float | None = None
@@ -78,8 +66,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     # pitch_used_for_prediction: str | None = None
 
     # Other fields in ContextDataPacket
-    retrieved_imu_packets: int | None
-    queued_imu_packets: int | None
+    retrieved_firm_packets: int | None
     apogee_predictor_queue_size: int | None
-    imu_packets_per_cycle: int | None
     update_timestamp_ns: int | None

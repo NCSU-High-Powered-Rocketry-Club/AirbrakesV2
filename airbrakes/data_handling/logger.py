@@ -11,17 +11,13 @@ from collections import deque
 from typing import Any, Literal
 
 import msgspec
+from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
-)
-from airbrakes.data_handling.packets.imu_data_packet import (
-    EstimatedDataPacket,
-    IMUDataPacket,
-    RawDataPacket,
 )
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import LandedState, StandbyState
@@ -130,7 +126,7 @@ class Logger:
     def _prepare_logger_packets(
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: list[IMUDataPacket],
+        firm_data_packets: list[FIRMDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
@@ -139,9 +135,9 @@ class Logger:
 
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
-        :param imu_data_packets: The IMU data packets to log.
+        :param firm_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log. This is always the same
-        length as the number of EstimatedDataPackets present in the `imu_data_packets`.
+        length as the number of EstimatedDataPackets present in the `firm_data_packets`.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         :return: A deque of LoggerDataPacket objects.
         """
@@ -149,87 +145,50 @@ class Logger:
 
         index = 0  # Index to loop over processor data packets:
 
-        # Convert the imu data packets to a LoggerDataPacket:
-        for imu_data_packet in imu_data_packets:
+        # Convert the firm data packets to a LoggerDataPacket:
+        for firm_data_packet in firm_data_packets:
             logger_packet = LoggerDataPacket(
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
                 encoder_position=servo_data_packet.encoder_position,
-                timestamp=imu_data_packet.timestamp,
-                invalid_fields=imu_data_packet.invalid_fields,
-                retrieved_imu_packets=context_data_packet.retrieved_imu_packets,
-                queued_imu_packets=context_data_packet.queued_imu_packets,
+                timestamp_seconds=firm_data_packet.timestamp_seconds,
+                retrieved_firm_packets=context_data_packet.retrieved_firm_packets,
                 apogee_predictor_queue_size=context_data_packet.apogee_predictor_queue_size,
-                imu_packets_per_cycle=context_data_packet.imu_packets_per_cycle,
                 update_timestamp_ns=context_data_packet.update_timestamp_ns,
             )
 
-            # Get the IMU data packet fields:
+            # Get the FIRMDataPacket fields:
             # Performance comparison (python 3.13.1 on x86_64 linux):
             # - isinstance is 45.2% faster than match statement
             # - hasattr is 20.57% faster than isinstance
             # - type() is 34.85% faster than hasattr
-            if type(imu_data_packet) is EstimatedDataPacket:
-                # Extract all the fields from the EstimatedDataPacket
-                logger_packet.estOrientQuaternionW = imu_data_packet.estOrientQuaternionW
-                logger_packet.estOrientQuaternionX = imu_data_packet.estOrientQuaternionX
-                logger_packet.estOrientQuaternionY = imu_data_packet.estOrientQuaternionY
-                logger_packet.estOrientQuaternionZ = imu_data_packet.estOrientQuaternionZ
-                logger_packet.estPressureAlt = imu_data_packet.estPressureAlt
-                logger_packet.estAttitudeUncertQuaternionW = (
-                    imu_data_packet.estAttitudeUncertQuaternionW
-                )
-                logger_packet.estAttitudeUncertQuaternionX = (
-                    imu_data_packet.estAttitudeUncertQuaternionX
-                )
-                logger_packet.estAttitudeUncertQuaternionY = (
-                    imu_data_packet.estAttitudeUncertQuaternionY
-                )
-                logger_packet.estAttitudeUncertQuaternionZ = (
-                    imu_data_packet.estAttitudeUncertQuaternionZ
-                )
-                logger_packet.estAngularRateX = imu_data_packet.estAngularRateX
-                logger_packet.estAngularRateY = imu_data_packet.estAngularRateY
-                logger_packet.estAngularRateZ = imu_data_packet.estAngularRateZ
-                logger_packet.estCompensatedAccelX = imu_data_packet.estCompensatedAccelX
-                logger_packet.estCompensatedAccelY = imu_data_packet.estCompensatedAccelY
-                logger_packet.estCompensatedAccelZ = imu_data_packet.estCompensatedAccelZ
-                logger_packet.estLinearAccelX = imu_data_packet.estLinearAccelX
-                logger_packet.estLinearAccelY = imu_data_packet.estLinearAccelY
-                logger_packet.estLinearAccelZ = imu_data_packet.estLinearAccelZ
-                logger_packet.estGravityVectorX = imu_data_packet.estGravityVectorX
-                logger_packet.estGravityVectorY = imu_data_packet.estGravityVectorY
-                logger_packet.estGravityVectorZ = imu_data_packet.estGravityVectorZ
-
-                # Now also extract the fields that we want from the ProcessorDataPacket
-                logger_packet.current_altitude = processor_data_packets[index].current_altitude
-                logger_packet.vertical_velocity = processor_data_packets[index].vertical_velocity
-                logger_packet.vertical_acceleration = processor_data_packets[
-                    index
-                ].vertical_acceleration
-                logger_packet.velocity_magnitude = processor_data_packets[index].velocity_magnitude
-                logger_packet.current_pitch_degrees = processor_data_packets[
-                    index
-                ].current_pitch_degrees
-
-                # Add index:
-                index += 1
-            else:  # It is a raw packet:
-                imu_data_packet = typing.cast("RawDataPacket", imu_data_packet)
-                # Extract all the fields from the RawDataPacket
-                logger_packet.scaledAccelX = imu_data_packet.scaledAccelX
-                logger_packet.scaledAccelY = imu_data_packet.scaledAccelY
-                logger_packet.scaledAccelZ = imu_data_packet.scaledAccelZ
-                logger_packet.scaledGyroX = imu_data_packet.scaledGyroX
-                logger_packet.scaledGyroY = imu_data_packet.scaledGyroY
-                logger_packet.scaledGyroZ = imu_data_packet.scaledGyroZ
-                logger_packet.deltaVelX = imu_data_packet.deltaVelX
-                logger_packet.deltaVelY = imu_data_packet.deltaVelY
-                logger_packet.deltaVelZ = imu_data_packet.deltaVelZ
-                logger_packet.deltaThetaX = imu_data_packet.deltaThetaX
-                logger_packet.deltaThetaY = imu_data_packet.deltaThetaY
-                logger_packet.deltaThetaZ = imu_data_packet.deltaThetaZ
-                logger_packet.scaledAmbientPressure = imu_data_packet.scaledAmbientPressure
+            logger_packet.est_acceleration_x_gs = firm_data_packet.est_acceleration_x_gs
+            logger_packet.est_acceleration_y_gs = firm_data_packet.est_acceleration_y_gs
+            logger_packet.est_acceleration_z_gs = firm_data_packet.est_acceleration_z_gs
+            logger_packet.est_angular_rate_x_rad_per_s = firm_data_packet.est_angular_rate_x_rad_per_s
+            logger_packet.est_angular_rate_y_rad_per_s = firm_data_packet.est_angular_rate_y_rad_per_s
+            logger_packet.est_angular_rate_z_rad_per_s = firm_data_packet.est_angular_rate_z_rad_per_s
+            logger_packet.est_position_x_meters = firm_data_packet.est_position_x_meters
+            logger_packet.est_position_y_meters = firm_data_packet.est_position_y_meters
+            logger_packet.est_position_z_meters = firm_data_packet.est_position_z_meters
+            logger_packet.est_quaternion_w = firm_data_packet.est_quaternion_w
+            logger_packet.est_quaternion_x = firm_data_packet.est_quaternion_x
+            logger_packet.est_quaternion_y = firm_data_packet.est_quaternion_y
+            logger_packet.est_quaternion_z = firm_data_packet.est_quaternion_z
+            logger_packet.est_velocity_x_meters_per_s = firm_data_packet.est_velocity_x_meters_per_s
+            logger_packet.est_velocity_y_meters_per_s = firm_data_packet.est_velocity_y_meters_per_s
+            logger_packet.est_velocity_z_meters_per_s = firm_data_packet.est_velocity_z_meters_per_s
+            logger_packet.magnetic_field_x_microteslas = firm_data_packet.magnetic_field_x_microteslas
+            logger_packet.magnetic_field_y_microteslas = firm_data_packet.magnetic_field_y_microteslas
+            logger_packet.magnetic_field_z_microteslas = firm_data_packet.magnetic_field_z_microteslas
+            logger_packet.pressure_pascals = firm_data_packet.pressure_pascals
+            logger_packet.raw_acceleration_x_gs = firm_data_packet.raw_acceleration_x_gs
+            logger_packet.raw_acceleration_y_gs = firm_data_packet.raw_acceleration_y_gs
+            logger_packet.raw_acceleration_z_gs = firm_data_packet.raw_acceleration_z_gs
+            logger_packet.raw_angular_rate_x_deg_per_s = firm_data_packet.raw_angular_rate_x_deg_per_s
+            logger_packet.raw_angular_rate_y_deg_per_s = firm_data_packet.raw_angular_rate_y_deg_per_s
+            logger_packet.raw_angular_rate_z_deg_per_s = firm_data_packet.raw_angular_rate_z_deg_per_s
+            logger_packet.temperature_celsius = firm_data_packet.temperature_celsius
 
             # Apogee Prediction happens asynchronously, so we need to check if we have a packet:
 
@@ -275,7 +234,7 @@ class Logger:
         self,
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
-        imu_data_packets: list[IMUDataPacket],
+        firm_data_packets: list[FIRMDataPacket],
         processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
@@ -284,7 +243,7 @@ class Logger:
 
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
-        :param imu_data_packets: The IMU data packets to log.
+        :param firm_data_packets: The IMU data packets to log.
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         """
@@ -292,7 +251,7 @@ class Logger:
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
             context_data_packet,
             servo_data_packet,
-            imu_data_packets,
+            firm_data_packets,
             processor_data_packets,
             apogee_predictor_data_packet,
         )

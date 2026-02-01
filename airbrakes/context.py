@@ -10,9 +10,7 @@ from firm_client import FIRMDataPacket
 from airbrakes.base_classes.base_firm import BaseFIRM
 from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-from airbrakes.hardware.firm import FIRM
 from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
@@ -222,10 +220,8 @@ class Context:
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(
             state=type(self.state),
-            retrieved_imu_packets=len(self.firm_data_packets),
-            queued_imu_packets=self.imu.queued_imu_packets,
+            retrieved_firm_packets=len(self.firm_data_packets),
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
-            imu_packets_per_cycle=self.imu.imu_packets_per_cycle,
             update_timestamp_ns=time.time_ns(),
         )
 
