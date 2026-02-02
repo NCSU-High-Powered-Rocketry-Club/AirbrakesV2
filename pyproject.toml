@@ -44,10 +44,10 @@ dev = [
     "pytest>=8.4.0",
     "pytest-cov",
     "ruff>=0.12.12",
-    "pre-commit",
     "pytest-benchmark>=5.1.0",
     # "docformatter",
     "ty>=0.0.1a20",
+    "prek",
 ]
 
 profiling = [
