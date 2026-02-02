@@ -2,7 +2,9 @@
 Utility functions used throughout the test suite.
 """
 
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
+import inspect
+
+from firm_client import FIRMDataPacket
 from msgspec.structs import asdict
 
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
@@ -12,28 +14,18 @@ from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataP
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
-def make_est_data_packet(**kwargs) -> EstimatedDataPacket:
+def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
     """
-    Creates an EstimatedDataPacket with the specified keyword arguments.
-
+    Creates a FIRMDataPacket with the specified keyword arguments.
     Provides dummy values for arguments not specified.
     """
-    dummy_values = dict.fromkeys(EstimatedDataPacket.__struct_fields__, 1.123456789)
-    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
-    dummy_values["invalid_fields"] = None  # Needs to be a list or None
-    return EstimatedDataPacket(**{**dummy_values, **kwargs})
+    # Gets the field names dynamically from the constructor signature
+    signature = inspect.signature(FIRMDataPacket)
+    field_names = signature.parameters.keys()
 
+    dummy_values = {name: 1.987654321 for name in field_names}
 
-def make_raw_data_packet(**kwargs) -> RawDataPacket:
-    """
-    Creates a RawDataPacket with the specified keyword arguments.
-
-    Provides dummy values for arguments not specified.
-    """
-    dummy_values = dict.fromkeys(RawDataPacket.__struct_fields__, 1.987654321)
-    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
-    dummy_values["invalid_fields"] = None  # Needs to be a list or None
-    return RawDataPacket(**{**dummy_values, **kwargs})
+    return FIRMDataPacket(**{**dummy_values, **kwargs})
 
 
 def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:

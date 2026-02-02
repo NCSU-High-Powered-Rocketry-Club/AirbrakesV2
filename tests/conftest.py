@@ -1,28 +1,27 @@
 """
 Module where fixtures are shared between all test files.
 """
-
+import queue
+import threading
 import time
 from pathlib import Path
 
 import pytest
-from airbrakes.hardware.imu import IMU
-from airbrakes.mock.mock_imu import MockIMU
+from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
-    EST_DATA_PACKET_SAMPLING_RATE,
-    IMU_PORT,
-    RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_CHANNEL,
+    SERVO_CHANNEL, FIRM_FREQUENCY,
 )
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.firm import FIRM
+from airbrakes.mock.mock_firm import MockFIRM
 from airbrakes.mock.mock_servo import MockServo
-from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
+from tests.auxil.utils import make_firm_data_packet
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
@@ -66,11 +65,11 @@ def data_processor():
 
 
 @pytest.fixture
-def imu():
-    imu = IMU(port=IMU_PORT)
-    yield imu
-    if imu.is_running:
-        imu.stop()
+def firm():
+    firm = FIRM()
+    yield firm
+    if firm.is_running:
+        firm.stop()
 
 
 @pytest.fixture
@@ -84,52 +83,53 @@ def apogee_predictor():
 
 
 @pytest.fixture
-def context(idle_mock_imu, logger, servo, data_processor, apogee_predictor):
-    ab = Context(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
+def context(idle_mock_firm, logger, servo, data_processor, apogee_predictor):
+    ab = Context(servo, idle_mock_firm, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
-    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+    if ab.firm.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
         ab.stop()  # Helps cleanup failing tests that don't stop the airbrakes context
 
 
 @pytest.fixture
-def mock_imu_airbrakes(mock_imu, logger, servo, data_processor, apogee_predictor):
+def mock_firm_airbrakes(mock_firm, logger, servo, data_processor, apogee_predictor):
     """
-    Fixture that returns an Context object with a mock IMU.
+    Fixture that returns an Context object with a mock FIRM.
 
-    This will run for all the launch data files (see the mock_imu fixture)
+    This will run for all the launch data files (see the mock_firm fixture)
     """
-    ab = Context(servo, mock_imu, logger, data_processor, apogee_predictor)
+    ab = Context(servo, mock_firm, logger, data_processor, apogee_predictor)
     yield ab
     # Check if something is running:
-    if ab.imu.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
+    if ab.firm.is_running or ab.apogee_predictor.is_running or ab.logger.is_running:
         ab.stop()
 
 
 @pytest.fixture
-def random_data_mock_imu():
-    # A mock IMU that outputs random data packets
-    imu = RandomDataIMU(port=IMU_PORT)
-    yield imu
-    if imu.is_running:
-        imu.stop()
+def random_data_mock_firm():
+    # A mock FIRM that outputs random data packets
+    firm = RandomDataFIRM()
+    yield firm
+    if firm.is_running:
+        firm.stop()
 
 
 @pytest.fixture
-def idle_mock_imu():
-    # A sleeping IMU that doesn't output any data packets
-    imu = IdleIMU(port=IMU_PORT)
-    yield imu
-    if imu.is_running:
-        imu.stop()
+def idle_mock_firm():
+    # A sleeping FIRM that doesn't output any data packets
+    firm = IdleFIRM()
+    yield firm
+    if firm.is_running:
+        firm.stop()
 
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
-def mock_imu(request):
+def mock_firm(request):
     """
-    Fixture that returns a MockIMU object with the specified log file.
+    Fixture that returns a MockFIRM object with the specified log file.
     """
-    return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
+    # TODO ts isn't finished
+    return MockFIRM(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
 
 
 @pytest.fixture
@@ -147,7 +147,7 @@ def mocked_args_parser():
         path = None
         verbose = False
         sim = False
-        real_imu = False
+        real_firm = False
 
     return MockArgs()
 
@@ -155,7 +155,7 @@ def mocked_args_parser():
 @pytest.fixture
 def target_altitude(request):
     """
-    Fixture to return the target altitude based on the mock IMU log file name.
+    Fixture to return the target altitude based on the mock FIRM log file name.
     """
     # This will be used to set the constants for the test, since they change for different flights:
     # request.node.name is the name of the test function, e.g. test_update[shake_n_bake]
@@ -188,54 +188,83 @@ def target_altitude(request):
     return 1000.0  # Default altitude
 
 
-class RandomDataIMU(IMU):
+class RandomDataFIRM(FIRM):
     """
-    Mocks the data fetch loop, since we don't have the actual IMU to use locally.
-    """
-
-    __slots__ = ()
-
-    def _fetch_data_loop(self, _: str) -> None:
-        """
-        Output Est and Raw Data packets at the sampling rate we use for the IMU.
-        """
-        self._running.set()
-        # Convert sampling rates to nanoseconds: 1/500Hz = 2ms = 2000000 ns, 1/1000Hz = 1000000 ns
-        EST_INTERVAL_NS = int(EST_DATA_PACKET_SAMPLING_RATE * 1e9)
-        RAW_INTERVAL_NS = int(RAW_DATA_PACKET_SAMPLING_RATE * 1e9)
-
-        # Initialize next packet times with first interval
-        next_estimated = time.time_ns() + EST_INTERVAL_NS
-        next_raw = time.time_ns() + RAW_INTERVAL_NS
-
-        while self.requested_to_run:
-            now = time.time_ns()
-
-            # Generate all raw packets due since last iteration
-            while now >= next_raw:
-                self._queued_imu_packets.put(make_raw_data_packet(timestamp=next_raw))
-                next_raw += RAW_INTERVAL_NS
-
-            # Generate all estimated packets due since last iteration
-            while now >= next_estimated:
-                self._queued_imu_packets.put(make_est_data_packet(timestamp=next_estimated))
-                next_estimated += EST_INTERVAL_NS
-
-            # Calculate sleep time until next expected packet
-            next_event = min(next_raw, next_estimated)
-            sleep_time = (next_event - time.time_ns()) / 1e9  # Convert ns to seconds
-
-            # Only sleep if we're ahead of schedule
-            if sleep_time > 0.0001:  # 100μs buffer for precision
-                time.sleep(sleep_time * 0.5)  # Sleep half the interval to maintain timing
-        self._running.clear()
-
-
-class IdleIMU(IMU):
-    """
-    Mocks the IMU data fetch loop, but doesn't output any data packets.
+    Mocks the FIRM device by generating random FIRMDataPackets internally
+    on a separate thread at FIRM_FREQUENCY.
     """
 
-    def _fetch_data_loop(self, _: str) -> None:
-        while self.requested_to_run:
-            time.sleep(0.1)
+    __slots__ = ("_queue", "_stop_event", "_thread")
+
+    def __init__(self):
+        # We override __init__ completely to bypass FIRMClient connection logic.
+        self._queue = queue.SimpleQueue()
+        self._stop_event = threading.Event()
+        self._thread = None
+
+    @property
+    def is_running(self) -> bool:
+        return self._thread is not None and self._thread.is_alive()
+
+    def start(self) -> None:
+        """Starts the background thread that generates fake packets."""
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._generation_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stops the background generation thread."""
+        self._stop_event.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join()
+        self._thread = None
+
+    def get_data_packets(self) -> list[FIRMDataPacket]:
+        """Returns all packets currently in the internal queue."""
+        packets = []
+        while not self._queue.empty():
+            packets.append(self._queue.get())
+        return packets
+
+    def _generation_loop(self) -> None:
+        """Generates packets at FIRM_FREQUENCY."""
+        interval_ns = int((1.0 / FIRM_FREQUENCY) * 1e9)
+        next_tick_ns = time.time_ns()
+
+        while not self._stop_event.is_set():
+            now_ns = time.time_ns()
+
+            if now_ns >= next_tick_ns:
+                # Generate packet with current timestamp
+                packet = make_firm_data_packet(timestamp_seconds=now_ns / 1e9)
+                self._queue.put(packet)
+
+                next_tick_ns += interval_ns
+
+            # Sleep until the next tick to prevent CPU spinning
+            remaining_ns = next_tick_ns - time.time_ns()
+            if remaining_ns > 0:
+                time.sleep(remaining_ns / 1e9)
+
+
+class IdleFIRM(FIRM):
+    """
+    Mocks a connected FIRM device that simply outputs no data.
+    """
+    __slots__ = ("_running",)
+
+    def __init__(self):
+        self._running = False
+
+    @property
+    def is_running(self) -> bool:
+        return self._running
+
+    def start(self) -> None:
+        self._running = True
+
+    def stop(self) -> None:
+        self._running = False
+
+    def get_data_packets(self) -> list[FIRMDataPacket]:
+        return []

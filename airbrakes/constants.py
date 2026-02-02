@@ -212,6 +212,7 @@ FIRM_BAUD_RATE = 2_000_000
 
 FIRM_SERIAL_TIMEOUT_SECONDS = 1.0
 
+FIRM_FREQUENCY = 100
 
 # -------------------------------------------------------
 # State Machine Configuration

@@ -76,21 +76,21 @@ class TestIMU:
         for attr in inst.__slots__:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
-    def test_init(self, imu, mock_imu):
+    def test_init(self, imu, mock_firm):
         """
         Tests whether the IMU and MockIMU objects initialize correctly.
         """
         # Tests that the data queue is correctly initialized
         assert isinstance(imu._queued_imu_packets, queue.SimpleQueue)
-        assert type(imu._queued_imu_packets) is type(mock_imu._queued_imu_packets)
+        assert type(imu._queued_imu_packets) is type(mock_firm._queued_imu_packets)
         # Tests that _running is correctly initialized
         assert isinstance(imu._running, threading.Event)
-        assert type(imu._running) is type(mock_imu._running)
+        assert type(imu._running) is type(mock_firm._running)
         assert not imu._running.is_set()
-        assert not mock_imu._running.is_set()
+        assert not mock_firm._running.is_set()
         # Tests that the thread is correctly initialized
         assert isinstance(imu._data_fetch_thread, threading.Thread)
-        assert type(imu._data_fetch_thread) is type(mock_imu._data_fetch_thread)
+        assert type(imu._data_fetch_thread) is type(mock_firm._data_fetch_thread)
 
         # Test IMU properties:
         assert isinstance(imu.queued_imu_packets, int)
@@ -153,11 +153,11 @@ class TestIMU:
         packets = imu.get_imu_data_packets(block=False)
         assert not packets, f"Expected empty deque, got {len(packets)} packets"
 
-    def test_data_packets_fetch(self, random_data_mock_imu):
+    def test_data_packets_fetch(self, random_data_mock_firm):
         """
         Tests whether the data fetching loop actually adds data to the queue.
         """
-        imu = random_data_mock_imu
+        imu = random_data_mock_firm
         imu.start()
         time.sleep(0.9)  # Time to start the thread
         time.sleep(0.31)  # Time to put data

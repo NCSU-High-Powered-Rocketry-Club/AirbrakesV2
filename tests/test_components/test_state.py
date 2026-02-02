@@ -479,9 +479,9 @@ class TestLandedState:
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
 
-    def test_update(self, data_processor, logger, random_data_mock_imu, servo, apogee_predictor):
+    def test_update(self, data_processor, logger, random_data_mock_firm, servo, apogee_predictor):
         # Test that calling update before shutdown delay does not shut down the system:
-        context = Context(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
+        context = Context(servo, random_data_mock_firm, logger, data_processor, apogee_predictor)
         context.start(wait_for_start=True)
         ls = LandedState(context)
         ls.context.state = ls
