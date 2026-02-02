@@ -1,5 +1,4 @@
 import pytest
-
 from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
 
 

@@ -1,6 +1,7 @@
 from abc import ABC
 
 import pytest
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
@@ -12,7 +13,6 @@ from airbrakes.constants import (
     ServoExtension,
 )
 from airbrakes.context import Context
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import (
     CoastState,
     FreeFallState,

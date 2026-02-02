@@ -5,7 +5,6 @@ from airbrakes.base_classes.base_firm import BaseFIRM
 
 # TODO: implement this later
 class MockFIRM(BaseFIRM):
-
     def __init__(self):
         super().__init__()
 
