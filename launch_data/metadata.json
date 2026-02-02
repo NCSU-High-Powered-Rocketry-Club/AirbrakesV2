@@ -445,8 +445,8 @@
         },
         "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off. At the field, we had to dremmel 2 fins, halfway through its thickness (3mm). They worked as intended. This was the first launch with FIRM in the AB and nose cone."
     },
-    "government_work_2.csv": {
-        "date": "2025-11-01T14:53:21.171-04:00",
+    "government_work_2_scrubbed.csv": {
+        "date": "2025-12-13T14:53:21.171-04:00",
         "rocket": {
             "rocket_Cd": 0.45,
             "rocket_mass_kg": 4.67,
@@ -480,6 +480,6 @@
             "flight_length_seconds": 0.0,
             "target_apogee_meters": 518.16
         },
-        "flight_description": ""
+        "flight_description": "This was supposed to be an important airbrakes flight, testing out multithreading, new apogee prediction, and the new mscl-rs library. However, when we arrived on the field, we realized that we forgot to bring the recovery hardware, so we did not launch."
     }
 }
