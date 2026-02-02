@@ -198,7 +198,7 @@ git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 cd AirbrakesV2
 ```
 
-### 3. Install the project:
+### 2. Install the project:
 ```bash
 uv run mock
 ```
