@@ -97,11 +97,13 @@ def create_components(
     # TODO: this looks ugly but eventually we will use HPRM to run sims
     if args.mode in ("mock"):
         if args.mode == "mock":
-            # Replace hardware with mock objects for simulation
-            firm = MockFIRM(
-                real_time_replay=not args.fast_replay,
-                log_file_path=args.path,
-            )
+            if args.pretend_firm:
+                firm = FIRM(is_pretend=True, log_file_path=args.pretend_firm)
+            else:
+                firm = MockFIRM(
+                    real_time_replay=not args.fast_replay,
+                    log_file_path=args.mock_firm,
+                )
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
@@ -117,11 +119,7 @@ def create_components(
 
     else:
         # Use real hardware components
-        if args.pretend_firm:
-            firm = FIRM(is_pretend=True, log_file_path=args.pretend_firm)
-        else:
-            # Use real hardware components
-            firm = FIRM()
+        firm = FIRM()
 
         logger = Logger(LOGS_PATH)
 

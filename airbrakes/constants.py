@@ -305,7 +305,6 @@ ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
 """
 
-# TODO: delete this and simulation/
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
 
 TIMEOUT_SECONDS: float = 5.0

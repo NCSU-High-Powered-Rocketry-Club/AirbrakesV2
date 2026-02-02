@@ -121,13 +121,6 @@ def arg_parser() -> argparse.Namespace:
         action="store_true",
         help="Run the real flight with a mock servo."
     )
-    real_parser.add_argument(
-        "-p",
-        "--pretend-firm",
-        help="Make FIRM output data from a previous FIRM log file.",
-        type=Path,
-        metavar="LOG_FILE"
-    )
 
     # Mock Replay Parser
     mock_parser = subparsers.add_parser(
@@ -153,10 +146,22 @@ def arg_parser() -> argparse.Namespace:
         action="store_true",
         help="Run replay at full speed."
     )
-    mock_parser.add_argument(
-        "-p", "--path",
+
+    firm_source_group = mock_parser.add_mutually_exclusive_group()
+
+    firm_source_group.add_argument(
+        "-m", "--mock-firm",
         type=Path,
-        help="Path to flight data file (defaults to first in launch_data)."
+        help="Use MockFIRM to read data from a previous airbakes log file, (defaults to first in launch_data)",
+        metavar="LOG_FILE",
+        default=None
+    )
+
+    firm_source_group.add_argument(
+        "-p", "--pretend-firm",
+        help="Make FIRM output data from a previous FIRM log file.",
+        type=Path,
+        metavar="LOG_FILE"
     )
 
     return parser.parse_args()

@@ -128,15 +128,16 @@ class DataProcessor:
 
         0 degrees is nose up, 90 degrees is horizontal, and 180 degrees is nose down.
         """
-        if self._current_orientation_quaternions is not None:
-            rotated = (
-                self._current_orientation_quaternions
-                * self._longitudinal_axis
-                * self._current_orientation_quaternions.conjugate()
-            )
-            current_orientation = rotated.vec
-            dot_product = np.clip(np.dot(current_orientation, [0, 0, 1]), -1.0, 1.0)
-            return np.degrees(np.arccos(dot_product))
+        # TODO: replace this with what FIRM outputs? Or maybe just delete it from here all together
+        # if self._current_orientation_quaternions is not None:
+        #     rotated = (
+        #         self._current_orientation_quaternions
+        #         * self._longitudinal_axis
+        #         * self._current_orientation_quaternions.conjugate()
+        #     )
+        #     current_orientation = rotated.vec
+        #     dot_product = np.clip(np.dot(current_orientation, [0, 0, 1]), -1.0, 1.0)
+        #     return np.degrees(np.arccos(dot_product))
         return 0.0
 
     @property
@@ -233,7 +234,7 @@ class DataProcessor:
         """
         # Zero out the altitude based on the average of recent altitudes
         self._pressure_alt_buffer.extend(
-            [data_packet.est_position_y_meters for data_packet in self._data_packets],
+            [data_packet.est_position_z_meters for data_packet in self._data_packets],
         )
 
         # Avoid division by zero:
@@ -270,23 +271,23 @@ class DataProcessor:
             ),
         )
 
-        # TODO: what do we need to change for this
-        # Get the longitudinal axis the IMU is on:
-        gravity_vector = np.array(
-            [
-                self._last_data_packet.estGravityVectorX,
-                self._last_data_packet.estGravityVectorY,
-                self._last_data_packet.estGravityVectorZ,
-            ]
-        )
-        # Find the dominant axis (largest absolute component)
-        abs_gravity = np.abs(gravity_vector)
-        dominant_axis_idx = np.argmax(abs_gravity)
-
-        # Set longitudinal axis as the unit vector where gravity is dominant
-        longitudinal_axis = np.zeros(4)
-        longitudinal_axis[dominant_axis_idx + 1] = np.sign(gravity_vector[dominant_axis_idx])
-        self._longitudinal_axis = quaternion.from_float_array(longitudinal_axis)
+        # TODO: We can probably delete all of this when firm gives us pitch
+        # # Get the longitudinal axis the IMU is on:
+        # gravity_vector = np.array(
+        #     [
+        #         self._last_data_packet.estGravityVectorX,
+        #         self._last_data_packet.estGravityVectorY,
+        #         self._last_data_packet.estGravityVectorZ,
+        #     ]
+        # )
+        # # Find the dominant axis (largest absolute component)
+        # abs_gravity = np.abs(gravity_vector)
+        # dominant_axis_idx = np.argmax(abs_gravity)
+        #
+        # # Set longitudinal axis as the unit vector where gravity is dominant
+        # longitudinal_axis = np.zeros(4)
+        # longitudinal_axis[dominant_axis_idx + 1] = np.sign(gravity_vector[dominant_axis_idx])
+        # self._longitudinal_axis = quaternion.from_float_array(longitudinal_axis)
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
@@ -312,7 +313,7 @@ class DataProcessor:
         else:
             altitudes = np.array(
                 [
-                    data_packet.est_position_y_meters - self._initial_altitude
+                    data_packet.est_position_z_meters - self._initial_altitude
                     for data_packet in self._data_packets
                 ],
             )
@@ -345,9 +346,9 @@ class DataProcessor:
         # list comprehensions. This would change if it was say 1000 data packets in a single update.
         for i, data_packet in enumerate(self._data_packets):
             # Extract accelerations in m/s^2
-            x_accel = data_packet.est_acceleration_x_gs
-            y_accel = data_packet.est_acceleration_y_gs
-            z_accel = data_packet.est_acceleration_z_gs
+            x_accel = data_packet.est_acceleration_x_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+            y_accel = data_packet.est_acceleration_y_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+            z_accel = data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
 
             # It's about 6x faster to just multiply the dt here rather than outside the loop
             # using numpy vectorization.
