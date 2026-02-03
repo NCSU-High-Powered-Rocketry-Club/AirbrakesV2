@@ -108,10 +108,8 @@ class BaseIMU:
 
         :param block: Whether to wait until a IMU data packet is available or not. Will wait up to
             IMU_TIMEOUT_SECONDS seconds.
-
         :return: an IMUDataPacket object containing the latest data from the IMU packet queue. If a
             value is not available, it will be None.
-
         :raises queue.Empty: If no IMU data packet is available within the timeout period.
         """
         return self._queued_imu_packets.get(block, timeout=IMU_TIMEOUT_SECONDS)

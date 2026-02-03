@@ -17,9 +17,6 @@ dependencies = [
     # Pinned versions because we need python 3.14 free threading wheels:
     "polars==1.36.1",
     "polars-runtime-32",
-    # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
-    # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
-    "rpi-gpio>=0.7.1",
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
@@ -44,10 +41,10 @@ dev = [
     "pytest>=8.4.0",
     "pytest-cov",
     "ruff>=0.12.12",
-    "pre-commit",
     "pytest-benchmark>=5.1.0",
     # "docformatter",
     "ty>=0.0.1a20",
+    "prek",
 ]
 
 profiling = [

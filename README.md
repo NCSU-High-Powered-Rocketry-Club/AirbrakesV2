@@ -187,18 +187,18 @@ _Note: We will continue using `uv` for the rest of this README, if you don't wan
 If you want to contribute to the project, you will need to set up the project locally. Luckily, 
 the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
-### 1. Clone the repository and open in VSC:
+It is highly recommended to use WSL if you are on Windows, as the project only supports Linux.
 
-Run the following in a WSL terminal in a new directory:
+### 1. Clone the repository:
+
+Run the following in a terminal:
 ```
 git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 
 cd AirbrakesV2
-
-code .
 ```
 
-### 3. Install the project:
+### 2. Install the project:
 ```bash
 uv run mock
 ```
@@ -209,10 +209,9 @@ Potential Issues:
 * command 'cc' failed: No such file or directory
   * This means your environment doesn't have a C compiler. Install using:
   ```bash
-  sudo apt-get update
-  sudo apt-get install -y build-essential
+  sudo apt-get update && sudo apt install -y build-essential
   ```
-* Make sure you are on Python 3.14.
+* Make sure you are on Python 3.14.2 free threaded (`uv python install 3.14.2t`).
 
 _Note: It is important to use `uv run` instead of `uvx` since the `uvx` environment is isolated from
 the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools/#relationship-to-uv-run) for more information._
@@ -221,7 +220,7 @@ _Note 2: The more "correct" command to run is `uv sync`. This will install the p
 
 ### 4. Install the pre-commit hook:
 ```
-uv run pre-commit install
+uv run prek install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
 
@@ -302,7 +301,7 @@ Our CI also tries to maintain code quality by running a linter. We use [Ruff](ht
 
 To lint and format your code, run:
 ```bash
-uv run pre-commit run --all-files
+uv run prek run --all-files
 ```
 
 This will run both ruff and doc-formatter.

@@ -1,17 +1,13 @@
-# TODO: Uncomment the ci section and delete pre-commit.yml file after repo is public
-# ci:
-#   autofix_prs: false
-#   autoupdate_schedule: "monthly"
-
 repos:
-  # This is incompatible with Python 3.14: https://github.com/PyCQA/docformatter/issues/327
-  # - repo: https://github.com/PyCQA/docformatter
-  #   rev: v1.7.7
-  #   hooks:
-  #     - id: docformatter
-  #       args: [ --in-place, --recursive ]
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.7
+    hooks:
+      - id: docformatter
+        # This is incompatible with Python 3.14: https://github.com/PyCQA/docformatter/issues/327
+        language_version: python3.13
+        args: [ --in-place, --recursive ]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.13
+    rev: v0.14.14
     hooks:
       - id: ruff-check
         args: [ --fix ]

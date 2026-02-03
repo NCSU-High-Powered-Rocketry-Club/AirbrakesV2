@@ -147,6 +147,7 @@ class DisplayEndingType(StrEnum):
 WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
 """
 The number of packets to use for zeroing the pressure altitude at the launch pad.
+
 This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
 altitude.
 """
@@ -229,8 +230,8 @@ This is the reciprocal of the frequency.
 
 IMU_TIMEOUT_SECONDS = 3.0
 """
-The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
-packet) before it is considered to have timed out.
+The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a packet)
+before it is considered to have timed out.
 
 This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
 used as the max timeout to read from the serial port.
