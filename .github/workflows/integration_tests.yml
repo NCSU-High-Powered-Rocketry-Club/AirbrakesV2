@@ -38,4 +38,4 @@ jobs:
       - name: Run integration tests
         timeout-minutes: 3
         run: |
-          PYTHON_GIL=0 PYTHON_JIT=1 uv run pytest -v tests/test_integration.py
+          uv run pytest -v tests/test_integration.py

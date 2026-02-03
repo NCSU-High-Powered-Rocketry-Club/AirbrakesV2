@@ -234,12 +234,7 @@ git push -u origin branch-name
 ## Advanced Local Usage
 
 For performance improvements, we _highly_ recommend switching off the Global Interpreter Lock (GIL),
-and turning on the experimental Python Just-In-Time (JIT) compiler. To do this, export `PYTHON_JIT=1`, and `PYTHON_GIL=0` in your shell (preferably in your `.bashrc` or `.zshrc` file).
-
-```bash
-export PYTHON_JIT=1
-export PYTHON_GIL=0
-```
+and turning on the experimental Python Just-In-Time (JIT) compiler. This should be in the `python-settings.env` file, which `uv` will automatically load when you run `uv run ...`.
 
 ### Running Mock Launches
 Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
