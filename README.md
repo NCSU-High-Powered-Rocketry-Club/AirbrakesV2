@@ -187,7 +187,7 @@ _Note: We will continue using `uv` for the rest of this README, if you don't wan
 If you want to contribute to the project, you will need to set up the project locally. Luckily, 
 the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
-It is highly recommended to use WSL if you are on Windows, as the project only supports Linux.
+It is highly recommended to use WSL if you are on Windows, as the project only supports Linux. Running natively on Windows should work, but it is not a guarantee.
 
 ### 1. Clone the repository:
 
@@ -198,7 +198,7 @@ git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
 cd AirbrakesV2
 ```
 
-### 3. Install the project:
+### 2. Install the project:
 ```bash
 uv run mock
 ```
@@ -218,7 +218,7 @@ the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools
 
 _Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock replay._
 
-### 4. Install the pre-commit hook:
+### 3. Install the pre-commit hook:
 ```
 uv run prek install
 ```

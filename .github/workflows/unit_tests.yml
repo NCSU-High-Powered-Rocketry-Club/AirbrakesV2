@@ -1,39 +1,39 @@
-  name: Unit Tests
+name: Unit Tests
 
-  on:
-    pull_request:
-      branches:
-        - '**'  # Matches all branch names, for PRs
-    push:
-      branches:
-        - 'main'  # Run tests on main branch
+on:
+  pull_request:
+    branches:
+      - "**" # Matches all branch names, for PRs
+  push:
+    branches:
+      - "main" # Run tests on main branch
 
-  jobs:
-    pytest:
-      name: pytest
-      runs-on: ${{ matrix.os }}
-      timeout-minutes: 5
-      strategy:
-        matrix:
-          os: [ubuntu-latest, ubuntu-24.04-arm]
-        fail-fast: False
-      steps:
-        - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
+      fail-fast: False
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
-        - name: Install uv
-          uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-          with:
-            enable-cache: true
-            version: "0.9.16"
-        - name: Set up Python
-          uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-          with:
-            python-version-file: "pyproject.toml"
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+          version: "0.9.28"
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: "pyproject.toml"
 
-        - name: Install the project
-          run: uv sync --verbose --group dev
+      - name: Install the project
+        run: uv sync --verbose --group dev
 
-        - name: Run tests with coverage
-          run: |
-            # Run tests with coverage except for the integration tests
-            PYTHON_GIL=0 PYTHON_JIT=1 uv run pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
+      - name: Run tests with coverage
+        run: |
+          # Run tests with coverage except for the integration tests
+          PYTHON_GIL=0 PYTHON_JIT=1 uv run pytest --cov=airbrakes --cov-report=term --cov-report=html --ignore=tests/test_integration.py -v tests/
