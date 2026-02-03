@@ -178,7 +178,7 @@ file.
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor thread, this will be put in the queue to
+The signal to stop the FIRM device, Logger, and ApogeePredictor thread, this will be put in the queue to
 stop the threads.
 """
 
@@ -223,7 +223,7 @@ FIRM_FREQUENCY = 100
 # ----------------- Standby to MotorBurn ----------------
 ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
 """
-We integrate our acceleration to get velocity, but because IMU has some noise, and other things like
+We integrate our acceleration to get velocity, but because FIRM has some noise, and other things like
 wind or being small bumps can cause this to accumulate even while the rocket is stationary, so we
 deadband the acceleration to zero to prevent this.
 """

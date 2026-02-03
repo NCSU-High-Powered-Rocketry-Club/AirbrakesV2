@@ -5,15 +5,15 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from firm_client import FIRMDataPacket
-
-from airbrakes.base_classes.base_firm import BaseFIRM
 from airbrakes.constants import BUSY_WAIT_SECONDS
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
+
+    from airbrakes.base_classes.base_firm import BaseFIRM
     from airbrakes.base_classes.base_servo import BaseServo
     from airbrakes.data_handling.apogee_predictor import ApogeePredictor
     from airbrakes.data_handling.data_processor import DataProcessor
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class Context:
     """
     Manages the state machine for the rocket's air brakes system, keeping track of the current state
-    and communicating with hardware like the servo and IMU. This class is what connects the state
+    and communicating with hardware like the servo and FIRM. This class is what connects the state
     machine to the hardware.
 
     Read more about the state machine pattern here:
@@ -71,7 +71,7 @@ class Context:
             real FIRM or mock FIRM.
         :param logger: The logger object that logs data to a CSV file. This can be a real logger or
             a mock logger.
-        :param data_processor: The DataProcessor object that processes IMU data on a higher level.
+        :param data_processor: The DataProcessor object that processes FIRM data on a higher level.
         :param apogee_predictor: The ApogeePredictor object that predicts what the apogee of the
             rocket will be based on the processed data.
         """
@@ -121,7 +121,7 @@ class Context:
         Handles shutting down the air brakes system.
 
         This will cause the main loop to break. It retracts the air brakes and stops the processes
-        for IMU, Logger, and ApogeePredictor.
+        for the FIRM device, Logger, and ApogeePredictor.
         """
         if self.shutdown_requested:
             return

@@ -2,8 +2,6 @@
 Utility functions used throughout the test suite.
 """
 
-import inspect
-
 from firm_client import FIRMDataPacket
 from msgspec.structs import asdict
 
@@ -19,12 +17,7 @@ def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
     Creates a FIRMDataPacket with the specified keyword arguments.
     Provides dummy values for arguments not specified.
     """
-    # Gets the field names dynamically from the constructor signature
-    signature = inspect.signature(FIRMDataPacket)
-    field_names = signature.parameters.keys()
-
-    dummy_values = {name: 1.987654321 for name in field_names}
-
+    dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 1.987654321)
     return FIRMDataPacket(**{**dummy_values, **kwargs})
 
 

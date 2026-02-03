@@ -11,7 +11,6 @@ from collections import deque
 from typing import Any, Literal
 
 import msgspec
-from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
@@ -25,6 +24,8 @@ from airbrakes.utils import get_all_packets_from_queue
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
+
+    from firm_client import FIRMDataPacket
 
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
@@ -45,10 +46,10 @@ class Logger:
     """
     A class that logs data to a CSV file.
 
-    Similar to the IMU class, it runs in a separate thread. This is because the logging thread is
+    The logging runs in a separate thread. This is because the logging thread is
     I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
     running it in a separate thread, we can continue to log data while the main loop is running. It
-    uses Python's csv module to append the airbrakes' current state, extension, and IMU data to our
+    uses Python's csv module to append the airbrakes' current state, extension, and FIRM data to our
     logs in real time.
     """
 
@@ -64,7 +65,7 @@ class Logger:
         """
         Initializes the logger object.
 
-        It creates a new log file in the specified directory. Like the IMU class, it creates a queue
+        It creates a new log file in the specified directory. It creates a queue
         to store log messages, and starts a separate thread to handle the logging. We are logging a
         lot of data, and logging is I/O-bound, so running it in a separate thread allows the main
         loop to continue running without waiting for the log file to be written to.
@@ -135,15 +136,13 @@ class Logger:
 
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
-        :param firm_data_packets: The IMU data packets to log.
+        :param firm_data_packets: The FIRM data packets to log.
         :param processor_data_packets: The processor data packets to log. This is always the same
         length as the number of EstimatedDataPackets present in the `firm_data_packets`.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         :return: A deque of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
-
-        index = 0  # Index to loop over processor data packets:
 
         # Convert the firm data packets to a LoggerDataPacket:
         for firm_data_packet in firm_data_packets:
@@ -211,7 +210,7 @@ class Logger:
             # Apogee Prediction happens asynchronously, so we need to check if we have a packet:
 
             # There is a small possibility that we won't log all the apogee predictor data packets
-            # if the length of the IMU data packets is less than the length of the apogee predictor
+            # if the length of the FIRM data packets is less than the length of the apogee predictor
             # data packets. However, this is unlikely to happen in practice. This particular case
             # is NOT covered by tests.
             if apogee_predictor_data_packet:
@@ -257,11 +256,11 @@ class Logger:
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
         """
-        Logs the current state, extension, and IMU data to the CSV file.
+        Logs the current state, extension, and FIRM data to the CSV file.
 
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
-        :param firm_data_packets: The IMU data packets to log.
+        :param firm_data_packets: The FIRM data packets to log.
         :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         """

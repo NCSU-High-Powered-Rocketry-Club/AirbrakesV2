@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from firm_client import FIRMDataPacket
+if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
 
 
 class BaseFIRM(ABC):

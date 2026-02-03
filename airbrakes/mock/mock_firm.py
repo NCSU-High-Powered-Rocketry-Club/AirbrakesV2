@@ -1,6 +1,9 @@
-from firm_client import FIRMDataPacket
+from typing import TYPE_CHECKING
 
 from airbrakes.base_classes.base_firm import BaseFIRM
+
+if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
 
 
 # TODO: implement this later

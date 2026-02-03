@@ -1,15 +1,18 @@
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from firm_client import FIRMClient, FIRMDataPacket
 
 from airbrakes.base_classes.base_firm import BaseFIRM
 from airbrakes.constants import FIRM_BAUD_RATE, FIRM_PORT, FIRM_SERIAL_TIMEOUT_SECONDS
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 class FIRM(BaseFIRM):
     __slots__ = ("_log_file_path", "firm_client", "is_pretend")
 
-    def __init__(self, is_pretend=False, log_file_path: Path = None):
+    def __init__(self, is_pretend=False, log_file_path: Path | None = None):
         super().__init__()
         self.is_pretend = is_pretend
         self._log_file_path = log_file_path

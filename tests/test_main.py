@@ -7,13 +7,12 @@ from functools import partial
 
 import gpiozero
 import pytest
-from airbrakes.hardware.imu import IMU
-from airbrakes.mock.mock_imu import MockIMU
 
 from airbrakes.constants import LOGS_PATH
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.firm import FIRM
 from airbrakes.hardware.servo import Servo
 from airbrakes.main import (
     create_components,
@@ -21,6 +20,7 @@ from airbrakes.main import (
     run_mock_flight,
     run_real_flight,
 )
+from airbrakes.mock.mock_firm import MockFIRM
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.utils import arg_parser
@@ -116,8 +116,8 @@ def test_create_components(parsed_args, monkeypatch):
         else:
             assert type(created_components[0]) is Servo
 
-        # IMU: always real in real mode (no option to mock it)
-        assert type(created_components[1]) is IMU
+        # FIRM: always real in real mode (no option to mock it)
+        assert type(created_components[1]) is FIRM
 
         # Logger: always real in real mode
         assert type(created_components[2]) is Logger
@@ -134,9 +134,9 @@ def test_create_components(parsed_args, monkeypatch):
                 created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
             )
 
-        # IMU: mock or sim-specific, no real IMU option anymore
+        # FIRM: mock or sim-specific, no real FIRM option anymore
         if parsed_args.mode == "mock":
-            assert type(created_components[1]) is MockIMU
+            assert type(created_components[1]) is MockFIRM
             if parsed_args.path:
                 assert created_components[1]._log_file_path == parsed_args.path
             else:

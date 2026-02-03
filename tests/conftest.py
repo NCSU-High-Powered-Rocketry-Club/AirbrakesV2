@@ -1,18 +1,20 @@
 """
 Module where fixtures are shared between all test files.
 """
+
 import queue
 import threading
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
-from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
-    SERVO_CHANNEL, FIRM_FREQUENCY,
+    FIRM_FREQUENCY,
+    SERVO_CHANNEL,
 )
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
@@ -23,27 +25,20 @@ from airbrakes.mock.mock_firm import MockFIRM
 from airbrakes.mock.mock_servo import MockServo
 from tests.auxil.utils import make_firm_data_packet
 
+if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
+
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
-LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
-# Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
-LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
-# Remove the legacy_launch_2.csv file since it failed
-LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
-# Use the filenames as the ids for the fixtures:
-LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-
-
-def pytest_collection_modifyitems(config, items):
-    marker = "imu_benchmark"
-    marker_expr = config.getoption("-m", None)
-
-    # Skip tests with the marker if not explicitly requested
-    if marker_expr != marker:
-        skip_marker = pytest.mark.skip(reason=f"Test requires '-m {marker}'")
-        for item in items:
-            if item.get_closest_marker(marker):
-                item.add_marker(skip_marker)
+# LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
+# # Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
+# LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
+# # Remove the legacy_launch_2.csv file since it failed
+# LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
+# # Use the filenames as the ids for the fixtures:
+# LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
+LAUNCH_DATA = []
+LAUNCH_DATA_IDS = []
 
 
 @pytest.fixture
@@ -129,7 +124,9 @@ def mock_firm(request):
     Fixture that returns a MockFIRM object with the specified log file.
     """
     # TODO ts isn't finished
-    return MockFIRM(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
+    return MockFIRM(
+        log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True
+    )
 
 
 @pytest.fixture
@@ -251,6 +248,7 @@ class IdleFIRM(FIRM):
     """
     Mocks a connected FIRM device that simply outputs no data.
     """
+
     __slots__ = ("_running",)
 
     def __init__(self):

@@ -1,7 +1,6 @@
 from abc import ABC
 
 import pytest
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
@@ -21,7 +20,7 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from tests.auxil.utils import make_apogee_predictor_data_packet
+from tests.auxil.utils import make_apogee_predictor_data_packet, make_firm_data_packet
 
 
 @pytest.fixture
@@ -147,7 +146,7 @@ class TestMotorBurnState:
 
     def test_init_launch_time_set(self, motor_burn_state):
         ctx = motor_burn_state.context
-        ctx.data_processor._last_data_packet = EstimatedDataPacket(1000)
+        ctx.data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=1)
         m = MotorBurnState(ctx)
         assert m.start_time_ns == 1000
 
@@ -180,7 +179,9 @@ class TestMotorBurnState:
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
+        motor_burn_state.context.data_processor._last_data_packet = make_firm_data_packet(
+            timestamp_seconds=1.1
+        )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
@@ -453,8 +454,8 @@ class TestFreeFallState:
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
         free_fall_state.start_time_ns = 0
-        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
-            time_length * 1e9
+        free_fall_state.context.data_processor._last_data_packet = make_firm_data_packet(
+            timestamp_seconds=time_length
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)

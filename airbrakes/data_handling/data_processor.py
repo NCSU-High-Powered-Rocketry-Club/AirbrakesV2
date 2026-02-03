@@ -1,13 +1,13 @@
 """
-Module for processing IMU data on a higher level.
+Module for processing FIRM data on a higher level.
 """
 
 from collections import deque
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
 import quaternion
-from firm_client import FIRMDataPacket
 
 from airbrakes.constants import (
     ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
@@ -18,10 +18,13 @@ from airbrakes.constants import (
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.utils import convert_ns_to_s
 
+if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
+
 
 class DataProcessor:
     """
-    Performs high level calculations on the estimated data packets received from the IMU.
+    Performs high level calculations on the data packets received from FIRM.
 
     Includes calculation the vertical acceleration, velocity, maximum altitude so far, etc., from
     the set of data points.
@@ -48,7 +51,7 @@ class DataProcessor:
 
     def __init__(self):
         """
-        Initializes the IMUDataProcessor object.
+        Initializes the DataProcessor object.
 
         It processes data points to calculate various things we need such as the maximum altitude,
         vertical acceleration, velocity, etc. All numbers in this class are handled with numpy. This
@@ -68,7 +71,7 @@ class DataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
         self._retraction_timestamp: int | None = None
-        # The axis the IMU is on:
+        # The axis the FIRM device is on:
         self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
         self._pressure_alt_buffer = deque(maxlen=WINDOW_SIZE_FOR_PRESSURE_ZEROING)
 

@@ -7,11 +7,11 @@ import numpy.testing as npt
 import polars as pl
 import pytest
 import quaternion
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
+from firm_client import FIRMDataPacket
 
 from airbrakes.constants import WINDOW_SIZE_FOR_PRESSURE_ZEROING
 from airbrakes.data_handling.data_processor import DataProcessor
-from tests.auxil.utils import make_est_data_packet
+from tests.auxil.utils import make_firm_data_packet
 
 
 def generate_altitude_sine_wave(
@@ -40,7 +40,7 @@ def generate_altitude_sine_wave(
     return altitudes
 
 
-def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacket]:
+def load_data_packets(csv_path: Path, n_packets: int) -> list[FIRMDataPacket]:
     """
     Reads csv log files containing data packets to use for testing. Will read the first n_packets
     amount of estimated data packets.
@@ -50,7 +50,7 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacke
     :return: list containing n_packets amount of estimated data packets
     """
     data_packets = []
-    needed_columns = list(set(EstimatedDataPacket.__struct_fields__) - {"invalid_fields"})
+    needed_columns = list(set(FIRMDataPacket.__struct_fields__) - {"invalid_fields"})
     df = pl.read_csv(
         csv_path,
         columns=needed_columns,
@@ -60,9 +60,9 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[EstimatedDataPacke
     for row in df.iter_rows(named=True):
         # Convert the named tuple to a dictionary and remove any NaN values:
         row_dict = {k: v for k, v in row.items() if v is not None}
-        # Create an EstimatedDataPacket instance from the dictionary
-        if row_dict.get("estPressureAlt"):
-            packet = EstimatedDataPacket(**row_dict)
+        # Create an FIRMDataPacket instance from the dictionary
+        if row_dict.get("est_position_z_meters"):
+            packet = FIRMDataPacket(**row_dict)
         else:
             continue
         data_packets.append(packet)
@@ -84,30 +84,30 @@ class TestDataProcessor:
     """
 
     packets = [
-        EstimatedDataPacket(
+        FIRMDataPacket(
             1 * 1e9,
             estLinearAccelX=1,
             estLinearAccelY=2,
             estLinearAccelZ=3,
-            estPressureAlt=20,
-            estOrientQuaternionW=0.1,
-            estOrientQuaternionX=0.2,
-            estOrientQuaternionY=0.3,
-            estOrientQuaternionZ=0.4,
+            est_position_z_meters=20,
+            est_quaternion_w=0.1,
+            est_quaternion_x=0.2,
+            est_quaternion_y=0.3,
+            est_quaternion_z=0.4,
             estGravityVectorX=0,
             estGravityVectorY=0,
             estGravityVectorZ=9.8,
         ),
-        EstimatedDataPacket(
+        FIRMDataPacket(
             2 * 1e9,
             estLinearAccelX=2,
             estLinearAccelY=3,
             estLinearAccelZ=4,
-            estPressureAlt=21,
-            estOrientQuaternionW=0.1,
-            estOrientQuaternionX=0.2,
-            estOrientQuaternionY=0.3,
-            estOrientQuaternionZ=0.4,
+            est_position_z_meters=21,
+            est_quaternion_w=0.1,
+            est_quaternion_x=0.2,
+            est_quaternion_y=0.3,
+            est_quaternion_z=0.4,
             estGravityVectorX=0,
             estGravityVectorY=0,
             estGravityVectorZ=9.8,
@@ -160,23 +160,23 @@ class TestDataProcessor:
         ("packets", "initial_altitude", "initial_velocity", "expected_altitudes"),
         [
             # Test case 1:
-            # Dummy packet at 1e9 ns, then two packets at 2e9 and 3e9.
+            # Dummy packet at 1 s, then two packets at 2 and 3.
             # dt1 = 1.0 sec, dt2 = 1.0 sec.
             # With a constant vertical velocity of 10 m/s,
             # altitudes will be: [initial_altitude + 10*1, initial_altitude + 10*2]
             (
-                [(2e9, -9.8, 105), (3e9, -9.8, 105)],
+                [(2, -9.8, 105), (3, -9.8, 105)],
                 100.0,
                 10.0,
                 [110.0, 120.0],
             ),
             # Test case 2:
-            # Dummy packet at 1e9 ns, then three packets at 2e9, 2.5e9, and 3.5e9.
+            # Dummy packet at 1e9 ns, then three packets at 2, 2.5, and 3.5.
             # dt1 = 1.0 sec, dt2 = 0.5 sec, dt3 = 1.0 sec.
             # Altitude integration: [100+10*1, 100+10*1+10*0.5, 100+10*1+10*0.5+10*1]
             # Expected altitudes: [110, 115, 125]
             (
-                [(2e9, -9.8, 105), (2.5e9, -9.8, 105), (3.5e9, -9.8, 105)],
+                [(2, -9.8, 105), (2.5, -9.8, 105), (3.5, -9.8, 105)],
                 100.0,
                 10.0,
                 [110.0, 115.0, 125.0],
@@ -194,19 +194,19 @@ class TestDataProcessor:
 
         # Perform a dummy update to establish initial conditions.
         # This avoids calling _first_update() during our test.
-        dummy_packet = make_est_data_packet(
-            timestamp=1e9,  # 1 second in ns
-            estCompensatedAccelX=0,
-            estCompensatedAccelY=0,
-            estCompensatedAccelZ=-9.8,  # so that rotated acceleration becomes 9.8 m/s²
-            estPressureAlt=100.0,
-            estOrientQuaternionW=1,
-            estOrientQuaternionX=0,
-            estOrientQuaternionY=0,
-            estOrientQuaternionZ=0,
-            estAngularRateX=0,
-            estAngularRateY=0,
-            estAngularRateZ=0,
+        dummy_packet = make_firm_data_packet(
+            timestamp_seconds=1,  # 1 second in ns
+            est_acceleration_x_gs=0,
+            est_acceleration_y_gs=0,
+            est_acceleration_z_gs=-1,  # so that rotated acceleration becomes 9.8 m/s²
+            est_position_z_meters=100.0,
+            est_quaternion_w=1,
+            est_quaternion_x=0,
+            est_quaternion_y=0,
+            est_quaternion_z=0,
+            est_angular_rate_x_rad_per_s=0,
+            est_angular_rate_y_rad_per_s=0,
+            est_angular_rate_z_rad_per_s=0,
         )
         d.update([dummy_packet])
 
@@ -218,24 +218,24 @@ class TestDataProcessor:
         d._integrating_for_altitude = True
 
         # Build new data packets based on the parameterized input.
-        # Each tuple is (timestamp, estCompensatedAccelZ, estPressureAlt).
+        # Each tuple is (timestamp, est_acceleration_z_gs, est_position_z_meters).
         # We use zero angular rates and identity orientation (quaternion = [1,0,0,0])
         new_packets = []
         for ts, accel_z, pressure_alt in packets:
             new_packets.append(
-                make_est_data_packet(
-                    timestamp=ts,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=accel_z,
-                    estPressureAlt=pressure_alt,
-                    estOrientQuaternionW=1,
-                    estOrientQuaternionX=0,
-                    estOrientQuaternionY=0,
-                    estOrientQuaternionZ=0,
-                    estAngularRateX=0,
-                    estAngularRateY=0,
-                    estAngularRateZ=0,
+                make_firm_data_packet(
+                    timestamp_seconds=ts,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=accel_z,
+                    est_position_z_meters=pressure_alt,
+                    est_quaternion_w=1,
+                    est_quaternion_x=0,
+                    est_quaternion_y=0,
+                    est_quaternion_z=0,
+                    est_angular_rate_x_rad_per_s=0,
+                    est_angular_rate_y_rad_per_s=0,
+                    est_angular_rate_z_rad_per_s=0,
                 )
             )
 
@@ -265,42 +265,42 @@ class TestDataProcessor:
         d.update(
             [
                 # reference data is shake_n_bake launch (very rounded data)
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     2 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=70,
-                    estPressureAlt=106,
-                    estOrientQuaternionW=0.35,
-                    estOrientQuaternionX=-0.036,
-                    estOrientQuaternionY=-0.039,
-                    estOrientQuaternionZ=0.936,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=70,
+                    est_position_z_meters=106,
+                    est_quaternion_w=0.35,
+                    est_quaternion_x=-0.036,
+                    est_quaternion_y=-0.039,
+                    est_quaternion_z=0.936,
                     estGravityVectorX=0,
                     estGravityVectorY=0,
                     estGravityVectorZ=9.8,
-                    estAngularRateX=-0.17,
-                    estAngularRateY=0.18,
-                    estAngularRateZ=3.7,
+                    est_angular_rate_x_rad_per_s=-0.17,
+                    est_angular_rate_y_rad_per_s=0.18,
+                    est_angular_rate_z_rad_per_s=3.7,
                 ),
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     2.1 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=-30,
-                    estPressureAlt=110,
-                    estAngularRateX=-0.8,
-                    estAngularRateY=0.05,
-                    estAngularRateZ=3.5,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=-30,
+                    est_position_z_meters=110,
+                    est_angular_rate_x_rad_per_s=-0.8,
+                    est_angular_rate_y_rad_per_s=0.05,
+                    est_angular_rate_z_rad_per_s=3.5,
                 ),
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     2.2 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=-10,
-                    estPressureAlt=123,
-                    estAngularRateX=-0.08,
-                    estAngularRateY=-0.075,
-                    estAngularRateZ=3.4,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=-10,
+                    est_position_z_meters=123,
+                    est_angular_rate_x_rad_per_s=-0.08,
+                    est_angular_rate_y_rad_per_s=-0.075,
+                    est_angular_rate_z_rad_per_s=3.4,
                 ),
             ]
         )
@@ -312,35 +312,35 @@ class TestDataProcessor:
         # This tests that we are now falling (the accel is less than 9.8)
         d.update(
             [
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     5 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=30,
-                    estPressureAlt=24,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=30,
+                    est_position_z_meters=24,
+                    est_angular_rate_x_rad_per_s=0.01,
+                    est_angular_rate_y_rad_per_s=0.02,
+                    est_angular_rate_z_rad_per_s=0.03,
                 ),
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     6 * 1e9,
-                    estCompensatedAccelX=6,
-                    estCompensatedAccelY=7,
-                    estCompensatedAccelZ=8,
-                    estPressureAlt=25,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    est_acceleration_x_gs=6,
+                    est_acceleration_y_gs=7,
+                    est_acceleration_z_gs=8,
+                    est_position_z_meters=25,
+                    est_angular_rate_x_rad_per_s=0.01,
+                    est_angular_rate_y_rad_per_s=0.02,
+                    est_angular_rate_z_rad_per_s=0.03,
                 ),
-                EstimatedDataPacket(
+                FIRMDataPacket(
                     7 * 1e9,
-                    estCompensatedAccelX=0,
-                    estCompensatedAccelY=0,
-                    estCompensatedAccelZ=5,
-                    estPressureAlt=26,
-                    estAngularRateX=0.01,
-                    estAngularRateY=0.02,
-                    estAngularRateZ=0.03,
+                    est_acceleration_x_gs=0,
+                    est_acceleration_y_gs=0,
+                    est_acceleration_z_gs=5,
+                    est_position_z_meters=26,
+                    est_angular_rate_x_rad_per_s=0.01,
+                    est_angular_rate_y_rad_per_s=0.02,
+                    est_angular_rate_z_rad_per_s=0.03,
                 ),
             ]
         )
@@ -372,12 +372,13 @@ class TestDataProcessor:
         [
             (
                 [
-                    make_est_data_packet(
-                        timestamp=0 * 1e9,
-                        estPressureAlt=20,
-                        estGravityVectorX=0.1,
-                        estGravityVectorY=0.2,
-                        estGravityVectorZ=9.79,
+                    make_firm_data_packet(
+                        timestamp=0,
+                        est_position_z_meters=20,
+                        # TODO: no gravity vector
+                        # estGravityVectorX=0.1,
+                        # estGravityVectorY=0.2,
+                        # estGravityVectorZ=9.79,
                     )
                 ],
                 20.0,
@@ -387,16 +388,16 @@ class TestDataProcessor:
             ),
             (
                 [
-                    make_est_data_packet(
-                        timestamp=1 * 1e9,
-                        estPressureAlt=20,
-                        estGravityVectorX=9.79,
-                        estGravityVectorY=0.1,
-                        estGravityVectorZ=0.2,
+                    make_firm_data_packet(
+                        timestamp=1,
+                        est_position_z_meters=20,
+                        estGravityVectorX=0.99,
+                        estGravityVectorY=0.01,
+                        estGravityVectorZ=0.02,
                     ),
-                    make_est_data_packet(
-                        timestamp=2 * 1e9,
-                        estPressureAlt=30,
+                    make_firm_data_packet(
+                        timestamp=2,
+                        est_position_z_meters=30,
                     ),
                 ],
                 25.0,
@@ -406,20 +407,20 @@ class TestDataProcessor:
             ),
             (
                 [
-                    make_est_data_packet(
-                        timestamp=1 * 1e9,
-                        estPressureAlt=20,
-                        estGravityVectorX=0.1,
-                        estGravityVectorY=-9.79,
-                        estGravityVectorZ=0.2,
+                    make_firm_data_packet(
+                        timestamp=1,
+                        est_position_z_meters=20,
+                        estGravityVectorX=0.01,
+                        estGravityVectorY=-0.99,
+                        estGravityVectorZ=0.02,
                     ),
-                    make_est_data_packet(
-                        timestamp=2 * 1e9,
-                        estPressureAlt=30,
+                    make_firm_data_packet(
+                        timestamp=2,
+                        est_position_z_meters=30,
                     ),
-                    make_est_data_packet(
-                        timestamp=3 * 1e9,
-                        estPressureAlt=40,
+                    make_firm_data_packet(
+                        timestamp=3,
+                        est_position_z_meters=40,
                     ),
                 ],
                 30.0,
@@ -469,7 +470,7 @@ class TestDataProcessor:
             rtol=1e-5,
         )
         assert d.current_altitude == (
-            0.0 if init_alt is None else data_packets[-1].estPressureAlt - init_alt
+            0.0 if init_alt is None else data_packets[-1].est_position_z_meters - init_alt
         )
         assert d._max_altitude == d.max_altitude == max_alt
 
@@ -485,7 +486,7 @@ class TestDataProcessor:
         assert quaternion.allclose(d._longitudinal_axis, expected_longitudinal_axis)
 
     @pytest.mark.parametrize(
-        # altitude reading - list of altitudes passed to the data processor (estPressureAlt)
+        # altitude reading - list of altitudes passed to the data processor (est_position_z_meters)
         # current_altitude - calculated current altitude of the rocket, zeroed out.
         # max_altitude - calculated max altitude of the rocket
         ("altitude_reading", "current_altitude", "max_altitude"),
@@ -504,21 +505,21 @@ class TestDataProcessor:
         """
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
-        d._last_data_packet = make_est_data_packet(
+        d._last_data_packet = make_firm_data_packet(
             timestamp=0,
-            estPressureAlt=altitude_reading[0],
+            est_position_z_meters=altitude_reading[0],
         )
         d._initial_altitude = 20.0
         d._current_orientation_quaternions = quaternion.from_float_array([0.1, 0.1, 0.1, 0.1])
 
         new_packets = [
-            make_est_data_packet(
+            make_firm_data_packet(
                 timestamp=idx + 3,
-                estPressureAlt=alt,
-                estOrientQuaternionW=0.1,
-                estOrientQuaternionX=0.2,
-                estOrientQuaternionY=0.3,
-                estOrientQuaternionZ=0.4,
+                est_position_z_meters=alt,
+                est_quaternion_w=0.1,
+                est_quaternion_x=0.2,
+                est_quaternion_y=0.3,
+                est_quaternion_z=0.4,
             )
             for idx, alt in enumerate(altitude_reading)
         ]
@@ -536,9 +537,9 @@ class TestDataProcessor:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [
-                    make_est_data_packet(
+                    make_firm_data_packet(
                         timestamp=i,
-                        estPressureAlt=alt,
+                        est_position_z_meters=alt,
                     )
                     for alt in altitudes[i : i + 10]
                 ]
@@ -594,9 +595,9 @@ class TestDataProcessor:
         Tests the performance of the update method.
         """
         data_packets = [
-            make_est_data_packet(
+            make_firm_data_packet(
                 timestamp=idx,
-                estPressureAlt=idx,
+                est_position_z_meters=idx,
             )
             for idx in range(10)
         ]
@@ -640,9 +641,9 @@ class TestDataProcessor:
     def test_zero_out_altitude(self, data_processor):
         for i in range(1, 11):
             data_processor._data_packets.append(
-                make_est_data_packet(
+                make_firm_data_packet(
                     timestamp=i * 1e9,
-                    estPressureAlt=i,
+                    est_position_z_meters=i,
                 )
             )
         data_processor.zero_out_altitude()
@@ -652,9 +653,9 @@ class TestDataProcessor:
         # Test overflow:
         for i in range(WINDOW_SIZE_FOR_PRESSURE_ZEROING):
             data_processor._data_packets.append(
-                make_est_data_packet(
-                    timestamp=i * 1e9,
-                    estPressureAlt=i,
+                make_firm_data_packet(
+                    timestamp=i,
+                    est_position_z_meters=i,
                 )
             )
         data_processor.zero_out_altitude()
