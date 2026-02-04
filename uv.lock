@@ -17,7 +17,6 @@ dependencies = [
     { name = "firm-client" },
     { name = "gpiozero" },
     { name = "hprm" },
-    { name = "mscl-rs" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion" },
@@ -58,7 +57,6 @@ requires-dist = [
     { name = "gpiozero" },
     { name = "hprm", specifier = ">=0.1.7" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
-    { name = "mscl-rs", specifier = "==0.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = ">=2024.0.10" },
@@ -251,18 +249,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
-]
-
-[[package]]
-name = "mscl-rs"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/42/3c/e44f1be703b1de8b61127953779a1a4d45b74575cb6a6f118ba577d385dc/mscl_rs-0.2.0.tar.gz", hash = "sha256:08627bb22dcb0cecaf16858b4e3102aa2eaed962eab7c61bc13d6534beaa6a60", size = 621090, upload-time = "2025-12-08T09:20:24.333Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/a4/8be249680073a8a8480c8102ab5fd7942da9bdad6a85d132770da845dd2c/mscl_rs-0.2.0-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:11871f4abbce73527b3fe4fce24e9cc0a77ddbd9bbfca28d2754b8029159f4fd", size = 328036, upload-time = "2025-12-08T09:15:24.45Z" },
-    { url = "https://files.pythonhosted.org/packages/cf/70/682021b9c4fb0ba6ee7127ce0260bd11eea4cde3ef2dba3a24e648e78eed/mscl_rs-0.2.0-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:22f9356d9055ea6402922147de90778aaf96e96a31970de96275d4ff80cadb4f", size = 385144, upload-time = "2025-12-08T09:20:19.788Z" },
-    { url = "https://files.pythonhosted.org/packages/30/a1/5f5a4887c9c97c5a4d528c1d2a8fd0f04abcebe02594e433d46bc91d232a/mscl_rs-0.2.0-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:129ec2a2429b0e6dc04db81762890023d1b2ba768095c3f84dade42d4e4e4372", size = 327604, upload-time = "2025-12-08T09:20:14.987Z" },
-    { url = "https://files.pythonhosted.org/packages/17/69/0cb3a3b8306a65a76ac19b31ec31ef36cee7f74a0da8d6ea634f8ce095bf/mscl_rs-0.2.0-cp314-cp314t-manylinux_2_34_x86_64.whl", hash = "sha256:dd1c9bf00f6eb1723c0bab18ce98b8156c4ece67d59525f1e1bd13bbd35d5537", size = 385378, upload-time = "2025-12-08T09:20:21.852Z" },
 ]
 
 [[package]]

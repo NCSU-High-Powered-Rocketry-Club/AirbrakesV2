@@ -18,7 +18,7 @@ from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
 from airbrakes.utils import get_all_packets_from_queue
 
 if TYPE_CHECKING:
-    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+    from firm_client import FIRMDataPacket
 
 
 class ApogeePredictor:
@@ -29,13 +29,13 @@ class ApogeePredictor:
     __slots__ = (
         "_apogee_predictor_packet_queue",
         "_prediction_thread",
-        "_processor_data_packet_queue",
+        "_firm_data_packet_queue",
     )
 
     def __init__(self) -> None:
         # Single input queue: main thread -> prediction thread
-        self._processor_data_packet_queue: queue.SimpleQueue[
-            ProcessorDataPacket | Literal["STOP"]
+        self._firm_data_packet_queue: queue.SimpleQueue[
+            FIRMDataPacket
         ] = queue.SimpleQueue()
 
         self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
@@ -58,13 +58,13 @@ class ApogeePredictor:
         return self._prediction_thread.is_alive()
 
     @property
-    def processor_data_packet_queue_size(self) -> int:
+    def firm_data_packet_queue_size(self) -> int:
         """
         Gets the number of data packets in the processor data packet queue.
 
         :return: The number of ProcessorDataPacket in the processor data packet queue.
         """
-        return self._processor_data_packet_queue.qsize()
+        return self._firm_data_packet_queue.qsize()
 
     def start(self) -> None:
         """
@@ -80,10 +80,10 @@ class ApogeePredictor:
         Stops the prediction thread.
         """
         # Request the thread to stop:
-        self._processor_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._firm_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_thread.join()
 
-    def update(self, processor_data_packet: ProcessorDataPacket) -> None:
+    def update(self, processor_data_packet: FIRMDataPacket) -> None:
         """
         Updates the apogee predictor to include the most recent processor data packet.
 
@@ -91,7 +91,7 @@ class ApogeePredictor:
 
         :param processor_data_packet: The most recent ProcessorDataPacket.
         """
-        self._processor_data_packet_queue.put(processor_data_packet)
+        self._firm_data_packet_queue.put(processor_data_packet)
 
     def get_prediction_data_packet(self) -> ApogeePredictorDataPacket | None:
         """
@@ -130,23 +130,23 @@ class ApogeePredictor:
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
-            processor_data_packets = get_all_packets_from_queue(
-                self._processor_data_packet_queue, block=True
+            firm_data_packets = get_all_packets_from_queue(
+                self._firm_data_packet_queue, block=True
             )
 
             # If we got a stop signal in this batch, exit the loop
-            if STOP_SIGNAL in processor_data_packets:
+            if STOP_SIGNAL in firm_data_packets:
                 break
 
-            most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
+            most_recent_packet = cast("FIRMDataPacket", firm_data_packets[-1])
 
             adaptive_time_step = AdaptiveTimeStep.default()
             adaptive_time_step.dt_max = 1
 
             # Compute apogee given the latest state and history
             apogee = rocket.predict_apogee(
-                most_recent_packet.current_altitude,
-                most_recent_packet.velocity_magnitude,
+                most_recent_packet.est_position_z_meters,   # temporary until firm calculates current values
+                most_recent_packet.est_velocity_z_meters_per_s, # temporary until firm calculates current values
                 ModelType.OneDOF,
                 OdeMethod.RK45,
                 adaptive_time_step,
@@ -157,7 +157,7 @@ class ApogeePredictor:
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(
                     apogee,
-                    most_recent_packet.current_altitude,
-                    most_recent_packet.velocity_magnitude,
+                    most_recent_packet.est_position_z_meters,   # temporary until firm calculates current values
+                    most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
                 )
             )

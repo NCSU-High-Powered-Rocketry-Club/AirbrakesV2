@@ -38,7 +38,6 @@ class Context:
         "apogee_predictor",
         "context_data_packet",
         "data_processor",
-        "est_data_packets",
         "firm",
         "firm_data_packets",
         "launch_time_ns",
@@ -208,9 +207,9 @@ class Context:
         """
         # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
         # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
-        if self.est_data_packets:
-            # We pass in the most recent Processor Data Packet to the apogee predictor
-            self.apogee_predictor.update(self.processor_data_packets[-1])
+        if self.firm_data_packets:
+            # We pass in the most recent FIRM Data Packet to the apogee predictor
+            self.apogee_predictor.update(self.firm_data_packets[-1])
 
     def generate_data_packets(self) -> None:
         """
@@ -221,7 +220,7 @@ class Context:
         self.context_data_packet = ContextDataPacket(
             state=type(self.state),
             retrieved_firm_packets=len(self.firm_data_packets),
-            apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.firm_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
         )
 

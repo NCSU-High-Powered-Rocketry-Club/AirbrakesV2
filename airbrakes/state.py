@@ -202,7 +202,7 @@ class FreeFallState(State):
 
         # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
         # This is a fallback condition so that we won't be stuck in freefall state.
-        if convert_ns_to_s(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
+        if data.current_timestamp - self.start_time_ns >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self) -> None:

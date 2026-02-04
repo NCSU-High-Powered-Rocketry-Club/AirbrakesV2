@@ -12,7 +12,6 @@ dependencies = [
     "colorama",
     "scipy",
     "textual",
-    "mscl-rs==0.2.0",
     "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
     "polars==1.37.1",

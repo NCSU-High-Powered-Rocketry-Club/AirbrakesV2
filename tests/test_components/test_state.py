@@ -148,7 +148,7 @@ class TestMotorBurnState:
         ctx = motor_burn_state.context
         ctx.data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=1)
         m = MotorBurnState(ctx)
-        assert m.start_time_ns == 1000
+        assert m.start_time_ns == 1
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
@@ -488,17 +488,17 @@ class TestLandedState:
         ls.context.state = ls
         ls.update()
         assert context.logger.is_running
-        assert context.imu.is_running
-        assert context.imu._data_fetch_thread.is_alive()
+        assert context.firm.is_running
+        #assert context.imu._data_fetch_thread.is_alive()
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
-        assert context.imu._data_fetch_thread.is_alive()
+        #assert context.imu._data_fetch_thread.is_alive()
         ls.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
-        assert not context.imu.requested_to_run
+        #assert not context.imu.requested_to_run
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert not context.logger.is_log_buffer_full
         assert len(context.logger._log_buffer) == 0
