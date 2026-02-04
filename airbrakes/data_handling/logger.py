@@ -144,84 +144,71 @@ class Logger:
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
-        # Convert the firm data packets to a LoggerDataPacket:
-        for firm_data_packet in firm_data_packets:
+        # zip the FIRM and Processor data packets together
+        for firm_data_packet, processor_data_packet in zip(
+            firm_data_packets, processor_data_packets
+        ):
+            # Apogee Predictor fields default to none if no packet is provided
+            predicted_apogee = None
+            height_used_for_prediction = None
+            velocity_used_for_prediction = None
+
+            if apogee_predictor_data_packet:
+                predicted_apogee = apogee_predictor_data_packet.predicted_apogee
+                height_used_for_prediction = apogee_predictor_data_packet.height_used_for_prediction
+                velocity_used_for_prediction = (
+                    apogee_predictor_data_packet.velocity_used_for_prediction
+                )
+
             logger_packet = LoggerDataPacket(
+                # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
                 encoder_position=servo_data_packet.encoder_position,
+                # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
+                temperature_celsius=firm_data_packet.temperature_celsius,
+                pressure_pascals=firm_data_packet.pressure_pascals,
+                raw_acceleration_x_gs=firm_data_packet.raw_acceleration_x_gs,
+                raw_acceleration_y_gs=firm_data_packet.raw_acceleration_y_gs,
+                raw_acceleration_z_gs=firm_data_packet.raw_acceleration_z_gs,
+                raw_angular_rate_x_deg_per_s=firm_data_packet.raw_angular_rate_x_deg_per_s,
+                raw_angular_rate_y_deg_per_s=firm_data_packet.raw_angular_rate_y_deg_per_s,
+                raw_angular_rate_z_deg_per_s=firm_data_packet.raw_angular_rate_z_deg_per_s,
+                magnetic_field_x_microteslas=firm_data_packet.magnetic_field_x_microteslas,
+                magnetic_field_y_microteslas=firm_data_packet.magnetic_field_y_microteslas,
+                magnetic_field_z_microteslas=firm_data_packet.magnetic_field_z_microteslas,
+                est_position_x_meters=firm_data_packet.est_position_x_meters,
+                est_position_y_meters=firm_data_packet.est_position_y_meters,
+                est_position_z_meters=firm_data_packet.est_position_z_meters,
+                est_velocity_x_meters_per_s=firm_data_packet.est_velocity_x_meters_per_s,
+                est_velocity_y_meters_per_s=firm_data_packet.est_velocity_y_meters_per_s,
+                est_velocity_z_meters_per_s=firm_data_packet.est_velocity_z_meters_per_s,
+                est_acceleration_x_gs=firm_data_packet.est_acceleration_x_gs,
+                est_acceleration_y_gs=firm_data_packet.est_acceleration_y_gs,
+                est_acceleration_z_gs=firm_data_packet.est_acceleration_z_gs,
+                est_angular_rate_x_rad_per_s=firm_data_packet.est_angular_rate_x_rad_per_s,
+                est_angular_rate_y_rad_per_s=firm_data_packet.est_angular_rate_y_rad_per_s,
+                est_angular_rate_z_rad_per_s=firm_data_packet.est_angular_rate_z_rad_per_s,
+                est_quaternion_w=firm_data_packet.est_quaternion_w,
+                est_quaternion_x=firm_data_packet.est_quaternion_x,
+                est_quaternion_y=firm_data_packet.est_quaternion_y,
+                est_quaternion_z=firm_data_packet.est_quaternion_z,
+                # Processor Data Packet Fields
+                current_altitude=processor_data_packet.current_altitude,
+                velocity_magnitude=processor_data_packet.velocity_magnitude,
+                vertical_velocity=processor_data_packet.vertical_velocity,
+                vertical_acceleration=processor_data_packet.vertical_acceleration,
+                current_pitch_degrees=processor_data_packet.current_pitch_degrees,
+                # Apogee Predictor Data Packet Fields
+                predicted_apogee=predicted_apogee,
+                height_used_for_prediction=height_used_for_prediction,
+                velocity_used_for_prediction=velocity_used_for_prediction,
+                # Remaining Context Fields
                 retrieved_firm_packets=context_data_packet.retrieved_firm_packets,
                 apogee_predictor_queue_size=context_data_packet.apogee_predictor_queue_size,
                 update_timestamp_ns=context_data_packet.update_timestamp_ns,
             )
-
-            # Get the FIRMDataPacket fields:
-            # Performance comparison (python 3.13.1 on x86_64 linux):
-            # - isinstance is 45.2% faster than match statement
-            # - hasattr is 20.57% faster than isinstance
-            # - type() is 34.85% faster than hasattr
-            logger_packet.est_acceleration_x_gs = firm_data_packet.est_acceleration_x_gs
-            logger_packet.est_acceleration_y_gs = firm_data_packet.est_acceleration_y_gs
-            logger_packet.est_acceleration_z_gs = firm_data_packet.est_acceleration_z_gs
-            logger_packet.est_angular_rate_x_rad_per_s = (
-                firm_data_packet.est_angular_rate_x_rad_per_s
-            )
-            logger_packet.est_angular_rate_y_rad_per_s = (
-                firm_data_packet.est_angular_rate_y_rad_per_s
-            )
-            logger_packet.est_angular_rate_z_rad_per_s = (
-                firm_data_packet.est_angular_rate_z_rad_per_s
-            )
-            logger_packet.est_position_x_meters = firm_data_packet.est_position_x_meters
-            logger_packet.est_position_y_meters = firm_data_packet.est_position_y_meters
-            logger_packet.est_position_z_meters = firm_data_packet.est_position_z_meters
-            logger_packet.est_quaternion_w = firm_data_packet.est_quaternion_w
-            logger_packet.est_quaternion_x = firm_data_packet.est_quaternion_x
-            logger_packet.est_quaternion_y = firm_data_packet.est_quaternion_y
-            logger_packet.est_quaternion_z = firm_data_packet.est_quaternion_z
-            logger_packet.est_velocity_x_meters_per_s = firm_data_packet.est_velocity_x_meters_per_s
-            logger_packet.est_velocity_y_meters_per_s = firm_data_packet.est_velocity_y_meters_per_s
-            logger_packet.est_velocity_z_meters_per_s = firm_data_packet.est_velocity_z_meters_per_s
-            logger_packet.magnetic_field_x_microteslas = (
-                firm_data_packet.magnetic_field_x_microteslas
-            )
-            logger_packet.magnetic_field_y_microteslas = (
-                firm_data_packet.magnetic_field_y_microteslas
-            )
-            logger_packet.magnetic_field_z_microteslas = (
-                firm_data_packet.magnetic_field_z_microteslas
-            )
-            logger_packet.pressure_pascals = firm_data_packet.pressure_pascals
-            logger_packet.raw_acceleration_x_gs = firm_data_packet.raw_acceleration_x_gs
-            logger_packet.raw_acceleration_y_gs = firm_data_packet.raw_acceleration_y_gs
-            logger_packet.raw_acceleration_z_gs = firm_data_packet.raw_acceleration_z_gs
-            logger_packet.raw_angular_rate_x_deg_per_s = (
-                firm_data_packet.raw_angular_rate_x_deg_per_s
-            )
-            logger_packet.raw_angular_rate_y_deg_per_s = (
-                firm_data_packet.raw_angular_rate_y_deg_per_s
-            )
-            logger_packet.raw_angular_rate_z_deg_per_s = (
-                firm_data_packet.raw_angular_rate_z_deg_per_s
-            )
-            logger_packet.temperature_celsius = firm_data_packet.temperature_celsius
-
-            # Apogee Prediction happens asynchronously, so we need to check if we have a packet:
-
-            # There is a small possibility that we won't log all the apogee predictor data packets
-            # if the length of the FIRM data packets is less than the length of the apogee predictor
-            # data packets. However, this is unlikely to happen in practice. This particular case
-            # is NOT covered by tests.
-            if apogee_predictor_data_packet:
-                logger_packet.predicted_apogee = apogee_predictor_data_packet.predicted_apogee  # ty: ignore[invalid-assignment]
-                logger_packet.height_used_for_prediction = (
-                    apogee_predictor_data_packet.height_used_for_prediction
-                )  # ty: ignore[invalid-assignment]
-                logger_packet.velocity_used_for_prediction = (
-                    apogee_predictor_data_packet.velocity_used_for_prediction
-                )  # ty: ignore[invalid-assignment]
-                # logger_packet.pitch_used_for_prediction = apogee_packet.pitch_used_for_prediction
 
             logger_data_packets.append(logger_packet)
 

@@ -79,7 +79,7 @@ class TestLoggerDataPacket:
         log_dp_fields = list(LoggerDataPacket.__struct_fields__)
         context_dp_fields = list(ContextDataPacket.__struct_fields__)
         servo_dp_fields = list(ServoDataPacket.__struct_fields__)
-        firm_dp_fields = set(FIRMDataPacket.__struct_fields__)
+        firm_dp_fields = list(FIRMDataPacket.__struct_fields__)
         proc_dp_fields = list(ProcessorDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = list(ApogeePredictorDataPacket.__struct_fields__)
 

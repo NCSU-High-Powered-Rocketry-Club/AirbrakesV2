@@ -21,6 +21,15 @@ def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
     return FIRMDataPacket(**{**dummy_values, **kwargs})
 
 
+def make_firm_data_packet_zeroed(**kwargs) -> FIRMDataPacket:
+    """
+    Creates a FIRMDataPacket with the specified keyword arguments.
+    Provides zeroes for arguments not specified.
+    """
+    dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 0.0)
+    return FIRMDataPacket(**{**dummy_values, **kwargs})
+
+
 def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
     """
     Creates a ProcessorDataPacket with the specified keyword arguments.

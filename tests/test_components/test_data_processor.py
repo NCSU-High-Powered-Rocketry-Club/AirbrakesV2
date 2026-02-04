@@ -11,7 +11,7 @@ from firm_client import FIRMDataPacket
 
 from airbrakes.constants import WINDOW_SIZE_FOR_PRESSURE_ZEROING
 from airbrakes.data_handling.data_processor import DataProcessor
-from tests.auxil.utils import make_firm_data_packet
+from tests.auxil.utils import make_firm_data_packet, make_firm_data_packet_zeroed
 
 
 def generate_altitude_sine_wave(
@@ -84,33 +84,33 @@ class TestDataProcessor:
     """
 
     packets = [
-        FIRMDataPacket(
-            1 * 1e9,
-            estLinearAccelX=1,
-            estLinearAccelY=2,
-            estLinearAccelZ=3,
+        make_firm_data_packet_zeroed(
+            timestamp_seconds=1,
+            est_acceleration_x_gs=1,
+            est_acceleration_y_gs=2,
+            est_acceleration_z_gs=3,
             est_position_z_meters=20,
             est_quaternion_w=0.1,
             est_quaternion_x=0.2,
             est_quaternion_y=0.3,
             est_quaternion_z=0.4,
-            estGravityVectorX=0,
-            estGravityVectorY=0,
-            estGravityVectorZ=9.8,
+            # estGravityVectorX=0,
+            # estGravityVectorY=0,
+            # estGravityVectorZ=9.8,
         ),
-        FIRMDataPacket(
-            2 * 1e9,
-            estLinearAccelX=2,
-            estLinearAccelY=3,
-            estLinearAccelZ=4,
+        make_firm_data_packet_zeroed(
+            timestamp_seconds=2,
+            est_acceleration_x_gs=2,
+            est_acceleration_y_gs=3,
+            est_acceleration_z_gs=4,
             est_position_z_meters=21,
             est_quaternion_w=0.1,
             est_quaternion_x=0.2,
             est_quaternion_y=0.3,
             est_quaternion_z=0.4,
-            estGravityVectorX=0,
-            estGravityVectorY=0,
-            estGravityVectorZ=9.8,
+            # estGravityVectorX=0,
+            # estGravityVectorY=0,
+            # estGravityVectorZ=9.8,
         ),
     ]
 
@@ -265,8 +265,8 @@ class TestDataProcessor:
         d.update(
             [
                 # reference data is shake_n_bake launch (very rounded data)
-                FIRMDataPacket(
-                    2 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=2,
                     est_acceleration_x_gs=0,
                     est_acceleration_y_gs=0,
                     est_acceleration_z_gs=70,
@@ -275,15 +275,15 @@ class TestDataProcessor:
                     est_quaternion_x=-0.036,
                     est_quaternion_y=-0.039,
                     est_quaternion_z=0.936,
-                    estGravityVectorX=0,
-                    estGravityVectorY=0,
-                    estGravityVectorZ=9.8,
+                    # estGravityVectorX=0,
+                    # estGravityVectorY=0,
+                    # estGravityVectorZ=9.8,
                     est_angular_rate_x_rad_per_s=-0.17,
                     est_angular_rate_y_rad_per_s=0.18,
                     est_angular_rate_z_rad_per_s=3.7,
                 ),
-                FIRMDataPacket(
-                    2.1 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=2.1,
                     est_acceleration_x_gs=0,
                     est_acceleration_y_gs=0,
                     est_acceleration_z_gs=-30,
@@ -292,8 +292,8 @@ class TestDataProcessor:
                     est_angular_rate_y_rad_per_s=0.05,
                     est_angular_rate_z_rad_per_s=3.5,
                 ),
-                FIRMDataPacket(
-                    2.2 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=2.2,
                     est_acceleration_x_gs=0,
                     est_acceleration_y_gs=0,
                     est_acceleration_z_gs=-10,
@@ -312,8 +312,8 @@ class TestDataProcessor:
         # This tests that we are now falling (the accel is less than 9.8)
         d.update(
             [
-                FIRMDataPacket(
-                    5 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=5,
                     est_acceleration_x_gs=0,
                     est_acceleration_y_gs=0,
                     est_acceleration_z_gs=30,
@@ -322,8 +322,8 @@ class TestDataProcessor:
                     est_angular_rate_y_rad_per_s=0.02,
                     est_angular_rate_z_rad_per_s=0.03,
                 ),
-                FIRMDataPacket(
-                    6 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=6,
                     est_acceleration_x_gs=6,
                     est_acceleration_y_gs=7,
                     est_acceleration_z_gs=8,
@@ -332,8 +332,8 @@ class TestDataProcessor:
                     est_angular_rate_y_rad_per_s=0.02,
                     est_angular_rate_z_rad_per_s=0.03,
                 ),
-                FIRMDataPacket(
-                    7 * 1e9,
+                make_firm_data_packet_zeroed(
+                    timestamp_seconds=7,
                     est_acceleration_x_gs=0,
                     est_acceleration_y_gs=0,
                     est_acceleration_z_gs=5,
@@ -373,7 +373,7 @@ class TestDataProcessor:
             (
                 [
                     make_firm_data_packet(
-                        timestamp=0,
+                        timestamp_seconds=0,
                         est_position_z_meters=20,
                         # TODO: no gravity vector
                         # estGravityVectorX=0.1,
@@ -389,14 +389,14 @@ class TestDataProcessor:
             (
                 [
                     make_firm_data_packet(
-                        timestamp=1,
+                        timestamp_seconds=1,
                         est_position_z_meters=20,
-                        estGravityVectorX=0.99,
-                        estGravityVectorY=0.01,
-                        estGravityVectorZ=0.02,
+                        # estGravityVectorX=0.99,
+                        # estGravityVectorY=0.01,
+                        # estGravityVectorZ=0.02,
                     ),
                     make_firm_data_packet(
-                        timestamp=2,
+                        timestamp_seconds=2,
                         est_position_z_meters=30,
                     ),
                 ],
@@ -408,18 +408,18 @@ class TestDataProcessor:
             (
                 [
                     make_firm_data_packet(
-                        timestamp=1,
+                        timestamp_seconds=1,
                         est_position_z_meters=20,
-                        estGravityVectorX=0.01,
-                        estGravityVectorY=-0.99,
-                        estGravityVectorZ=0.02,
+                        # estGravityVectorX=0.01,
+                        # estGravityVectorY=-0.99,
+                        # estGravityVectorZ=0.02,
                     ),
                     make_firm_data_packet(
-                        timestamp=2,
+                        timestamp_seconds=2,
                         est_position_z_meters=30,
                     ),
                     make_firm_data_packet(
-                        timestamp=3,
+                        timestamp_seconds=3,
                         est_position_z_meters=40,
                     ),
                 ],
@@ -506,7 +506,7 @@ class TestDataProcessor:
         d = data_processor
         # test_first_update tests the initial alt update, so we can skip that here:
         d._last_data_packet = make_firm_data_packet(
-            timestamp=0,
+            timestamp_seconds=0,
             est_position_z_meters=altitude_reading[0],
         )
         d._initial_altitude = 20.0
@@ -514,7 +514,7 @@ class TestDataProcessor:
 
         new_packets = [
             make_firm_data_packet(
-                timestamp=idx + 3,
+                timestamp_seconds=idx + 3,
                 est_position_z_meters=alt,
                 est_quaternion_w=0.1,
                 est_quaternion_x=0.2,
@@ -538,7 +538,7 @@ class TestDataProcessor:
             d.update(
                 [
                     make_firm_data_packet(
-                        timestamp=i,
+                        timestamp_seconds=i,
                         est_position_z_meters=alt,
                     )
                     for alt in altitudes[i : i + 10]
@@ -596,7 +596,7 @@ class TestDataProcessor:
         """
         data_packets = [
             make_firm_data_packet(
-                timestamp=idx,
+                timestamp_seconds=idx,
                 est_position_z_meters=idx,
             )
             for idx in range(10)
@@ -642,7 +642,7 @@ class TestDataProcessor:
         for i in range(1, 11):
             data_processor._data_packets.append(
                 make_firm_data_packet(
-                    timestamp=i * 1e9,
+                    timestamp_seconds=i * 1e9,
                     est_position_z_meters=i,
                 )
             )
@@ -654,7 +654,7 @@ class TestDataProcessor:
         for i in range(WINDOW_SIZE_FOR_PRESSURE_ZEROING):
             data_processor._data_packets.append(
                 make_firm_data_packet(
-                    timestamp=i,
+                    timestamp_seconds=i,
                     est_position_z_meters=i,
                 )
             )
