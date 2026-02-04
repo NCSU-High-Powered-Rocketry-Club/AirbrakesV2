@@ -3,10 +3,10 @@ name: Integration Tests
 on:
   pull_request:
     branches:
-      - '**'  # Matches all branch names, for PRs
+      - "**" # Matches all branch names, for PRs
   push:
     branches:
-      - 'main'  # Run tests on main branch
+      - "main" # Run tests on main branch
 
 jobs:
   integration-tests:
@@ -15,8 +15,7 @@ jobs:
     timeout-minutes: 5
     strategy:
       matrix:
-        # TODO: Add back ubuntu-24.04-arm once the repo is public again
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest]
       fail-fast: False
 
     steps:
@@ -26,7 +25,7 @@ jobs:
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
-          version: "0.9.16"
+          version: "0.9.28"
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -39,4 +38,4 @@ jobs:
       - name: Run integration tests
         timeout-minutes: 3
         run: |
-          PYTHON_GIL=0 PYTHON_JIT=1 uv run pytest -v tests/test_integration.py
+          uv run pytest -v tests/test_integration.py

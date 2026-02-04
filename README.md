@@ -187,7 +187,7 @@ _Note: We will continue using `uv` for the rest of this README, if you don't wan
 If you want to contribute to the project, you will need to set up the project locally. Luckily, 
 the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
-It is highly recommended to use WSL if you are on Windows, as the project only supports Linux.
+It is highly recommended to use WSL if you are on Windows, as the project only supports Linux. Running natively on Windows should work, but it is not a guarantee.
 
 ### 1. Clone the repository:
 
@@ -218,7 +218,7 @@ the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools
 
 _Note 2: The more "correct" command to run is `uv sync`. This will install the project and its dependencies, but not run the mock replay._
 
-### 4. Install the pre-commit hook:
+### 3. Install the pre-commit hook:
 ```
 uv run prek install
 ```
@@ -234,12 +234,7 @@ git push -u origin branch-name
 ## Advanced Local Usage
 
 For performance improvements, we _highly_ recommend switching off the Global Interpreter Lock (GIL),
-and turning on the experimental Python Just-In-Time (JIT) compiler. To do this, export `PYTHON_JIT=1`, and `PYTHON_GIL=0` in your shell (preferably in your `.bashrc` or `.zshrc` file).
-
-```bash
-export PYTHON_JIT=1
-export PYTHON_GIL=0
-```
+and turning on the experimental Python Just-In-Time (JIT) compiler. This should be in the `python-settings.env` file, which `uv` will automatically load when you run `uv run ...`.
 
 ### Running Mock Launches
 Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
