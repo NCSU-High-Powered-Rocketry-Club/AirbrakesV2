@@ -145,6 +145,8 @@ def mocked_args_parser():
         verbose = False
         sim = False
         real_firm = False
+        pretend_firm = False
+        mock_firm = None
 
     return MockArgs()
 
