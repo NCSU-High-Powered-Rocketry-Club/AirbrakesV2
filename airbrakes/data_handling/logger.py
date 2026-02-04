@@ -319,6 +319,7 @@ class Logger:
     def _logging_loop(self) -> None:  # pragma: no cover
         """
         The loop that saves data to the logs.
+
         It runs in parallel with the main loop.
         """
         # Set up the csv logging in the new thread

@@ -133,9 +133,9 @@ class Context:
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main thread. This is essentially the "brain" of the
-        air brakes system, where all the data is collected, processed, and logged, and the state
-        machine is updated.
+        Called every loop iteration from the main thread. This is essentially the "brain" of the air
+        brakes system, where all the data is collected, processed, and logged, and the state machine
+        is updated.
 
         This function retrieves the latest FIRM data packets, processes them, updates the state
         machine, generates data packets for logging, and logs all relevant data.

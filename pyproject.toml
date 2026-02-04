@@ -15,11 +15,8 @@ dependencies = [
     "mscl-rs==0.2.0",
     "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
-    "polars==1.36.1",
+    "polars==1.37.1",
     "polars-runtime-32",
-    # Need the below to get the servo to work. Make sure you are using the full Raspberry Pi OS
-    # 64 bit image and not the lite. You also need to add `dtparam=i2c_arm=on` in the /boot/firmware/config.txt
-    "rpi-gpio>=0.7.1",
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
@@ -30,9 +27,11 @@ dependencies = [
 # TODO: Remove this once polars has official wheels for python 3.14t
 [tool.uv.sources]
 polars-runtime-32 = [
-	{ url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.1-cp314-cp314t-manylinux_2_39_aarch64.whl", marker = "platform_machine == 'aarch64'" },
-	{ url = "https://github.com/harshil21/polars-runtime-32-ft/raw/refs/heads/main/wheels/polars_runtime_32-1.36.1-cp314-cp314t-manylinux_2_39_x86_64.whl", marker = "platform_machine == 'x86_64'" }
+    { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl", marker = "platform_machine == 'aarch64'" },
+    { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl", marker = "platform_machine == 'x86_64'" },
+    { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl", marker = "platform_machine == 'AMD64'" }
 ]
+
 [project.optional-dependencies]
 # Need to run `sudo apt install liblgpio-dev swig` to build and install everything encoder related.
 encoder = [
@@ -45,9 +44,9 @@ dev = [
     "pytest>=8.4.0",
     "pytest-cov",
     "ruff>=0.12.12",
-    "pre-commit",
     "pytest-benchmark>=5.1.0",
     "ty>=0.0.1a20",
+    "prek",
 ]
 
 profiling = [
