@@ -37,14 +37,14 @@ class State(ABC):
         Airbrakes program will end.
     """
 
-    __slots__ = ("context", "start_time_ns")
+    __slots__ = ("context", "start_time_seconds")
 
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
-        self.start_time_ns = context.data_processor.current_timestamp
+        self.start_time_seconds = context.data_processor.current_timestamp_seconds
 
     @property
     def name(self) -> str:
@@ -100,7 +100,7 @@ class MotorBurnState(State):
 
     def __init__(self, context: Context):
         super().__init__(context)
-        self.context.launch_time_ns = self.start_time_ns
+        self.context.launch_time_ns = self.start_time_seconds
 
     def update(self) -> None:
         """
@@ -202,7 +202,7 @@ class FreeFallState(State):
 
         # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
         # This is a fallback condition so that we won't be stuck in freefall state.
-        if data.current_timestamp - self.start_time_ns >= MAX_FREE_FALL_SECONDS:
+        if data.current_timestamp_seconds - self.start_time_seconds >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self) -> None:

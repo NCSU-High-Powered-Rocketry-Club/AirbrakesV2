@@ -142,13 +142,13 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, context):
         assert motor_burn_state.context == context
         assert issubclass(motor_burn_state.__class__, State)
-        assert motor_burn_state.start_time_ns == 0
+        assert motor_burn_state.start_time_seconds == 0
 
     def test_init_launch_time_set(self, motor_burn_state):
         ctx = motor_burn_state.context
         ctx.data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=1)
         m = MotorBurnState(ctx)
-        assert m.start_time_ns == 1
+        assert m.start_time_seconds == 1
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
@@ -371,7 +371,7 @@ class TestCoastState:
         assert not coast_state.context.data_processor._integrating_for_altitude
         assert (
             coast_state.context.data_processor._retraction_timestamp
-            == coast_state.context.data_processor.current_timestamp
+            == coast_state.context.data_processor.current_timestamp_seconds
         )
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
@@ -453,7 +453,7 @@ class TestFreeFallState:
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
         free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
-        free_fall_state.start_time_ns = 0
+        free_fall_state.start_time_seconds = 0
         free_fall_state.context.data_processor._last_data_packet = make_firm_data_packet(
             timestamp_seconds=time_length
         )
@@ -489,16 +489,13 @@ class TestLandedState:
         ls.update()
         assert context.logger.is_running
         assert context.firm.is_running
-        #assert context.imu._data_fetch_thread.is_alive()
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
-        #assert context.imu._data_fetch_thread.is_alive()
         ls.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
-        #assert not context.imu.requested_to_run
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert not context.logger.is_log_buffer_full
         assert len(context.logger._log_buffer) == 0

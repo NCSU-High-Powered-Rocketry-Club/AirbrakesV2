@@ -28,15 +28,13 @@ class ApogeePredictor:
 
     __slots__ = (
         "_apogee_predictor_packet_queue",
-        "_prediction_thread",
         "_firm_data_packet_queue",
+        "_prediction_thread",
     )
 
     def __init__(self) -> None:
         # Single input queue: main thread -> prediction thread
-        self._firm_data_packet_queue: queue.SimpleQueue[
-            FIRMDataPacket
-        ] = queue.SimpleQueue()
+        self._firm_data_packet_queue: queue.SimpleQueue[FIRMDataPacket] = queue.SimpleQueue()
 
         self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
             queue.SimpleQueue()
@@ -60,9 +58,9 @@ class ApogeePredictor:
     @property
     def firm_data_packet_queue_size(self) -> int:
         """
-        Gets the number of data packets in the processor data packet queue.
+        Gets the number of data packets in the FIRM data packet queue.
 
-        :return: The number of ProcessorDataPacket in the processor data packet queue.
+        :return: The number of FIRMDataPacket in the FIRM data packet queue.
         """
         return self._firm_data_packet_queue.qsize()
 
@@ -83,15 +81,15 @@ class ApogeePredictor:
         self._firm_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_thread.join()
 
-    def update(self, processor_data_packet: FIRMDataPacket) -> None:
+    def update(self, firm_data_packet: FIRMDataPacket) -> None:
         """
-        Updates the apogee predictor to include the most recent processor data packet.
+        Updates the apogee predictor to include the most recent FIRM data packet.
 
         This method should only be called during the coast phase of the rocket's flight.
 
-        :param processor_data_packet: The most recent ProcessorDataPacket.
+        :param firm_data_packet: The most recent FIRMDataPacket.
         """
-        self._firm_data_packet_queue.put(processor_data_packet)
+        self._firm_data_packet_queue.put(firm_data_packet)
 
     def get_prediction_data_packet(self) -> ApogeePredictorDataPacket | None:
         """
@@ -130,9 +128,7 @@ class ApogeePredictor:
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
-            firm_data_packets = get_all_packets_from_queue(
-                self._firm_data_packet_queue, block=True
-            )
+            firm_data_packets = get_all_packets_from_queue(self._firm_data_packet_queue, block=True)
 
             # If we got a stop signal in this batch, exit the loop
             if STOP_SIGNAL in firm_data_packets:
@@ -145,8 +141,8 @@ class ApogeePredictor:
 
             # Compute apogee given the latest state and history
             apogee = rocket.predict_apogee(
-                most_recent_packet.est_position_z_meters,   # temporary until firm calculates current values
-                most_recent_packet.est_velocity_z_meters_per_s, # temporary until firm calculates current values
+                most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
+                most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
                 ModelType.OneDOF,
                 OdeMethod.RK45,
                 adaptive_time_step,
@@ -157,7 +153,7 @@ class ApogeePredictor:
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(
                     apogee,
-                    most_recent_packet.est_position_z_meters,   # temporary until firm calculates current values
+                    most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
                     most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
                 )
             )

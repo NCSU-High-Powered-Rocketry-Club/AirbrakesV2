@@ -180,7 +180,8 @@ class FlightDisplay:
 
         time_since_launch = (
             convert_ns_to_s(
-                self._context.data_processor.current_timestamp - self._context.launch_time_ns
+                self._context.data_processor.current_timestamp_seconds
+                - self._context.launch_time_ns
             )
             if self._context.launch_time_ns
             else 0

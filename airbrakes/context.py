@@ -205,8 +205,6 @@ class Context:
 
         This should only be called in the coast state, before we start controlling the air brakes.
         """
-        # Because the DataProcessor only uses Estimated Data Packets to create Processor Data
-        # Packets, we only update the apogee predictor when Estimated Data Packets are ready.
         if self.firm_data_packets:
             # We pass in the most recent FIRM Data Packet to the apogee predictor
             self.apogee_predictor.update(self.firm_data_packets[-1])

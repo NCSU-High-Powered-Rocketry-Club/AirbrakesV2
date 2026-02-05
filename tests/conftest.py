@@ -251,9 +251,10 @@ class IdleFIRM(FIRM):
     Mocks a connected FIRM device that simply outputs no data.
     """
 
-    __slots__ = ("_running",)
+    __slots__ = ("_queue", "_running")
 
     def __init__(self):
+        self._queue = queue.SimpleQueue()
         self._running = False
 
     @property
@@ -267,4 +268,7 @@ class IdleFIRM(FIRM):
         self._running = False
 
     def get_data_packets(self) -> list[FIRMDataPacket]:
-        return []
+        packets = []
+        while not self._queue.empty():
+            packets.append(self._queue.get())
+        return packets

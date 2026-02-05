@@ -153,7 +153,7 @@ class TestDataProcessor:
         assert d.current_altitude == 0.0
         assert d.vertical_velocity == 0.0
         assert d.max_vertical_velocity == 0.0
-        assert d.current_timestamp == 0
+        assert d.current_timestamp_seconds == 0
         assert d.average_vertical_acceleration == 0.0
 
     @pytest.mark.parametrize(
@@ -365,7 +365,7 @@ class TestDataProcessor:
         assert d._initial_altitude is None
         assert d._max_altitude == 0.0
         assert d._last_data_packet is None
-        assert d.current_timestamp == 0
+        assert d.current_timestamp_seconds == 0
 
     @pytest.mark.parametrize(
         ("data_packets", "init_alt", "max_alt", "rotation_quat", "expected_longitudinal_axis"),
@@ -450,7 +450,7 @@ class TestDataProcessor:
         assert d._last_data_packet
         assert d._last_data_packet == data_packets[-1]
         assert len(d._data_packets) == len(data_packets)
-        assert d.current_timestamp == data_packets[-1].timestamp
+        assert d.current_timestamp_seconds == data_packets[-1].timestamp
 
         # the max() is there because if we only process one data packet, we just return early
         # and the variables set at __init__ are used:

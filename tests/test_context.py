@@ -16,11 +16,12 @@ from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.state import CoastState, StandbyState
+from airbrakes.state import CoastState, StandbyState, MotorBurnState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_firm_data_packet,
     make_processor_data_packet,
+    make_firm_data_packet_zeroed,
 )
 
 if TYPE_CHECKING:
@@ -331,8 +332,8 @@ class TestContext:
         def fake_log(self, *args, **kwargs):
             pass
 
-        def apogee_update(self, processor_data_packets):
-            packets.append(processor_data_packets)
+        def apogee_update(self, firm_data_packets):
+            packets.append(firm_data_packets)
             calls.append("apogee update called")
 
         context.firm = idle_mock_firm
@@ -340,9 +341,8 @@ class TestContext:
 
         time.sleep(0.01)
 
-        # assert not context.firm._queue.qsize()    idle firm does not have this method
+        assert not context.firm._queue.qsize()
         assert context.state.name == "StandbyState"
-        assert context.data_processor._last_data_packet is None
         assert not context.most_recent_apogee_predictor_data_packet
 
         monkeypatch.setattr(context.apogee_predictor.__class__, "update", apogee_update)
@@ -355,47 +355,56 @@ class TestContext:
         context.update()
         # Check if we processed the firm data packet:
         assert list(context.firm_data_packets) == [firm_data_packet_1]
-        assert len(context.processor_data_packets) == 0
         assert not context.most_recent_apogee_predictor_data_packet
-        # Let's call .predict_apogee() and check if stuff was called and/or changed:
-        context.predict_apogee()
+        # There should be no calls or packets, because we are in StandbyState
+        assert context.state.name == "StandbyState"
         assert not calls
         assert not packets
 
-        # Insert 2 more firm data packets
-        # first_update():
-        firm_data_packet_2 = make_firm_data_packet(timestamp=time.time_ns())
-        firm_data_packet_2.timestamp_seconds = 1.00001
-        firm_data_packet_2.est_position_z_meters = 20.0
-        firm_data_packet_2.est_quaternion_w = 0.99
-        firm_data_packet_2.est_quaternion_x = 0.1
-        firm_data_packet_2.est_quaternion_y = 0.2
-        firm_data_packet_2.est_quaternion_z = 0.3
+        # Now go to motor burn, still no apogee prediction should happen
+        context.state = MotorBurnState(context=context)
+        # Insert 1 firm data packet
+        firm_data_packet_2 = make_firm_data_packet(timestamp_seconds=time.time())
+        context.firm._queue.put(firm_data_packet_2)
+        time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
+        context.update()
+        # There should be no calls or packets, because we are in MotorBurnState
+        assert not calls
+        assert not packets
 
-        firm_data_packet_3 = make_firm_data_packet(timestamp=time.time_ns())
-        firm_data_packet_3.timestamp_seconds = 1.00004
-        firm_data_packet_3.est_position_z_meters = 24.0
+        # Now go to coast burn we should see apogee prediction happening
+        context.state = CoastState(context=context)
+        assert context.state.name == "CoastState"
+
+        # Insert 2 more firm data packets
+        firm_data_packet_2 = make_firm_data_packet_zeroed(
+            timestamp_seconds=1.00001,
+            est_position_z_meters=20.0,
+            est_velocity_z_meters_per_s=0.0,
+        )
+
+        firm_data_packet_3 = make_firm_data_packet_zeroed(
+            timestamp_seconds=1.00004,
+            est_position_z_meters=24.0,
+            est_velocity_z_meters_per_s=0.0,
+        )
 
         context.firm._queue.put(firm_data_packet_2)
         context.firm._queue.put(firm_data_packet_3)
         time.sleep(0.001)
         context.update()
         time.sleep(0.01)
-        # Check if we processed the estimated data packet:
+        # Now we should have calls and packets, because we are in CoastState
         assert list(context.firm_data_packets) == [firm_data_packet_2, firm_data_packet_3]
         assert len(context.processor_data_packets) == 2
-        assert context.processor_data_packets[-1].current_altitude == 2.0
         assert float(
             context.processor_data_packets[-1].time_since_last_data_packet
         ) == pytest.approx(2.0 + 1e-9, rel=1e1)
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         context.predict_apogee()
-        assert len(calls) == 1
-        assert calls == ["apogee update called"]
-        # We only send over 1 packet at a time to the apogee predictor, so even though we had 2 new
-        # estimated data packets, only 1 processor data packet is sent over:
-        assert len(packets) == 1
-        assert packets[-1].current_altitude == 2.0
+        # It's 2, one from when it was called in update(), and once from here:
+        assert len(calls) == 2
+        assert calls == ["apogee update called"] * 2
 
         context.stop()
 

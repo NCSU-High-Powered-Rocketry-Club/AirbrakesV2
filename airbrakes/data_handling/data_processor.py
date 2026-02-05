@@ -143,9 +143,9 @@ class DataProcessor:
         return 0.0
 
     @property
-    def current_timestamp(self) -> int:
+    def current_timestamp_seconds(self) -> int:
         """
-        The timestamp of the last data packet in nanoseconds.
+        The timestamp of the last data packet in seconds.
 
         :return: the current timestamp of the most recent FIRMDataPacket.
         """
@@ -226,7 +226,7 @@ class DataProcessor:
         to wait a little bit of time for the pressure to stabilize.
         """
         self._integrating_for_altitude = False
-        self._retraction_timestamp = self.current_timestamp
+        self._retraction_timestamp = self.current_timestamp_seconds
 
     def zero_out_altitude(self):
         """
@@ -306,7 +306,7 @@ class DataProcessor:
         # when the airbrakes are extended as the pressure gets fucky
         if self._integrating_for_altitude or (
             self._retraction_timestamp is not None
-            and convert_ns_to_s(self.current_timestamp - self._retraction_timestamp)
+            and convert_ns_to_s(self.current_timestamp_seconds - self._retraction_timestamp)
             < SECONDS_UNTIL_PRESSURE_STABILIZATION
         ):
             # Integrate the vertical velocities to get altitudes:
