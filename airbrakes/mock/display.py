@@ -51,7 +51,7 @@ class FlightDisplay:
         """
         Initializes the FlightDisplay object.
 
-        :param conetxt: The AirbrakesContext object.
+        :param context: The Context object.
         :param args: Command line arguments determining the program configuration.
         """
         init(autoreset=True)  # Automatically reset colors after each print

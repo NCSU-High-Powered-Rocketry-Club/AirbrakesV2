@@ -24,12 +24,12 @@ class MockFIRM(BaseFIRM):
     """
 
     __slots__ = (
+        "_data_fetch_thread",
         "_headers",
+        "_is_running",
         "_log_file_path",
         "_needed_fields",
         "_queued_packets",
-        "_data_fetch_thread",
-        "_running",
     )
 
     def __init__(
@@ -58,7 +58,7 @@ class MockFIRM(BaseFIRM):
             else:
                 self._log_file_path = Path("launch_data/shake_n_bake.csv")
 
-        self._log_file_path = typing.cast(Path, self._log_file_path)
+        self._log_file_path = self._log_file_path
 
         # Set up a queue and thread
         self._queued_packets: queue.SimpleQueue[FIRMDataPacket | str] = queue.SimpleQueue()
@@ -70,6 +70,8 @@ class MockFIRM(BaseFIRM):
             daemon=True,
         )
 
+        self._is_running = threading.Event()
+
         super().__init__()
 
     @property
@@ -77,7 +79,7 @@ class MockFIRM(BaseFIRM):
         """
         Returns True if the Mock FIRM thread is running and fetching data.
         """
-        return self._running.is_set()
+        return self._is_running.is_set()
 
     def start(self) -> None:
         """
@@ -92,7 +94,7 @@ class MockFIRM(BaseFIRM):
         Stops the Mock FIRM thread.
         """
         super().stop()
-        # The thread will exit its loop when self._running is cleared
+        # The thread will exit its loop when self._is_running is cleared
 
     def get_data_packets(self) -> list[FIRMDataPacket]:
         """
@@ -104,7 +106,7 @@ class MockFIRM(BaseFIRM):
 
             # If we hit the stop signal, ensure we mark ourselves as stopped
             if item == STOP_SIGNAL:
-                self._running.clear()
+                self._is_running.clear()
                 break
 
             packets.append(item)
@@ -147,7 +149,7 @@ class MockFIRM(BaseFIRM):
 
         # Iterate over every row
         for row in collected_data.iter_rows(named=True):
-            if not self._running.is_set():
+            if not self._is_running.is_set():
                 break
 
             loop_start_time = time.time()
@@ -190,12 +192,12 @@ class MockFIRM(BaseFIRM):
         """
         The main thread loop.
         """
-        self._running.set()
+        self._is_running.set()
 
         try:
             self._read_file(real_time_replay)
         except Exception as e:
             print(f"MockFIRM Error reading file: {e}")
         finally:
-            self._running.clear()
+            self._is_running.clear()
             self._queued_packets.put(STOP_SIGNAL)

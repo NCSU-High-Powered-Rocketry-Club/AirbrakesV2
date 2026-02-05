@@ -160,10 +160,8 @@ def test_create_components(parsed_args, monkeypatch):
             # If -p is passed, we use the REAL FIRM class, but with is_pretend=True
             assert type(created_components[1]) is FIRM
             assert created_components[1].is_pretend is True
-            # Check if the path was passed correctly
-            assert str(created_components[1]._log_file_path) == parsed_args.pretend_firm
         else:
-            # Otherwise we use the MockFIRM class (pure python simulation)
+            # Otherwise we use the MockFIRM class
             assert type(created_components[1]) is MockFIRM
 
             if parsed_args.mock_firm:

@@ -29,7 +29,7 @@ class FIRM(BaseFIRM):
         self.firm_client.start()
 
         if self.is_pretend:
-            self.firm_client.start_mock_log_stream(self._log_file_path)
+            self.firm_client.start_mock_log_stream(str(self._log_file_path))
         super().start()
 
     def stop(self) -> None:
