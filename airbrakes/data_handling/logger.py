@@ -31,7 +31,6 @@ if typing.TYPE_CHECKING:
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
@@ -128,7 +127,6 @@ class Logger:
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """
@@ -137,17 +135,13 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
-        :param processor_data_packets: The processor data packets to log. This is always the same
-        length as the number of EstimatedDataPackets present in the `firm_data_packets`.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         :return: A deque of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
         # zip the FIRM and Processor data packets together
-        for firm_data_packet, processor_data_packet in zip(
-            firm_data_packets, processor_data_packets
-        ):
+        for firm_data_packet in firm_data_packets:
             # Apogee Predictor fields default to none if no packet is provided
             predicted_apogee = None
             height_used_for_prediction = None
@@ -194,12 +188,6 @@ class Logger:
                 est_quaternion_x=firm_data_packet.est_quaternion_x,
                 est_quaternion_y=firm_data_packet.est_quaternion_y,
                 est_quaternion_z=firm_data_packet.est_quaternion_z,
-                # Processor Data Packet Fields
-                current_altitude=processor_data_packet.current_altitude,
-                velocity_magnitude=processor_data_packet.velocity_magnitude,
-                vertical_velocity=processor_data_packet.vertical_velocity,
-                vertical_acceleration=processor_data_packet.vertical_acceleration,
-                current_pitch_degrees=processor_data_packet.current_pitch_degrees,
                 # Apogee Predictor Data Packet Fields
                 predicted_apogee=predicted_apogee,
                 height_used_for_prediction=height_used_for_prediction,
@@ -239,7 +227,6 @@ class Logger:
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
         """
@@ -248,7 +235,6 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
-        :param processor_data_packets: The processor data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
         """
         # We are populating a list with the fields of the logger data packet
@@ -256,7 +242,6 @@ class Logger:
             context_data_packet,
             servo_data_packet,
             firm_data_packets,
-            processor_data_packets,
             apogee_predictor_data_packet,
         )
 

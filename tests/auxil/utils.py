@@ -8,7 +8,6 @@ from msgspec.structs import asdict
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
@@ -28,16 +27,6 @@ def make_firm_data_packet_zeroed(**kwargs) -> FIRMDataPacket:
     """
     dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 0.0)
     return FIRMDataPacket(**{**dummy_values, **kwargs})
-
-
-def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
-    """
-    Creates a ProcessorDataPacket with the specified keyword arguments.
-
-    Provides dummy values for arguments not specified.
-    """
-    dummy_values = dict.fromkeys(ProcessorDataPacket.__struct_fields__, 1.887766554)
-    return ProcessorDataPacket(**{**dummy_values, **kwargs})
 
 
 def make_context_data_packet(**kwargs) -> ContextDataPacket:

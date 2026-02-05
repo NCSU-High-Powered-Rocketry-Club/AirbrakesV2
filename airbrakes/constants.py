@@ -139,25 +139,6 @@ class DisplayEndingType(StrEnum):
     The display ends because the rocket took off, in a real launch.
     """
 
-
-# -------------------------------------------------------
-# Data Processor Configuration
-# -------------------------------------------------------
-
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
-"""
-The number of packets to use for zeroing the pressure altitude at the launch pad.
-This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
-altitude.
-"""
-
-SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
-"""
-After airbrakes retract, it takes some time for the pressure to stabilize.
-
-DataProcessor will wait this amount of time before switching back to using pressure altitude.
-"""
-
 # -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
@@ -221,12 +202,6 @@ FIRM_FREQUENCY = 100
 # Arbitrarily set values for transition between states:
 
 # ----------------- Standby to MotorBurn ----------------
-ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
-"""
-We integrate our acceleration to get velocity, but because FIRM has some noise, and other things like
-wind or being small bumps can cause this to accumulate even while the rocket is stationary, so we
-deadband the acceleration to zero to prevent this.
-"""
 
 
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10

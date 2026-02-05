@@ -50,20 +50,12 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_y: float | None = None
     est_quaternion_z: float | None = None
 
-    # Processor Data Packet Fields
-    current_altitude: float | None = None
-    velocity_magnitude: float | None = None
-    vertical_velocity: float | None = None
-    vertical_acceleration: float | None = None
-    current_pitch_degrees: float | None = None
-
     # Apogee Predictor Data Packet Fields
     # These fields are "str" because they were numpy.float64, which is converted to a string
     # when encoded in the logger. Encoding directly to string with 8 decimal places truncation.
     predicted_apogee: str | None = None
     height_used_for_prediction: str | None = None
     velocity_used_for_prediction: str | None = None
-    # pitch_used_for_prediction: str | None = None
 
     # Other fields in ContextDataPacket
     retrieved_firm_packets: int | None

@@ -187,10 +187,6 @@ class FlightDisplay:
             else 0
         )
 
-        # Assign the startup pitch value when it is available:
-        if not self._pitch_at_startup:
-            self._pitch_at_startup = data_processor.average_pitch
-
         # Prepare output
         output = [
             self._display_header,
@@ -213,7 +209,6 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Predicted apogee:                {G}{self._context.most_recent_apogee_predictor_data_packet.predicted_apogee if self._context.most_recent_apogee_predictor_data_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501

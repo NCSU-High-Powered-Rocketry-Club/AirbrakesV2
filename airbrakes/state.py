@@ -85,8 +85,6 @@ class StandbyState(State):
             self.next_state()
             return
 
-        self.context.data_processor.zero_out_altitude()
-
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
@@ -97,10 +95,6 @@ class MotorBurnState(State):
     """
 
     __slots__ = ()
-
-    def __init__(self, context: Context):
-        super().__init__(context)
-        self.context.launch_time_ns = self.start_time_seconds
 
     def update(self) -> None:
         """
@@ -159,7 +153,6 @@ class CoastState(State):
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
-            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
@@ -185,7 +178,6 @@ class FreeFallState(State):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.context.switch_altitude_back_to_pressure()
 
     def update(self) -> None:
         """

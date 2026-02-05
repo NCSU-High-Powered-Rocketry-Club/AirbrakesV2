@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
-    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 class Context:
@@ -43,7 +42,6 @@ class Context:
         "launch_time_ns",
         "logger",
         "most_recent_apogee_predictor_data_packet",
-        "processor_data_packets",
         "servo",
         "servo_data_packet",
         "shutdown_requested",
@@ -84,7 +82,6 @@ class Context:
 
         self.shutdown_requested = False
         self.firm_data_packets: list[FIRMDataPacket] = []
-        self.processor_data_packets: list[ProcessorDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
@@ -149,12 +146,6 @@ class Context:
         # Update the data processor with the new data packets.
         self.data_processor.update(self.firm_data_packets)
 
-        # Get the Processor Data Packets from the data processor, this will have the same length
-        # as the number of EstimatedDataPackets in data_packets because a processor data packet is
-        # created for each estimated data packet.
-        if self.firm_data_packets:
-            self.processor_data_packets = self.data_processor.get_processor_data_packets()
-
         # Gets the most recent Apogee Predictor Data Packets, this will only have new data if we are
         # in coast and have called predict_apogee(), and the apogee predictor has had time to
         # process the data and predict the apogee.
@@ -173,7 +164,6 @@ class Context:
             self.context_data_packet,
             self.servo_data_packet,
             self.firm_data_packets,
-            self.processor_data_packets,
             self.most_recent_apogee_predictor_data_packet,
         )
 
@@ -181,7 +171,6 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
-        self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
@@ -189,15 +178,6 @@ class Context:
         Retracts the air brakes to the minimum extension.
         """
         self.servo.set_retracted()
-
-    def switch_altitude_back_to_pressure(self) -> None:
-        """
-        Switches the altitude back to pressure, after airbrakes have been retracted.
-        """
-        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
-        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
-        # want this to be called every time.
-        self.data_processor.prepare_for_retracting_airbrakes()
 
     def predict_apogee(self) -> None:
         """

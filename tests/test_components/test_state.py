@@ -351,8 +351,6 @@ class TestCoastState:
                 predicted_apogee=1100.0,
             )
         )
-        # If the airbrakes have been extended, it means we've been integrating for altitude
-        coast_state.context.data_processor._integrating_for_altitude = True
 
         coast_state.update()
         assert coast_state.airbrakes_extended
@@ -368,11 +366,6 @@ class TestCoastState:
 
         coast_state.update()
         assert not coast_state.airbrakes_extended
-        assert not coast_state.context.data_processor._integrating_for_altitude
-        assert (
-            coast_state.context.data_processor._retraction_timestamp
-            == coast_state.context.data_processor.current_timestamp_seconds
-        )
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
@@ -452,7 +445,7 @@ class TestFreeFallState:
         time_length,
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
-        free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
+        free_fall_state.context.data_processor._vertical_accelerations = [vertical_accel]
         free_fall_state.start_time_seconds = 0
         free_fall_state.context.data_processor._last_data_packet = make_firm_data_packet(
             timestamp_seconds=time_length

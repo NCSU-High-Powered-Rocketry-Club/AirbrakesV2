@@ -20,7 +20,6 @@ from airbrakes.state import CoastState, StandbyState, MotorBurnState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_firm_data_packet,
-    make_processor_data_packet,
     make_firm_data_packet_zeroed,
 )
 
@@ -132,8 +131,7 @@ class TestContext:
             # get_processed_data() to work correctly
             self._current_altitudes = [0.0] * len(firm_data_packets)
             self._vertical_velocities = [0.0] * len(firm_data_packets)
-            self._rotated_accelerations = [0.0] * len(firm_data_packets)
-            self._time_differences = [0.0] * len(firm_data_packets)
+            self._vertical_accelerations = [0.0] * len(firm_data_packets)
 
         def state(self):
             # monkeypatched method of State
@@ -142,7 +140,7 @@ class TestContext:
                 self.context.predict_apogee()
                 self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
-        def log(self, ctx_dp, servo_dp, firm_data_packets, processor_data_packets, apg_dps):
+        def log(self, ctx_dp, servo_dp, firm_data_packets, apg_dps):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(firm_data_packets) > 10)
@@ -155,7 +153,6 @@ class TestContext:
             asserts.append(
                 firm_data_packets[0].timestamp_seconds == pytest.approx(time.time(), rel=1e9)
             )
-            asserts.append(processor_data_packets[0].current_altitude == 0.0)
             asserts.append(apg_dps is not None)
             asserts.append(apg_dps == make_apogee_predictor_data_packet())
             # More testing of whether we got ApogeePredictorDataPackets is done in
@@ -163,7 +160,7 @@ class TestContext:
             # here is because state.update() is called before apogee_predictor.update(), so the
             # packets aren't sent to the apogee predictor for prediction.
 
-        def apogee_update(self, processor_data_packets):
+        def apogee_update(self, firm_data_packets):
             calls.append("apogee update called")
 
         def get_prediction_data_packet(self):
@@ -396,10 +393,7 @@ class TestContext:
         time.sleep(0.01)
         # Now we should have calls and packets, because we are in CoastState
         assert list(context.firm_data_packets) == [firm_data_packet_2, firm_data_packet_3]
-        assert len(context.processor_data_packets) == 2
-        assert float(
-            context.processor_data_packets[-1].time_since_last_data_packet
-        ) == pytest.approx(2.0 + 1e-9, rel=1e1)
+
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         context.predict_apogee()
         # It's 2, one from when it was called in update(), and once from here:
@@ -419,10 +413,8 @@ class TestContext:
 
         context.start(wait_for_start=True)
         time.sleep(0.1)
-        # Need to have at least 1 processor packet, which means 1 firm data packet or else apogee
-        # predictor won't run
+
         context.firm_data_packets = [make_firm_data_packet()]
-        context.processor_data_packets = [make_processor_data_packet()]
 
         # Now we will have enough packets to run the apogee predictor:
         context.predict_apogee()
@@ -475,16 +467,3 @@ class TestContext:
         time.sleep(0.05)  # Sleep a bit so that the FIRM queue is being filled
         benchmark(context.update)
         ab.stop()
-
-    def test_switch_altitude_back_to_pressure(self, context):
-        """
-        Tests whether the switch_altitude_back_to_pressure method works correctly.
-        """
-        # When this method is called, we know it's been integrating for altitude
-        context.data_processor._integrating_for_altitude = True
-
-        assert context.data_processor._integrating_for_altitude
-        assert context.data_processor._retraction_timestamp is None
-        context.switch_altitude_back_to_pressure()
-        assert not context.data_processor._integrating_for_altitude
-        assert context.data_processor._retraction_timestamp is not None
