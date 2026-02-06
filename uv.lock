@@ -30,9 +30,9 @@ dependencies = [
     { name = "numpy-quaternion" },
     { name = "polars" },
     { name = "polars-runtime-32", version = "1.37.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
-    { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
     { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
     { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl" }, marker = "platform_machine == 'AMD64'" },
+    { name = "polars-runtime-32", version = "1.37.1", source = { path = "polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_39_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
     { name = "rpi-hardware-pwm" },
     { name = "scipy" },
     { name = "textual" },
@@ -73,7 +73,7 @@ requires-dist = [
     { name = "polars", specifier = "==1.37.1" },
     { name = "polars-runtime-32", marker = "platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
     { name = "polars-runtime-32", marker = "platform_machine == 'AMD64'", url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl" },
-    { name = "polars-runtime-32", marker = "platform_machine == 'aarch64'", url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl" },
+    { name = "polars-runtime-32", marker = "platform_machine == 'aarch64'", path = "polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_39_aarch64.whl" },
     { name = "polars-runtime-32", marker = "platform_machine == 'x86_64'", url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl" },
     { name = "rpi-hardware-pwm", specifier = ">=0.3.0" },
     { name = "scipy" },
@@ -424,9 +424,9 @@ version = "1.37.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars-runtime-32", version = "1.37.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
-    { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
     { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl" }, marker = "platform_machine == 'x86_64'" },
     { name = "polars-runtime-32", version = "1.37.1", source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl" }, marker = "platform_machine == 'AMD64'" },
+    { name = "polars-runtime-32", version = "1.37.1", source = { path = "polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_39_aarch64.whl" }, marker = "platform_machine == 'aarch64'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/84/ae/dfebf31b9988c20998140b54d5b521f64ce08879f2c13d9b4d44d7c87e32/polars-1.37.1.tar.gz", hash = "sha256:0309e2a4633e712513401964b4d95452f124ceabf7aec6db50affb9ced4a274e", size = 715572, upload-time = "2026-01-12T23:27:03.267Z" }
 wheels = [
@@ -457,19 +457,6 @@ wheels = [
 [[package]]
 name = "polars-runtime-32"
 version = "1.37.1"
-source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl" }
-resolution-markers = [
-    "platform_machine == 'aarch64' and sys_platform == 'win32'",
-    "platform_machine == 'aarch64' and sys_platform == 'emscripten'",
-    "platform_machine == 'aarch64' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-]
-wheels = [
-    { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:b103555af171b1c4ae67c14f5913d5de25684857bc4644b666c1d575b0230f1f" },
-]
-
-[[package]]
-name = "polars-runtime-32"
-version = "1.37.1"
 source = { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl" }
 resolution-markers = [
     "platform_machine == 'x86_64' and sys_platform == 'win32'",
@@ -491,6 +478,19 @@ resolution-markers = [
 ]
 wheels = [
     { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl", hash = "sha256:ec622e31312016e25b3e07f150dfc3cce7b1b5d0512a87fbb887fa7d510cd627" },
+]
+
+[[package]]
+name = "polars-runtime-32"
+version = "1.37.1"
+source = { path = "polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_39_aarch64.whl" }
+resolution-markers = [
+    "platform_machine == 'aarch64' and sys_platform == 'win32'",
+    "platform_machine == 'aarch64' and sys_platform == 'emscripten'",
+    "platform_machine == 'aarch64' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+wheels = [
+    { filename = "polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_39_aarch64.whl", hash = "sha256:05db6ed933d86d440ae2695f3ef241bee9994fd8bb1a9f9e23c51472c6de759e" },
 ]
 
 [[package]]

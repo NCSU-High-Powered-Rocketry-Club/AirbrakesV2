@@ -50,4 +50,4 @@ class FIRM(BaseFIRM):
             return []
 
         # Otherwise we just return the data packets like normal
-        return self.firm_client.get_data_packets()
+        return self.firm_client.get_data_packets(block=True)
