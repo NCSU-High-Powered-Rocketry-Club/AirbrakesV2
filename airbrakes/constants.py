@@ -187,7 +187,7 @@ Once the state changes, this buffer will be logged to make sure we don't lose da
 # FIRM Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "COM12"
+FIRM_PORT = "/dev/ttyACM0"
 
 FIRM_BAUD_RATE = 2_000_000
 
@@ -269,7 +269,7 @@ ROCKET_DRY_MASS_KG: float = 4.937
 The mass of the entire rocket without propellant in kilograms.
 """
 
-ROCKET_CD: float = 0.45
+ROCKET_CD: float = 0.6
 """
 The drag coefficient of the rocket with airbrakes all the way retracted.
 """

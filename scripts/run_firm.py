@@ -2,7 +2,7 @@ from firm_client import FIRMClient
 
 
 def main() -> None:
-    port = "COM12"  # Update as needed (e.g., "COM8" or "/dev/ttyACM0")
+    port = "/dev/ttyACM0"  # Update as needed (e.g., "COM8" or "/dev/ttyACM0")
     baud_rate = 2_000_000
 
     initial_dt = 0
