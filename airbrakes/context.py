@@ -39,7 +39,7 @@ class Context:
         "data_processor",
         "firm",
         "firm_data_packets",
-        "launch_time_ns",
+        "launch_time_seconds",
         "logger",
         "most_recent_apogee_predictor_data_packet",
         "servo",
@@ -87,7 +87,7 @@ class Context:
         self.servo_data_packet: ServoDataPacket | None = None
 
         # Keeps track of the launch time, used for calculating convergence time
-        self.launch_time_ns: int = 0
+        self.launch_time_seconds: float = 0
 
     def start(self, wait_for_start: bool = False) -> None:
         """

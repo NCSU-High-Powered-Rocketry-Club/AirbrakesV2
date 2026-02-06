@@ -71,8 +71,8 @@ class FlightDisplay:
         self.end_mock_interrupted = threading.Event()
 
         try:
-            # Try to get the launch file name (only available in MockIMU or SimIMU)
-            self._launch_file = self._context.imu._log_file_path.name
+            # Try to get the launch file name (only available in MockFIRM)
+            self._launch_file = self._context.firm._log_file_path.name
         except AttributeError:  # If it failed, that means we are running a real flight!
             self._launch_file = "N/A"
 
@@ -178,12 +178,7 @@ class FlightDisplay:
 
         data_processor = self._context.data_processor
 
-        time_since_launch = (
-            convert_ns_to_s(
-                self._context.data_processor.current_timestamp_seconds
-                - self._context.launch_time_ns
-            )
-            if self._context.launch_time_ns
+        time_since_launch = (self._context.data_processor.current_timestamp_seconds - self._context.launch_time_seconds if self._context.launch_time_seconds
             else 0
         )
 

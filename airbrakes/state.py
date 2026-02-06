@@ -96,6 +96,10 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
+    def __init__(self, context: Context) -> None:
+        super().__init__(context)
+        self.context.launch_time_seconds = context.data_processor.current_timestamp_seconds
+
     def update(self) -> None:
         """
         Checks to see if the velocity has decreased lower than the maximum velocity, indicating the
