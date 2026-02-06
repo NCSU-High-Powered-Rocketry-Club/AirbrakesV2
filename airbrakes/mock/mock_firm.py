@@ -141,11 +141,16 @@ class MockFIRM(BaseFIRM):
         try:
             # Collect the dataframe
             collected_data: pl.DataFrame = self._scan_csv().collect()
+            # TODO: delete this once firm fixes this mock bug
+            collected_data = collected_data.slice(1)
         except Exception:
             # If file is empty or missing, just return
             return
 
         prev_timestamp = None
+
+        cumulative_time = 0
+        mock_start_time = time.time()
 
         # Iterate over every row
         for row in collected_data.iter_rows(named=True):
@@ -169,22 +174,21 @@ class MockFIRM(BaseFIRM):
             if real_time_replay:
                 current_timestamp = getattr(packet, "timestamp_seconds", None)
 
-                # We can only sleep if we have a current and previous timestamp
-                if current_timestamp is not None and prev_timestamp is not None:
-                    # Calculate gap in the recording
-                    delta_log = current_timestamp - prev_timestamp
+                if prev_timestamp is None:
+                    prev_timestamp = current_timestamp
+                    continue
 
-                    # Calculate how long we took to process this loop
-                    delta_proc = time.time() - loop_start_time
+                # Calculate gap in the recording
+                delta_log = current_timestamp - prev_timestamp
+                cumulative_time += delta_log
 
-                    # Sleep the difference
+                # Calculate how long we took to process this loop
+                delta_proc = time.time() - loop_start_time
+
+                # Sleep the difference if we're not already behind
+                if time.time() - mock_start_time < cumulative_time:
                     sleep_time = max(0.0, delta_log - delta_proc)
                     time.sleep(sleep_time)
-
-                # If we don't have timestamps, but requested real_time,
-                # we assume a default rate (e.g. 50Hz -> 0.02s)
-                elif current_timestamp is None:
-                    time.sleep(0.02)
 
                 prev_timestamp = current_timestamp
 

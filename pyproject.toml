@@ -46,6 +46,8 @@ dev = [
     "pytest-benchmark>=5.1.0",
     "ty>=0.0.1a20",
     "prek",
+    "pandas",
+    "plotly",
 ]
 
 profiling = [
