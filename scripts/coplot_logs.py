@@ -4,23 +4,24 @@ coplot_two_logs.py
 
 Interactive Plotly coplotter for two FIRM CSV log formats, aligned by start of motor burn state.
 
-It plots (from both logs, if present):
-  - vertical position (old: est_position_z_meters, new: current_altitude)
-  - vertical velocity (old: est_velocity_z_meters_per_s, new: vertical_velocity)
+Plots (from both logs):
+  - vertical position (firm: est_position_z_meters, imu: current_altitude)
+  - vertical velocity (firm: est_velocity_z_meters_per_s, imu: vertical_velocity)
+  - vertical acceleration (firm: est_acceleration_z_gs -> m/s^2, imu: vertical_acceleration)
   - predicted apogee (predicted_apogee)
 
 Alignment:
   - Finds the first row where state_letter == --motor-state in each file and sets that as t=0.
-  - If the motor state is not found, falls back to the first state change, then to first timestamp.
+  - If motor state not found, falls back to first state change, then to first timestamp.
 
-New-format "estimated packets":
-  - Keeps only rows where at least one of (current_altitude, vertical_velocity, predicted_apogee)
-    is present (non-empty / non-NaN).
+imu-format "estimated packets":
+  - Keeps rows where at least one of (current_altitude, vertical_velocity, vertical_acceleration, predicted_apogee)
+    is present.
 
-Usage:
-  python coplot_two_logs.py old.csv new.csv --motor-state M
-  python coplot_two_logs.py old.csv new.csv --motor-state B --out out.html
-  python coplot_two_logs.py old.csv new.csv --no-state-shading
+Fixes for "values exist but not plotted":
+  - Sort by time
+  - connectgaps=True to avoid line breaks from occasional NaNs
+  - Optionally collapse duplicate timestamps (median)
 """
 
 from __future__ import annotations
@@ -34,6 +35,8 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
+G0 = 9.80665  # m/s^2 per g
+
 STATE_COLORS = {
     "S": "rgba(0, 102, 204, 0.15)",
     "M": "rgba(0, 153, 0, 0.15)",
@@ -44,6 +47,7 @@ STATE_COLORS = {
 
 
 def _to_float_series(s: pd.Series) -> pd.Series:
+    # Handles blanks/strings safely
     return pd.to_numeric(s, errors="coerce")
 
 
@@ -63,7 +67,7 @@ def find_motor_burn_start_time(
       1) first state change from the initial state
       2) first timestamp
     """
-    if time_col not in df.columns:
+    if time_col not in df.columns or df.empty:
         return None
 
     t = _to_float_series(df[time_col])
@@ -110,7 +114,36 @@ def add_state_regions(fig: go.Figure, df: pd.DataFrame, time_col: str = "t") -> 
         )
 
 
-def load_old_format(path: Path, motor_state: str) -> pd.DataFrame:
+def _sort_and_dedupe(df: pd.DataFrame, time_col: str = "t") -> pd.DataFrame:
+    """Sort by time and collapse duplicate timestamps (median) to keep lines continuous."""
+    if df.empty or time_col not in df.columns:
+        return df
+
+    df = df.sort_values(time_col).reset_index(drop=True)
+
+    # If there are duplicate timestamps, collapse them to one row per t
+    if df[time_col].duplicated().any():
+        # Aggregate numeric columns by median; keep first state_letter in that bin
+        agg = {}
+        for c in df.columns:
+            if c == "state_letter":
+                agg[c] = "first"
+            elif c == time_col:
+                continue
+            else:
+                # median for numeric, otherwise first
+                agg[c] = "median"
+        df = (
+            df.groupby(time_col, as_index=False)
+              .agg(agg)
+              .sort_values(time_col)
+              .reset_index(drop=True)
+        )
+
+    return df
+
+
+def load_firm_format(path: Path, motor_state: str) -> pd.DataFrame:
     df = pd.read_csv(path)
 
     if "timestamp_seconds" not in df.columns:
@@ -123,26 +156,22 @@ def load_old_format(path: Path, motor_state: str) -> pd.DataFrame:
     df = df.copy()
     df["t"] = _to_float_series(df["timestamp_seconds"]) - float(t0)
 
-    # Normalize columns to common names (alt/vel/apogee)
-    if "est_position_z_meters" in df.columns:
-        df["alt"] = _to_float_series(df["est_position_z_meters"])
-    else:
-        df["alt"] = np.nan
+    # Normalize columns
+    df["alt"] = _to_float_series(df["est_position_z_meters"]) if "est_position_z_meters" in df.columns else np.nan
+    df["vel"] = _to_float_series(df["est_velocity_z_meters_per_s"]) if "est_velocity_z_meters_per_s" in df.columns else np.nan
+    df["apogee"] = _to_float_series(df["predicted_apogee"]) if "predicted_apogee" in df.columns else np.nan
 
-    if "est_velocity_z_meters_per_s" in df.columns:
-        df["vel"] = _to_float_series(df["est_velocity_z_meters_per_s"])
+    # Vertical acceleration: convert g -> m/s^2 for comparability
+    if "est_acceleration_z_gs" in df.columns:
+        df["acc"] = _to_float_series(df["est_acceleration_z_gs"]) * G0
     else:
-        df["vel"] = np.nan
+        df["acc"] = np.nan
 
-    if "predicted_apogee" in df.columns:
-        df["apogee"] = _to_float_series(df["predicted_apogee"])
-    else:
-        df["apogee"] = np.nan
-
+    df = _sort_and_dedupe(df, "t")
     return df
 
 
-def load_new_format(path: Path, motor_state: str) -> pd.DataFrame:
+def load_imu_format(path: Path, motor_state: str) -> pd.DataFrame:
     df = pd.read_csv(path)
 
     if "timestamp" not in df.columns:
@@ -150,12 +179,14 @@ def load_new_format(path: Path, motor_state: str) -> pd.DataFrame:
 
     df = df.copy()
 
-    # Keep only "estimated-ish" packets: rows with at least one key estimated field present
+    # Build candidate estimated-series fields
     alt = _to_float_series(df["current_altitude"]) if "current_altitude" in df.columns else pd.Series(np.nan, index=df.index)
     vel = _to_float_series(df["vertical_velocity"]) if "vertical_velocity" in df.columns else pd.Series(np.nan, index=df.index)
+    acc = _to_float_series(df["vertical_acceleration"]) if "vertical_acceleration" in df.columns else pd.Series(np.nan, index=df.index)
     apo = _to_float_series(df["predicted_apogee"]) if "predicted_apogee" in df.columns else pd.Series(np.nan, index=df.index)
 
-    keep = alt.notna() | vel.notna() | apo.notna()
+    # Keep only rows that look like "estimated packets"
+    keep = alt.notna() | vel.notna() | acc.notna() | apo.notna()
     df = df.loc[keep].copy()
 
     if df.empty:
@@ -168,18 +199,20 @@ def load_new_format(path: Path, motor_state: str) -> pd.DataFrame:
     ts_ns = _to_int_series(df["timestamp"]).astype("float64")
     df["t"] = (ts_ns - float(t0_ns)) / 1e9
 
-    # Normalize columns to common names (alt/vel/apogee)
+    # Normalize columns
     df["alt"] = _to_float_series(df["current_altitude"]) if "current_altitude" in df.columns else np.nan
     df["vel"] = _to_float_series(df["vertical_velocity"]) if "vertical_velocity" in df.columns else np.nan
+    df["acc"] = _to_float_series(df["vertical_acceleration"]) if "vertical_acceleration" in df.columns else np.nan
     df["apogee"] = _to_float_series(df["predicted_apogee"]) if "predicted_apogee" in df.columns else np.nan
 
+    df = _sort_and_dedupe(df, "t")
     return df
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("old_csv", type=Path, help="Old-format log CSV")
-    ap.add_argument("new_csv", type=Path, help="New-format log CSV")
+    ap.add_argument("firm_csv", type=Path, help="firm-format log CSV")
+    ap.add_argument("imu_csv", type=Path, help="imu-format log CSV")
     ap.add_argument(
         "--motor-state",
         default="M",
@@ -198,77 +231,50 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    if not args.old_csv.exists():
-        raise SystemExit(f"File not found: {args.old_csv}")
-    if not args.new_csv.exists():
-        raise SystemExit(f"File not found: {args.new_csv}")
+    if not args.firm_csv.exists():
+        raise SystemExit(f"File not found: {args.firm_csv}")
+    if not args.imu_csv.exists():
+        raise SystemExit(f"File not found: {args.imu_csv}")
 
-    df_old = load_old_format(args.old_csv, args.motor_state)
-    df_new = load_new_format(args.new_csv, args.motor_state)
+    df_firm = load_firm_format(args.firm_csv, args.motor_state)
+    df_imu = load_imu_format(args.imu_csv, args.motor_state)
 
     fig = go.Figure()
 
+    def add_line(x, y, name):
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                mode="lines",
+                name=name,
+                connectgaps=True,  # key fix for coast-phase visual gaps
+            )
+        )
+
     # Altitude
-    fig.add_trace(
-        go.Scatter(
-            x=df_old["t"],
-            y=df_old["alt"],
-            mode="lines",
-            name=f"Old: altitude (est_position_z_meters)",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=df_new["t"],
-            y=df_new["alt"],
-            mode="lines",
-            name=f"New: altitude (current_altitude)",
-        )
-    )
+    add_line(df_firm["t"], df_firm["alt"], "firm: altitude (est_position_z_meters)")
+    add_line(df_imu["t"], df_imu["alt"], "imu: altitude (current_altitude)")
 
     # Vertical velocity
-    fig.add_trace(
-        go.Scatter(
-            x=df_old["t"],
-            y=df_old["vel"],
-            mode="lines",
-            name=f"Old: vertical velocity (est_velocity_z_meters_per_s)",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=df_new["t"],
-            y=df_new["vel"],
-            mode="lines",
-            name=f"New: vertical velocity (vertical_velocity)",
-        )
-    )
+    add_line(df_firm["t"], df_firm["vel"], "firm: vertical velocity (est_velocity_z_meters_per_s)")
+    add_line(df_imu["t"], df_imu["vel"], "imu: vertical velocity (vertical_velocity)")
+
+    # Vertical acceleration
+    add_line(df_firm["t"], df_firm["acc"], "firm: vertical acceleration (est_acceleration_z_gs → m/s²)")
+    add_line(df_imu["t"], df_imu["acc"], "imu: vertical acceleration (vertical_acceleration, m/s²)")
 
     # Predicted apogee
-    fig.add_trace(
-        go.Scatter(
-            x=df_old["t"],
-            y=df_old["apogee"],
-            mode="lines",
-            name=f"Old: predicted apogee",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=df_new["t"],
-            y=df_new["apogee"],
-            mode="lines",
-            name=f"New: predicted apogee",
-        )
-    )
+    add_line(df_firm["t"], df_firm["apogee"], "firm: predicted apogee")
+    add_line(df_imu["t"], df_imu["apogee"], "imu: predicted apogee")
 
-    # State shading (do both; old and new may differ)
+    # Optional state shading (both logs)
     if not args.no_state_shading:
-        add_state_regions(fig, df_old, time_col="t")
-        add_state_regions(fig, df_new, time_col="t")
+        add_state_regions(fig, df_firm, time_col="t")
+        add_state_regions(fig, df_imu, time_col="t")
 
     fig.update_layout(
-        title=f"Coplots aligned to motor burn start (t=0)<br><sup>{args.old_csv.name} vs {args.new_csv.name}</sup>",
+        title=f"Coplots aligned to motor burn start (t=0)<br><sup>{args.firm_csv.name} vs {args.imu_csv.name}</sup>",
         xaxis_title="Time since motor burn start (s)",
         yaxis_title="Value",
         hovermode="x unified",
