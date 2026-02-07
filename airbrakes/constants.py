@@ -312,12 +312,12 @@ The target apogee in meters that we want the rocket to reach.
 This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 4.937
+ROCKET_DRY_MASS_KG: float = 4.770
 """
 The mass of the entire rocket without propellant in kilograms.
 """
 
-ROCKET_CD: float = 0.45
+ROCKET_CD: float = 0.55
 """
 The drag coefficient of the rocket with airbrakes all the way retracted.
 """
