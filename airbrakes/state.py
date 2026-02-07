@@ -10,11 +10,9 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_APOGEE_METERS,
 )
-from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.context import Context
@@ -37,14 +35,14 @@ class State(ABC):
         Airbrakes program will end.
     """
 
-    __slots__ = ("context", "start_time_ns")
+    __slots__ = ("context", "start_time_seconds")
 
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
-        self.start_time_ns = context.data_processor.current_timestamp
+        self.start_time_seconds = context.data_processor.current_timestamp_seconds
 
     @property
     def name(self) -> str:
@@ -85,8 +83,6 @@ class StandbyState(State):
             self.next_state()
             return
 
-        self.context.data_processor.zero_out_altitude()
-
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
@@ -98,9 +94,9 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.context.launch_time_ns = self.start_time_ns
+        self.context.launch_time_seconds = context.data_processor.current_timestamp_seconds
 
     def update(self) -> None:
         """
@@ -111,9 +107,7 @@ class MotorBurnState(State):
 
         # If our current velocity is less than our max velocity, that means we have stopped
         # accelerating. This is the same thing as checking if our accel sign has flipped
-        # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
-        # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if data.vertical_velocity < data.max_vertical_velocity:
             self.next_state()
             return
 
@@ -159,7 +153,6 @@ class CoastState(State):
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
-            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
@@ -185,7 +178,6 @@ class FreeFallState(State):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.context.switch_altitude_back_to_pressure()
 
     def update(self) -> None:
         """
@@ -202,7 +194,7 @@ class FreeFallState(State):
 
         # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
         # This is a fallback condition so that we won't be stuck in freefall state.
-        if convert_ns_to_s(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
+        if data.current_timestamp_seconds - self.start_time_seconds >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self) -> None:
