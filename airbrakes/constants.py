@@ -305,19 +305,19 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 518.16  # 518.16 meters is 1700 feet
+TARGET_APOGEE_METERS = 487.68  # 1600 ft
 """
 The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 4.937
+ROCKET_DRY_MASS_KG: float = 4.770
 """
 The mass of the entire rocket without propellant in kilograms.
 """
 
-ROCKET_CD: float = 0.45
+ROCKET_CD: float = 0.55
 """
 The drag coefficient of the rocket with airbrakes all the way retracted.
 """
