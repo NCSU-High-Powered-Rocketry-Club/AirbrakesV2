@@ -8,7 +8,6 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
 from airbrakes.context import Context
@@ -162,18 +161,12 @@ class TestMotorBurnState:
         [
             (0.0, 0.0, MotorBurnState),
             (100.0, 100.0, MotorBurnState),
-            (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
-            (
-                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
-                54.0,
-                CoastState,
-            ),  # tests that the threshold works
+            (53.9, 54.0, CoastState),
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
-            "decreasing_velocity_under_threshold",
-            "decreasing_velocity_over_threshold",
+            "change_to_coast",
         ],
     )
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):

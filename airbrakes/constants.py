@@ -187,7 +187,7 @@ Once the state changes, this buffer will be logged to make sure we don't lose da
 # FIRM Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "/dev/ttyACM0"
+FIRM_PORT = "COM12" #"/dev/ttyACM0"
 
 FIRM_BAUD_RATE = 2_000_000
 
@@ -208,16 +208,6 @@ TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
 """
 The velocity in meters per second that the rocket must reach before we consider it to have taken
 off.
-"""
-
-# ---------------- MotorBurn to Coasting ----------------
-MAX_VELOCITY_THRESHOLD = 0.96
-"""
-Because the acceleration noise right after the motor burn is very noisy, we will only say that the
-motor has stopped burning if the current velocity is less than a percentage of the max velocity.
-
-This helps us predict apogee sooner, because the data used at the beginning of coast phase will be
-less noisy.
 """
 
 # ----------------- Coasting to Freefall -----------------

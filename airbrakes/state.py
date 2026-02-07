@@ -10,11 +10,9 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_APOGEE_METERS,
 )
-from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.context import Context
@@ -109,9 +107,7 @@ class MotorBurnState(State):
 
         # If our current velocity is less than our max velocity, that means we have stopped
         # accelerating. This is the same thing as checking if our accel sign has flipped
-        # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
-        # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if data.vertical_velocity < data.max_vertical_velocity:
             self.next_state()
             return
 
