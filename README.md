@@ -1,4 +1,21 @@
-# AirbrakesV2 🚀
+<div align="center">
+<h1 align="center">AirbrakesV2 🚀</h1>
+<p align="center">
+
+![airbrakes](https://github.com/user-attachments/assets/d9818acc-3099-4c42-96bb-6189898dd92f)
+
+<b> _Airbrakes deploying on Pelicanator Launch 3_ </b>
+
+</p>
+
+
+<video src="https://github.com/user-attachments/assets/19442628-268c-4f7e-b52c-8c47f2a7a4e6" autoplay controls type="video/mp4"></video>
+
+<video src="https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa" autoplay controls type="video/mp4"></video>
+
+<b> _A video of our airbrakes extending and retracting_ </b>
+
+</div>
 
 # Table of Contents
 
@@ -15,7 +32,8 @@
 - [Advanced Local Usage](#advanced-local-usage)
   - [Running Mock Launches](#running-mock-launches)
   - [Running Tests](#running-tests)
-  - [Running the Linter](#running-the-linter)
+  - [Running the Linter](#running-the-linter-and-formatter)
+  - [Using the terminal UI](#using-the-terminal-ui)
 - [Pi Usage](#pi-usage)
   - [Connecting to the Pi (SSH)](#connecting-to-the-pi-ssh)
   - [Run a real flight with real hardware](#run-a-real-flight-with-real-hardware)
@@ -27,13 +45,6 @@
 ## Overview
 This project is for controlling our air brakes system with the goal of making our rocket "hit" its target apogee. We have a Raspberry Pi 5 as the brains of our system which runs our code. It connects to a servo motor to control the extension of our air brakes and an [IMU](https://www.microstrain.com/inertial-sensors/3dm-cx5-15) (basically an altimeter, accelerometer, and gyroscope). The code follows the [finite state machine](https://www.tutorialspoint.com/design_pattern/state_pattern.htm) design pattern, using the [`AirbrakesContext`](https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2/blob/main/airbrakes/airbrakes.py) to manage interactions between the states, hardware, logging, and data processing. 
 
-https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa
-
-_A video of our air brakes extending and retracting_
-
-![airbrakes](https://github.com/user-attachments/assets/d9818acc-3099-4c42-96bb-6189898dd92f)
-
-_Video of the Pelicanator Launch 3 which deployed airbrakes_
 
 ### Design
 As per the finite state machine design pattern, we have a context class which links everything together. Every loop, the context:
@@ -247,10 +258,6 @@ If you want to run a mock launch, but with the real servo running, run:
 ```bash
 uv run mock -r
 ```
-To run a mock launch with our custom simulation:
-```bash
-uv run sim
-```
 There are some additional options you can use when running a mock launch. To view them all, run:
 ```bash
 uv run mock --help
@@ -290,7 +297,7 @@ which is critical for accurate benchmarking.
 
 If you make a change to the code, please make sure to update or add the necessary tests.
 
-### Running the Linter/Formatter
+### Running the Linter and Formatter
 
 Our CI also tries to maintain code quality by running a linter. We use [Ruff](https://docs.astral.sh/ruff/).
 
@@ -300,6 +307,21 @@ uv run prek run --all-files
 ```
 
 This will run both ruff and doc-formatter.
+
+### Using the terminal UI
+
+An advanced TUI is available under the `term-gui` branch. This UI allows to inspect every flight, including old ones, with much greater detail than the simple text updates. Some features include: 
+
+1. Playing launches at different speeds, including the ability to pause the replay at an instant of time.
+2. Viewing the acceleration / velocity / predicted apogee / altitude graphs.
+3. A graphical visualization of the rocket
+4. Ability to set different target apogees, and view metadata of the flight
+5. Automatic application of settings based on the conditions the rocket launched with.
+6. Maximum eye candy
+
+```bash
+git checkout term-gui && uv run mock
+``` 
 
 ## Pi Usage
 
