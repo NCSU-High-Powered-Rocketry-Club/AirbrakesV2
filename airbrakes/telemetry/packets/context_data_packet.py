@@ -29,8 +29,7 @@ class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
 
     queued_imu_packets: int
     """
-    The number of IMU data packets in the IMU queue, waiting to be fetched, by the
-    main thread.
+    The number of IMU data packets in the IMU queue, waiting to be fetched, by the main thread.
     """
 
     apogee_predictor_queue_size: int

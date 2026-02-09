@@ -182,6 +182,7 @@ METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
 """
 The number of packets to use for zeroing the pressure altitude at the launch pad.
+
 This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
 altitude.
 """
@@ -264,8 +265,8 @@ This is the reciprocal of the frequency.
 
 IMU_TIMEOUT_SECONDS = 3.0
 """
-The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a
-packet) before it is considered to have timed out.
+The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a packet)
+before it is considered to have timed out.
 
 This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
 used as the max timeout to read from the serial port.
@@ -346,19 +347,19 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 518.16  # 518.16 meters is 1700 feet
+TARGET_APOGEE_METERS = 487.68  # 1600 ft
 """
 The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 4.937
+ROCKET_DRY_MASS_KG: float = 4.770
 """
 The mass of the entire rocket without propellant in kilograms.
 """
 
-ROCKET_CD: float = 0.45
+ROCKET_CD: float = 0.55
 """
 The drag coefficient of the rocket with airbrakes all the way retracted.
 """

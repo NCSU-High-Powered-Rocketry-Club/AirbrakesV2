@@ -112,8 +112,8 @@ class ApogeePredictor:
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
     def _prediction_loop(self) -> None:
         """
-        Responsible for fetching data packets, updating internal state, and finally predicting
-        the apogee using the chosen method (e.g. HPRM).
+        Responsible for fetching data packets, updating internal state, and finally predicting the
+        apogee using the chosen method (e.g. HPRM).
 
         Runs in a separate thread.
         """
@@ -140,7 +140,7 @@ class ApogeePredictor:
 
             most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
 
-            adaptive_time_step = AdaptiveTimeStep()
+            adaptive_time_step = AdaptiveTimeStep.default()
             adaptive_time_step.dt_max = 1
 
             # Compute apogee given the latest state and history

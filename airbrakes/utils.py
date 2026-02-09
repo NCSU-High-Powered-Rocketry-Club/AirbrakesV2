@@ -79,7 +79,6 @@ def get_all_packets_from_queue(packet_queue: queue.SimpleQueue, block: bool) -> 
 
     :param packet_queue: The queue to empty.
     :param block: Whether to block when getting items from the queue.
-
     :return: A list of all the items in the queue.
     """
     items = []

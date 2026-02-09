@@ -41,8 +41,10 @@ def get_some_packets(
     packet_queue: queue.SimpleQueue, block: bool, max_packets_to_fetch: int = 15
 ) -> list[IMUDataPacket]:
     """
-    Keep this the same as the one in utils.py! This is here because we need to limit the number of
-    packets received for the integration test, so it doesn't skip over data and fails test cases.
+    Keep this the same as the one in utils.py!.
+
+    This is here because we need to limit the number of packets received for the integration test,
+    so it doesn't skip over data and fails test cases.
     :param max_packets_to_fetch: The maximum number of packets to fetch. 0 means no limit.
     """
     items = []

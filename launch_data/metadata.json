@@ -445,8 +445,8 @@
         },
         "flight_description": "Subscale Launch 2025. This flight was to test the new airbrakes design on a smaller rocket. Airbrakes were programmed to deploy immediately at the beginning of coast to see how much altitude they can take off. At the field, we had to dremmel 2 fins, halfway through its thickness (3mm). They worked as intended. This was the first launch with FIRM in the AB and nose cone."
     },
-    "government_work_2.csv": {
-        "date": "2025-11-01T14:53:21.171-04:00",
+    "government_work_2_scrubbed.csv": {
+        "date": "2025-12-13T14:53:21.171-04:00",
         "rocket": {
             "rocket_Cd": 0.45,
             "rocket_mass_kg": 4.67,
@@ -480,6 +480,80 @@
             "flight_length_seconds": 0.0,
             "target_apogee_meters": 518.16
         },
-        "flight_description": ""
+        "flight_description": "This was supposed to be an important airbrakes flight, testing out multithreading, new apogee prediction, and the new mscl-rs library. However, when we arrived on the field, we realized that we forgot to bring the recovery hardware, so we did not launch."
+    },
+    "government_work_2.csv": {
+        "date": "2025-02-07T13:51:21.171-04:00",
+        "rocket": {
+            "rocket_Cd": 0.45,
+            "rocket_mass_kg": 4.77,
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
+        "launch_site": {
+            "air_temperature_celsius": 6.0,
+            "air_pressure_mb": 1018.10,
+            "wind_speed_kmh": 22.7,
+            "wind_direction": "NNW",
+            "location": "Dalzell, SC",
+            "launch_coordinates": {
+                "latitude": 34.050934,
+                "longitude": -80.421280
+            },
+            "launch_rod_angle": 2.0
+        },
+        "imu_details": {
+            "imu_model": "Parker-LORD 3DM-CX5-15",
+            "raw_packet_frequency": 500.0,
+            "est_packet_frequency": 500.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 496.16,
+            "landed_coordinates": {
+                "latitude": 35.175980,
+                "longitude": -76.828120
+            },
+            "landed_coordinates_precision": "",
+            "flight_length_seconds": 56.57,
+            "target_apogee_meters": 457.0
+        },
+        "flight_description": "Extra flight for Airbrakes which uses the new apogee prediction (HPRM). This flight also tests mscl-rs. This was done in Dalzell because of accumulated snow in Bayboro. "
+    },
+    "government_work_3.csv": {
+        "date": "2025-02-07T15:53:21.171-04:00",
+        "rocket": {
+            "rocket_Cd": 0.45,
+            "rocket_mass_kg": 4.77, 
+            "rocket_cross_sectional_area_m2": 0.008107319665
+        },
+        "launch_site": {
+            "air_temperature_celsius": 7.0,
+            "air_pressure_mb": 1018.10,
+            "wind_speed_kmh": 22.7,
+            "wind_direction": "NNW",
+            "location": "Dalzell, SC",
+            "launch_coordinates": {
+                "latitude": 34.050934,
+                "longitude": -80.421280
+            },
+            "launch_rod_angle": 2.0
+        },
+        "imu_details": {
+            "imu_model": "FIRM v0.1 - Kalman Filter",
+            "est_packet_frequency": 100.0,
+            "raw_packet_frequency": 0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 496.16,
+            "landed_coordinates": {
+                "latitude": 35.175980,
+                "longitude": -76.828120
+            },
+            "landed_coordinates_precision": "",
+            "flight_length_seconds": 56.57,
+            "target_apogee_meters": 0.0
+        },
+        "flight_description": "First flight with FIRM as the IMU. This also debuts a vast simplification of the codebase, with a lot of the components being deleted because of FIRM."
     }
 }

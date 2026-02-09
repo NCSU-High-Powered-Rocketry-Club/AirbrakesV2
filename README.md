@@ -187,10 +187,14 @@ _Note: We will continue using `uv` for the rest of this README, if you don't wan
 If you want to contribute to the project, you will need to set up the project locally. Luckily, 
 the only other thing you need to install is [`git`](https://git-scm.com/) for version control.
 
+It is highly recommended to use WSL if you are on Windows, as the project only supports Linux. Running natively on Windows should work, but it is not a guarantee.
+
 ### 1. Clone the repository:
 
+Run the following in a terminal:
 ```
 git clone https://github.com/NCSU-High-Powered-Rocketry-Club/AirbrakesV2.git
+
 cd AirbrakesV2
 ```
 
@@ -201,6 +205,14 @@ uv run mock
 
 This will install the project, including development dependencies, activate the virtual environment and run the mock replay.
 
+Potential Issues:
+* command 'cc' failed: No such file or directory
+  * This means your environment doesn't have a C compiler. Install using:
+  ```bash
+  sudo apt-get update && sudo apt install -y build-essential
+  ```
+* Make sure you are on Python 3.14.2 free threaded (`uv python install 3.14.2t`).
+
 _Note: It is important to use `uv run` instead of `uvx` since the `uvx` environment is isolated from
 the project. See the [uv documentation](https://docs.astral.sh/uv/concepts/tools/#relationship-to-uv-run) for more information._
 
@@ -208,7 +220,7 @@ _Note 2: The more "correct" command to run is `uv sync`. This will install the p
 
 ### 3. Install the pre-commit hook:
 ```
-uv run pre-commit install
+uv run prek install
 ```
 This will install a pre-commit hook that will run the linter before you commit your changes.
 
@@ -222,12 +234,7 @@ git push -u origin branch-name
 ## Advanced Local Usage
 
 For performance improvements, we _highly_ recommend switching off the Global Interpreter Lock (GIL),
-and turning on the experimental Python Just-In-Time (JIT) compiler. To do this, export `PYTHON_JIT=1`, and `PYTHON_GIL=0` in your shell (preferably in your `.bashrc` or `.zshrc` file).
-
-```bash
-export PYTHON_JIT=1
-export PYTHON_GIL=0
-```
+and turning on the experimental Python Just-In-Time (JIT) compiler. This should be in the `python-settings.env` file, which `uv` will automatically load when you run `uv run ...`.
 
 ### Running Mock Launches
 Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
@@ -299,7 +306,7 @@ Our CI also tries to maintain code quality by running a linter. We use [Ruff](ht
 
 To lint and format your code, run:
 ```bash
-uv run pre-commit run --all-files
+uv run prek run --all-files
 ```
 
 This will run both ruff and doc-formatter.
