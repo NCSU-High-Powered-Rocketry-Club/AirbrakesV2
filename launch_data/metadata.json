@@ -517,6 +517,6 @@
             "flight_length_seconds": 60.80,
             "target_apogee_meters": 807.72
         },
-        "flight_description": "Extra flight for Airbrakes which uses the new apogee prediction (HPRM). This flight also tests mscl-rs. This was done in Dalzell because of accumulated snow in Bayboro. This flight we undershot our apogee because of the winds, but everything else worked flawlessly, including the new apogee prediction."
+        "flight_description": "Extra flight for Airbrakes which uses the new apogee prediction (HPRM). This flight also tests mscl-rs. This was done in Dalzell because of accumulated snow in Bayboro. This flight we undershot our apogee because of the motor, but everything else worked flawlessly, including the new apogee prediction."
     }
 }
