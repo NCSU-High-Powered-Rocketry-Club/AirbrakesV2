@@ -9,9 +9,12 @@
 </p>
 
 
-<video src="https://github.com/user-attachments/assets/19442628-268c-4f7e-b52c-8c47f2a7a4e6" autoplay controls type="video/mp4"></video>
+<video src="https://github.com/user-attachments/assets/24dc94fe-5f85-4dfa-9eb1-ef5fc23d2880" autoplay controls loop type="video/mp4"></video>
 
-<video src="https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa" autoplay controls type="video/mp4"></video>
+<b> _Advanced TUI to inspect previous launches_ </b>
+
+
+<video src="https://github.com/user-attachments/assets/0c72a9eb-0b15-4fbf-9e62-f6a69e5fadaa" autoplay controls loop type="video/mp4"></video>
 
 <b> _A video of our airbrakes extending and retracting_ </b>
 
