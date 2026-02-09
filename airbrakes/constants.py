@@ -347,7 +347,7 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 487.68  # 1600 ft
+TARGET_APOGEE_METERS = 807.72  # 1600 ft
 """
 The target apogee in meters that we want the rocket to reach.
 
