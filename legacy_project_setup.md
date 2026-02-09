@@ -70,6 +70,12 @@ As always, you can see all the options by running:
 python -m airbrakes.main --help
 ```
 
+To run the textual app with the console, you would run:
+
+```bash
+textual run --dev airbrakes/main.py [options]
+```
+
 To run a script for testing, you would run:
 
 ```bash

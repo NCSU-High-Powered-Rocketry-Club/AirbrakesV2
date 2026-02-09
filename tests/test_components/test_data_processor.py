@@ -630,6 +630,12 @@ class TestDataProcessor:
         """
         Tests that the pitch calculation is correct.
         """
+        # Ignore govt work 2 since the pitch was intentionally at 13 degrees:
+        if launch_data.name == "government_work_2.csv":
+            pytest.skip(
+                "government_work_2.csv has an intentional pitch of 13 degrees, which is above the"
+                "5 degree threshold for this test"
+            )
         # Load a single est data packet from the CSV file
         d = data_processor
         est_data_packets = load_data_packets(launch_data, 1)

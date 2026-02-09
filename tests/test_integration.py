@@ -222,13 +222,13 @@ class TestIntegration:
         # Now let's check if everything was logged correctly using polars
 
         # Read the log file into a polars DataFrame
-        df = pl.read_csv(ab.logger.log_path)
+        df = pl.scan_csv(ab.logger.log_path, infer_schema_length=10)
 
         # Check if all headers were logged
-        assert list(df.columns) == list(LoggerDataPacket.__struct_fields__)
+        assert df.collect_schema().names() == list(LoggerDataPacket.__struct_fields__)
 
         # Test the first row for specific validations
-        first_row = df.row(0, named=True)
+        first_row = df.head(1).collect().to_dicts()[0]
 
         # Check if values are rounded to 8 decimal places
         accel = (
@@ -250,11 +250,13 @@ class TestIntegration:
         assert len(state) == 1
 
         # Get counts and perform other validations without looping
-        line_number = df.height
+        lines_in_log_file = df.select(pl.len()).collect().item()
         state_list = (
             df.group_by("state_letter", maintain_order=True)
             .agg()
-            .get_column("state_letter")
+            .select(pl.col("state_letter"))
+            .collect()
+            .to_series()
             .to_list()
         )
 
@@ -262,7 +264,9 @@ class TestIntegration:
         coast_df = df.filter(pl.col("state_letter") == "C")
         pred_apogees_in_coast = (
             coast_df.filter(pl.col("predicted_apogee").is_not_null())
-            .get_column("predicted_apogee")
+            .select(pl.col("predicted_apogee"))
+            .collect()
+            .to_series()
             .to_list()
         )
 
@@ -280,9 +284,21 @@ class TestIntegration:
 
         # Check estimated data packet validations
         est_data_df = df.filter(pl.col("estLinearAccelX").is_not_null())
-        assert est_data_df.select(pl.col("vertical_velocity").is_not_null()).to_series().all()
-        assert est_data_df.select(pl.col("current_altitude").is_not_null()).to_series().all()
-        assert est_data_df.select(pl.col("vertical_acceleration").is_not_null()).to_series().all()
+        assert (
+            est_data_df.select(pl.col("vertical_velocity").is_not_null())
+            .collect()
+            .to_series()
+            .all()
+        )
+        assert (
+            est_data_df.select(pl.col("current_altitude").is_not_null()).collect().to_series().all()
+        )
+        assert (
+            est_data_df.select(pl.col("vertical_acceleration").is_not_null())
+            .collect()
+            .to_series()
+            .all()
+        )
 
         # Check if extensions are valid floats
         valid_extensions = [
@@ -293,13 +309,14 @@ class TestIntegration:
         ]
         all_extensions_valid = (
             df.select(pl.col("set_extension").cast(pl.Float64).is_in(valid_extensions))
+            .collect()
             .to_series()
             .all()
         )
         assert all_extensions_valid
 
         # Check if we have a lot of lines in the log file
-        assert launch_case_init.log_file_lines_test(line_number)
+        assert launch_case_init.log_file_lines_test(lines_in_log_file)
 
         # Predicted apogees and values used for prediction should be present in coast state
         assert len(pred_apogees_in_coast) > 0

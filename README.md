@@ -243,6 +243,16 @@ To run a mock launch, run:
 ```bash
 uv run mock
 ```
+
+To connect to the dev console, open another terminal, and run:
+```bash
+uv run textual console
+```
+and then run:
+```bash
+uv run textual run -c --dev mock
+```
+
 If you want to run a mock launch, but with the real servo running, run:
 ```bash
 uv run mock -r
@@ -324,6 +334,11 @@ uv sync --all-extras
 
 
 ### Run a real flight with real hardware:
+```bash
+sudo $(which uv) run real
+```
+
+If you want to see additional information from the IMU and have the ability to control the servo, run:
 ```bash
 sudo $(which uv) run real -v
 ```

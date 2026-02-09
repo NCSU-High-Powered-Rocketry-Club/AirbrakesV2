@@ -20,6 +20,18 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
+def convert_to_nanoseconds(timestamp_str: str) -> int:
+    """
+    Converts seconds to nanoseconds, if it isn't already in nanoseconds.
+    """
+    try:
+        # check if value is already in nanoseconds:
+        return int(timestamp_str)
+    except ValueError:
+        timestamp_float = float(timestamp_str)
+        return int(timestamp_float * 1e9)  # return the value in nanoseconds
+
+
 def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.
@@ -28,6 +40,27 @@ def convert_ns_to_s(nanoseconds: int) -> float:
     :return: The time in seconds.
     """
     return nanoseconds * 1e-9
+
+
+def convert_seconds_to_packets(
+    seconds: float, raw_packet_freq: float, est_packet_freq: float
+) -> int:
+    """
+    Returns the number of packets which are expected to be received, given the time in seconds, the
+    raw packet rate, and the estimated packet rate.
+
+    :param seconds: The time in seconds.
+    :param raw_packet_freq: The raw packet rate, in Hz.
+    :param est_packet_freq: The estimated packet rate, in Hz.
+    :return: The number of packets expected to be received.
+    """
+    # Formula for converting number of packets to seconds and vice versa:
+    # If N = total number of packets, T = total time in seconds:
+    # f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
+    # T = N/f => N = T * 1000
+
+    # Calculate the number of packets expected to be received:
+    return int(seconds * (raw_packet_freq + est_packet_freq))
 
 
 def convert_s_to_ns(seconds: float) -> float:
@@ -88,27 +121,6 @@ def arg_parser() -> argparse.Namespace:
     # - mock: Run in mock replay mode with mock data.
     global_parser = argparse.ArgumentParser(add_help=False)
 
-    # Global mutually exclusive group, for the `--debug` and `--verbose` options:
-    global_group = global_parser.add_mutually_exclusive_group()
-
-    # These are global options, available to `real` or `mock` modes:
-    global_group.add_argument(
-        "-d",
-        "--debug",
-        help="Run the flight without a display. This will not print the flight data and allow "
-        "you to inspect the values of your print() statements.",
-        action="store_true",
-        default=False,
-    )
-
-    global_group.add_argument(
-        "-v",
-        "--verbose",
-        help="Shows the display with much more data.",
-        action="store_true",
-        default=False,
-    )
-
     # Top-level parser for the main script:
     main_parser = argparse.ArgumentParser(
         description="Main parser for the Airbrakes program.",
@@ -146,7 +158,12 @@ def arg_parser() -> argparse.Namespace:
     )
     add_common_arguments(mock_replay_parser)
 
-    return main_parser.parse_args()
+    parsed_args = main_parser.parse_args()
+    # If benchmark mode is enabled, set fast replay to True
+    if parsed_args.mode != "real" and parsed_args.bench:
+        parsed_args.fast_replay = True
+
+    return parsed_args
 
 
 def add_common_arguments(parser: argparse.ArgumentParser) -> None:
@@ -180,6 +197,24 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
         help=f"Run the {_type} at full speed instead of in real time.",
         action="store_true",
         default=False,
+    )
+
+    parser.add_argument(
+        "-b",
+        "--bench",
+        help=f"Run the {_type} in benchmark mode. This disables the display and simply shows the "
+        "flight data after it has finished. Implies --fast-replay.",
+        action="store_true",
+        default=False,
+    )
+
+    parser.add_argument(
+        "-t",
+        "--target-apogee",
+        help=f"Set the target apogee for the {_type}. Defaults to the value in the metadata for "
+        "mock replays.",
+        type=float,
+        default=None,
     )
 
     parser.add_argument(

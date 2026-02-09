@@ -3,7 +3,7 @@ Contains the constants used in the Airbrakes module.
 """
 
 import math
-from enum import Enum, StrEnum
+from enum import Enum
 from pathlib import Path
 
 # -------------------------------------------------------
@@ -120,25 +120,60 @@ The GPIO pin the buzzer is connected to.
 # Display Configuration
 # -------------------------------------------------------
 
+MOCK_DISPLAY_UPDATE_RATE = 1 / 15
+"""
+The frequency at which the display updates in replay or sim mode.
 
-class DisplayEndingType(StrEnum):
-    """
-    Enum that represents the different ways the display can end.
-    """
+Increasing this value will negatively affect the performance when running with a "fast" simulation.
+"""
 
-    NATURAL = "natural"
-    """
-    The display ends naturally, when the rocket lands, in a mock replay.
-    """
-    INTERRUPTED = "interrupted"
-    """
-    The display ends because the user interrupted the program.
-    """
-    TAKEOFF = "takeoff"
-    """
-    The display ends because the rocket took off, in a real launch.
-    """
+REALTIME_DISPLAY_UPDATE_RATE = 1 / 10  # 10 Hz
+"""
+The frequency at which the display updates in real mode.
 
+Decreasing this value will not show major performance improvements, but increasing it will
+negatively affect the performance.
+"""
+
+
+GRAPH_DATA_STORE_INTERVAL_SECONDS = 4
+"""
+The interval in seconds at which the graph data is stored.
+
+This is used so that it is easy to look at the changing data in real time.
+"""
+
+RIGHT_TRIANGLE = "▶"
+LEFT_TRIANGLE = "◀"
+"""
+The icons used to represent the simulation speed.
+"""
+
+LIGHT_THEME = "textual-light"
+"""
+The name of the light theme.
+"""
+
+DARK_THEME = "catppuccin-mocha"
+"""
+The name of the dark theme.
+"""
+
+
+# Constants for rocket dimensions (in canvas cells)
+ROCKET_WIDTH = 6
+ROCKET_HEIGHT = 15
+NOSECONE_HEIGHT = 5
+ASPECT_RATIO = 0.5  # Terminal cell width-to-height ratio (roughly)
+NOZZLE_HEIGHT = 2  # Height of the nozzle in cells
+NOZZLE_WIDTH = ROCKET_WIDTH / 2.0  # Width of the nozzle in cells
+FLAME_OFFSETS: list[float] = [0.5, 1, 1.5, 2, 2.5, 3]  # Distances in cells where "X" flames appears
+AIRBRAKE_LENGTH = 2  # Length of airbrakes in cells
+
+# Constants for altitude axis
+TICK_INTERVAL = 1.7  # meters per tick  (NOT TO SCALE)
+AXIS_X = 0  # x-position of the axis
+METERS_PER_CELL = 0.15  # Meters per canvas cell (defines scale)
 
 # -------------------------------------------------------
 # Data Processor Configuration
@@ -237,6 +272,13 @@ This is used to prevent the program from deadlocking if the IMU stops sending da
 used as the max timeout to read from the serial port.
 """
 
+REALTIME_PLAYBACK_SPEED: float = 1.0
+"""
+The speed at which the Mock IMU plays back the data.
+
+1.0 means real-time playback, 2.0 means maximum speed.
+"""
+
 # -------------------------------------------------------
 # State Machine Configuration
 # -------------------------------------------------------
@@ -305,7 +347,7 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 487.68  # 1600 ft
+TARGET_APOGEE_METERS = 807.72  # 1600 ft
 """
 The target apogee in meters that we want the rocket to reach.
 
@@ -329,5 +371,4 @@ ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
 """
 
-# TODO: delete this and simulation/
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81

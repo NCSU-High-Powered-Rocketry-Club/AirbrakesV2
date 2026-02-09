@@ -35,6 +35,27 @@ LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
 LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
+class MockArgs:
+    """
+    All the possible command line arguments.
+
+    See the fixtures below which will modify these for mock, real, sim.
+    """
+
+    # Global:
+    mode = "mock"
+    # "real" args:
+    mock_servo = False
+    verbose = False
+    # "mock" args:
+    real_servo = False
+    keep_log_file = False
+    fast_replay = False
+    bench = False
+    target_apogee = None
+    path = None
+
+
 def pytest_collection_modifyitems(config, items):
     marker = "imu_benchmark"
     marker_expr = config.getoption("-m", None)
@@ -129,7 +150,7 @@ def mock_imu(request):
     """
     Fixture that returns a MockIMU object with the specified log file.
     """
-    return MockIMU(log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True)
+    return MockIMU(log_file_path=request.param, real_time_replay=2.0, start_after_log_buffer=True)
 
 
 @pytest.fixture
@@ -184,7 +205,7 @@ def target_altitude(request):
     if launch_name == "government_work_1":
         return 360.0  # actual apogee was about 400m
     if launch_name == "government_work_2":
-        return 468.16  # actual apogee was about 518.16m
+        return 674.13  # actual apogee was about 724.13m
     return 1000.0  # Default altitude
 
 

@@ -2,6 +2,7 @@
 Module for simulating interacting with the IMU (Inertial measurement unit) on the rocket.
 """
 
+import contextlib
 import queue
 import threading
 import time
@@ -13,13 +14,14 @@ import msgspec.json
 import polars as pl
 
 import airbrakes.constants
-from airbrakes.constants import STOP_SIGNAL
+from airbrakes.constants import BUSY_WAIT_SECONDS, REALTIME_PLAYBACK_SPEED, STOP_SIGNAL
 from airbrakes.interfaces.base_imu import BaseIMU
 from airbrakes.telemetry.packets.imu_data_packet import (
     EstimatedDataPacket,
     IMUDataPacket,
     RawDataPacket,
 )
+from airbrakes.utils import convert_to_nanoseconds
 
 
 class RocketParameters(msgspec.Struct):
@@ -43,13 +45,14 @@ class MockIMU(BaseIMU):
         "_headers",
         "_log_file_path",
         "_needed_fields",
+        "_sim_speed_factor",
         "file_metadata",
         "rocket_parameters",
     )
 
     def __init__(
         self,
-        real_time_replay: bool,
+        real_time_replay: float = REALTIME_PLAYBACK_SPEED,
         log_file_path: Path | None = None,
         start_after_log_buffer: bool = True,
     ):
@@ -65,7 +68,6 @@ class MockIMU(BaseIMU):
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
-        self._log_file_path = log_file_path
         # Check if the launch data file exists:
         if log_file_path is None:
             # Just use the first file in the `launch_data` directory:
@@ -83,12 +85,14 @@ class MockIMU(BaseIMU):
         # Starts the thread that fetches data from the log file
         data_fetch_thread = threading.Thread(
             target=self._fetch_data_loop,
-            args=(real_time_replay, start_after_log_buffer),
+            args=(start_after_log_buffer,),
             name="Mock IMU Thread",
             daemon=True,
         )
 
-        file_metadata: dict = MockIMU.read_file_metadata()
+        self._sim_speed_factor = real_time_replay
+
+        file_metadata: dict = MockIMU.read_all_metadata()
         self.file_metadata = file_metadata.get(self._log_file_path.name, {})
         self.rocket_parameters: RocketParameters = self._get_rocket_parameters(self.file_metadata)
 
@@ -104,7 +108,7 @@ class MockIMU(BaseIMU):
         super().__init__(data_fetch_thread, queued_imu_packets)
 
     @staticmethod
-    def read_file_metadata() -> dict:
+    def read_all_metadata() -> dict:
         """
         Reads the metadata from the log file and returns it as a dictionary.
         """
@@ -163,6 +167,7 @@ class MockIMU(BaseIMU):
             **kwargs,
         ).select(self._needed_fields)
 
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE PROCESS -------------------------
     def _calculate_start_index(self) -> int:
         """
         Calculate the start index based on log buffer size and time differences.
@@ -184,17 +189,16 @@ class MockIMU(BaseIMU):
         )
         return result["index"][0] if not result.is_empty() else 0  # Default to 0 if no index found
 
-    def _read_file(self, real_time_replay: bool, start_after_log_buffer: bool = False) -> None:
+    def _read_file(self, start_after_log_buffer: bool = False) -> None:
         """
         Reads the data from the log file and puts it into the shared queue.
 
-        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period, or run
-            at full speed, e.g. for using it in the CI.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
+        # Find the sampling rate of the raw data packets:
         launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
 
         collected_data: pl.DataFrame = self._scan_csv(start_index=start_index).collect()
@@ -214,41 +218,105 @@ class MockIMU(BaseIMU):
                 if row_dict[k] is None:
                     del row_dict[k]
 
-            # # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is
-            # # an estimated data packet
-            if row_dict.get("scaledAccelX"):
+            # If the row has the scaledAccelX field, it is a raw data packet, otherwise it is an
+            # estimated data packet
+            raw_packet = row_dict.get("scaledAccelX")
+            if raw_packet:
                 imu_data_packet = RawDataPacket(**row_dict)
             else:
                 imu_data_packet = EstimatedDataPacket(**row_dict)
 
             self._queued_imu_packets.put(imu_data_packet)
 
-            # Sleep only if we are running a real-time replay
-            # Our IMU sends raw data at 500 Hz (or in older files 1000hz), so we sleep for 1 or 2 ms
-            # between each packet to pretend to be real-time
-            if real_time_replay and type(imu_data_packet) is RawDataPacket:
-                # Mimic the polling interval so it "runs in real time"
-                end_time = time.time()
-                time.sleep(max(0.0, launch_raw_data_packet_rate - (end_time - start_time)))
+            # sleep only if we are running a real-time simulation
+            # Our IMU sends raw data at 1000 Hz, so we sleep for 1 ms between each packet to
+            # pretend to be real-time
+            if not raw_packet:
+                continue
+
+            sim_speed = self._sim_speed_factor
+            if sim_speed > 0:
+                execution_time = time.time() - start_time
+                sleep_time = max(0.0, launch_raw_data_packet_rate - execution_time)
+                adjusted_sleep_time = sleep_time * (2.0 - sim_speed) / sim_speed
+                # See https://github.com/python/cpython/issues/125997 on why we don't
+                # time.sleep(0). If we did that, the mocks would be at least 2x slower.
+                if adjusted_sleep_time:
+                    time.sleep(adjusted_sleep_time)
+            else:  # If sim_speed is 0, we sleep in a loop to simulate a hang:
+                while not self._sim_speed_factor and self._requested_to_run.is_set():
+                    time.sleep(BUSY_WAIT_SECONDS)
 
     def _fetch_data_loop(
         self,
-        real_time_replay: bool,
         start_after_log_buffer: bool = False,
     ) -> None:
         """
         A wrapper function to suppress KeyboardInterrupt exceptions when reading the log file.
 
-        :param real_time_replay: Whether to mimic a real flight by sleeping for a set period, or run
-            at full speed.
         :param start_after_log_buffer: Whether to send the data packets only after the log buffer
             was filled for Standby state.
         """
         self._running.set()  # Specify that the thread is running
-        self._read_file(real_time_replay, start_after_log_buffer)
+        self._read_file(start_after_log_buffer)
 
         # For the mock, once we're done reading the file, we say it is no longer running
         self._running.clear()
         # If we don't put the STOP_SIGNAL in the queue, the main thread will wait till IMU_TIMEOUT
         # seconds before exiting, which is not what we want.
         self._queued_imu_packets.put(STOP_SIGNAL)
+
+    def get_launch_time(self) -> int:
+        """
+        Gets the launch time, from reading the csv file.
+
+        :return int: The corresponding launch time in nanoseconds. Returns 0 if the launch time
+            could not be found.
+        """
+        # Read the file, and check when the "state_letter" field shows "M", or when the
+        # magnitude of the estimated linear acceleration is greater than 3 m/s^2:
+
+        # We get an exception for files which didn't log any state, e.g. purple_launch.csv
+        with contextlib.suppress(Exception):
+            df: pl.LazyFrame = pl.scan_csv(self._log_file_path).select(
+                ["timestamp", "state_letter"]
+            )
+            # Check for the "M" state, get only the first timestamp
+            launch_time: pl.DataFrame = (
+                df.filter(pl.col("state_letter") == "M").select(pl.first("timestamp")).collect()
+            )
+            if not launch_time.is_empty():
+                return convert_to_nanoseconds(launch_time["timestamp"][0])
+            return 0
+
+        mag: pl.DataFrame = (
+            pl.scan_csv(
+                self._log_file_path,
+                has_header=True,
+            )
+            .select(
+                [
+                    "timestamp",
+                    "estLinearAccelX",
+                    "estLinearAccelY",
+                    "estLinearAccelZ",
+                ]
+            )
+            .with_columns(
+                (
+                    pl.col("estLinearAccelX") ** 2
+                    + pl.col("estLinearAccelY") ** 2
+                    + pl.col("estLinearAccelZ") ** 2
+                )
+                .sqrt()
+                .alias("estLinearAccelMag")
+            )
+            .filter(pl.col("estLinearAccelMag") > 3)
+            .select("timestamp")
+            .first()
+            .collect()
+        )
+
+        if not mag.is_empty():
+            return convert_to_nanoseconds(mag["timestamp"][0])
+        return 0

@@ -66,7 +66,7 @@ class DataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._last_data_packet: EstimatedDataPacket | None = None
         self._current_orientation_quaternions: quaternion.quaternion | None = None
-        self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
+        self._rotated_accelerations: npt.NDArray[np.float64] = np.zeros((1, 3), dtype=np.float64)
         self._data_packets: list[EstimatedDataPacket] = []
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._integrating_for_altitude = False
@@ -106,6 +106,22 @@ class DataProcessor:
         return float(self._vertical_velocities[-1])
 
     @property
+    def vertical_acceleration(self) -> float:
+        """
+        The current vertical acceleration of the rocket in m/s^2.
+
+        :return: The vertical acceleration of the rocket.
+        """
+        return float(self._rotated_accelerations[:, 2][-1])
+
+    @property
+    def average_vertical_acceleration(self) -> float:
+        """
+        The average vertical acceleration of the rocket.
+        """
+        return self._rotated_accelerations[:, 2].mean()
+
+    @property
     def max_vertical_velocity(self) -> float:
         """
         The maximum vertical velocity the rocket has attained during the flight, in m/s.
@@ -113,15 +129,6 @@ class DataProcessor:
         :return: The maximum vertical velocity of the rocket.
         """
         return float(self._max_vertical_velocity)
-
-    @property
-    def average_vertical_acceleration(self) -> float:
-        """
-        The average vertical acceleration of the rocket in m/s^2.
-
-        :return: The average vertical acceleration of the rocket.
-        """
-        return float(np.mean(self._rotated_accelerations))
 
     @property
     def average_pitch(self) -> float:
@@ -160,10 +167,6 @@ class DataProcessor:
         This will recompute all information such as altitude, velocity, etc.
         :param data_packets: A list of EstimatedDataPacket objects to process
         """
-        # If the data points are empty, we don't want to try to process anything
-        if not data_packets:
-            return
-
         self._data_packets = data_packets
 
         # If we don't have a last data point, we can't calculate the time differences needed
@@ -202,7 +205,7 @@ class DataProcessor:
                 # TODO: check if this pitch is good
                 current_pitch_degrees=self.average_pitch,
                 vertical_velocity=float(self._vertical_velocities[i]),
-                vertical_acceleration=float(self._rotated_accelerations[i]),
+                vertical_acceleration=float(self._rotated_accelerations[:, 2][i]),
                 time_since_last_data_packet=float(self._time_differences[i]),
             )
             for i in range(len(self._data_packets))
@@ -326,10 +329,10 @@ class DataProcessor:
 
     def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
         """
-        Calculates the vertical rotated accelerations.
+        Calculates the rotated accelerations.
 
         Converts gyroscope data into a delta quaternion, and adds onto the last quaternion.
-        :return: numpy list of vertical rotated accelerations.
+        :return: numpy list of rotated accelerations.
         """
         # We integrate gyro to get position instead of using the quaternions from our packet
         # directly. The reason why is listed in
@@ -376,13 +379,13 @@ class DataProcessor:
             new_orientation_quaternion * accelerations * new_orientation_quaternion.conjugate()
         )
         # Discard the scalar part of the quaternion
-        rotated_accelerations = quaternion.as_float_array(rotated_accel_quat)[..., 1:]
-        rotated_vertical_accelerations = -rotated_accelerations[:, 2]
+        rotated_accelerations_positive = quaternion.as_float_array(rotated_accel_quat)[..., 1:]
+        rotated_accelerations = -rotated_accelerations_positive
 
         # Update the instance attribute with the latest quaternion orientation
         self._current_orientation_quaternions = new_orientation_quaternion[-1]
 
-        return rotated_vertical_accelerations
+        return rotated_accelerations
 
     def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
         """
@@ -395,7 +398,7 @@ class DataProcessor:
         # be subtracted from vertical acceleration, Then deadbanded.
 
         # Using np.where() is faster than using our deadband() function by about ~15%
-        adjusted = self._rotated_accelerations - GRAVITY_METERS_PER_SECOND_SQUARED
+        adjusted = self._rotated_accelerations[:, 2] - GRAVITY_METERS_PER_SECOND_SQUARED
         vertical_accelerations = np.where(
             np.abs(adjusted) < ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,  # Condition to check
             0,  # If the condition is true, set to 0 (deadband)

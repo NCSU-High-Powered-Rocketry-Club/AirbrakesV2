@@ -63,3 +63,5 @@ There is a video of the launch from the rocket's perspective in the `videos` fol
 
 We provide additional context about the launch in the metadata.json file. The date of the launch is
 calculated from the timestamp of the first motor burn packet.
+
+Flight length is calculated from the timestamp of the first motor burn packet to the timestamp of the first landed state packet in the file.

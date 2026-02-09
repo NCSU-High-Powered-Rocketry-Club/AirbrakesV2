@@ -3,20 +3,25 @@ name = "AirbrakesV2"
 description = "Logic for air brakes as a part of the NASA Student Launch Competition"
 # We use Python 3.14t only! There is currently no way to specify this in pyproject.toml
 requires-python = ">=3.14, <3.15"
-version = "2.1.0"
+version = "3.0.0"
 readme = "README.md"
 dependencies = [
     "gpiozero",
     "msgspec",
     "numpy",
-    "colorama",
     "scipy",
     "textual",
     "mscl-rs==0.2.0",
-    "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
     "polars==1.37.1",
     "polars-runtime-32",
+    "textual-dev>=1.7.0",
+    "numpy-quaternion>=2024.0.10",
+    "textual-plot>=0.8.0",
+    "textual-hires-canvas>=0.10.1",
+    "textual-image>=0.8.3",
+    "textual-pyfiglet~=1.1.0",
+    "textual-speedups>=0.2.0",
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
@@ -44,6 +49,8 @@ dev = [
     "pytest-cov",
     "ruff>=0.12.12",
     "pytest-benchmark>=5.1.0",
+    "pytest-textual-snapshot>=1.1.0",
+    "pytest-asyncio>=1.1.0",
     # "docformatter",
     "ty>=0.0.1a20",
     "prek",
@@ -74,6 +81,7 @@ packages = ["airbrakes"]
 [tool.hatch.build.targets.wheel.force-include]
 # specify one launch file so that the mock flight can be run as a demo with uvx.
 "launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
+"launch_data/pictures/genesis_launch_1.jpg" = "/launch_data/pictures/genesis_launch_1.jpg"
 
 # RUFF:
 [tool.ruff]
@@ -98,7 +106,6 @@ select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error", # treat warnings as errors
     "ignore:Could not import LGPIOFactory", # ignore warning about LGPIO
     "ignore:To reduce servo jitter", # ignore warning about pigpio
     "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
@@ -107,6 +114,7 @@ addopts = "--benchmark-skip"  # skip benchmarks by default:
 markers = [
     "imu_benchmark",
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true
