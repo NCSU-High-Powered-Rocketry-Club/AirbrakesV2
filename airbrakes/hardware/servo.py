@@ -3,14 +3,16 @@ Module which contains the Servo class, representing a servo motor that controls 
 airbrakes, along with a rotary encoder to measure the servo's position.
 """
 
-import gpiozero
-from rpi_hardware_pwm import HardwarePWM
-
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
-    SERVO_OPERATING_FREQUENCY_HZ,
     ServoExtension,
+    SERVO_EXTENSION_TIME,
+    SERVO_ID
 )
+
+if TYPE_CHECKING:
+    from LewanLib import Servo, ServoDataPacket
+    from airbrakes.mock.mock_servo import MockServo
 
 
 class Servo(BaseServo):
@@ -24,43 +26,38 @@ class Servo(BaseServo):
     control the airbrakes, using hardware PWM on the Pi 5.
     """
 
-    __slots__ = ()
+    __slots__ = (
+        "servo",
+    )
 
-    def __init__(
-        self,
-        servo_channel: int,
-        encoder_pin_number_a: int,
-        encoder_pin_number_b: int,
-    ) -> None:
+    def __init__(self) -> None:
         """
         Initializes the Servo class.
 
-        :param servo_channel: The PWM channel that the servo is connected to.
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
-            to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
-            to.
         """
-        servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
-        servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        super().__init__()
 
-        # This library can only be imported on the raspberry pi. It's why the import is here.
-        from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
+        self.servo = Servo(SERVO_ID)
+        self.servo.move_time_write(ServoExtension.MIN_EXTENSION, SERVO_EXTENSION_TIME)
 
-        # max_steps=0 indicates that the encoder's `value` property will never change. We will
-        # only use the integer value, which is the `steps` property.
-        encoder = gpiozero.RotaryEncoder(
-            encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
-        )
 
-        super().__init__(encoder=encoder, servo=servo)
-
-    def _set_extension(self, extension: ServoExtension) -> None:
+    def set_max_extension(self, extension: ServoExtension) -> None:
         """
         Sets the servo to the specified extension.
 
         :param extension: The extension to set the servo to.
         """
-        super()._set_extension(extension)
-        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
+        # If we are already going to the minimum extension, we cancel that operation before
+        # extending the servo.
+        self.servo.move_time_write((ServoExtension.MAX_EXTENSION), SERVO_EXTENSION_TIME)
+
+    def set_min_extension(self, extension: ServoExtension) -> None:
+        """
+        Retracts the servo to the minimum extension.
+        """
+
+        self.servo.move_time_write((ServoExtension.MIN_EXTENSION), SERVO_EXTENSION_TIME)
+
+
+    def get_data_packet(self) -> list[ServoDataPacket]:
+        return self.servo.get_data_packets()

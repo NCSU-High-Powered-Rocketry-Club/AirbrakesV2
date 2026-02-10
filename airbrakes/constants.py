@@ -38,7 +38,7 @@ SERVO_MIN_ANGLE_DEGREES = 0
 The minimum angle that the servo can rotate to.
 """
 
-SERVO_MAX_ANGLE_DEGREES = 180
+SERVO_MAX_ANGLE_DEGREES = 240
 """
 The maximum angle that the servo can rotate to.
 """
@@ -50,12 +50,9 @@ The operating frequency of the servo in Hertz.
 It supports 50-330Hz.
 """
 
-SERVO_CHANNEL = 2
+SERVO_ID = 1
 """
-The PWM channel the servo is connected to on the Pi.
-
-Channel 2 corresponds to GPIO Pin 18.
-See https://pypi.org/project/rpi-hardware-pwm/ for more information.
+The ID of the servo.
 """
 
 SERVO_DELAY_SECONDS = 1.0
@@ -65,6 +62,8 @@ This is how long the servo approximately takes to move from one extreme to the o
 This is used for the no buzz code, to make sure the servo has enough time to move to the desired
 position.
 """
+
+SERVO_EXTENSION_TIME = 0.25    # Time in seconds to extend the servo
 
 
 class ServoExtension(Enum):
@@ -80,11 +79,9 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 74
-    MIN_NO_BUZZ = 78
+    MIN_EXTENSION = 0
 
-    MAX_EXTENSION = 124
-    MAX_NO_BUZZ = 121
+    MAX_EXTENSION = 40
 
 
 # -------------------------------------------------------

@@ -12,6 +12,7 @@ from airbrakes.state import StandbyState, State
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
+    from LewanLib import ServoDataPacket
 
     from airbrakes.base_classes.base_firm import BaseFIRM
     from airbrakes.base_classes.base_servo import BaseServo
@@ -171,13 +172,13 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
-        self.servo.set_extended()
+        self.servo.set_max_extension()
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the air brakes to the minimum extension.
         """
-        self.servo.set_retracted()
+        self.servo.set_min_extension()
 
     def predict_apogee(self) -> None:
         """
@@ -204,7 +205,4 @@ class Context:
 
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
-        self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.current_extension,
-            encoder_position=self.servo.get_encoder_reading(),
-        )
+        self.servo_data_packet = self.servo.get_servo_data_packet()
