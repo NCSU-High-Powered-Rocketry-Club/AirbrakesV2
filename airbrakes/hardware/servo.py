@@ -2,20 +2,23 @@
 Module which contains the Servo class, representing a servo motor that controls the extension of the
 airbrakes, along with a rotary encoder to measure the servo's position.
 """
+from typing import TYPE_CHECKING
 
 from airbrakes.base_classes.base_servo import BaseServo
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+from airbrakes.mock.mock_servo import MockServo
+
 from airbrakes.constants import (
     ServoExtension,
     SERVO_EXTENSION_TIME,
-    SERVO_ID
+    SERVO_PORT,
+    SERVO_ID,
 )
 
-if TYPE_CHECKING:
-    from LewanLib import Servo, ServoDataPacket
-    from airbrakes.mock.mock_servo import MockServo
+from lewanlib.bus import ServoBus
+from lewanlib.servo import Servo
 
-
-class Servo(BaseServo):
+class LewanServo(BaseServo):
     """
     A custom class that represents a servo motor and the accompanying rotary encoder. The servo
     controls the extension of the airbrakes while the encoder measures the servo's position. the
@@ -27,6 +30,8 @@ class Servo(BaseServo):
     """
 
     __slots__ = (
+        "bus",
+        "current_extension",
         "servo",
     )
 
@@ -36,28 +41,20 @@ class Servo(BaseServo):
 
         """
         super().__init__()
-
-        self.servo = Servo(SERVO_ID)
+        self.current_extension : int
+        self.bus = ServoBus(port=SERVO_PORT)
+        self.servo = Servo(SERVO_ID, self.bus)
         self.servo.move_time_write(ServoExtension.MIN_EXTENSION, SERVO_EXTENSION_TIME)
 
 
-    def set_max_extension(self, extension: ServoExtension) -> None:
+    def set_max_extension(self) -> None:
         """
-        Sets the servo to the specified extension.
-
-        :param extension: The extension to set the servo to.
+        Sets the servo to the maximum extension.
         """
-        # If we are already going to the minimum extension, we cancel that operation before
-        # extending the servo.
-        self.servo.move_time_write((ServoExtension.MAX_EXTENSION), SERVO_EXTENSION_TIME)
+        self.servo.move_time_write(ServoExtension.MAX_EXTENSION, SERVO_EXTENSION_TIME)
 
-    def set_min_extension(self, extension: ServoExtension) -> None:
+    def set_min_extension(self) -> None:
         """
         Retracts the servo to the minimum extension.
         """
-
-        self.servo.move_time_write((ServoExtension.MIN_EXTENSION), SERVO_EXTENSION_TIME)
-
-
-    def get_data_packet(self) -> list[ServoDataPacket]:
-        return self.servo.get_data_packets()
+        self.servo.move_time_write(ServoExtension.MIN_EXTENSION, SERVO_EXTENSION_TIME)

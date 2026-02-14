@@ -17,7 +17,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     state_letter: str | None
 
     # Fields in ServoDataPacket
-    set_extension: str | None
+    extension: str | None
     encoder_position: int | None
 
     # FIRMDataPacket Fields

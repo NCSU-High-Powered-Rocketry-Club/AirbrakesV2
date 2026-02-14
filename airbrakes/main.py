@@ -9,17 +9,17 @@ import sysconfig
 from typing import TYPE_CHECKING
 
 from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
     LOGS_PATH,
-    SERVO_CHANNEL,
+    SERVO_ID,
+    SERVO_PORT
 )
+
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
 from airbrakes.hardware.firm import FIRM
-from airbrakes.hardware.servo import Servo
+from airbrakes.hardware.servo import LewanServo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.mock.mock_firm import MockFIRM
 from airbrakes.mock.mock_logger import MockLogger
@@ -95,7 +95,7 @@ def create_components(
         objects.
     """
     # TODO: this looks ugly but eventually we will use HPRM to run sims
-    if args.mode in ("mock"):
+    if args.mode in "mock":
         if args.mode == "mock":
             if args.pretend_firm:
                 firm = FIRM(is_pretend=True, log_file_path=args.pretend_firm)
@@ -106,15 +106,7 @@ def create_components(
                 )
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
-        servo = (
-            Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
-            if args.real_servo
-            else MockServo(
-                SERVO_CHANNEL,
-                ENCODER_PIN_A,
-                ENCODER_PIN_B,
-            )
-        )
+        servo = LewanServo() if args.real_servo else MockServo(SERVO_ID, SERVO_PORT)
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
 
     else:
@@ -124,14 +116,7 @@ def create_components(
         logger = Logger(LOGS_PATH)
 
         # Maybe use mock components as specified by the command line arguments:
-        if args.mock_servo:
-            servo = MockServo(
-                SERVO_CHANNEL,
-                ENCODER_PIN_A,
-                ENCODER_PIN_B,
-            )
-        else:
-            servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+        servo = MockServo(SERVO_ID, SERVO_PORT) if args.mock_servo else LewanServo()
 
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the DataProcessor class and the ApogeePredictor class. There are no mock versions of

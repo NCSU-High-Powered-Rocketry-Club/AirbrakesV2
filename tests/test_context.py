@@ -38,7 +38,7 @@ class TestContext:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, context):
-        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert context.current_extension == ServoExtension.MIN_EXTENSION
         assert isinstance(context.data_processor, DataProcessor)
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
@@ -48,13 +48,13 @@ class TestContext:
     def test_set_extension(self, context):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         context.extend_airbrakes()
-        assert context.servo.current_extension == ServoExtension.MAX_EXTENSION
+        assert context.current_extension == ServoExtension.MAX_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.current_extension == ServoExtension.MAX_NO_BUZZ
+        assert context.current_extension == ServoExtension.MAX_EXTENSION
         context.retract_airbrakes()
-        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert context.current_extension == ServoExtension.MIN_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert context.current_extension == ServoExtension.MIN_EXTENSION
 
     def test_start(self, context):
         context.start(wait_for_start=True)
@@ -69,7 +69,7 @@ class TestContext:
         assert not context.logger.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor.is_running
-        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
+        assert context.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
         assert context.shutdown_requested
         context.stop()  # Stop again to test idempotency
 
@@ -138,7 +138,7 @@ class TestContext:
             calls.append("state update called")
             if isinstance(self.context.state, CoastState):
                 self.context.predict_apogee()
-                self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
+                self.context.current_extension = ServoExtension.MAX_EXTENSION
 
         def log(self, ctx_dp, servo_dp, firm_data_packets, apg_dps):
             # monkeypatched method of Logger
@@ -244,10 +244,7 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.current_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert context.current_extension in ServoExtension.MIN_EXTENSION
 
         # Open the file and check if we have a large number of lines:
         with context.logger.log_path.open() as file:
@@ -292,10 +289,7 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.current_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert context.current_extension in ServoExtension.MIN_EXTENSION
 
         assert not fd._running
 

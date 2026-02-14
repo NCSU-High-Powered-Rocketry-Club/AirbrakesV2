@@ -18,19 +18,14 @@ The amount of time to sleep while busy waiting in a loop.
 # -------------------------------------------------------
 # Servo Configuration (DS3235 SG)
 # -------------------------------------------------------
-
-SERVO_MIN_PULSE_WIDTH_US = 500
+SERVO_PORT = ""
 """
-The minimum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the minimum rotation of the servo.
+The port of the servo.
 """
 
-SERVO_MAX_PULSE_WIDTH_US = 2500
+SERVO_ID = 1
 """
-The maximum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the maximum rotation of the servo.
+The ID of the servo.
 """
 
 SERVO_MIN_ANGLE_DEGREES = 0
@@ -43,16 +38,14 @@ SERVO_MAX_ANGLE_DEGREES = 240
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_OPERATING_FREQUENCY_HZ = 50
-"""
-The operating frequency of the servo in Hertz.
-
-It supports 50-330Hz.
-"""
-
 SERVO_ID = 1
 """
 The ID of the servo.
+"""
+
+BUS_NUMBER = 1
+"""
+The bus number of the servo.
 """
 
 SERVO_DELAY_SECONDS = 1.0
@@ -63,7 +56,7 @@ This is used for the no buzz code, to make sure the servo has enough time to mov
 position.
 """
 
-SERVO_EXTENSION_TIME = 0.25    # Time in seconds to extend the servo
+SERVO_EXTENSION_TIME = 0.0    # Time in seconds to extend the servo
 
 
 class ServoExtension(Enum):
@@ -87,21 +80,6 @@ class ServoExtension(Enum):
 # -------------------------------------------------------
 # Encoder Configuration
 # -------------------------------------------------------
-
-ENCODER_RESOLUTION = 20
-"""
-The points per revolution of the encoder.
-"""
-
-ENCODER_PIN_A = 23
-"""
-The GPIO pin that the encoder's A pin is connected to.
-"""
-
-ENCODER_PIN_B = 24
-"""
-The GPIO pin that the encoder's B pin is connected to.
-"""
 
 # -------------------------------------------------------
 # Buzzer Configuration

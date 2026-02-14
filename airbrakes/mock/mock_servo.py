@@ -1,90 +1,57 @@
 """
-Module which contains the MockServo class and doesn't use the adafruit circuitpython library.
 """
 
-from gpiozero import RotaryEncoder
-from gpiozero.pins.mock import MockFactory, MockPWMPin
-
+from airbrakes.constants import ServoExtension
 from airbrakes.base_classes.base_servo import BaseServo
-from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
 
 
 class MockServo(BaseServo):
-    """
-    A custom class that represents a servo motor and the accompanying rotary encoder. The servo
-    controls the extension of the airbrakes while the encoder measures the servo's position. the
-    encoder is controlled using the gpiozero library, which provides a simple interface for
-    controlling GPIO pins on the Raspberry Pi.
+    """Very small mock: holds an angle and exposes simple control methods."""
 
-    The servo we use is the DS3235, which is a coreless digital servo.
-    """
+    __slots__ = (
+        "current_extension",
+        "servo",
+        "servo_id",
+    )
 
-    __slots__ = ()
-
-    def __init__(
-        self,
-        servo_channel: int,
-        encoder_pin_number_a: int,
-        encoder_pin_number_b: int,
-    ) -> None:
+    def __init__(self, servo_id: int, _port: str | None = None) -> None:
         """
-        Initializes the servo object with the specified GPIO pin.
 
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
-            to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
-            to.
+        Create a mock servo.
+
+        :param servo_id: arbitrary identifier (kept for compatibility with fixtures)
+        :param _port: unused, kept for API compatibility
         """
-        factory = MockFactory(pin_class=MockPWMPin)
+        super().__init__()
+        self.servo_id = servo_id
+        # Provide a simple mock servo bus object for compatibility with tests
+        # Many tests expect `servo.servo` to be an instance of MockServo (module's MockServo),
+        # so point `servo` to this instance for compatibility.
+        self.servo = MockBus(_port)
+        self.current_extension: ServoExtension
 
-        # max_steps=0 indicates that the encoder's `value` property will never change. We will
-        # only use the integer value, which is the `steps` property.
-        encoder = RotaryEncoder(
-            encoder_pin_number_a,
-            encoder_pin_number_b,
-            max_steps=0,
-            pin_factory=factory,
-        )
-
-        servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
-
-        super().__init__(encoder=encoder, servo=servo)
-
-    def _set_extension(self, extension: ServoExtension) -> None:
+    def set_max_extension(self) -> None:
         """
-        Sets the servo to the specified extension.
-
-        :param extension: The extension to set the servo to.
+        Set servo to maximum extension.
         """
-        super()._set_extension(extension)
-        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
+        self.current_extension = self.servo.set_min_extension()
 
-
-class MockHardwarePWM:
-    """
-    A mock class that simulates the rpi_hardware_pwm.HardwarePWM class.
-    """
-
-    __slots__ = ("chip", "duty_cycle", "hz", "pwm_channel")
-
-    def __init__(self, pwm_channel: int, hz: int, chip: int) -> None:
+    def set_min_extension(self) -> None:
         """
-        Initializes the mock HardwarePWM object.
-
-        :param pwm_channel: The PWM channel to use.
-        :param hz: The frequency to use.
-        :param chip: The chip to use.
+        Set servo to minimum extension.
         """
-        self.pwm_channel: int = pwm_channel
-        self.hz: int = hz
-        self.chip: int = chip
-        self.duty_cycle: float = 0.0
+        self.current_extension = self.servo.set_min_extension()
 
-    def change_duty_cycle(self, duty_cycle: float) -> None:
-        """
-        Changes the duty cycle of the PWM signal.
+class MockBus:
+    """A tiny mock of the servo bus used by the real hardware class."""
 
-        :param duty_cycle: The new duty cycle to use.
-        """
-        self.duty_cycle = duty_cycle
+    __slots__ = ("port",)
+
+    def __init__(self, port: str | None = None) -> None:
+        self.port = port
+
+    def set_max_extension(self) -> ServoExtension:
+        return ServoExtension.MAX_EXTENSION
+
+    def set_min_extension(self) -> ServoExtension:
+        return ServoExtension.MIN_EXTENSION

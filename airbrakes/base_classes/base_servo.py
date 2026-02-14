@@ -4,12 +4,7 @@ Base class for the Servo.
 This will serve as the base for real servo and the mock servo.
 """
 
-import threading
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from LewanLib import ServoDataPacket
 
 class BaseServo(ABC):
     """
@@ -26,11 +21,6 @@ class BaseServo(ABC):
 
     __slots__ = ()
 
-    def __init__(self) -> None:
-        """
-        Initializes the BaseServo class.
-        """
-
     @abstractmethod
     def set_max_extension(self) -> None:
         """
@@ -45,12 +35,4 @@ class BaseServo(ABC):
         Retracts the servo to the minimum extension.
 
         Starts a timer to stop the buzzing after the servo reaches the minimum extension.
-        """
-
-    @abstractmethod
-    def get_data_packet(self) -> list[ServoDataPacket]:
-        """
-        Returns all available FIRM data packets from the queued FIRM packets.
-
-        :return: A list containing the latest FIRM data packets from the FIRM packet queue.
         """

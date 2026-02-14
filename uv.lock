@@ -17,6 +17,7 @@ dependencies = [
     { name = "firm-client" },
     { name = "gpiozero" },
     { name = "hprm" },
+    { name = "lewanlib" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion" },
@@ -28,6 +29,7 @@ dependencies = [
     { name = "rpi-hardware-pwm" },
     { name = "scipy" },
     { name = "textual" },
+    { name = "typing" },
 ]
 
 [package.optional-dependencies]
@@ -56,6 +58,7 @@ requires-dist = [
     { name = "firm-client", specifier = ">=1.1.0" },
     { name = "gpiozero" },
     { name = "hprm", specifier = ">=0.1.7" },
+    { name = "lewanlib", specifier = ">=0.1.0" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
@@ -69,6 +72,7 @@ requires-dist = [
     { name = "scipy" },
     { name = "swig", marker = "extra == 'encoder'", specifier = ">=4.3.0" },
     { name = "textual" },
+    { name = "typing", specifier = ">=3.10.0.0" },
 ]
 provides-extras = ["encoder"]
 
@@ -187,6 +191,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
+]
+
+[[package]]
+name = "lewanlib"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyserial" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4e/2b/52d09f18254c0c17f4bd9b39bf3d503b639478182c75779f04d660ce6d78/lewanlib-0.1.0.tar.gz", hash = "sha256:7e31a88fee02bff08370a19a6b7c4f302a76996c1817d5c52eb6fca8a5298fe8", size = 17413, upload-time = "2026-02-13T00:22:39.196Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/11/899c3bf32233775b776d6f1a80d7348cc2a32e0989a7bfcca251f6994aee/lewanlib-0.1.0-py3-none-any.whl", hash = "sha256:f213c4c0d6b6d1e49652b000cbaf6bb819dea87c82fb85d257dc6525e70ef9f0", size = 16009, upload-time = "2026-02-13T00:22:37.835Z" },
 ]
 
 [[package]]
@@ -489,6 +505,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyserial"
+version = "3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -683,6 +708,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/08/d5/655beb51224d1bfd4f9ddc0bb209659bfe71ff141bcf05c418ab670698f0/ty-0.0.14-py3-none-win32.whl", hash = "sha256:b20e22cf54c66b3e37e87377635da412d9a552c9bf4ad9fc449fed8b2e19dad2", size = 9507626, upload-time = "2026-01-27T00:57:41.43Z" },
     { url = "https://files.pythonhosted.org/packages/b6/d9/c569c9961760e20e0a4bc008eeb1415754564304fd53997a371b7cf3f864/ty-0.0.14-py3-none-win_amd64.whl", hash = "sha256:e312ff9475522d1a33186657fe74d1ec98e4a13e016d66f5758a452c90ff6409", size = 10437980, upload-time = "2026-01-27T00:57:36.422Z" },
     { url = "https://files.pythonhosted.org/packages/ad/0c/186829654f5bfd9a028f6648e9caeb11271960a61de97484627d24443f91/ty-0.0.14-py3-none-win_arm64.whl", hash = "sha256:b6facdbe9b740cb2c15293a1d178e22ffc600653646452632541d01c36d5e378", size = 9885831, upload-time = "2026-01-27T00:57:49.747Z" },
+]
+
+[[package]]
+name = "typing"
+version = "3.10.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/1b/835d4431805939d2996f8772aca1d2313a57e8860fec0e48e8e7dfe3a477/typing-3.10.0.0.tar.gz", hash = "sha256:13b4ad211f54ddbf93e5901a9967b1e07720c1d1b78d596ac6a439641aa1b130", size = 78962, upload-time = "2021-05-01T18:03:58.186Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f2/5d/865e17349564eb1772688d8afc5e3081a5964c640d64d1d2880ebaed002d/typing-3.10.0.0-py3-none-any.whl", hash = "sha256:12fbdfbe7d6cca1a42e485229afcb0b0c8259258cfb919b8a5e2a5c953742f89", size = 26320, upload-time = "2021-05-01T18:03:56.398Z" },
 ]
 
 [[package]]

@@ -5,14 +5,18 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS
+from airbrakes.constants import (
+    BUSY_WAIT_SECONDS,
+    ServoExtension,
+)
+
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.state import StandbyState, State
 
+
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
-    from LewanLib import ServoDataPacket
 
     from airbrakes.base_classes.base_firm import BaseFIRM
     from airbrakes.base_classes.base_servo import BaseServo
@@ -22,6 +26,7 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
+
 
 
 class Context:
@@ -37,6 +42,7 @@ class Context:
     __slots__ = (
         "apogee_predictor",
         "context_data_packet",
+        "current_extension",
         "data_processor",
         "firm",
         "firm_data_packets",
@@ -89,6 +95,7 @@ class Context:
 
         # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_ns: int = 0
+        self.current_extension: ServoExtension
 
     def start(self, wait_for_start: bool = False) -> None:
         """
@@ -172,12 +179,14 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
+        self.current_extension = ServoExtension.MAX_EXTENSION
         self.servo.set_max_extension()
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the air brakes to the minimum extension.
         """
+        self.current_extension = ServoExtension.MIN_EXTENSION
         self.servo.set_min_extension()
 
     def predict_apogee(self) -> None:
@@ -205,4 +214,6 @@ class Context:
 
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
-        self.servo_data_packet = self.servo.get_servo_data_packet()
+        self.servo_data_packet = ServoDataPacket(
+            extension=self.current_extension
+        )

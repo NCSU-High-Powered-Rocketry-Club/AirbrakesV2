@@ -109,7 +109,7 @@ class TestLogger:
 
     sample_ldp = LoggerDataPacket(
         state_letter="S",
-        set_extension="0.0",
+        extension="0.0",
         timestamp_seconds=4,
         encoder_position=None,
         retrieved_firm_packets=None,
@@ -241,7 +241,7 @@ class TestLogger:
         [
             (
                 make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+                make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION),
                 [make_firm_data_packet()],
                 [],
                 1,
@@ -252,7 +252,7 @@ class TestLogger:
                         ),
                         **asdict(
                             make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                                extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
@@ -261,7 +261,7 @@ class TestLogger:
             ),
             (
                 make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+                make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION),
                 [make_firm_data_packet()] * 2,
                 [],
                 2,
@@ -272,7 +272,7 @@ class TestLogger:
                         ),
                         **asdict(
                             make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                                extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
@@ -282,7 +282,7 @@ class TestLogger:
             ),
             (
                 make_context_data_packet(state=MotorBurnState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+                make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION),
                 [make_firm_data_packet()],
                 [],
                 1,
@@ -293,7 +293,7 @@ class TestLogger:
                         ),
                         **asdict(
                             make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
+                                extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
@@ -302,7 +302,7 @@ class TestLogger:
             ),
             (
                 make_context_data_packet(state=CoastState),
-                make_servo_data_packet(set_extension=ServoExtension.MAX_NO_BUZZ),
+                make_servo_data_packet(extension=ServoExtension.MAX_EXTENSION),
                 [make_firm_data_packet()],
                 [],
                 1,
@@ -313,7 +313,7 @@ class TestLogger:
                         ),
                         **asdict(
                             make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_NO_BUZZ.value)
+                                extension=str(ServoExtension.MAX_EXTENSION.value)
                             )
                         ),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
@@ -382,7 +382,7 @@ class TestLogger:
         """
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
-        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        servo_packet = make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION)
         firm_data_packets = [make_firm_data_packet()]
         apogee_predictor_data_packets = make_apogee_predictor_data_packet()
 
@@ -424,7 +424,7 @@ class TestLogger:
         """
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
-        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        servo_packet = make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION)
         firm_data_packets = [make_firm_data_packet()]
         apogee_predictor_data_packets = make_apogee_predictor_data_packet()
 
@@ -473,7 +473,7 @@ class TestLogger:
         # Setup packets
         context_standby = make_context_data_packet(state=StandbyState)
         context_motor = make_context_data_packet(state=MotorBurnState)
-        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        servo_packet = make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION)
 
         firm_data_packets = [make_firm_data_packet()]
         apogee_predictor_data_packet = make_apogee_predictor_data_packet()
@@ -545,7 +545,7 @@ class TestLogger:
         """
         # Setup the specific packets for this test
         context_packet = make_context_data_packet(state=LandedState)
-        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        servo_packet = make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION)
         firm_data_packets = [make_firm_data_packet()]
         apogee_predictor_data_packet = None
 
@@ -627,7 +627,7 @@ class TestLogger:
         """
         # Prepare sample data packets
         context_packet = make_context_data_packet(state=MotorBurnState)  # Avoid buffering
-        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        servo_packet = make_servo_data_packet(extension=ServoExtension.MIN_EXTENSION)
         firm_data_packets = [make_firm_data_packet()]
 
         flush_calls = 0
