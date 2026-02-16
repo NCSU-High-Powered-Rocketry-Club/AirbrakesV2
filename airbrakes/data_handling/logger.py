@@ -157,8 +157,7 @@ class Logger:
             logger_packet = LoggerDataPacket(
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
-                set_extension=str(servo_data_packet.set_extension.value),
-                encoder_position=servo_data_packet.encoder_position,
+                extension=str(servo_data_packet.extension.value),
                 # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
                 temperature_celsius=firm_data_packet.temperature_celsius,

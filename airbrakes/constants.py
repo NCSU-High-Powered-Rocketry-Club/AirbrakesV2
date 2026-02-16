@@ -38,11 +38,6 @@ SERVO_MAX_ANGLE_DEGREES = 240
 The maximum angle that the servo can rotate to.
 """
 
-SERVO_ID = 1
-"""
-The ID of the servo.
-"""
-
 BUS_NUMBER = 1
 """
 The bus number of the servo.
@@ -75,11 +70,6 @@ class ServoExtension(Enum):
     MIN_EXTENSION = 0
 
     MAX_EXTENSION = 40
-
-
-# -------------------------------------------------------
-# Encoder Configuration
-# -------------------------------------------------------
 
 # -------------------------------------------------------
 # Buzzer Configuration

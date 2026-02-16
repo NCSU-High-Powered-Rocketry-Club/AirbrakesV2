@@ -5,6 +5,7 @@ This will serve as the base for real servo and the mock servo.
 """
 
 from abc import ABC, abstractmethod
+from airbrakes.constants import ServoExtension
 
 class BaseServo(ABC):
     """
@@ -35,4 +36,10 @@ class BaseServo(ABC):
         Retracts the servo to the minimum extension.
 
         Starts a timer to stop the buzzing after the servo reaches the minimum extension.
+        """
+    @property
+    @abstractmethod
+    def current_extension(self) -> ServoExtension:
+        """
+        The servo's current extension.
         """

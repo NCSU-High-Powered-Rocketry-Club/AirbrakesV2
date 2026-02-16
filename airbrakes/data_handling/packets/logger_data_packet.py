@@ -18,7 +18,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Fields in ServoDataPacket
     extension: str | None
-    encoder_position: int | None
 
     # FIRMDataPacket Fields
     timestamp_seconds: float | None = None

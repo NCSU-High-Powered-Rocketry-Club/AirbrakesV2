@@ -6,7 +6,7 @@ import pytest
 
 from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
 from airbrakes.hardware.servo import Servo
-from airbrakes.mock.mock_servo import MockBus, MockServo
+from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx
 """
@@ -28,7 +28,6 @@ class TestBaseServo:
         assert isinstance(servo, MockServo)
         assert isinstance(servo.current_extension, ServoExtension)
         assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert isinstance(servo.servo, MockBus)
 
     def test_set_extension(self, servo):
         servo.set_max_extension()

@@ -5,8 +5,6 @@ airbrakes, along with a rotary encoder to measure the servo's position.
 from typing import TYPE_CHECKING
 
 from airbrakes.base_classes.base_servo import BaseServo
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-from airbrakes.mock.mock_servo import MockServo
 
 from airbrakes.constants import (
     ServoExtension,
@@ -30,8 +28,8 @@ class LewanServo(BaseServo):
     """
 
     __slots__ = (
+        "_current_extension",
         "bus",
-        "current_extension",
         "servo",
     )
 
@@ -41,7 +39,7 @@ class LewanServo(BaseServo):
 
         """
         super().__init__()
-        self.current_extension : int
+        self._current_extension: ServoExtension
         self.bus = ServoBus(port=SERVO_PORT)
         self.servo = Servo(SERVO_ID, self.bus)
         self.servo.move_time_write(ServoExtension.MIN_EXTENSION, SERVO_EXTENSION_TIME)
@@ -58,3 +56,13 @@ class LewanServo(BaseServo):
         Retracts the servo to the minimum extension.
         """
         self.servo.move_time_write(ServoExtension.MIN_EXTENSION, SERVO_EXTENSION_TIME)
+
+    @property
+    def current_extension(self) -> ServoExtension:
+        """
+        The servo's current extension.
+        """
+        return self._current_extension
+
+
+
