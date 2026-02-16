@@ -21,6 +21,8 @@ dependencies = [
     "rpi-hardware-pwm>=0.3.0",
     "hprm>=0.1.7",
     "firm-client>=1.1.0",
+    "lewanlib>=0.1.0",
+    "typing>=3.10.0.0",
 ]
 
 # TODO: Remove this once polars has official wheels for python 3.14t

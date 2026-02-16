@@ -50,11 +50,11 @@ class TestContext:
         context.extend_airbrakes()
         assert context.servo.current_extension == ServoExtension.MAX_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.current_extension == ServoExtension.MAX_NO_BUZZ
+        assert context.servo.current_extension == ServoExtension.MAX_EXTENSION
         context.retract_airbrakes()
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.current_extension == ServoExtension.MIN_NO_BUZZ
+        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
     def test_start(self, context):
         context.start(wait_for_start=True)
@@ -149,7 +149,7 @@ class TestContext:
             asserts.append(ctx_dp.retrieved_firm_packets >= 1)
             asserts.append(ctx_dp.apogee_predictor_queue_size >= 0)
             asserts.append(ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9))
-            asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
+            asserts.append(servo_dp.extension == ServoExtension.MAX_EXTENSION)
             asserts.append(
                 firm_data_packets[0].timestamp_seconds == pytest.approx(time.time(), rel=1e9)
             )
@@ -244,10 +244,7 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.current_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert context.servo.current_extension in ServoExtension.MIN_EXTENSION
 
         # Open the file and check if we have a large number of lines:
         with context.logger.log_path.open() as file:
@@ -292,10 +289,7 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.current_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert context.servo.current_extension in ServoExtension.MIN_EXTENSION
 
         assert not fd._running
 
@@ -452,7 +446,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
+        assert context.servo_data_packet.extension == ServoExtension.MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
         """

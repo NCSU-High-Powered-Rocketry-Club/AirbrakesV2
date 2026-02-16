@@ -11,10 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
-    FIRM_FREQUENCY,
-    SERVO_CHANNEL,
+    FIRM_FREQUENCY, SERVO_ID, SERVO_PORT
 )
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
@@ -69,7 +66,7 @@ def firm():
 
 @pytest.fixture
 def servo():
-    return MockServo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+    return MockServo(SERVO_ID, SERVO_PORT)
 
 
 @pytest.fixture

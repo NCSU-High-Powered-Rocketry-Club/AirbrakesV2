@@ -5,10 +5,14 @@ Module which provides a high level interface to the air brakes system on the roc
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS
+from airbrakes.constants import (
+    BUSY_WAIT_SECONDS,
+)
+
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.state import StandbyState, State
+
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
@@ -21,6 +25,7 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
+
 
 
 class Context:
@@ -171,13 +176,13 @@ class Context:
         """
         Extends the air brakes to the maximum extension.
         """
-        self.servo.set_extended()
+        self.servo.set_max_extension()
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the air brakes to the minimum extension.
         """
-        self.servo.set_retracted()
+        self.servo.set_min_extension()
 
     def predict_apogee(self) -> None:
         """
@@ -205,6 +210,5 @@ class Context:
         # Creates a Servo Data Packet to log the current extension of the servo and the position
         # of the encoder.
         self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.current_extension,
-            encoder_position=self.servo.get_encoder_reading(),
+            extension=self.servo.current_extension
         )
