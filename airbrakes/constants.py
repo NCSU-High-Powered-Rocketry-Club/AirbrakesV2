@@ -187,7 +187,7 @@ Once the state changes, this buffer will be logged to make sure we don't lose da
 # FIRM Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "COM12" #"/dev/ttyACM0"
+FIRM_PORT = "COM11" #"/dev/ttyACM0"
 
 FIRM_BAUD_RATE = 2_000_000
 

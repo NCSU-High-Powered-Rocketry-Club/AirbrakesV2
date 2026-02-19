@@ -63,7 +63,7 @@ profiling = [
 [package.metadata]
 requires-dist = [
     { name = "colorama" },
-    { name = "firm-client", specifier = ">=1.1.0" },
+    { name = "firm-client", specifier = ">=1.1.1" },
     { name = "gpiozero" },
     { name = "hprm", specifier = ">=0.1.7" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
@@ -156,16 +156,16 @@ wheels = [
 
 [[package]]
 name = "firm-client"
-version = "1.1.0"
+version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ef/8a/cfc4a19bbc5f9022f98d3b5ba420c648372b809a3e84753e8f0e6be8370a/firm_client-1.1.0.tar.gz", hash = "sha256:3b242e877acf000966bd963d39c581f15e306a46e635ee3b937f403546930236", size = 55119, upload-time = "2026-02-04T04:06:40.555Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/94/7f6c0eab08bf754620e349f26c53958ba885e67fd75a1465fe1f8e202d59/firm_client-1.1.2.tar.gz", hash = "sha256:77f074e257d7bdff9a09d25af4c3d855631f37157e5959a663c9e23f981ab680", size = 56829, upload-time = "2026-02-11T06:41:42.699Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/3b/e443635a50c5acea621b6584f7fa217019eadf1f92da24085ac594017bc3/firm_client-1.1.0-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:6c5072fd3e21e1d7935460aff1a1d947c0d58c38b5593cc80ce37a37eb0984d4", size = 414074, upload-time = "2026-02-04T04:06:39.688Z" },
-    { url = "https://files.pythonhosted.org/packages/9d/8d/eb1343dee128c06ba87e055af8b6323b605f743208c13f6538b4116f1df6/firm_client-1.1.0-cp314-cp314-manylinux_2_31_x86_64.whl", hash = "sha256:e6482569328ef67254f4c0d2359f0ad04e5da4cc28b6837c8183800346b177ab", size = 436409, upload-time = "2026-02-04T04:06:45.535Z" },
-    { url = "https://files.pythonhosted.org/packages/58/b2/a7aedc12bdf11defeb17110b896c57b22a8a88ca186d4e888324e3dfe2a8/firm_client-1.1.0-cp314-cp314-win_amd64.whl", hash = "sha256:2f24e3b059558d3a9005013b3d25f4143bc5cea97180d14a7f6f3e1d2b3623f1", size = 344234, upload-time = "2026-02-04T04:06:36.121Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/d5/46b662f7e73c3453a95ff472790c036bbf2891a91a540cb63c22f4298c13/firm_client-1.1.0-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:a27111745dc27fe9382b155e970b86b244361c70c4bb57d5bbc754c4eb6153b6", size = 412427, upload-time = "2026-02-04T04:06:35.076Z" },
-    { url = "https://files.pythonhosted.org/packages/28/c5/1f05d88068fa3245449ee72a109a7e37e5b4df917b7e6a1bad314fc4462d/firm_client-1.1.0-cp314-cp314t-manylinux_2_31_x86_64.whl", hash = "sha256:8c22ccc05243287eaf3c3ef2e30ecfe850a80b1a0f5bf41c3e56832f07bc1994", size = 436226, upload-time = "2026-02-04T04:06:51.613Z" },
-    { url = "https://files.pythonhosted.org/packages/c6/98/24db31cca1a2b058f6a96c5afc790eae38f7c7c8450293f1d505293b00ee/firm_client-1.1.0-cp314-cp314t-win_amd64.whl", hash = "sha256:26752453c96d5a4cffd1579b5fd2fdcec6e3146b1946e621f4f8896553bbb310", size = 343991, upload-time = "2026-02-04T04:06:32.082Z" },
+    { url = "https://files.pythonhosted.org/packages/13/54/0e29133bc88c6cce2c08293faf60bba2f0b2a580520819b95d51893d8732/firm_client-1.1.2-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:8360edc879ddba02c8a4709782dd2f118a590e01f8f35243f53bc297204af2d9", size = 428026, upload-time = "2026-02-11T06:41:35.234Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/b6/f9096bc3589a4577d47c2d7515c8f2d29f3a68e9521b87f28cae9c2052ef/firm_client-1.1.2-cp314-cp314-manylinux_2_31_x86_64.whl", hash = "sha256:ad490add9adcc6c4f691148671fb7c718109445a1a8d9443334b078a69e0eb98", size = 449875, upload-time = "2026-02-11T06:41:45.635Z" },
+    { url = "https://files.pythonhosted.org/packages/78/de/c35f318ac5e911dbff59f68ea9b33ad2a9f3b1f40a6605e4aaee2852f225/firm_client-1.1.2-cp314-cp314-win_amd64.whl", hash = "sha256:a6b743b7f20aa07eedc8e2bf0f96ff8079ac13d0af9e70177f4c816565865259", size = 356617, upload-time = "2026-02-11T06:41:48.65Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/36/52870dccde6d96911880d7cf29aa0cc16d6687dafd9ae12be57884ee7751/firm_client-1.1.2-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:896c5528106a4994574d6f1c2d0d6f28a1b598bd7415c59e7c74fc1857ad3f6e", size = 426474, upload-time = "2026-02-11T06:41:44.093Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/53/d85cf17ede2118b01aed94c0a71791fd72b771f8641ec6fc9e973f3ac014/firm_client-1.1.2-cp314-cp314t-manylinux_2_31_x86_64.whl", hash = "sha256:156052879d31643af2f56fafe97c1bd77c53c3c435f42eab6dc03d9e12ca9465", size = 450155, upload-time = "2026-02-11T06:41:30.05Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/45/aeefa071f3d73f0e02562f43304cedc8d4ea1f2bc724c3456c7f3fd7b6ba/firm_client-1.1.2-cp314-cp314t-win_amd64.whl", hash = "sha256:90e36dcc6bd2bb52f2657edd2f4db196714051c77e3e53c9a03e6e6fe70b9a6f", size = 356814, upload-time = "2026-02-11T06:41:41.744Z" },
 ]
 
 [[package]]
