@@ -80,11 +80,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 74
-    MIN_NO_BUZZ = 78
+    MIN_EXTENSION = 65
+    MIN_NO_BUZZ = 70
 
-    MAX_EXTENSION = 124
-    MAX_NO_BUZZ = 121
+    MAX_EXTENSION = 100
+    MAX_NO_BUZZ = 95
 
 
 # -------------------------------------------------------
@@ -305,14 +305,14 @@ from 50.0 to 30.0 after Huntsville launch data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 487.68  # 1600 ft
+TARGET_APOGEE_METERS = 807.72  # 2650 ft
 """
 The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 4.770
+ROCKET_DRY_MASS_KG: float = 5.150  # 4.770
 """
 The mass of the entire rocket without propellant in kilograms.
 """
