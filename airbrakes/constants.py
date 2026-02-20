@@ -86,26 +86,6 @@ class ServoExtension(Enum):
     MAX_EXTENSION = 124
     MAX_NO_BUZZ = 121
 
-
-# -------------------------------------------------------
-# Encoder Configuration
-# -------------------------------------------------------
-
-ENCODER_RESOLUTION = 20
-"""
-The points per revolution of the encoder.
-"""
-
-ENCODER_PIN_A = 23
-"""
-The GPIO pin that the encoder's A pin is connected to.
-"""
-
-ENCODER_PIN_B = 24
-"""
-The GPIO pin that the encoder's B pin is connected to.
-"""
-
 # -------------------------------------------------------
 # Buzzer Configuration
 # -------------------------------------------------------

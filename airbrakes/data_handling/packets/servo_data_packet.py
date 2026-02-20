@@ -18,8 +18,3 @@ class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
     The set extension of the servo.
     """
-
-    encoder_position: int | None
-    """
-    The position the encoder is currently reading.
-    """

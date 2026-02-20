@@ -32,7 +32,6 @@ class TestBaseServo:
         assert servo.servo.hz == 50
         assert isinstance(servo._go_to_max_no_buzz, threading.Timer)
         assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
-        assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
 
     def test_set_extension(self, servo):
         prev_duty_cycle = servo.servo.duty_cycle
@@ -113,18 +112,6 @@ class TestBaseServo:
         time.sleep(time_taken)
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert servo.servo.duty_cycle != prev_duty_cycle
-
-    def test_encoder_get_position(self, servo):
-        """
-        Tests that the encoder reading is correct.
-        """
-        assert servo.get_encoder_reading() == 0
-        servo.encoder.steps = 10
-        assert servo.get_encoder_reading() == 10
-        servo.encoder.steps = -10
-        assert servo.get_encoder_reading() == -10
-        servo.encoder.steps = 0
-        assert servo.get_encoder_reading() == 0
 
     def test_angle_to_duty_cycle(self):
         """

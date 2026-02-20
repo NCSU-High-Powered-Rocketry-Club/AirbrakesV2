@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
     FIRM_FREQUENCY,
     SERVO_CHANNEL,
 )
@@ -69,7 +67,7 @@ def firm():
 
 @pytest.fixture
 def servo():
-    return MockServo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+    return MockServo(SERVO_CHANNEL)
 
 
 @pytest.fixture
