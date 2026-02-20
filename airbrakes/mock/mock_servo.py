@@ -5,8 +5,8 @@ Module which contains the MockServo class and doesn't use the adafruit circuitpy
 from gpiozero import RotaryEncoder
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
+from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
-from airbrakes.interfaces.base_servo import BaseServo
 
 
 class MockServo(BaseServo):
@@ -24,31 +24,19 @@ class MockServo(BaseServo):
     def __init__(
         self,
         servo_channel: int,
-        encoder_pin_number_a: int,
-        encoder_pin_number_b: int,
     ) -> None:
         """
         Initializes the servo object with the specified GPIO pin.
 
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
-            to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
-            to.
         """
         factory = MockFactory(pin_class=MockPWMPin)
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
-        encoder = RotaryEncoder(
-            encoder_pin_number_a,
-            encoder_pin_number_b,
-            max_steps=0,
-            pin_factory=factory,
-        )
 
         servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
-        super().__init__(encoder=encoder, servo=servo)
+        super().__init__(servo=servo)
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """

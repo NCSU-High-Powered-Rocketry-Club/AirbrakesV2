@@ -86,26 +86,6 @@ class ServoExtension(Enum):
     MAX_EXTENSION = 124
     MAX_NO_BUZZ = 121
 
-
-# -------------------------------------------------------
-# Encoder Configuration
-# -------------------------------------------------------
-
-ENCODER_RESOLUTION = 20
-"""
-The points per revolution of the encoder.
-"""
-
-ENCODER_PIN_A = 23
-"""
-The GPIO pin that the encoder's A pin is connected to.
-"""
-
-ENCODER_PIN_B = 24
-"""
-The GPIO pin that the encoder's B pin is connected to.
-"""
-
 # -------------------------------------------------------
 # Buzzer Configuration
 # -------------------------------------------------------
@@ -139,26 +119,6 @@ class DisplayEndingType(StrEnum):
     The display ends because the rocket took off, in a real launch.
     """
 
-
-# -------------------------------------------------------
-# Data Processor Configuration
-# -------------------------------------------------------
-
-WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000  # 6 seconds at 500 Hz
-"""
-The number of packets to use for zeroing the pressure altitude at the launch pad.
-
-This is used to prevent atmospheric pressure changes from affecting the zeroed out pressure
-altitude.
-"""
-
-SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
-"""
-After airbrakes retract, it takes some time for the pressure to stabilize.
-
-DataProcessor will wait this amount of time before switching back to using pressure altitude.
-"""
-
 # -------------------------------------------------------
 # Logging Configuration
 # -------------------------------------------------------
@@ -179,7 +139,7 @@ file.
 
 STOP_SIGNAL = "STOP"
 """
-The signal to stop the IMU, Logger, and ApogeePredictor thread, this will be put in the queue to
+The signal to stop the FIRM device, Logger, and ApogeePredictor thread, this will be put in the queue to
 stop the threads.
 """
 
@@ -204,38 +164,16 @@ Once the state changes, this buffer will be logged to make sure we don't lose da
 
 
 # -------------------------------------------------------
-# IMU Configuration
+# FIRM Configuration
 # -------------------------------------------------------
 
-IMU_PORT = "/dev/ttyACM0"
-"""
-The port that the IMU is connected to.
+FIRM_PORT = "COM12"
 
-This is typically the default port where the IMU connects to the Raspberry Pi. "/dev/ttyACM0"
-corresponds to the first USB-serial device recognized by the system in Linux.
-"""
+FIRM_BAUD_RATE = 2_000_000
 
-RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
-"""
-The period at which the IMU sends raw data packets.
+FIRM_SERIAL_TIMEOUT_SECONDS = 1.0
 
-This is the reciprocal of the frequency.
-"""
-EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
-"""
-The period at which the IMU sends estimated data packets.
-
-This is the reciprocal of the frequency.
-"""
-
-IMU_TIMEOUT_SECONDS = 3.0
-"""
-The maximum amount of time in seconds the IMU thread is allowed to do something (e.g. read a packet)
-before it is considered to have timed out.
-
-This is used to prevent the program from deadlocking if the IMU stops sending data. This is also
-used as the max timeout to read from the serial port.
-"""
+FIRM_FREQUENCY = 100
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -244,12 +182,6 @@ used as the max timeout to read from the serial port.
 # Arbitrarily set values for transition between states:
 
 # ----------------- Standby to MotorBurn ----------------
-ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
-"""
-We integrate our acceleration to get velocity, but because IMU has some noise, and other things like
-wind or being small bumps can cause this to accumulate even while the rocket is stationary, so we
-deadband the acceleration to zero to prevent this.
-"""
 
 
 TAKEOFF_VELOCITY_METERS_PER_SECOND = 10
@@ -329,5 +261,10 @@ ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 The cross-sectional area of the rocket in square meters, with airbrakes all the way retracted.
 """
 
-# TODO: delete this and simulation/
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
+
+TIMEOUT_SECONDS: float = 5.0
+
+BAUD_RATE: int = 2_000_000
+
+TIMEOUT: float = 0.1

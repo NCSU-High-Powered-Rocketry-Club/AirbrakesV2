@@ -2,48 +2,31 @@
 Utility functions used throughout the test suite.
 """
 
+from firm_client import FIRMDataPacket
 from msgspec.structs import asdict
 
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
-def make_est_data_packet(**kwargs) -> EstimatedDataPacket:
+def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
     """
-    Creates an EstimatedDataPacket with the specified keyword arguments.
-
+    Creates a FIRMDataPacket with the specified keyword arguments.
     Provides dummy values for arguments not specified.
     """
-    dummy_values = dict.fromkeys(EstimatedDataPacket.__struct_fields__, 1.123456789)
-    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
-    dummy_values["invalid_fields"] = None  # Needs to be a list or None
-    return EstimatedDataPacket(**{**dummy_values, **kwargs})
+    dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 1.987654321)
+    return FIRMDataPacket(**{**dummy_values, **kwargs})
 
 
-def make_raw_data_packet(**kwargs) -> RawDataPacket:
+def make_firm_data_packet_zeroed(**kwargs) -> FIRMDataPacket:
     """
-    Creates a RawDataPacket with the specified keyword arguments.
-
-    Provides dummy values for arguments not specified.
+    Creates a FIRMDataPacket with the specified keyword arguments.
+    Provides zeroes for arguments not specified.
     """
-    dummy_values = dict.fromkeys(RawDataPacket.__struct_fields__, 1.987654321)
-    dummy_values["timestamp"] = kwargs.get("timestamp", 12345678)  # Needs to be an integer
-    dummy_values["invalid_fields"] = None  # Needs to be a list or None
-    return RawDataPacket(**{**dummy_values, **kwargs})
-
-
-def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
-    """
-    Creates a ProcessorDataPacket with the specified keyword arguments.
-
-    Provides dummy values for arguments not specified.
-    """
-    dummy_values = dict.fromkeys(ProcessorDataPacket.__struct_fields__, 1.887766554)
-    return ProcessorDataPacket(**{**dummy_values, **kwargs})
+    dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 0.0)
+    return FIRMDataPacket(**{**dummy_values, **kwargs})
 
 
 def make_context_data_packet(**kwargs) -> ContextDataPacket:

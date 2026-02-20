@@ -8,7 +8,7 @@ command:
 from airbrakes.constants import ServoExtension, SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B
 from airbrakes.hardware.servo import Servo
 
-servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+servo = Servo(SERVO_CHANNEL)
 
 print("0 for testing exending/retracting, 1 for testing positions")
 if int(input()) == 0:

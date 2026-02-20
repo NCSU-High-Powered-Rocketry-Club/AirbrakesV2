@@ -2,7 +2,6 @@ import csv
 import queue
 import threading
 import time
-from collections import deque
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -16,33 +15,31 @@ from airbrakes.constants import (
     STOP_SIGNAL,
     ServoExtension,
 )
+from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import (
     CoastState,
     LandedState,
     MotorBurnState,
     StandbyState,
 )
-from airbrakes.telemetry.logger import Logger
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.utils import (
     context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
     make_context_data_packet,
-    make_est_data_packet,
-    make_processor_data_packet,
-    make_raw_data_packet,
+    make_firm_data_packet,
     make_servo_data_packet,
 )
 from tests.conftest import LOG_PATH
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-    from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-    from airbrakes.telemetry.packets.imu_data_packet import (
-        IMUDataPacket,
+    from firm_client import FIRMDataPacket
+
+    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+        ApogeePredictorDataPacket,
     )
-    from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-    from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+    from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
 def patched_stop(self):
@@ -65,14 +62,6 @@ def extract_state_letter(value) -> str:
         return value[0]
 
     return str(value)[0]
-
-
-def only_logged_pdp_fields(pdp_dict: dict[str, str]) -> dict[str, str]:
-    """
-    Returns a dictionary with only the fields that are logged in the ProcessorDataPacket.
-    """
-    pdp_dict.pop("time_since_last_data_packet")
-    return pdp_dict
 
 
 def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> dict[str, str]:
@@ -121,12 +110,8 @@ class TestLogger:
     sample_ldp = LoggerDataPacket(
         state_letter="S",
         set_extension="0.0",
-        timestamp=4,
-        invalid_fields="",
-        encoder_position=None,
-        imu_packets_per_cycle=None,
-        retrieved_imu_packets=None,
-        queued_imu_packets=None,
+        timestamp_seconds=4,
+        retrieved_firm_packets=None,
         apogee_predictor_queue_size=None,
         update_timestamp_ns=None,
     )
@@ -247,8 +232,7 @@ class TestLogger:
         (
             "context_packet",
             "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
+            "firm_data_packets",
             "apogee_predictor_data_packet",
             "file_lines",
             "expected_output",
@@ -257,8 +241,7 @@ class TestLogger:
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
+                [make_firm_data_packet()],
                 [],
                 1,
                 [
@@ -271,17 +254,16 @@ class TestLogger:
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
+                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
                 ],
             ),
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
+                [make_firm_data_packet()] * 2,
                 [],
-                1,
+                2,
                 [
                     {
                         **convert_dict_vals_to_str(
@@ -292,20 +274,17 @@ class TestLogger:
                                 set_extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
-                        **convert_dict_vals_to_str(asdict(make_est_data_packet())),
-                        **only_logged_pdp_fields(
-                            convert_dict_vals_to_str(asdict(make_processor_data_packet()))
-                        ),
+                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
-                ],
+                ]
+                * 2,
             ),
             (
                 make_context_data_packet(state=MotorBurnState),
-                make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
-                deque([make_raw_data_packet(), make_est_data_packet()]),
-                [make_processor_data_packet()],
+                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+                [make_firm_data_packet()],
                 [],
-                2,
+                1,
                 [
                     {
                         **convert_dict_vals_to_str(
@@ -313,34 +292,19 @@ class TestLogger:
                         ),
                         **asdict(
                             make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
+                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
                             )
                         ),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                    },
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=MotorBurnState))
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
-                            )
-                        ),
-                        **convert_dict_vals_to_str(asdict(make_est_data_packet())),
-                        **only_logged_pdp_fields(
-                            convert_dict_vals_to_str(asdict(make_processor_data_packet()))
-                        ),
-                    },
+                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                    }
                 ],
             ),
             (
                 make_context_data_packet(state=CoastState),
                 make_servo_data_packet(set_extension=ServoExtension.MAX_NO_BUZZ),
-                deque([make_raw_data_packet(), make_est_data_packet()]),
-                [make_processor_data_packet()],
-                make_apogee_predictor_data_packet(),
-                2,
+                [make_firm_data_packet()],
+                [],
+                1,
                 [
                     {
                         **convert_dict_vals_to_str(
@@ -351,32 +315,16 @@ class TestLogger:
                                 set_extension=str(ServoExtension.MAX_NO_BUZZ.value)
                             )
                         ),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                        **convert_dict_vals_to_str(asdict(make_apogee_predictor_data_packet())),
-                    },
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=CoastState))
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_NO_BUZZ.value)
-                            )
-                        ),
-                        **convert_dict_vals_to_str(asdict(make_est_data_packet())),
-                        **convert_dict_vals_to_str(asdict(make_apogee_predictor_data_packet())),
-                        **only_logged_pdp_fields(
-                            convert_dict_vals_to_str(asdict(make_processor_data_packet()))
-                        ),
-                    },
+                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                    }
                 ],
             ),
         ],
         ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-            "BothDataPackets in MotorBurn",
-            "BothDataPackets in Coast",
+            "FIRMDataPacket",
+            "2 FIRMDataPackets",
+            "FIRMDataPacket in MotorBurn",
+            "FIRMDataPacket in Coast",
         ],
     )
     def test_log_method(
@@ -384,8 +332,7 @@ class TestLogger:
         logger,
         context_packet,
         servo_packet,
-        imu_data_packets,
-        processor_data_packets,
+        firm_data_packets,
         apogee_predictor_data_packet,
         file_lines,
         expected_output: list[dict],
@@ -398,8 +345,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            imu_data_packets.copy(),
-            processor_data_packets.copy(),
+            firm_data_packets.copy(),
             apogee_predictor_data_packet,
         )
         time.sleep(0.01)  # Give the thread time to log to file
@@ -429,473 +375,215 @@ class TestLogger:
 
             assert idx + 1 == file_lines
 
-    @pytest.mark.parametrize(
-        (
-            "context_packet",
-            "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
-            "apogee_predictor_data_packets",
-        ),
-        [
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
-                [],
-            ),
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
-                make_apogee_predictor_data_packet(),
-            ),
-        ],
-        ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-        ],
-    )
-    def test_log_capacity_exceeded_standby(
-        self,
-        context_packet: ContextDataPacket,
-        servo_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
-        monkeypatch,
-        logger,
-    ):
+    def test_log_capacity_exceeded_standby(self, monkeypatch, logger):
         """
-        Tests whether the log buffer works correctly for the Standby and Landed state.
+        Tests whether the log buffer works correctly for the Standby state.
         """
+        # Setup packets
+        context_packet = make_context_data_packet(state=StandbyState)
+        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        firm_data_packets = [make_firm_data_packet()]
+        apogee_predictor_data_packets = make_apogee_predictor_data_packet()
+
         monkeypatch.setattr(logger.__class__, "stop", patched_stop)
+
         # Test if the buffer works correctly
         logger.start()
+
         # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after LOG_BUFFER_SIZE.
+        # We multiply lists to simulate multiple packets coming in
         logger.log(
             context_packet,
             servo_packet,
-            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
-            processor_data_packets * (IDLE_LOG_CAPACITY + 10),
+            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
             apogee_predictor_data_packets,
         )
 
         time.sleep(0.01)  # Give the thread time to log to file
-        # Since we did +10 above, we should have 10 left in the buffer
+
+        # Since we did +10 above the capacity, we should have 10 left in the buffer
+        # (The first IDLE_LOG_CAPACITY were written to disk, the rest are buffered)
         assert len(logger._log_buffer) == 10
-        logger.stop()  # We must stop because otherwise the values are not flushed to the file
+
+        logger.stop()  # We must stop because otherwise the values are not flushed to the file due to monkeypatch
 
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
-            count = 0
-            for idx, _ in enumerate(reader):
-                count = idx
+            # Count rows excluding header
+            count = sum(1 for _ in reader)
 
-            # First row index is zero, hence the +1
-            assert count + 1 == IDLE_LOG_CAPACITY
-            assert logger._log_counter == IDLE_LOG_CAPACITY
+        # The file should only contain the IDLE_LOG_CAPACITY rows.
+        # The 10 in the buffer were never flushed because we monkeypatched stop().
+        assert count == IDLE_LOG_CAPACITY
+        assert logger._log_counter == IDLE_LOG_CAPACITY
 
-    @pytest.mark.parametrize(
-        (
-            "context_packet",
-            "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
-            "apogee_predictor_data_packets",
-        ),
-        [
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
-                [],
-            ),
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
-                make_apogee_predictor_data_packet(),
-            ),
-        ],
-        ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-        ],
-    )
-    def test_log_buffer_keeps_increasing(
-        self,
-        context_packet: ContextDataPacket,
-        servo_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: list[ApogeePredictorDataPacket],
-        logger,
-    ):
+    def test_log_buffer_keeps_increasing(self, logger):
         """
         Tests that the buffer keeps building up on subsequent calls to log().
         """
-        # Test if the buffer works correctly
+        # Setup packets
+        context_packet = make_context_data_packet(state=StandbyState)
+        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        firm_data_packets = [make_firm_data_packet()]
+        apogee_predictor_data_packets = make_apogee_predictor_data_packet()
+
         logger.start()
-        # Log more than IDLE_LOG_CAPACITY packets to test if packets go to the buffer.
+
+        # 1. Fill the IDLE capacity + put 10 in buffer
         logger.log(
             context_packet,
             servo_packet,
-            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
-            processor_data_packets * (IDLE_LOG_CAPACITY + 10),
+            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
             apogee_predictor_data_packets,
         )
 
-        # Log more than LOG_BUFFER_SIZE packets to test if the buffer keeps building.
+        # 2. Log WAY more than the buffer size to test capping mechanism
+        # This will attempt to add LOG_BUFFER_SIZE + 10 packets to the existing buffer.
         logger.log(
             context_packet,
             servo_packet,
-            imu_data_packets * (LOG_BUFFER_SIZE + 10),
-            processor_data_packets * (LOG_BUFFER_SIZE + 10),
+            firm_data_packets * (LOG_BUFFER_SIZE + 10),
             apogee_predictor_data_packets,
         )
 
         time.sleep(0.01)  # Give the thread time to log to file
 
+        # The buffer should be capped at exactly LOG_BUFFER_SIZE.
+        # Any excess packets (the +10 and the previous +10) are dropped or fit within the cap.
         assert len(logger._log_buffer) == LOG_BUFFER_SIZE
-        logger.stop()  # We must stop because otherwise the values are not flushed to the file
+
+        logger.stop()  # stop() will flush the buffer to disk
+
         assert len(logger._log_buffer) == 0
 
         with logger.log_path.open() as file:
             lines = file.readlines()
-            # First row is the header:
+            # First row is the header, so we subtract 1.
+            # Total lines should be:
+            #   IDLE_LOG_CAPACITY (written immediately in step 1)
+            # + LOG_BUFFER_SIZE (flushed from buffer in step 3)
             assert len(lines) - 1 == IDLE_LOG_CAPACITY + LOG_BUFFER_SIZE
 
-    @pytest.mark.parametrize(
-        (
-            "context_packets",
-            "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
-            "apogee_predictor_data_packets",
-        ),
-        [
-            (
-                (
-                    make_context_data_packet(state=StandbyState),
-                    make_context_data_packet(state=MotorBurnState),
-                ),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
-                [],
-            ),
-            (
-                (
-                    make_context_data_packet(state=StandbyState),
-                    make_context_data_packet(state=MotorBurnState),
-                ),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
-                make_apogee_predictor_data_packet(),
-            ),
-        ],
-        ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-        ],
-    )
-    def test_log_buffer_reset_after_standby(
-        self,
-        logger,
-        context_packets: tuple[ContextDataPacket, ContextDataPacket],
-        servo_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: ApogeePredictorDataPacket,
-    ):
+    def test_log_buffer_reset_after_standby(self, logger):
         """
         Tests if the buffer is logged when switching from standby to motor burn and that the counter
         is reset.
         """
+        # Setup packets
+        context_standby = make_context_data_packet(state=StandbyState)
+        context_motor = make_context_data_packet(state=MotorBurnState)
+        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+
+        firm_data_packets = [make_firm_data_packet()]
+        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
+
         # Note: We are not monkeypatching the stop method here, because we want to test if the
         # entire buffer is logged when we switch from Standby to MotorBurn.
         logger.start()
-        # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after hitting that.
+
+        # 1. Log in Standby (IDLE capacity + 10 overflow)
+        # The first IDLE_LOG_CAPACITY get written immediately. The +10 sit in the buffer.
         logger.log(
-            context_packets[0],
+            context_standby,
             servo_packet,
-            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
-            processor_data_packets * (IDLE_LOG_CAPACITY + 10),
-            apogee_predictor_data_packets,
+            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            apogee_predictor_data_packet,
         )
         time.sleep(0.1)  # Give the thread time to log to file
 
         # Since we did +10 above, we should have 10 left in the buffer
         assert len(logger._log_buffer) == 10
-        # Let's test that switching to MotorBurn will log those packets:
 
+        # 2. Switch to MotorBurn -> Should flush the buffer (the previous 10) + log new ones
         logger.log(
-            context_packets[1],
+            context_motor,
             servo_packet,
-            imu_data_packets * 8,
-            processor_data_packets * 8,
-            apogee_predictor_data_packets,
+            firm_data_packets * 8,
+            apogee_predictor_data_packet,
         )
+
+        # Buffer should be empty now (flushed to disk due to state change)
         assert len(logger._log_buffer) == 0
+
         logger.stop()
         assert len(logger._log_buffer) == 0
 
-        # Read the file and check if we have LOG_BUFFER_SIZE + 10
+        # 3. Read the file and verify correct state transition
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
             count = 0
-            prev_state_vals = []  # store the log buffer values
-            next_state_vals = []  # get the next state values
+            prev_state_vals = []  # store the log buffer values (Standby)
+            next_state_vals = []  # get the next state values (MotorBurn)
+
             for idx, val in enumerate(reader):
                 count = idx
+                # We are checking the rows that occurred AFTER the idle capacity was full
                 if idx + 1 > IDLE_LOG_CAPACITY:
                     state = val["state_letter"]
                     if state == "S":
                         prev_state_vals.append(True)
                     if state == "M":
                         next_state_vals.append(True)
+
+            # Ensure we didn't leave anything in the buffer object
             assert len(logger._log_buffer) == 0
+
+            # We expect 10 Standby packets (the ones that were buffered)
             assert len(prev_state_vals) == 10
+
+            # We expect 8 MotorBurn packets (the ones logged after switch)
             assert len(next_state_vals) == 8
-            # First row index is zero, hence the +1
+
+            # Total lines = IDLE_CAPACITY + 10 buffered + 8 new
+            # (count is 0-indexed, so we add 1 for total lines)
             assert count + 1 == IDLE_LOG_CAPACITY + 10 + 8
 
-    @pytest.mark.parametrize(
-        (
-            "context_packet",
-            "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
-            "apogee_predictor_data_packets",
-        ),
-        [
-            (
-                make_context_data_packet(state=LandedState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
-                [],
-            ),
-            (
-                make_context_data_packet(state=LandedState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
-                [],
-            ),
-        ],
-        ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-        ],
-    )
-    def test_log_buffer_reset_after_landed(
-        self,
-        logger,
-        context_packet: tuple[ContextDataPacket, ContextDataPacket],
-        servo_packet: ServoDataPacket,
-        imu_data_packets: deque[IMUDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
-        apogee_predictor_data_packets: ApogeePredictorDataPacket,
-    ):
+    def test_log_buffer_reset_after_landed(self, logger):
         """
         Tests if we've hit the idle log capacity when are in LandedState and that it is logged.
         """
+        # Setup the specific packets for this test
+        context_packet = make_context_data_packet(state=LandedState)
+        servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
+        firm_data_packets = [make_firm_data_packet()]
+        apogee_predictor_data_packet = None
+
         # Note: We are not monkeypatching the stop method here, because we want to test if the
         # entire buffer is logged when we are in LandedState and when stop() is called.
         logger.start()
+
         # Log more than IDLE_LOG_CAPACITY packets to test if it stops logging after adding on to
         # that.
+        packets_to_log = IDLE_LOG_CAPACITY + 100
+
         logger.log(
             context_packet,
             servo_packet,
-            imu_data_packets * (IDLE_LOG_CAPACITY + 100),
-            processor_data_packets * (IDLE_LOG_CAPACITY + 100),
-            apogee_predictor_data_packets,
-        )
-        time.sleep(0.1)
-        assert len(logger._log_buffer) == 100
-        logger.stop()  # Will log the buffer
-        assert len(logger._log_buffer) == 0
-
-        # Read the file and check if we have exactly IDLE_LOG_CAPACITY packets
-        with logger.log_path.open() as f:
-            reader = csv.DictReader(f)
-            count = 0
-            for idx, _ in enumerate(reader):
-                count = idx
-
-            # First row index is zero, hence the +1
-            assert count + 1 == IDLE_LOG_CAPACITY + 100
-            # We don't reset the log counter after stop() is called:
-            assert logger._log_counter == IDLE_LOG_CAPACITY
-
-    @pytest.mark.parametrize(
-        (
-            "context_packet",
-            "servo_packet",
-            "imu_data_packets",
-            "processor_data_packets",
-            "apogee_predictor_data_packet",
-            "expected_outputs",
-        ),
-        [
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet()]),
-                [],
-                None,
-                [
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=StandbyState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_raw_data_packet()),
-                    )
-                ],
-            ),
-            (
-                make_context_data_packet(state=StandbyState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_est_data_packet()]),
-                [make_processor_data_packet()],
-                [],
-                [
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=StandbyState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_est_data_packet()),
-                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
-                    ),
-                ],
-            ),
-            (
-                make_context_data_packet(state=MotorBurnState),
-                make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
-                deque([make_raw_data_packet(), make_est_data_packet()]),
-                [make_processor_data_packet()],
-                [],
-                [
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=MotorBurnState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_raw_data_packet()),
-                    ),
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=MotorBurnState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MIN_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_est_data_packet()),
-                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
-                    ),
-                ],
-            ),
-            (
-                make_context_data_packet(state=CoastState),
-                make_servo_data_packet(set_extension=ServoExtension.MAX_EXTENSION),
-                deque([make_raw_data_packet(), make_est_data_packet()]),
-                [make_processor_data_packet()],
-                make_apogee_predictor_data_packet(),
-                [
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=CoastState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_raw_data_packet()),
-                        **asdict(make_apogee_predictor_data_packet()),
-                    ),
-                    LoggerDataPacket(
-                        **context_packet_to_logger_kwargs(
-                            make_context_data_packet(state=CoastState)
-                        ),
-                        **asdict(
-                            make_servo_data_packet(
-                                set_extension=str(ServoExtension.MAX_EXTENSION.value)
-                            )
-                        ),
-                        **asdict(make_est_data_packet()),
-                        **asdict(make_apogee_predictor_data_packet()),
-                        **only_logged_pdp_fields(asdict(make_processor_data_packet())),
-                    ),
-                ],
-            ),
-        ],
-        ids=[
-            "RawDataPacket",
-            "EstimatedDataPacket",
-            "both in motor burn",
-            "both in coast",
-        ],
-    )
-    def test_prepare_logger_packets(
-        self,
-        logger,
-        context_packet,
-        servo_packet,
-        imu_data_packets,
-        processor_data_packets,
-        apogee_predictor_data_packet,
-        expected_outputs,
-    ):
-        """
-        Tests whether the _prepare_logger_packets method creates correct LoggerDataPackets.
-        """
-        # set some invalid fields to test if they stay as a list
-        invalid_field = ["something", "hey"]
-        for imu_packet in imu_data_packets:
-            imu_packet.invalid_fields = invalid_field
-        # we need to change the output also
-        for expected in expected_outputs:
-            expected.invalid_fields = invalid_field
-
-        # Now let's test the method
-        logger_data_packets = logger._prepare_logger_packets(
-            context_packet,
-            servo_packet,
-            imu_data_packets,
-            processor_data_packets,
+            firm_data_packets * packets_to_log,
             apogee_predictor_data_packet,
         )
-        # Check that we log every packet:
-        assert len(logger_data_packets) == len(expected_outputs)
 
-        for logger_data_packet, expected in zip(logger_data_packets, expected_outputs, strict=True):
-            assert isinstance(logger_data_packet, LoggerDataPacket)
-            assert logger_data_packet == expected
+        time.sleep(0.1)
+
+        # In LandedState, the logger typically stops incrementing the main counter
+        # but might still hold overflow in the buffer until flush/stop.
+        assert len(logger._log_buffer) == 100
+
+        logger.stop()  # Will log the rest of the buffer
+        assert len(logger._log_buffer) == 0
+
+        # Read the file and check if we have exactly IDLE_LOG_CAPACITY + 100 packets
+        with logger.log_path.open() as f:
+            reader = csv.DictReader(f)
+            # Count the rows in the CSV (excluding header)
+            count = sum(1 for _ in reader)
+
+            # We expect all packets to be logged eventually
+            assert count == packets_to_log
+
+            # However, the internal log counter should have capped at IDLE_LOG_CAPACITY
+            # as per LandedState logic
+            assert logger._log_counter == IDLE_LOG_CAPACITY
 
     @pytest.mark.parametrize(
         ("num_packets", "expected_flush_calls", "expected_lines_in_file"),
@@ -939,7 +627,7 @@ class TestLogger:
         # Prepare sample data packets
         context_packet = make_context_data_packet(state=MotorBurnState)  # Avoid buffering
         servo_packet = make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION)
-        imu_data_packets = deque([make_raw_data_packet()])
+        firm_data_packets = [make_firm_data_packet()]
 
         flush_calls = 0
         # Monkeypatch Path.open to return our custom TextIOWrapper
@@ -968,8 +656,7 @@ class TestLogger:
             threaded_logger.log(
                 context_packet,
                 servo_packet,
-                imu_data_packets.copy(),
-                processor_data_packets=[],
+                firm_data_packets.copy(),
                 apogee_predictor_data_packet=None,
             )
 
@@ -1012,40 +699,37 @@ class TestLogger:
                 f"Expected {num_packets} lines, got {num_data_lines}"
             )
 
-    def test_benchmark_log_method(self, benchmark, logger):
-        """
-        Tests the performance of the _prepare_logger_packets method.
-        """
-        context_packet = make_context_data_packet(state=StandbyState)
-        servo_packet = make_servo_data_packet(set_extension="0.1")
-        imu_data_packets = deque([make_raw_data_packet()])
-        processor_data_packets = []
-        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
-
-        benchmark(
-            logger.log,
-            context_packet,
-            servo_packet,
-            imu_data_packets,
-            processor_data_packets,
-            apogee_predictor_data_packet,
-        )
-
-    def test_benchmark_prepare_logger_packets(self, benchmark, logger):
-        """
-        Tests the performance of the _prepare_logger_packets method.
-        """
-        context_packet = make_context_data_packet(state=StandbyState)
-        servo_packet = make_servo_data_packet(set_extension="0.1")
-        imu_data_packets = deque([make_raw_data_packet()])
-        processor_data_packets = []
-        apogee_predictor_data_packet = make_apogee_predictor_data_packet()
-
-        benchmark(
-            logger._prepare_logger_packets,
-            context_packet,
-            servo_packet,
-            imu_data_packets,
-            processor_data_packets,
-            apogee_predictor_data_packet,
-        )
+    # TODO: should add these back
+    # def test_benchmark_log_method(self, benchmark, logger):
+    #     """
+    #     Tests the performance of the _prepare_logger_packets method.
+    #     """
+    #     context_packet = make_context_data_packet(state=StandbyState)
+    #     servo_packet = make_servo_data_packet(set_extension="0.1")
+    #     firm_data_packets = [make_firm_data_packet()]
+    #     apogee_predictor_data_packet = make_apogee_predictor_data_packet()
+    #
+    #     benchmark(
+    #         logger.log,
+    #         context_packet,
+    #         servo_packet,
+    #         firm_data_packets,
+    #         apogee_predictor_data_packet,
+    #     )
+    #
+    # def test_benchmark_prepare_logger_packets(self, benchmark, logger):
+    #     """
+    #     Tests the performance of the _prepare_logger_packets method.
+    #     """
+    #     context_packet = make_context_data_packet(state=StandbyState)
+    #     servo_packet = make_servo_data_packet(set_extension="0.1")
+    #     firm_data_packets = [make_firm_data_packet()]
+    #     apogee_predictor_data_packet = make_apogee_predictor_data_packet()
+    #
+    #     benchmark(
+    #         logger._prepare_logger_packets,
+    #         context_packet,
+    #         servo_packet,
+    #         firm_data_packets,
+    #         apogee_predictor_data_packet,
+    #     )

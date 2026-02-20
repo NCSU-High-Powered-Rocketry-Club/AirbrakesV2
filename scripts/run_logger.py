@@ -5,10 +5,11 @@ Module for testing how the logger module runs.
 import time
 from collections import deque
 
-from airbrakes.telemetry.data_processor import DataProcessor
+from firm_client import FIRMDataPacket
+
+from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.constants import TEST_LOGS_PATH
-from airbrakes.telemetry.packets.imu_data_packet import RawDataPacket
-from airbrakes.telemetry.logger import Logger
+from airbrakes.data_handling.logger import Logger
 
 
 def main():
@@ -21,9 +22,11 @@ def main():
     try:
         logger.start()
         while time.time() - start_time < 5:
-            # Create fake IMU data
-            imu_data_list = deque([RawDataPacket(int(time.time()), 1, 2, 3, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6)])
-            logger.log("TEST_STATE", 0.5, imu_data_list, data_processor)
+            # Create fake FIRM data
+            packet = FIRMDataPacket.default_zero()
+            packet.timestamp_seconds = time.time()
+            firm_data_list = deque(FIRMDataPacket.default_zero())
+            logger.log("TEST_STATE", 0.5, firm_data_list, data_processor)
     except KeyboardInterrupt:  # Stop logging if the user presses Ctrl+C
         pass
     finally:

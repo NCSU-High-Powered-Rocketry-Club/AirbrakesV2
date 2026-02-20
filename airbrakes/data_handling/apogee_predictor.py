@@ -1,0 +1,159 @@
+"""
+Module for predicting apogee.
+"""
+
+import queue
+import threading
+from typing import TYPE_CHECKING, Literal, cast
+
+from hprm import AdaptiveTimeStep, ModelType, OdeMethod, Rocket
+
+from airbrakes import constants
+from airbrakes.constants import (
+    STOP_SIGNAL,
+)
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
+    ApogeePredictorDataPacket,
+)
+from airbrakes.utils import get_all_packets_from_queue
+
+if TYPE_CHECKING:
+    from firm_client import FIRMDataPacket
+
+
+class ApogeePredictor:
+    """
+    Class that performs the calculations to predict the apogee of the rocket during flight.
+    """
+
+    __slots__ = (
+        "_apogee_predictor_packet_queue",
+        "_firm_data_packet_queue",
+        "_prediction_thread",
+    )
+
+    def __init__(self) -> None:
+        # Single input queue: main thread -> prediction thread
+        self._firm_data_packet_queue: queue.SimpleQueue[FIRMDataPacket] = queue.SimpleQueue()
+
+        self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
+            queue.SimpleQueue()
+        )
+
+        self._prediction_thread = threading.Thread(
+            target=self._prediction_loop,
+            name="Apogee Prediction Thread",
+            daemon=True,
+        )
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Returns whether the prediction thread is running.
+
+        :return: True if the thread is running, False otherwise.
+        """
+        return self._prediction_thread.is_alive()
+
+    @property
+    def firm_data_packet_queue_size(self) -> int:
+        """
+        Gets the number of data packets in the FIRM data packet queue.
+
+        :return: The number of FIRMDataPacket in the FIRM data packet queue.
+        """
+        return self._firm_data_packet_queue.qsize()
+
+    def start(self) -> None:
+        """
+        Starts the prediction thread.
+
+        This is called before the main loop starts.
+        """
+        if not self._prediction_thread.is_alive():
+            self._prediction_thread.start()
+
+    def stop(self) -> None:
+        """
+        Stops the prediction thread.
+        """
+        # Request the thread to stop:
+        self._firm_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
+        self._prediction_thread.join()
+
+    def update(self, firm_data_packet: FIRMDataPacket) -> None:
+        """
+        Updates the apogee predictor to include the most recent FIRM data packet.
+
+        This method should only be called during the coast phase of the rocket's flight.
+
+        :param firm_data_packet: The most recent FIRMDataPacket.
+        """
+        self._firm_data_packet_queue.put(firm_data_packet)
+
+    def get_prediction_data_packet(self) -> ApogeePredictorDataPacket | None:
+        """
+        Gets the most recent apogee prediction data packet from the queue.
+
+        This operation is non-blocking: it drains everything currently in the
+        prediction queue and returns only the latest packet, or None if no
+        prediction has been made yet.
+
+        :return: The most recent ApogeePredictorDataPacket, or None.
+        """
+        apogee_predictor_packets = get_all_packets_from_queue(
+            self._apogee_predictor_packet_queue, block=False
+        )
+
+        return apogee_predictor_packets[-1] if apogee_predictor_packets else None
+
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
+    def _prediction_loop(self) -> None:
+        """
+        Responsible for fetching data packets, updating internal state, and finally predicting the
+        apogee using the chosen method (e.g. HPRM).
+
+        Runs in a separate thread.
+        """
+        rocket = Rocket(
+            constants.ROCKET_DRY_MASS_KG,
+            constants.ROCKET_CD,
+            constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
+            # Rest of these are unused for 1D modeling
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+
+        # Keep checking for new data packets until the stop signal is received:
+        while True:
+            firm_data_packets = get_all_packets_from_queue(self._firm_data_packet_queue, block=True)
+
+            # If we got a stop signal in this batch, exit the loop
+            if STOP_SIGNAL in firm_data_packets:
+                break
+
+            most_recent_packet = cast("FIRMDataPacket", firm_data_packets[-1])
+
+            adaptive_time_step = AdaptiveTimeStep.default()
+            adaptive_time_step.dt_max = 1
+
+            # Compute apogee given the latest state and history
+            apogee = rocket.predict_apogee(
+                most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
+                most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
+                ModelType.OneDOF,
+                OdeMethod.RK45,
+                adaptive_time_step,
+            )
+
+            # Push a prediction packet back to the main thread.
+            # TODO: add more stuff to the packet
+            self._apogee_predictor_packet_queue.put(
+                ApogeePredictorDataPacket(
+                    apogee,
+                    most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
+                    most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
+                )
+            )

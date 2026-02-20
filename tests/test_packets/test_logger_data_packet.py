@@ -1,11 +1,10 @@
 import pytest
+from firm_client import FIRMDataPacket
 
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
-from airbrakes.telemetry.packets.processor_data_packet import ProcessorDataPacket
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import make_logger_data_packet
 
 
@@ -31,13 +30,8 @@ class TestLoggerDataPacket:
 
         context_dp_fields = set(ContextDataPacket.__struct_fields__)
         servo_dp_fields = set(ServoDataPacket.__struct_fields__)
-        est_dp_fields = set(EstimatedDataPacket.__struct_fields__)
-        raw_dp_fields = set(RawDataPacket.__struct_fields__)
-        proc_dp_fields = set(ProcessorDataPacket.__struct_fields__)
+        firm_dp_fields = set(FIRMDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = set(ApogeePredictorDataPacket.__struct_fields__)
-
-        # remove one field from proc_dp_fields:
-        proc_dp_fields.remove("time_since_last_data_packet")
 
         # Map Context 'state' -> Logger 'state_letter' for comparisons
         context_dp_fields_mapped = {
@@ -47,14 +41,8 @@ class TestLoggerDataPacket:
         assert servo_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {servo_dp_fields - log_dp_fields}"
         )
-        assert est_dp_fields.issubset(log_dp_fields), (
-            f"Missing fields: {est_dp_fields - log_dp_fields}"
-        )
-        assert raw_dp_fields.issubset(log_dp_fields), (
-            f"Missing fields: {raw_dp_fields - log_dp_fields}"
-        )
-        assert proc_dp_fields.issubset(log_dp_fields), (
-            f"Missing fields: {proc_dp_fields - log_dp_fields}"
+        assert firm_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {firm_dp_fields - log_dp_fields}"
         )
         assert apogee_predictor_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {apogee_predictor_dp_fields - log_dp_fields}"
@@ -64,9 +52,7 @@ class TestLoggerDataPacket:
         )
 
         available_fields = (
-            est_dp_fields.union(raw_dp_fields)
-            .union(proc_dp_fields)
-            .union(context_dp_fields_mapped)
+            firm_dp_fields.union(context_dp_fields_mapped)
             .union(servo_dp_fields)
             .union(apogee_predictor_dp_fields)
         )
@@ -84,22 +70,13 @@ class TestLoggerDataPacket:
         log_dp_fields = list(LoggerDataPacket.__struct_fields__)
         context_dp_fields = list(ContextDataPacket.__struct_fields__)
         servo_dp_fields = list(ServoDataPacket.__struct_fields__)
-        raw_dp_fields = list(RawDataPacket.__struct_fields__)
-        est_dp_fields = list(EstimatedDataPacket.__struct_fields__)
-        proc_dp_fields = list(ProcessorDataPacket.__struct_fields__)
+        firm_dp_fields = list(FIRMDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = list(ApogeePredictorDataPacket.__struct_fields__)
-
-        proc_dp_fields.remove("time_since_last_data_packet")
-        # Remove the base class IMUDataPacket fields from the list:
-        est_dp_fields.remove("timestamp")
-        est_dp_fields.remove("invalid_fields")
 
         assert (
             log_dp_fields[1:]
             == servo_dp_fields
-            + raw_dp_fields
-            + est_dp_fields
-            + proc_dp_fields
+            + firm_dp_fields
             + apogee_predictor_dp_fields
             + context_dp_fields[1:]
         )

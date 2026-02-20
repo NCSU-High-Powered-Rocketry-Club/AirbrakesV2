@@ -80,113 +80,74 @@ def deadband(input_value: float, threshold: float) -> float:
 def arg_parser() -> argparse.Namespace:
     """
     Handles the command line arguments for the main Airbrakes program.
-
-    :return: The parsed arguments as a class with attributes.
     """
-    # We require ONE and only one of the 3 positional arguments to be passed:
-    # - real: Run the real flight with all the real hardware.
-    # - mock: Run in mock replay mode with mock data.
-    global_parser = argparse.ArgumentParser(add_help=False)
-
-    # Global mutually exclusive group, for the `--debug` and `--verbose` options:
-    global_group = global_parser.add_mutually_exclusive_group()
-
-    # These are global options, available to `real` or `mock` modes:
-    global_group.add_argument(
+    # We define this as a parent so we can use it in both sub-commands
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_group = common_parser.add_mutually_exclusive_group()
+    common_group.add_argument(
         "-d",
         "--debug",
-        help="Run the flight without a display. This will not print the flight data and allow "
-        "you to inspect the values of your print() statements.",
         action="store_true",
-        default=False,
+        help="Run without a display to inspect print() statements.",
+    )
+    common_group.add_argument(
+        "-v", "--verbose", action="store_true", help="Show the display with extended data."
     )
 
-    global_group.add_argument(
-        "-v",
-        "--verbose",
-        help="Shows the display with much more data.",
-        action="store_true",
-        default=False,
+    # Main Parser
+    parser = argparse.ArgumentParser(
+        description="Main parser for the Airbrakes program.", parents=[common_parser]
     )
 
-    # Top-level parser for the main script:
-    main_parser = argparse.ArgumentParser(
-        description="Main parser for the Airbrakes program.",
-        parents=[global_parser],
-    )
+    subparsers = parser.add_subparsers(title="modes", dest="mode", required=True)
 
-    # Subparsers for `real` or `mock`
-    subparsers = main_parser.add_subparsers(
-        title="modes", description="Valid modes of operation", dest="mode", required=True
-    )
-
-    # Real flight parser:
+    # Real Flight Parser
     real_parser = subparsers.add_parser(
         "real",
-        help="Run the real flight with all the real hardware by default.",
-        description="Configuration for the real flight. Uses real hardware unless specified.",
-        parents=[global_parser],
-        prog="real",
+        parents=[common_parser],
+        help="Run real flight with hardware.",
+        description="Configuration for the real flight.",
     )
     real_parser.add_argument(
-        "-s",
-        "--mock-servo",
-        help="Run the real flight with a mock servo instead of the real servo.",
-        action="store_true",
-        default=False,
+        "-s", "--mock-servo", action="store_true", help="Run the real flight with a mock servo."
     )
 
-    # Mock replay parser:
-    mock_replay_parser = subparsers.add_parser(
+    # Mock Replay Parser
+    mock_parser = subparsers.add_parser(
         "mock",
-        help="Run in replay mode with mock data (i.e. previous flight data)",
-        description="Configuration for the mock replay Airbrakes program.",
-        parents=[global_parser],  # Include the global options
-        prog="mock",  # Program name in help messages
-    )
-    add_common_arguments(mock_replay_parser)
-
-    return main_parser.parse_args()
-
-
-def add_common_arguments(parser: argparse.ArgumentParser) -> None:
-    """
-    Adds the arguments common to the mock replay.
-
-    :param parser: the mock replay subparser.
-    """
-    # TODO: add sim back with HPRM
-    _type = "mock replay"
-
-    parser.add_argument(
-        "-s",
-        "--real-servo",
-        help=f"Run the {_type} with the real servo",
-        action="store_true",
-        default=False,
+        parents=[common_parser],
+        help="Run in replay mode with mock data.",
+        description="Configuration for the mock replay.",
     )
 
-    parser.add_argument(
-        "-l",
-        "--keep-log-file",
-        help=f"Keep the log file after the {_type} stops",
-        action="store_true",
-        default=False,
+    # Inlined arguments (previously in add_common_arguments)
+    mock_parser.add_argument(
+        "-s", "--real-servo", action="store_true", help="Run the mock replay with the real servo."
+    )
+    mock_parser.add_argument(
+        "-l", "--keep-log-file", action="store_true", help="Keep the log file after replay stops."
+    )
+    mock_parser.add_argument(
+        "-f", "--fast-replay", action="store_true", help="Run replay at full speed."
     )
 
-    parser.add_argument(
-        "-f",
-        "--fast-replay",
-        help=f"Run the {_type} at full speed instead of in real time.",
-        action="store_true",
-        default=False,
-    )
+    firm_source_group = mock_parser.add_mutually_exclusive_group()
 
-    parser.add_argument(
-        "-p",
-        "--path",
-        help="Define the pathname of flight data to use in the mock replay. The first file"
-        " found in the launch_data directory will be used if not specified.",
+    firm_source_group.add_argument(
+        "-m",
+        "--mock-firm",
         type=Path,
+        help="Use MockFIRM to read data from a previous airbakes log file, (defaults to first in launch_data)",
+        metavar="LOG_FILE",
         default=None,
     )
+
+    firm_source_group.add_argument(
+        "-p",
+        "--pretend-firm",
+        help="Make FIRM output data from a previous FIRM log file.",
+        type=Path,
+        metavar="LOG_FILE",
+    )
+
+    return parser.parse_args()

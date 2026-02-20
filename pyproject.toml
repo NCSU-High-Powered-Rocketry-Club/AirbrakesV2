@@ -12,7 +12,6 @@ dependencies = [
     "colorama",
     "scipy",
     "textual",
-    "mscl-rs==0.2.0",
     "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
     "polars==1.37.1",
@@ -21,6 +20,7 @@ dependencies = [
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
     "hprm>=0.1.7",
+    "firm-client>=1.1.0",
 ]
 
 # TODO: Remove this once polars has official wheels for python 3.14t
@@ -44,7 +44,6 @@ dev = [
     "pytest-cov",
     "ruff>=0.12.12",
     "pytest-benchmark>=5.1.0",
-    # "docformatter",
     "ty>=0.0.1a20",
     "prek",
 ]
@@ -71,9 +70,9 @@ python-preference = "only-managed"
 [tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
 
-[tool.hatch.build.targets.wheel.force-include]
-# specify one launch file so that the mock flight can be run as a demo with uvx.
-"launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
+#[tool.hatch.build.targets.wheel.force-include]
+## specify one launch file so that the mock flight can be run as a demo with uvx.
+#"launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
 
 # RUFF:
 [tool.ruff]
@@ -102,10 +101,6 @@ filterwarnings = [
     "ignore:Could not import LGPIOFactory", # ignore warning about LGPIO
     "ignore:To reduce servo jitter", # ignore warning about pigpio
     "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
-]
-addopts = "--benchmark-skip"  # skip benchmarks by default:
-markers = [
-    "imu_benchmark",
 ]
 
 [tool.coverage.run]
@@ -150,11 +145,3 @@ root = ["./airbrakes"]
 
 [tool.ty.src]
 exclude = ["tests", "scripts"]
-
-[tool.docformatter]
-wrap-summaries = 100
-wrap-descriptions = 100
-pre-summary-newline = true
-make-summary-multi-line = true
-recursive = true
-in-place = true
