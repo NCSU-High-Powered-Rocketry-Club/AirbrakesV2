@@ -1,6 +1,4 @@
-"""
-Utility functions used throughout the test suite.
-"""
+"""Utility functions used throughout the test suite."""
 
 from firm_client import FIRMDataPacket
 from msgspec.structs import asdict
@@ -14,6 +12,7 @@ from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
     """
     Creates a FIRMDataPacket with the specified keyword arguments.
+
     Provides dummy values for arguments not specified.
     """
     dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 1.987654321)
@@ -23,6 +22,7 @@ def make_firm_data_packet(**kwargs) -> FIRMDataPacket:
 def make_firm_data_packet_zeroed(**kwargs) -> FIRMDataPacket:
     """
     Creates a FIRMDataPacket with the specified keyword arguments.
+
     Provides zeroes for arguments not specified.
     """
     dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 0.0)
@@ -51,7 +51,8 @@ def make_servo_data_packet(**kwargs) -> ServoDataPacket:
 
 def make_apogee_predictor_data_packet(**kwargs) -> ApogeePredictorDataPacket:
     """
-    Creates an ApogeePredictorDataPacket with the specified keyword arguments.
+    Creates an ApogeePredictorDataPacket with the specified keyword
+    arguments.
 
     Provides dummy values for arguments not specified.
     """
@@ -70,9 +71,7 @@ def make_logger_data_packet(**kwargs) -> LoggerDataPacket:
 
 
 def context_packet_to_logger_kwargs(ctx_packet) -> dict:
-    """
-    Converts a ContextDataPacket to a dictionary suitable for logging.
-    """
+    """Converts a ContextDataPacket to a dictionary suitable for logging."""
     d = asdict(ctx_packet).copy()
     state_type = d.pop("state")
     d["state_letter"] = state_type.__name__[0]  # "S", "M", "C", "F", "L"

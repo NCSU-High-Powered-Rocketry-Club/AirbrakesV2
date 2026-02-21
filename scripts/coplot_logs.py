@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-coplot_two_logs.py
+"""coplot_two_logs.py.
 
 Interactive Plotly coplotter for two FIRM CSV log formats, aligned by start of motor burn state.
 
@@ -61,8 +60,9 @@ def find_motor_burn_start_time(
     motor_state: str,
     state_col: str = "state_letter",
 ) -> Optional[float]:
-    """
-    Returns the timestamp (same units as time_col) for the first row where state_letter == motor_state.
+    """Returns the timestamp (same units as time_col) for the first row where
+    state_letter == motor_state.
+
     Fallbacks:
       1) first state change from the initial state
       2) first timestamp
@@ -115,7 +115,8 @@ def add_state_regions(fig: go.Figure, df: pd.DataFrame, time_col: str = "t") -> 
 
 
 def _sort_and_dedupe(df: pd.DataFrame, time_col: str = "t") -> pd.DataFrame:
-    """Sort by time and collapse duplicate timestamps (median) to keep lines continuous."""
+    """Sort by time and collapse duplicate timestamps (median) to keep lines
+    continuous."""
     if df.empty or time_col not in df.columns:
         return df
 

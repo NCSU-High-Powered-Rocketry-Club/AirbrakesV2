@@ -1,6 +1,4 @@
-"""
-Module for testing how the logger module runs.
-"""
+"""Module for testing how the logger module runs."""
 
 import time
 from collections import deque

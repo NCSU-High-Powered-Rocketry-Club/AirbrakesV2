@@ -27,15 +27,17 @@ if TYPE_CHECKING:
 
 class BaseServo(ABC):
     """
-    A custom class that represents a servo interface and the accompanying rotary encoder interface.
-    The servo controls the extension of the airbrakes while the encoder measures the servo's
-    position. The encoder is controlled using the gpiozero library, which provides a simple
-    interface for controlling GPIO pins on the Raspberry Pi.
+    A custom class that represents a servo interface and the accompanying
+    rotary encoder interface. The servo controls the extension of the airbrakes
+    while the encoder measures the servo's position. The encoder is controlled
+    using the gpiozero library, which provides a simple interface for
+    controlling GPIO pins on the Raspberry Pi.
 
-    The servo we use is the DS3235, which is a coreless digital servo. We use hardware PWM to
-    control the servo on the Pi 5. We can't use the gpiozero Servo class because it uses software
-    PWM, which causes too much jitter (more specifically, the PiGPIO library does not support the Pi
-    5, which is why it falls back to software PWM).
+    The servo we use is the DS3235, which is a coreless digital servo.
+    We use hardware PWM to control the servo on the Pi 5. We can't use
+    the gpiozero Servo class because it uses software PWM, which causes
+    too much jitter (more specifically, the PiGPIO library does not
+    support the Pi 5, which is why it falls back to software PWM).
     """
 
     __slots__ = (
@@ -54,7 +56,8 @@ class BaseServo(ABC):
         """
         Initializes the servo and the encoder.
 
-        :param servo: The servo object. Can be a real servo or a mock servo.
+        :param servo: The servo object. Can be a real servo or a mock
+            servo.
         :param encoder: The rotary encoder object.
         """
         self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
@@ -74,14 +77,16 @@ class BaseServo(ABC):
         """
         Sets the extension of the servo.
 
-        :param extension: The extension of the servo, there are 4 possible values, see constants.
+        :param extension: The extension of the servo, there are 4
+            possible values, see constants.
         """
         self.current_extension = extension
 
     @staticmethod
     def _angle_to_pulse_width(angle: float) -> float:
         """
-        Converts an angle in degrees to a pulse width in microseconds for a servo motor.
+        Converts an angle in degrees to a pulse width in microseconds for a
+        servo motor.
 
         :param angle: The angle in degrees (0 to 180).
         :return: The corresponding pulse width in microseconds.
@@ -104,7 +109,8 @@ class BaseServo(ABC):
     @staticmethod
     def _angle_to_duty_cycle(angle: float) -> float:
         """
-        Converts an angle in degrees to a duty cycle percentage for a servo motor.
+        Converts an angle in degrees to a duty cycle percentage for a servo
+        motor.
 
         :param angle: The angle in degrees.
         :return: The corresponding duty cycle percentage.
@@ -122,7 +128,8 @@ class BaseServo(ABC):
         """
         Extends the servo to the maximum extension.
 
-        Starts a timer to stop the buzzing after the servo reaches the maximum extension.
+        Starts a timer to stop the buzzing after the servo reaches the
+        maximum extension.
         """
         # If we are already going to the minimum extension, we cancel that operation before
         # extending the servo.
@@ -138,7 +145,8 @@ class BaseServo(ABC):
         """
         Retracts the servo to the minimum extension.
 
-        Starts a timer to stop the buzzing after the servo reaches the minimum extension.
+        Starts a timer to stop the buzzing after the servo reaches the
+        minimum extension.
         """
         # If we are already going to the maximum extension, we cancel that operation before
         # retracting the servo.
@@ -162,8 +170,8 @@ class BaseServo(ABC):
         """
         Extends the servo to the stop buzz position.
 
-        After the servo is extended to its maximum extension, this sets its extension to its actual
-        extension.
+        After the servo is extended to its maximum extension, this sets
+        its extension to its actual extension.
         """
         self._set_extension(ServoExtension.MAX_NO_BUZZ)
 
@@ -171,7 +179,7 @@ class BaseServo(ABC):
         """
         Retracts the servo to the stop buzz position.
 
-        After the servo is retracted to its minimum extension, this sets its extension to its actual
-        extension.
+        After the servo is retracted to its minimum extension, this sets
+        its extension to its actual extension.
         """
         self._set_extension(ServoExtension.MIN_NO_BUZZ)

@@ -5,7 +5,9 @@ from tests.conftest import IdleFIRM
 
 class TestFIRM:
     """
-    Really all the FIRM class is, is a wrapper for firm-client, which has extensive unit tests.
+    Really all the FIRM class is, is a wrapper for firm-client, which has
+    extensive unit tests.
+
     TODO: could probably write unit tests using firm-client's mock port.
     """
 

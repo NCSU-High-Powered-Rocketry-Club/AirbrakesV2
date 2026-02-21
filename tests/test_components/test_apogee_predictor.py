@@ -11,9 +11,7 @@ from tests.auxil.utils import make_firm_data_packet, make_firm_data_packet_zeroe
 
 
 class TestApogeePredictor:
-    """
-    Tests the ApogeePredictor class.
-    """
+    """Tests the ApogeePredictor class."""
 
     def test_slots(self):
         inst = ApogeePredictor()
@@ -24,9 +22,7 @@ class TestApogeePredictor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, apogee_predictor):
-        """
-        Tests whether the ApogeePredictor is correctly initialized.
-        """
+        """Tests whether the ApogeePredictor is correctly initialized."""
         ap = apogee_predictor
         # Test attributes on init
         assert isinstance(ap._apogee_predictor_packet_queue, queue.SimpleQueue)
@@ -45,9 +41,7 @@ class TestApogeePredictor:
         assert not apogee_predictor.is_running
 
     def test_apogee_loop_add_to_queue(self, apogee_predictor):
-        """
-        Tests that the predictor adds to the queue when update is called.
-        """
+        """Tests that the predictor adds to the queue when update is called."""
         packet = [make_firm_data_packet()]
         # important to not .start() the thread, as we don't want it to run as it will fetch
         # it from the queue and we want to check if it's added to the queue.
@@ -57,7 +51,8 @@ class TestApogeePredictor:
 
     def test_apogee_predictor_stop_signal(self, apogee_predictor):
         """
-        Tests that the apogee predictor stops when the stop signal is sent.
+        Tests that the apogee predictor stops when the stop signal is
+        sent.
         """
         apogee_predictor.start()
         assert apogee_predictor.is_running
@@ -97,9 +92,10 @@ class TestApogeePredictor:
         self, apogee_predictor, firm_data_packets, expected_apogee, monkeypatch
     ):
         """
-        Integration-ish test of the apogee predictor using the real HPRM call. These tests assume
-        that HPRM works perfectly. To test the actual correctness of HPRM, we rely on HPRM's own
-        unit tests (which will hopefully exist soon).
+        Integration-ish test of the apogee predictor using the real HPRM
+        call. These tests assume that HPRM works perfectly. To test the actual
+        correctness of HPRM, we rely on HPRM's own unit tests (which will
+        hopefully exist soon).
 
         - Feeds a sequence of FIRMDataPackets into the predictor.
         - Waits for a prediction to appear on the apogee queue.

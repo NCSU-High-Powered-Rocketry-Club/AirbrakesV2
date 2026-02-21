@@ -24,9 +24,7 @@ from tests.auxil.utils import make_apogee_predictor_data_packet, make_firm_data_
 
 @pytest.fixture
 def state(context):
-    """
-    Dummy state class to test the base State class.
-    """
+    """Dummy state class to test the base State class."""
 
     class StateImpl(State):
         __slots__ = ()
@@ -74,9 +72,7 @@ def landed_state(context):
 
 
 class TestState:
-    """
-    Tests the base State class.
-    """
+    """Tests the base State class."""
 
     def test_slots(self, state):
         inst = state
@@ -93,9 +89,7 @@ class TestState:
 
 
 class TestStandbyState:
-    """
-    Tests the StandbyState class.
-    """
+    """Tests the StandbyState class."""
 
     def test_slots(self, standby_state):
         inst = standby_state
@@ -129,9 +123,7 @@ class TestStandbyState:
 
 
 class TestMotorBurnState:
-    """
-    Tests the MotorBurnState class.
-    """
+    """Tests the MotorBurnState class."""
 
     def test_slots(self, motor_burn_state):
         inst = motor_burn_state
@@ -181,9 +173,7 @@ class TestMotorBurnState:
 
 
 class TestCoastState:
-    """
-    Tests the CoastState class.
-    """
+    """Tests the CoastState class."""
 
     def test_slots(self, coast_state):
         inst = coast_state
@@ -298,7 +288,8 @@ class TestCoastState:
 
     def test_update_control_only_once(self, coast_state, monkeypatch):
         """
-        Check that we only tell the airbrakes to extend once, and not send the command repeatedly.
+        Check that we only tell the airbrakes to extend once, and not send
+        the command repeatedly.
         """
         calls = 0
 
@@ -323,7 +314,8 @@ class TestCoastState:
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
         """
-        Check that if we don't have an apogee prediction, we don't extend the airbrakes.
+        Check that if we don't have an apogee prediction, we don't extend
+        the airbrakes.
         """
         assert not coast_state.context.most_recent_apogee_predictor_data_packet
         coast_state.update()
@@ -331,8 +323,8 @@ class TestCoastState:
 
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
         """
-        Check that if we are extended, and the predicted apogee is less than the target altitude, we
-        retract the airbrakes.
+        Check that if we are extended, and the predicted apogee is less than
+        the target altitude, we retract the airbrakes.
         """
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
@@ -363,9 +355,7 @@ class TestCoastState:
 
 
 class TestFreeFallState:
-    """
-    Tests the FreeFallState class.
-    """
+    """Tests the FreeFallState class."""
 
     def test_slots(self, free_fall_state):
         inst = free_fall_state
@@ -449,9 +439,7 @@ class TestFreeFallState:
 
 
 class TestLandedState:
-    """
-    Tests the LandedState class.
-    """
+    """Tests the LandedState class."""
 
     def test_slots(self, landed_state):
         inst = landed_state

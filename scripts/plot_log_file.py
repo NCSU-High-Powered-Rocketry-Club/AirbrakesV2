@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-plot_firm_log.py
+"""plot_firm_log.py.
 
 Interactive Plotly viewer for FIRM CSV logs.
 
@@ -46,9 +45,7 @@ def existing_traces(df: pd.DataFrame, traces: Iterable[tuple[str, str]]) -> list
 
 
 def add_state_regions(fig: go.Figure, df: pd.DataFrame, time_col: str = "t") -> None:
-    """
-    Adds vertical shaded regions for runs of the same state_letter.
-    """
+    """Adds vertical shaded regions for runs of the same state_letter."""
     if "state_letter" not in df.columns:
         return
 

@@ -1,6 +1,4 @@
-"""
-Module where fixtures are shared between all test files.
-"""
+"""Module where fixtures are shared between all test files."""
 
 import queue
 import threading
@@ -43,9 +41,7 @@ LAUNCH_DATA_IDS = []
 
 @pytest.fixture
 def logger():
-    """
-    Clear the tests/logs directory before making a new Logger.
-    """
+    """Clear the tests/logs directory before making a new Logger."""
     for log in LOG_PATH.glob("log_*.csv"):
         log.unlink()
     logger = Logger(LOG_PATH)
@@ -91,7 +87,8 @@ def mock_firm_airbrakes(mock_firm, logger, servo, data_processor, apogee_predict
     """
     Fixture that returns an Context object with a mock FIRM.
 
-    This will run for all the launch data files (see the mock_firm fixture)
+    This will run for all the launch data files (see the mock_firm
+    fixture)
     """
     ab = Context(servo, mock_firm, logger, data_processor, apogee_predictor)
     yield ab
@@ -120,9 +117,7 @@ def idle_mock_firm():
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_firm(request):
-    """
-    Fixture that returns a MockFIRM object with the specified log file.
-    """
+    """Fixture that returns a MockFIRM object with the specified log file."""
     # TODO ts isn't finished
     return MockFIRM(
         log_file_path=request.param, real_time_replay=False, start_after_log_buffer=True
@@ -131,9 +126,7 @@ def mock_firm(request):
 
 @pytest.fixture
 def mocked_args_parser():
-    """
-    Fixture that returns a mocked argument parser.
-    """
+    """Fixture that returns a mocked argument parser."""
 
     class MockArgs:
         mode = "mock"
@@ -154,7 +147,8 @@ def mocked_args_parser():
 @pytest.fixture
 def target_altitude(request):
     """
-    Fixture to return the target altitude based on the mock FIRM log file name.
+    Fixture to return the target altitude based on the mock FIRM log file
+    name.
     """
     # This will be used to set the constants for the test, since they change for different flights:
     # request.node.name is the name of the test function, e.g. test_update[shake_n_bake]
@@ -189,8 +183,8 @@ def target_altitude(request):
 
 class RandomDataFIRM(FIRM):
     """
-    Mocks the FIRM device by generating random FIRMDataPackets internally
-    on a separate thread at FIRM_FREQUENCY.
+    Mocks the FIRM device by generating random FIRMDataPackets internally on
+    a separate thread at FIRM_FREQUENCY.
     """
 
     __slots__ = ("_queue", "_stop_event", "_thread")
@@ -247,9 +241,7 @@ class RandomDataFIRM(FIRM):
 
 
 class IdleFIRM(FIRM):
-    """
-    Mocks a connected FIRM device that simply outputs no data.
-    """
+    """Mocks a connected FIRM device that simply outputs no data."""
 
     __slots__ = ("_queue", "_running")
 

@@ -1,6 +1,4 @@
-"""
-Module for logging data to a CSV file in real time.
-"""
+"""Module for logging data to a CSV file in real time."""
 
 import csv
 import os
@@ -35,21 +33,20 @@ if typing.TYPE_CHECKING:
 
 
 DecodedLoggerDataPacket = list[int | float | str]
-"""
-The type of LoggerDataPacket after an instance of it converted to primitive type by
-msgspec.to_builtins.
-"""
+"""The type of LoggerDataPacket after an instance of it converted to primitive
+type by msgspec.to_builtins."""
 
 
 class Logger:
     """
     A class that logs data to a CSV file.
 
-    The logging runs in a separate thread. This is because the logging thread is
-    I/O-bound, meaning that it spends most of its time waiting for the file to be written to. By
-    running it in a separate thread, we can continue to log data while the main loop is running. It
-    uses Python's csv module to append the airbrakes' current state, extension, and FIRM data to our
-    logs in real time.
+    The logging runs in a separate thread. This is because the logging
+    thread is I/O-bound, meaning that it spends most of its time waiting
+    for the file to be written to. By running it in a separate thread,
+    we can continue to log data while the main loop is running. It uses
+    Python's csv module to append the airbrakes' current state,
+    extension, and FIRM data to our logs in real time.
     """
 
     __slots__ = (
@@ -64,10 +61,12 @@ class Logger:
         """
         Initializes the logger object.
 
-        It creates a new log file in the specified directory. It creates a queue
-        to store log messages, and starts a separate thread to handle the logging. We are logging a
-        lot of data, and logging is I/O-bound, so running it in a separate thread allows the main
-        loop to continue running without waiting for the log file to be written to.
+        It creates a new log file in the specified directory. It creates
+        a queue to store log messages, and starts a separate thread to
+        handle the logging. We are logging a lot of data, and logging is
+        I/O-bound, so running it in a separate thread allows the main
+        loop to continue running without waiting for the log file to be
+        written to.
         :param log_dir: The directory where the log files will be.
         """
         # Create the log directory if it doesn't exist
@@ -99,16 +98,12 @@ class Logger:
 
     @property
     def is_running(self) -> bool:
-        """
-        Returns whether the logging thread is running.
-        """
+        """Returns whether the logging thread is running."""
         return self._log_thread.is_alive()
 
     @property
     def is_log_buffer_full(self) -> bool:
-        """
-        Returns whether the log buffer is full.
-        """
+        """Returns whether the log buffer is full."""
         return len(self._log_buffer) == LOG_BUFFER_SIZE
 
     @staticmethod
@@ -135,7 +130,8 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
-        :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
+        :param apogee_predictor_data_packet: The most recent apogee
+            predictor data packet to log.
         :return: A deque of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
@@ -235,7 +231,8 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
-        :param apogee_predictor_data_packet: The most recent apogee predictor data packet to log.
+        :param apogee_predictor_data_packet: The most recent apogee
+            predictor data packet to log.
         """
         # We are populating a list with the fields of the logger data packet
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
@@ -271,7 +268,8 @@ class Logger:
 
     def _log_the_buffer(self):
         """
-        Enqueues all the packets in the log buffer to the log queue, so they will be logged.
+        Enqueues all the packets in the log buffer to the log queue, so they
+        will be logged.
         """
         for packet in self._log_buffer:
             self._log_queue.put(packet, block=False)
@@ -281,7 +279,8 @@ class Logger:
     @staticmethod
     def _truncate_floats(data: DecodedLoggerDataPacket) -> list[str | int]:
         """
-        Truncates the decimal place of the floats in the list to 8 decimal places.
+        Truncates the decimal place of the floats in the list to 8 decimal
+        places.
 
         :param data: The list of values whose floats we should truncate.
         :return: The truncated list.
