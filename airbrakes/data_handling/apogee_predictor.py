@@ -1,6 +1,4 @@
-"""
-Module for predicting apogee.
-"""
+"""Module for predicting apogee."""
 
 import queue
 import threading
@@ -23,7 +21,8 @@ if TYPE_CHECKING:
 
 class ApogeePredictor:
     """
-    Class that performs the calculations to predict the apogee of the rocket during flight.
+    Class that performs the calculations to predict the apogee of the rocket
+    during flight.
     """
 
     __slots__ = (
@@ -34,7 +33,9 @@ class ApogeePredictor:
 
     def __init__(self) -> None:
         # Single input queue: main thread -> prediction thread
-        self._firm_data_packet_queue: queue.SimpleQueue[FIRMDataPacket] = queue.SimpleQueue()
+        self._firm_data_packet_queue: queue.SimpleQueue[FIRMDataPacket | Literal["STOP"]] = (
+            queue.SimpleQueue()
+        )
 
         self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
             queue.SimpleQueue()
@@ -60,7 +61,8 @@ class ApogeePredictor:
         """
         Gets the number of data packets in the FIRM data packet queue.
 
-        :return: The number of FIRMDataPacket in the FIRM data packet queue.
+        :return: The number of FIRMDataPacket in the FIRM data packet
+            queue.
         """
         return self._firm_data_packet_queue.qsize()
 
@@ -74,18 +76,18 @@ class ApogeePredictor:
             self._prediction_thread.start()
 
     def stop(self) -> None:
-        """
-        Stops the prediction thread.
-        """
+        """Stops the prediction thread."""
         # Request the thread to stop:
         self._firm_data_packet_queue.put(STOP_SIGNAL)  # Put the stop signal in the queue
         self._prediction_thread.join()
 
     def update(self, firm_data_packet: FIRMDataPacket) -> None:
         """
-        Updates the apogee predictor to include the most recent FIRM data packet.
+        Updates the apogee predictor to include the most recent FIRM data
+        packet.
 
-        This method should only be called during the coast phase of the rocket's flight.
+        This method should only be called during the coast phase of the
+        rocket's flight.
 
         :param firm_data_packet: The most recent FIRMDataPacket.
         """
@@ -110,8 +112,8 @@ class ApogeePredictor:
     # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
     def _prediction_loop(self) -> None:
         """
-        Responsible for fetching data packets, updating internal state, and finally predicting the
-        apogee using the chosen method (e.g. HPRM).
+        Responsible for fetching data packets, updating internal state, and
+        finally predicting the apogee using the chosen method (e.g. HPRM).
 
         Runs in a separate thread.
         """
@@ -141,8 +143,8 @@ class ApogeePredictor:
 
             # Compute apogee given the latest state and history
             apogee = rocket.predict_apogee(
-                most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
-                most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
+                most_recent_packet.est_position_z_meters,
+                most_recent_packet.est_velocity_z_meters_per_s,
                 ModelType.OneDOF,
                 OdeMethod.RK45,
                 adaptive_time_step,
@@ -153,7 +155,7 @@ class ApogeePredictor:
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(
                     apogee,
-                    most_recent_packet.est_position_z_meters,  # temporary until firm calculates current values
-                    most_recent_packet.est_velocity_z_meters_per_s,  # temporary until firm calculates current values
+                    most_recent_packet.est_position_z_meters,
+                    most_recent_packet.est_velocity_z_meters_per_s,
                 )
             )

@@ -1,6 +1,6 @@
 import math
 import random
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import polars as pl
@@ -11,19 +11,24 @@ from firm_client import FIRMDataPacket
 from airbrakes.data_handling.data_processor import DataProcessor
 from tests.auxil.utils import make_firm_data_packet, make_firm_data_packet_zeroed
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def generate_altitude_sine_wave(
     n_points=1000, frequency=0.01, amplitude=100, noise_level=3, base_altitude=20
 ):
     """
-    Generates a random distribution of altitudes that follow a sine wave pattern, with some noise
-    added to mimic variations in the readings.
+    Generates a random distribution of altitudes that follow a sine wave
+    pattern, with some noise added to mimic variations in the readings.
 
     :param n_points: The number of altitude points to generate.
     :param frequency: The frequency of the sine wave.
     :param amplitude: The amplitude of the sine wave.
-    :param noise_level: The standard deviation of the Gaussian noise to add.
-    :param base_altitude: The base altitude, i.e. starting altitude from sea level.
+    :param noise_level: The standard deviation of the Gaussian noise to
+        add.
+    :param base_altitude: The base altitude, i.e. starting altitude from
+        sea level.
     """
     altitudes = []
     for i in range(n_points):
@@ -40,8 +45,8 @@ def generate_altitude_sine_wave(
 
 def load_data_packets(csv_path: Path, n_packets: int) -> list[FIRMDataPacket]:
     """
-    Reads csv log files containing data packets to use for testing. Will read the first n_packets
-    amount of estimated data packets.
+    Reads csv log files containing data packets to use for testing. Will
+    read the first n_packets amount of estimated data packets.
 
     :param csv_path: The relative path of the csv file to read
     :param n_packets: Amount of estimated data packets to retrieve
@@ -77,9 +82,7 @@ def data_processor():
 
 
 class TestDataProcessor:
-    """
-    Tests the DataProcessor class.
-    """
+    """Tests the DataProcessor class."""
 
     packets = [
         make_firm_data_packet_zeroed(
@@ -115,9 +118,7 @@ class TestDataProcessor:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, data_processor):
-        """
-        Tests whether the DataProcessor is correctly initialized.
-        """
+        """Tests whether the DataProcessor is correctly initialized."""
         d = data_processor
         # Test attributes on init
         assert d._max_altitude == 0.0
@@ -141,7 +142,8 @@ class TestDataProcessor:
 
     def test_first_update_no_data_packets(self, data_processor):
         """
-        Tests whether the update() method works correctly, when no data packets are passed.
+        Tests whether the update() method works correctly, when no data
+        packets are passed.
         """
         d = data_processor
         d.update([])
@@ -207,8 +209,8 @@ class TestDataProcessor:
         max_alt,
     ):
         """
-        Tests whether the update() method works correctly, for the first update() call, along with
-        get_processor_data_packets().
+        Tests whether the update() method works correctly, for the first
+        update() call, along with get_processor_data_packets().
         """
         d = data_processor
         d.update(data_packets.copy())
@@ -228,7 +230,8 @@ class TestDataProcessor:
 
     def test_max_altitude(self, data_processor):
         """
-        Tests whether the max altitude is correctly calculated even when altitude decreases.
+        Tests whether the max altitude is correctly calculated even when
+        altitude decreases.
         """
         d = data_processor
         altitudes = generate_altitude_sine_wave(n_points=1000)
@@ -246,8 +249,8 @@ class TestDataProcessor:
 
     def test_properties_values(self, data_processor):
         """
-        Manually sets internal state to verify properties return correct values
-        and types without relying on the complex update() logic.
+        Manually sets internal state to verify properties return correct
+        values and types without relying on the complex update() logic.
         """
         d = data_processor
         d._current_altitudes = np.array([100.0])
@@ -264,7 +267,10 @@ class TestDataProcessor:
         assert isinstance(d.current_altitude, float)
 
     def test_timestamp_safe_access(self, data_processor):
-        """Tests that timestamp returns 0 if no packet exists, and correct time otherwise."""
+        """
+        Tests that timestamp returns 0 if no packet exists, and correct time
+        otherwise.
+        """
         assert data_processor.current_timestamp_seconds == 0
 
         data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=123)

@@ -1,6 +1,4 @@
-"""
-Module for processing FIRM data on a higher level.
-"""
+"""Module for processing FIRM data on a higher level."""
 
 from typing import TYPE_CHECKING
 
@@ -17,8 +15,8 @@ class DataProcessor:
     """
     Performs high-level calculations on the data packets received from FIRM.
 
-    Includes calculation the vertical acceleration, velocity, maximum altitude so far, etc., from
-    the set of data points.
+    Includes calculation the vertical acceleration, velocity, maximum
+    altitude so far, etc., from the set of data points.
     """
 
     __slots__ = (
@@ -35,8 +33,9 @@ class DataProcessor:
         """
         Initializes the DataProcessor object.
 
-        It processes data points to calculate various things we need such as the maximum altitude,
-        vertical acceleration, velocity, etc. All numbers in this class are handled with numpy. This
+        It processes data points to calculate various things we need
+        such as the maximum altitude, vertical acceleration, velocity,
+        etc. All numbers in this class are handled with numpy. This
         class also has properties to return some of these values.
         """
         self._vertical_accelerations: npt.NDArray[np.float64] = np.array([0.0])
@@ -50,8 +49,8 @@ class DataProcessor:
     @property
     def max_altitude(self) -> float:
         """
-        Returns the highest altitude (zeroed-out) attained by the rocket for the entire flight so
-        far, in meters.
+        Returns the highest altitude (zeroed-out) attained by the rocket for
+        the entire flight so far, in meters.
 
         :return: the maximum zeroed-out altitude of the rocket.
         """
@@ -60,7 +59,8 @@ class DataProcessor:
     @property
     def current_altitude(self) -> float:
         """
-        Returns the altitudes of the rocket (zeroed out) from the data points, in meters.
+        Returns the altitudes of the rocket (zeroed out) from the data
+        points, in meters.
 
         :return: the current zeroed-out altitude of the rocket.
         """
@@ -71,8 +71,8 @@ class DataProcessor:
         """
         The current vertical velocity of the rocket in m/s.
 
-        Calculated by integrating the compensated acceleration after rotating it to the vertical
-        direction.
+        Calculated by integrating the compensated acceleration after
+        rotating it to the vertical direction.
         :return: The vertical velocity of the rocket.
         """
         return float(self._vertical_velocities[-1])
@@ -80,7 +80,8 @@ class DataProcessor:
     @property
     def max_vertical_velocity(self) -> float:
         """
-        The maximum vertical velocity the rocket has attained during the flight, in m/s.
+        The maximum vertical velocity the rocket has attained during the
+        flight, in m/s.
 
         :return: The maximum vertical velocity of the rocket.
         """
@@ -100,7 +101,8 @@ class DataProcessor:
         """
         The timestamp of the last data packet in seconds.
 
-        :return: the current timestamp of the most recent FIRMDataPacket.
+        :return: the current timestamp of the most recent
+            FIRMDataPacket.
         """
         try:
             return self._last_data_packet.timestamp_seconds
@@ -111,7 +113,8 @@ class DataProcessor:
         """
         Updates the data points to process.
 
-        This will recompute all information such as altitude, velocity, etc.
+        This will recompute all information such as altitude, velocity,
+        etc.
         :param data_packets: A list of FIRMDataPacket objects to process
         """
         # If the data points are empty, we don't want to try to process anything
@@ -123,11 +126,15 @@ class DataProcessor:
         # If this is the first update, we can't calculate anything yet
         if self._last_data_packet is None:
             self._last_data_packet = self._data_packets[-1]
-            self._vertical_accelerations[0] = self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+            self._vertical_accelerations[0] = (
+                self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+            )
             self._vertical_velocities[0] = self._last_data_packet.est_velocity_z_meters_per_s
             self._current_altitudes[0] = self._last_data_packet.est_position_z_meters
             self._max_altitude = np.float64(self._last_data_packet.est_position_z_meters)
-            self._max_vertical_velocity = np.float64(self._last_data_packet.est_velocity_z_meters_per_s)
+            self._max_vertical_velocity = np.float64(
+                self._last_data_packet.est_velocity_z_meters_per_s
+            )
             return
 
         self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(

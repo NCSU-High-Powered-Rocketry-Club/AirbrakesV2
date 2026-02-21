@@ -1,26 +1,24 @@
-"""
-Module for simulating the FIRM hardware by reading from a log file.
-"""
+"""Module for simulating the FIRM hardware by reading from a log file."""
 
+import contextlib
 import queue
 import threading
 import time
-import typing
 from pathlib import Path
 
 import polars as pl
+from firm_client import FIRMDataPacket
 
 from airbrakes.base_classes.base_firm import BaseFIRM
 from airbrakes.constants import STOP_SIGNAL
-from firm_client import FIRMDataPacket
 
 
 class MockFIRM(BaseFIRM):
     """
     A mock implementation of the FIRM for testing/simulation purposes.
 
-    It reads a CSV log file and feeds FIRMDataPackets into the queue as if they
-    were coming from the hardware.
+    It reads a CSV log file and feeds FIRMDataPackets into the queue as
+    if they were coming from the hardware.
     """
 
     __slots__ = (
@@ -40,23 +38,24 @@ class MockFIRM(BaseFIRM):
         """
         Initializes the MockFIRM.
 
-        :param real_time_replay: If True, packets are emitted with delays matching
-        their original timestamps. If False, packets are emitted as fast as possible.
+        :param real_time_replay: If True, packets are emitted with
+            delays matching their original timestamps. If False, packets
+            are emitted as fast as possible.
         :param log_file_path: Optional path to a specific CSV log file.
         """
         # 1. Resolve Log File Path
         self._log_file_path = log_file_path
         if self._log_file_path is None:
             # Default to finding the first CSV in launch_data
-            root_dir = Path(__file__).parent.parent.parent
-            launch_data_dir = root_dir / "launch_data"
+            # root_dir = Path(__file__).parent.parent.parent
+            # launch_data_dir = root_dir / "launch_data"
 
             # Use glob to find files
-            potential_files = list(launch_data_dir.glob("*.csv"))
-            if potential_files:
-                self._log_file_path = potential_files[0]
-            else:
-                self._log_file_path = Path("launch_data/shake_n_bake.csv")
+            # potential_files = list(launch_data_dir.rglob("*.csv"))
+            # if potential_files:
+            #     self._log_file_path = potential_files[0]
+            # else:
+            self._log_file_path = Path("launch_data/pretended_firm_launches/government_work_1.csv")
 
         self._log_file_path = self._log_file_path
 
@@ -77,29 +76,24 @@ class MockFIRM(BaseFIRM):
     @property
     def is_running(self) -> bool:
         """
-        Returns True if the Mock FIRM thread is running and fetching data.
+        Returns True if the Mock FIRM thread is running and fetching
+        data.
         """
         return self._is_running.is_set()
 
     def start(self) -> None:
-        """
-        Starts the Mock FIRM thread.
-        """
+        """Starts the Mock FIRM thread."""
         super().start()
         if not self._data_fetch_thread.is_alive():
             self._data_fetch_thread.start()
 
     def stop(self) -> None:
-        """
-        Stops the Mock FIRM thread.
-        """
+        """Stops the Mock FIRM thread."""
         super().stop()
         # The thread will exit its loop when self._is_running is cleared
 
     def get_data_packets(self) -> list[FIRMDataPacket]:
-        """
-        Returns all available FIRM data packets from the queue.
-        """
+        """Returns all available FIRM data packets from the queue."""
         packets = []
         while not self._queued_packets.empty():
             item = self._queued_packets.get()
@@ -116,9 +110,7 @@ class MockFIRM(BaseFIRM):
     # ------------------------ THREAD METHODS -------------------------
 
     def _scan_csv(self) -> pl.LazyFrame:
-        """
-        Prepares the Polars LazyFrame with only the columns we need.
-        """
+        """Prepares the Polars LazyFrame with only the columns we need."""
         # 1. Get all headers present in the CSV
         self._headers = pl.scan_csv(self._log_file_path).collect_schema().names()
 
@@ -136,16 +128,13 @@ class MockFIRM(BaseFIRM):
 
     def _read_file(self, real_time_replay: bool) -> None:
         """
-        Reads the CSV, converts rows to FIRMDataPackets, and manages replay timing.
+        Reads the CSV, converts rows to FIRMDataPackets, and manages replay
+        timing.
         """
-        try:
-            # Collect the dataframe
-            collected_data: pl.DataFrame = self._scan_csv().collect()
-            # TODO: delete this once firm fixes this mock bug
-            collected_data = collected_data.slice(1)
-        except Exception:
-            # If file is empty or missing, just return
-            return
+        # Collect the dataframe
+        collected_data: pl.DataFrame = self._scan_csv().collect()
+        # TODO: delete this once firm fixes this mock bug
+        collected_data = collected_data.slice(1)
 
         prev_timestamp = None
 
@@ -163,12 +152,9 @@ class MockFIRM(BaseFIRM):
             row_dict = {k: v for k, v in row.items() if v is not None}
 
             # 2. Create Packet
-            try:
+            with contextlib.suppress(Exception):
                 packet = FIRMDataPacket(**row_dict)
                 self._queued_packets.put(packet)
-            except Exception:
-                # If a row is malformed, skip it
-                continue
 
             # 3. Replay Logic
             if real_time_replay:
@@ -193,15 +179,10 @@ class MockFIRM(BaseFIRM):
                 prev_timestamp = current_timestamp
 
     def _fetch_data_loop(self, real_time_replay: bool) -> None:
-        """
-        The main thread loop.
-        """
+        """The main thread loop."""
         self._is_running.set()
 
-        try:
-            self._read_file(real_time_replay)
-        except Exception as e:
-            print(f"MockFIRM Error reading file: {e}")
-        finally:
-            self._is_running.clear()
-            self._queued_packets.put(STOP_SIGNAL)
+        self._read_file(real_time_replay)
+
+        self._is_running.clear()
+        self._queued_packets.put(STOP_SIGNAL)

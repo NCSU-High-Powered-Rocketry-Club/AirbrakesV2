@@ -16,7 +16,7 @@ from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.state import CoastState, StandbyState, MotorBurnState
+from airbrakes.state import CoastState, MotorBurnState, StandbyState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_firm_data_packet,
@@ -28,9 +28,7 @@ if TYPE_CHECKING:
 
 
 class TestContext:
-    """
-    Tests the Context class.
-    """
+    """Tests the Context class."""
 
     def test_slots(self, context):
         inst = context
@@ -74,9 +72,7 @@ class TestContext:
         context.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, context):
-        """
-        Tests whether the Context handles ctrl+c events correctly.
-        """
+        """Tests whether the Context handles ctrl+c events correctly."""
         context.start()
 
         try:
@@ -90,9 +86,7 @@ class TestContext:
         assert context.shutdown_requested
 
     def test_airbrakes_ctrl_c_exception(self, context):
-        """
-        Tests whether the AirbrakesContext handles unknown exceptions.
-        """
+        """Tests whether the AirbrakesContext handles unknown exceptions."""
         context.start()
         try:
             raise ValueError("some error in main loop")
@@ -113,7 +107,8 @@ class TestContext:
         context,
     ):
         """
-        Tests whether the Airbrakes update method works correctly by calling the relevant methods.
+        Tests whether the Airbrakes update method works correctly by calling
+        the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the data processor gets only estimated data packets
@@ -213,8 +208,8 @@ class TestContext:
 
     def test_stop_with_random_data_firm_and_update(self, context: Context, random_data_mock_firm):
         """
-        Tests stopping of the airbrakes system while we are using the FIRM and calling
-        airbrakes.update().
+        Tests stopping of the airbrakes system while we are using the FIRM
+        and calling airbrakes.update().
         """
         context.firm = random_data_mock_firm
         has_airbrakes_stopped = threading.Event()
@@ -232,7 +227,7 @@ class TestContext:
 
             if not started_thread:
                 started_thread = True
-                stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
+                stop_airbrakes_thread = threading.Timer(0.3, stop_airbrakes)
                 stop_airbrakes_thread.start()
 
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
@@ -258,8 +253,8 @@ class TestContext:
         self, context: Context, random_data_mock_firm, mocked_args_parser, capsys
     ):
         """
-        Tests stopping of the airbrakes system while we are using the FIRM, the flight display, and
-        calling airbrakes.update().
+        Tests stopping of the airbrakes system while we are using the FIRM,
+        the flight display, and calling airbrakes.update().
         """
         context.firm = random_data_mock_firm
         fd = FlightDisplay(context=context, args=mocked_args_parser)
@@ -316,8 +311,8 @@ class TestContext:
         context,
     ):
         """
-        Tests whether the airbrakes predict_apogee method works correctly by calling the relevant
-        methods.
+        Tests whether the airbrakes predict_apogee method works correctly by
+        calling the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the apogee predictor gets only estimated data packets and not duplicated
@@ -406,8 +401,9 @@ class TestContext:
         self, context: Context, monkeypatch, random_data_mock_firm
     ):
         """
-        Tests whether the airbrakes receives packets from the apogee predictor and that the
-        attribute `predicted_apogee` is updated correctly.
+        Tests whether the airbrakes receives packets from the apogee
+        predictor and that the attribute `predicted_apogee` is updated
+        correctly.
         """
         monkeypatch.setattr(context, "firm", random_data_mock_firm)
 
@@ -443,7 +439,8 @@ class TestContext:
 
     def test_generate_data_packets(self, context):
         """
-        Tests whether the airbrakes generates the correct data packets for logging.
+        Tests whether the airbrakes generates the correct data packets for
+        logging.
         """
         context.generate_data_packets()
         assert context.context_data_packet.state == StandbyState
@@ -455,9 +452,7 @@ class TestContext:
         assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
-        """
-        Benchmark the update method of the airbrakes system.
-        """
+        """Benchmark the update method of the airbrakes system."""
         # uv managed arm64 python is still not built with JIT, thus this is commented out.
         # if _testinternalcapi.get_optimizer() is None:
         #     pytest.fail("Please run benchmarks with PYTHON_JIT=1!")

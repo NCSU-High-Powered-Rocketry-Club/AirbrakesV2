@@ -1,6 +1,4 @@
-"""
-File to handle the display of real-time flight data in the terminal.
-"""
+"""File to handle the display of real-time flight data in the terminal."""
 
 import os
 import threading
@@ -10,7 +8,6 @@ from typing import TYPE_CHECKING
 from colorama import Fore, Style, init
 
 from airbrakes.constants import DisplayEndingType
-from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     import argparse
@@ -27,8 +24,8 @@ RESET = Style.RESET_ALL
 
 class FlightDisplay:
     """
-    Class related to displaying real-time flight data in the terminal with pretty colors and
-    spacing.
+    Class related to displaying real-time flight data in the terminal with
+    pretty colors and spacing.
     """
 
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
@@ -52,7 +49,8 @@ class FlightDisplay:
         Initializes the FlightDisplay object.
 
         :param context: The Context object.
-        :param args: Command line arguments determining the program configuration.
+        :param args: Command line arguments determining the program
+            configuration.
         """
         init(autoreset=True)  # Automatically reset colors after each print
         self._context = context
@@ -83,57 +81,47 @@ class FlightDisplay:
         """
         Starts the display and cpu monitoring thread.
 
-        Also prepares the processes for monitoring in the replay. This should only be done *after*
-        context.start() is called, because we need the thread IDs.
+        Also prepares the processes for monitoring in the replay. This
+        should only be done *after* context.start() is called, because
+        we need the thread IDs.
         """
         self._running = True
         self._display_update_thread.start()
 
     def stop(self) -> None:
-        """
-        Stops the display thread.
-        """
+        """Stops the display thread."""
         self._running = False
         self._display_update_thread.join()
 
-    # TODO: maybe implement this for FIRM?
-    # def sound_alarm_if_imu_is_having_issues(self) -> None:
-    #     """
-    #     Sounds an audible alarm if the IMU has invalid fields or large change in velocity.
-    #
-    #     This is most useful on real flights, where it is hard to see the display due to sunlight.
-    #     """
-    #     has_invalid_fields = False
-    #     has_large_velocity = False
-    #     imu_queue_backlog = False
-    #     pitch_drift = False
-    #
-    #     # If the absolute value of our velocity is large in standby state, we have a problem:
-    #     if abs(self._context.data_processor.vertical_velocity) > 2:
-    #         has_large_velocity = True
-    #
-    #     # While normally it is bad practice to access private variables, we kind of consider the
-    #     # display outside of/an addon to the main program, so we are okay with it here.
-    #     invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
-    #     has_invalid_fields = bool(invalid_fields)
-    #
-    #     if self._context.imu.imu_packets_per_cycle > 30:
-    #         imu_queue_backlog = True
-    #
-    #     if (
-    #         self._pitch_at_startup
-    #         and abs(self._context.data_processor.average_pitch - self._pitch_at_startup) > 1
-    #     ):
-    #         pitch_drift = True
-    #
-    #     if has_invalid_fields or has_large_velocity or imu_queue_backlog or pitch_drift:
-    #         print("\a", end="")  # \a is the bell character, which makes a beep sound
+    def sound_alarm_if_imu_is_having_issues(self) -> None:
+        """
+        Sounds an audible alarm if the IMU has invalid fields or large
+        change in velocity.
+
+        This is most useful on real flights, where it is hard to see the
+        display due to sunlight.
+        """
+        has_large_velocity = False
+        imu_queue_backlog = False
+
+        # If the absolute value of our velocity is large in standby state, we have a problem:
+        if abs(self._context.data_processor.vertical_velocity) > 2:
+            has_large_velocity = True
+
+        # If we have too many packets in one iteration, that means the IMU is producing data faster
+        # # than we can consume it, which is a problem:
+        if self._context.context_data_packet.retrieved_firm_packets > 30:
+            imu_queue_backlog = True
+
+        if has_large_velocity or imu_queue_backlog:
+            print("\a", end="")  # \a is the bell character, which makes a beep sound
 
     def update_display(self) -> None:
         """
         Updates the display with real-time data.
 
-        Runs in another thread. Automatically stops when the replay ends.
+        Runs in another thread. Automatically stops when the replay
+        ends.
         """
         # Don't print the flight data if we are in debug mode
         if self._args.debug:
@@ -154,7 +142,7 @@ class FlightDisplay:
 
             # If we are running a real flight, check if there is any cause of concern:
             if self._args.mode == "real":
-                # self.sound_alarm_if_imu_is_having_issues()
+                self.sound_alarm_if_imu_is_having_issues()
                 # We will stop the display when the rocket takes off (performance reasons)
                 if self._context.state.name == "MotorBurnState":
                     self._update_display(DisplayEndingType.TAKEOFF)
@@ -178,7 +166,10 @@ class FlightDisplay:
 
         data_processor = self._context.data_processor
 
-        time_since_launch = (self._context.data_processor.current_timestamp_seconds - self._context.launch_time_seconds if self._context.launch_time_seconds
+        time_since_launch = (
+            self._context.data_processor.current_timestamp_seconds
+            - self._context.launch_time_seconds
+            if self._context.launch_time_seconds
             else 0
         )
 

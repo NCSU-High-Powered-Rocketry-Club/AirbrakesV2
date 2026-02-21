@@ -1,5 +1,6 @@
 """
-Module which provides a high level interface to the air brakes system on the rocket.
+Module which provides a high level interface to the air brakes system on the
+rocket.
 """
 
 import time
@@ -25,9 +26,9 @@ if TYPE_CHECKING:
 
 class Context:
     """
-    Manages the state machine for the rocket's air brakes system, keeping track of the current state
-    and communicating with hardware like the servo and FIRM. This class is what connects the state
-    machine to the hardware.
+    Manages the state machine for the rocket's air brakes system, keeping
+    track of the current state and communicating with hardware like the servo
+    and FIRM. This class is what connects the state machine to the hardware.
 
     Read more about the state machine pattern here:
     https://www.tutorialspoint.com/design_pattern/state_pattern.htm
@@ -57,20 +58,22 @@ class Context:
         apogee_predictor: ApogeePredictor,
     ) -> None:
         """
-        Initializes Context with the specified hardware objects, Logger, DataProcessor, and
-        ApogeePredictor.
+        Initializes Context with the specified hardware objects, Logger,
+        DataProcessor, and ApogeePredictor.
 
-        The state machine starts in StandbyState, which is the initial state of the air brakes
-        system.
-        :param servo: The servo object that controls the extension of the air brakes. This can be a
-            real servo or a mocked servo.
-        :param firm: The FIRM object that reads data from the rocket's FIRM device. This can be a
-            real FIRM or mock FIRM.
-        :param logger: The logger object that logs data to a CSV file. This can be a real logger or
-            a mock logger.
-        :param data_processor: The DataProcessor object that processes FIRM data on a higher level.
-        :param apogee_predictor: The ApogeePredictor object that predicts what the apogee of the
-            rocket will be based on the processed data.
+        The state machine starts in StandbyState, which is the initial
+        state of the air brakes system.
+        :param servo: The servo object that controls the extension of
+            the air brakes. This can be a real servo or a mocked servo.
+        :param firm: The FIRM object that reads data from the rocket's
+            FIRM device. This can be a real FIRM or mock FIRM.
+        :param logger: The logger object that logs data to a CSV file.
+            This can be a real logger or a mock logger.
+        :param data_processor: The DataProcessor object that processes
+            FIRM data on a higher level.
+        :param apogee_predictor: The ApogeePredictor object that
+            predicts what the apogee of the rocket will be based on the
+            processed data.
         """
         self.servo: BaseServo = servo
         self.firm: BaseFIRM = firm
@@ -95,10 +98,11 @@ class Context:
 
         This is called before the main loop starts.
 
-        :param wait_for_start: If True, waits for all the threads to have actually started. This
-            matters because starting threads via the "spawn"/"forkserver" method is slow, and we
-            want to prevent data races where the main loop tries to access data before the threads
-            have started.
+        :param wait_for_start: If True, waits for all the threads to
+            have actually started. This matters because starting threads
+            via the "spawn"/"forkserver" method is slow, and we want to
+            prevent data races where the main loop tries to access data
+            before the threads have started.
         """
         self.firm.start()
         self.logger.start()
@@ -108,7 +112,6 @@ class Context:
             # Wait for all processes to start. It is assumed that once FIRM is running, all other
             # processes are also running. Even if they aren't it's okay, since the queue will fill
             # up with data and the other processes will start processing it when they wake up.
-            time.sleep(BUSY_WAIT_SECONDS)
             while not self.firm.is_running:
                 time.sleep(BUSY_WAIT_SECONDS)
 
@@ -116,8 +119,9 @@ class Context:
         """
         Handles shutting down the air brakes system.
 
-        This will cause the main loop to break. It retracts the air brakes and stops the processes
-        for the FIRM device, Logger, and ApogeePredictor.
+        This will cause the main loop to break. It retracts the air
+        brakes and stops the processes for the FIRM device, Logger, and
+        ApogeePredictor.
         """
         if self.shutdown_requested:
             return
@@ -129,12 +133,13 @@ class Context:
 
     def update(self) -> None:
         """
-        Called every loop iteration from the main thread. This is essentially the "brain" of the air
-        brakes system, where all the data is collected, processed, and logged, and the state machine
-        is updated.
+        Called every loop iteration from the main thread. This is
+        essentially the "brain" of the air brakes system, where all the data is
+        collected, processed, and logged, and the state machine is updated.
 
-        This function retrieves the latest FIRM data packets, processes them, updates the state
-        machine, generates data packets for logging, and logs all relevant data.
+        This function retrieves the latest FIRM data packets, processes
+        them, updates the state machine, generates data packets for
+        logging, and logs all relevant data.
         """
         self.firm_data_packets = self.firm.get_data_packets()
 
@@ -168,22 +173,20 @@ class Context:
         )
 
     def extend_airbrakes(self) -> None:
-        """
-        Extends the air brakes to the maximum extension.
-        """
+        """Extends the air brakes to the maximum extension."""
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
-        """
-        Retracts the air brakes to the minimum extension.
-        """
+        """Retracts the air brakes to the minimum extension."""
         self.servo.set_retracted()
 
     def predict_apogee(self) -> None:
         """
-        Predicts the apogee of the rocket based on the current processed data.
+        Predicts the apogee of the rocket based on the current processed
+        data.
 
-        This should only be called in the coast state, before we start controlling the air brakes.
+        This should only be called in the coast state, before we start
+        controlling the air brakes.
         """
         if self.firm_data_packets:
             # We pass in the most recent FIRM Data Packet to the apogee predictor
@@ -191,7 +194,8 @@ class Context:
 
     def generate_data_packets(self) -> None:
         """
-        Generates the Context Data Packet and Servo Data Packet to be logged.
+        Generates the Context Data Packet and Servo Data Packet to be
+        logged.
         """
         # Create a Context Data Packet to log the current state and queue information of the
         # Airbrakes program.

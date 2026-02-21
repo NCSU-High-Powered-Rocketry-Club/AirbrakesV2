@@ -1,6 +1,6 @@
 """
-File which contains utility functions which can be reused in the project, along with handling
-command line arguments.
+File which contains utility functions which can be reused in the project,
+along with handling command line arguments.
 """
 
 import argparse
@@ -78,9 +78,7 @@ def deadband(input_value: float, threshold: float) -> float:
 
 
 def arg_parser() -> argparse.Namespace:
-    """
-    Handles the command line arguments for the main Airbrakes program.
-    """
+    """Handles the command line arguments for the main Airbrakes program."""
     # We define this as a parent so we can use it in both sub-commands
     common_parser = argparse.ArgumentParser(add_help=False)
     common_group = common_parser.add_mutually_exclusive_group()
@@ -120,7 +118,6 @@ def arg_parser() -> argparse.Namespace:
         description="Configuration for the mock replay.",
     )
 
-    # Inlined arguments (previously in add_common_arguments)
     mock_parser.add_argument(
         "-s", "--real-servo", action="store_true", help="Run the mock replay with the real servo."
     )
@@ -131,23 +128,35 @@ def arg_parser() -> argparse.Namespace:
         "-f", "--fast-replay", action="store_true", help="Run replay at full speed."
     )
 
-    firm_source_group = mock_parser.add_mutually_exclusive_group()
-
-    firm_source_group.add_argument(
-        "-m",
-        "--mock-firm",
+    mock_parser.add_argument(
+        "-p",
+        "--path",
+        help="Define the pathname of flight data to use in the mock replay. The first file"
+        " found in the launch_data directory will be used if not specified.",
         type=Path,
-        help="Use MockFIRM to read data from a previous airbakes log file, (defaults to first in launch_data)",
-        metavar="LOG_FILE",
-        default=None,
     )
 
-    firm_source_group.add_argument(
+    pretend_parser = subparsers.add_parser(
+        "pretend",
+        parents=[common_parser],
+        help="Run in pretend mode with FIRM outputting data from a previous log.",
+        description="Configuration for the pretend replay.",
+    )
+
+    pretend_parser.add_argument(
         "-p",
-        "--pretend-firm",
-        help="Make FIRM output data from a previous FIRM log file.",
+        "--path",
+        help="Define the pathname of flight data to use in the pretend replay. "
+        "Must be a .FRM file.",
         type=Path,
-        metavar="LOG_FILE",
+        required=True,
+    )
+
+    pretend_parser.add_argument(
+        "-s", "--real-servo", action="store_true", help="Run the pretend with the real servo."
+    )
+    pretend_parser.add_argument(
+        "-l", "--keep-log-file", action="store_true", help="Keep the log file after replay stops."
     )
 
     return parser.parse_args()

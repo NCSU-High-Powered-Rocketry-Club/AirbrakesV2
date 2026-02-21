@@ -3,7 +3,6 @@ import queue
 import threading
 import time
 from functools import partial
-from typing import TYPE_CHECKING
 
 import pytest
 from msgspec.structs import asdict
@@ -24,7 +23,6 @@ from airbrakes.state import (
     StandbyState,
 )
 from tests.auxil.utils import (
-    context_packet_to_logger_kwargs,
     make_apogee_predictor_data_packet,
     make_context_data_packet,
     make_firm_data_packet,
@@ -32,20 +30,9 @@ from tests.auxil.utils import (
 )
 from tests.conftest import LOG_PATH
 
-if TYPE_CHECKING:
-    from firm_client import FIRMDataPacket
-
-    from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
-        ApogeePredictorDataPacket,
-    )
-    from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-
 
 def patched_stop(self):
-    """
-    Monkeypatched stop method which does not log the buffer.
-    """
+    """Monkeypatched stop method which does not log the buffer."""
     # Make sure the rest of the code is the same as the original method!
     self._log_queue.put(STOP_SIGNAL)
     self._log_thread.join()
@@ -90,9 +77,7 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
 
 @pytest.fixture
 def threaded_logger(monkeypatch):
-    """
-    Modifies the Logger to run in a separate thread instead of a process.
-    """
+    """Modifies the Logger to run in a separate thread instead of a process."""
     logger = Logger(LOG_PATH)
     # Cannot use signals from child threads, so we need to monkeypatch it:
     monkeypatch.setattr("signal.signal", lambda _, __: None)
@@ -103,9 +88,7 @@ def threaded_logger(monkeypatch):
 
 
 class TestLogger:
-    """
-    Tests the Logger() class in logger.py.
-    """
+    """Tests the Logger() class in logger.py."""
 
     sample_ldp = LoggerDataPacket(
         state_letter="S",
@@ -119,9 +102,7 @@ class TestLogger:
 
     @pytest.fixture(autouse=True)  # autouse=True means run this function before/after every test
     def _clear_directory(self):
-        """
-        Clear the tests/logs directory after running each test.
-        """
+        """Clear the tests/logs directory after running each test."""
         yield  # This is where the test runs
         # Test run is over, now clean up
         for log in LOG_PATH.glob("log_*.csv"):
@@ -167,9 +148,7 @@ class TestLogger:
             assert list(keys) == list(LoggerDataPacket.__struct_fields__)
 
     def test_log_buffer_is_full_property(self, logger):
-        """
-        Tests whether the property is_log_buffer_full works correctly.
-        """
+        """Tests whether the property is_log_buffer_full works correctly."""
         assert not logger.is_log_buffer_full
         logger._log_buffer.extend([1] * (LOG_BUFFER_SIZE - 1))
         assert not logger.is_log_buffer_full
@@ -179,9 +158,7 @@ class TestLogger:
         assert logger.is_log_buffer_full
 
     def test_logger_stops_on_stop_signal(self, logger):
-        """
-        Tests whether the logger stops when it receives a stop signal.
-        """
+        """Tests whether the logger stops when it receives a stop signal."""
         logger.start()
         logger._log_queue.put(STOP_SIGNAL)
         time.sleep(0.4)
@@ -339,7 +316,8 @@ class TestLogger:
         expected_output: list[dict],
     ):
         """
-        Tests whether the log method logs the data correctly to the CSV file.
+        Tests whether the log method logs the data correctly to the CSV
+        file.
         """
         logger.start()
 
@@ -378,7 +356,8 @@ class TestLogger:
 
     def test_log_capacity_exceeded_standby(self, monkeypatch, logger):
         """
-        Tests whether the log buffer works correctly for the Standby state.
+        Tests whether the log buffer works correctly for the Standby
+        state.
         """
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
@@ -406,7 +385,7 @@ class TestLogger:
         # (The first IDLE_LOG_CAPACITY were written to disk, the rest are buffered)
         assert len(logger._log_buffer) == 10
 
-        logger.stop()  # We must stop because otherwise the values are not flushed to the file due to monkeypatch
+        logger.stop()  # We must stop because otherwise the values are not flushed to the file
 
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
@@ -420,7 +399,8 @@ class TestLogger:
 
     def test_log_buffer_keeps_increasing(self, logger):
         """
-        Tests that the buffer keeps building up on subsequent calls to log().
+        Tests that the buffer keeps building up on subsequent calls to
+        log().
         """
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
@@ -467,8 +447,8 @@ class TestLogger:
 
     def test_log_buffer_reset_after_standby(self, logger):
         """
-        Tests if the buffer is logged when switching from standby to motor burn and that the counter
-        is reset.
+        Tests if the buffer is logged when switching from standby to motor
+        burn and that the counter is reset.
         """
         # Setup packets
         context_standby = make_context_data_packet(state=StandbyState)
@@ -541,7 +521,8 @@ class TestLogger:
 
     def test_log_buffer_reset_after_landed(self, logger):
         """
-        Tests if we've hit the idle log capacity when are in LandedState and that it is logged.
+        Tests if we've hit the idle log capacity when are in LandedState and
+        that it is logged.
         """
         # Setup the specific packets for this test
         context_packet = make_context_data_packet(state=LandedState)
@@ -622,8 +603,8 @@ class TestLogger:
         monkeypatch,
     ):
         """
-        Tests that the logger calls flush() every x lines by monkeypatching the file object's flush
-        method.
+        Tests that the logger calls flush() every x lines by monkeypatching
+        the file object's flush method.
         """
         # Prepare sample data packets
         context_packet = make_context_data_packet(state=MotorBurnState)  # Avoid buffering

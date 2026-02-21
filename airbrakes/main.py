@@ -59,11 +59,25 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
+def run_pretend_flight() -> None:
+    """
+    Entry point for the application to run the pretend flight.
+
+    Entered when run with
+    `uvx --from git+... pretend` or `uv run pretend`.
+    """
+    # Modify sys.argv to include mock as the first argument:
+    sys.argv.insert(1, "pretend")
+    args = arg_parser()
+    run_flight(args)
+
+
 def run_flight(args: argparse.Namespace) -> None:
     """
     Initializes the Airbrakes components and starts the main loop.
 
-    :param args: Command line arguments determining the program configuration.
+    :param args: Command line arguments determining the program
+        configuration.
     """
     servo, firm, logger, data_processor, apogee_predictor = create_components(args)
 
@@ -89,21 +103,23 @@ def create_components(
     """
     Creates the system components needed for the air brakes system.
 
-    Depending on its arguments, it will return either mock, or real components.
-    :param args: Command line arguments determining the program configuration.
-    :return: A tuple containing the Servo, FIRM, Logger, FIRMDataProcessor, and ApogeePredictor
-        objects.
+    Depending on its arguments, it will return either mock, or real
+    components.
+    :param args: Command line arguments determining the program
+        configuration.
+    :return: A tuple containing the Servo, FIRM, Logger, DataProcessor,
+        and ApogeePredictor objects.
     """
-    # TODO: this looks ugly but eventually we will use HPRM to run sims
-    if args.mode in ("mock"):
-        if args.mode == "mock":
-            if args.pretend_firm:
-                firm = FIRM(is_pretend=True, log_file_path=args.pretend_firm)
-            else:
-                firm = MockFIRM(
-                    real_time_replay=not args.fast_replay,
-                    log_file_path=args.mock_firm,
-                )
+    if args.mode in ("mock", "pretend"):
+        if args.mode == "pretend":
+            if args.path.suffix != ".FRM":
+                raise ValueError("The pretend FIRM log file must have a .FRM extension.")
+            firm = FIRM(is_pretend=True, log_file_path=args.path)
+        else:
+            firm = MockFIRM(
+                real_time_replay=not args.fast_replay,
+                log_file_path=args.path,
+            )
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
@@ -147,7 +163,8 @@ def run_flight_loop(
     is_mock: bool,
 ) -> None:
     """
-    Main flight control loop that runs until shutdown is requested or interrupted.
+    Main flight control loop that runs until shutdown is requested or
+    interrupted.
 
     :param context: The AirbrakesContext managing the state machine.
     :param flight_display: Display interface for flight data.
@@ -180,3 +197,33 @@ def run_flight_loop(
         # Stops the display and the Airbrakes program
         flight_display.stop()
         context.stop()
+
+
+if __name__ == "__main__":
+    # This code isn't actually used when running `uv run ...` but is kept for
+    # backwards compatibility. In the `pyproject.toml` file, the entry points for
+    # `uvx` are set to the functions above: `run_real_flight` or `run_mock_flight`
+
+    # Deprecated way to run the program:
+    # python -m airbrakes.main [ARGS]
+
+    # The main Airbrakes program can be run in different modes:
+
+    # `uv run real [ARGS]`: Runs the flight with real hardware. Optional arguments:
+    #     -s, --mock-servo   : Uses a mock servo instead of the real one.
+
+    # `uv run mock [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
+    #   Optional arguments include:
+    #     -s, --real-servo   : Uses the real servo instead of a mock one.
+    #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
+    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
+
+    # `uv run pretend [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
+    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
+
+    # Global options for all modes:
+    #     -d, --debug   : Runs without a display, allowing inspection of print statements.
+    #     -v, --verbose : Enables a detailed display with more flight data.
+
+    args = arg_parser()
+    run_flight(args)

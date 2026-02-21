@@ -1,3 +1,8 @@
+"""
+This module contains the FIRM class, which is responsible for fetching data
+packets from FIRM.
+"""
+
 from typing import TYPE_CHECKING
 
 from firm_client import FIRMClient, FIRMDataPacket
@@ -10,6 +15,11 @@ if TYPE_CHECKING:
 
 
 class FIRM(BaseFIRM):
+    """
+    A custom class that represents the FIRM device, which is responsible for
+    fetching data packets from FIRM.
+    """
+
     __slots__ = ("_log_file_path", "firm_client", "is_pretend")
 
     def __init__(self, is_pretend=False, log_file_path: Path | None = None):
@@ -23,9 +33,7 @@ class FIRM(BaseFIRM):
         return self.firm_client.is_running()
 
     def start(self) -> None:
-        """
-        Starts the FIRM client for fetching data packets.
-        """
+        """Starts the FIRM client for fetching data packets."""
         self.firm_client.start()
 
         if self.is_pretend:
@@ -33,17 +41,17 @@ class FIRM(BaseFIRM):
         super().start()
 
     def stop(self) -> None:
-        """
-        Stops the FIRM client for fetching data packets.
-        """
+        """Stops the FIRM client for fetching data packets."""
         self.firm_client.stop()
         super().stop()
 
     def get_data_packets(self) -> list[FIRMDataPacket]:
         """
-        Returns all available FIRM data packets from the queued FIRM packets.
+        Returns all available FIRM data packets from the queued FIRM
+        packets.
 
-        :return: A list containing the latest FIRM data packets from the FIRM packet queue.
+        :return: A list containing the latest FIRM data packets from the
+            FIRM packet queue.
         """
         # Throws out any packets collected before FIRM responds that it's in mock mode
         if self.is_pretend and not self.firm_client.is_mock_log_streaming():

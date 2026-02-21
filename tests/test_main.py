@@ -1,10 +1,7 @@
-"""
-Module to test the main script.
-"""
+"""Module to test the main script."""
 
 import sys
 from functools import partial
-from pathlib import Path
 
 import gpiozero
 import pytest
@@ -28,9 +25,7 @@ from airbrakes.utils import arg_parser
 
 
 class MockedServo:
-    """
-    Mocked class for the adafruit.motor servo.
-    """
+    """Mocked class for the adafruit.motor servo."""
 
     def __init__(self, *_, **__):
         self.actuation_range = 180
@@ -42,9 +37,7 @@ class MockedServo:
 
 @pytest.fixture(autouse=True)
 def _clear_directory():
-    """
-    Clear the tests/logs directory after running each test.
-    """
+    """Clear the tests/logs directory after running each test."""
     yield
     for log in LOGS_PATH.glob("log_*.csv"):
         log.unlink()
@@ -52,9 +45,7 @@ def _clear_directory():
 
 @pytest.fixture
 def parsed_args(request, monkeypatch):
-    """
-    Fixture to return the parsed arguments.
-    """
+    """Fixture to return the parsed arguments."""
     monkeypatch.setattr(sys, "argv", request.param)
     return arg_parser()
 
@@ -68,10 +59,20 @@ def parsed_args(request, monkeypatch):
         (["main.py", "mock", "-s"]),
         (["main.py", "mock", "-s", "-l"]),
         (["main.py", "mock", "-s", "-l", "-f"]),
-        # Mock mode, but using FIRM class in pretend mode
-        (["main.py", "mock", "-p", "launch_data/shake_n_bake.csv"]),
-        # Mock mode, using MockFIRM class with explicit file
-        (["main.py", "mock", "-m", "launch_data/shake_n_bake.csv"]),
+        (
+            [
+                "main.py",
+                "mock",
+                "-s",
+                "-l",
+                "-f",
+                "-p",
+                "launch_data/pretended_firm_launches/government_work_1.csv",
+            ]
+        ),
+        (["main.py", "pretend", "-p", "launch_data/raw_firm_data/test.FRM"]),
+        (["main.py", "pretend", "-p", "launch_data/raw_firm_data/test.FRM", "-l"]),
+        (["main.py", "pretend", "-p", "launch_data/raw_firm_data/test.FRM", "-l", "-s"]),
     ],
     ids=[
         "real flight default (all real)",
@@ -80,21 +81,25 @@ def parsed_args(request, monkeypatch):
         "mock with real servo",
         "mock with real servo, and log file kept",
         "mock with real servo, log file kept, and fast replay",
-        "mock with Pretend FIRM (real class, pretend mode)",
-        "mock with Mock FIRM (mock class, explicit file)",
+        "mock with real servo, log file kept, fast replay, and specific launch file",
+        "pretend mode with specific launch file",
+        "pretend mode with specific launch file and log file kept",
+        "pretend mode with specific launch file and real servo",
     ],
     indirect=True,
 )
 def test_create_components(parsed_args, monkeypatch):
-    """
-    Tests whether we create the correct components, given the arguments.
-    """
+    """Tests whether we create the correct components, given the arguments."""
     # 1. Mock GPIO for Servo
     mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
     def mock_servo__init__(self, *args, **kwargs):
-        """Mock the __init__ of the airbrakes Servo class."""
-        pass
+        """
+        Mock the __init__ of the airbrakes Servo class.
+
+        Because the import of LGPIOFactory fails on non-raspberry pi
+        devices, we need to mock the Servo class.
+        """
 
     monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
     monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
@@ -136,6 +141,9 @@ def test_create_components(parsed_args, monkeypatch):
         # Servo Checks
         if parsed_args.mock_servo:
             assert type(created_components[0]) is MockServo
+            assert isinstance(
+                created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
+            )
         else:
             assert type(created_components[0]) is Servo
 
@@ -149,31 +157,21 @@ def test_create_components(parsed_args, monkeypatch):
 
     # --- MOCK MODE CHECKS ---
     elif parsed_args.mode == "mock":
+        assert type(created_components[1]) is MockFIRM
+        if parsed_args.path:
+            assert created_components[1]._log_file_path == parsed_args.path
+
         # Servo Checks
         if parsed_args.real_servo:
             assert type(created_components[0]) is Servo
         else:
             assert type(created_components[0]) is MockServo
 
-        # FIRM Checks (The Logic Change is Here)
-        if parsed_args.pretend_firm:
-            # If -p is passed, we use the REAL FIRM class, but with is_pretend=True
-            assert type(created_components[1]) is FIRM
-            assert created_components[1].is_pretend is True
+        # Fast replay only applies to MockFIRM
+        if parsed_args.fast_replay:
+            assert not created_components[1]._data_fetch_thread._args[0]
         else:
-            # Otherwise we use the MockFIRM class
-            assert type(created_components[1]) is MockFIRM
-
-            if parsed_args.mock_firm:
-                assert created_components[1]._log_file_path == parsed_args.mock_firm
-            else:
-                assert "launch_data" in str(created_components[1]._log_file_path)
-
-            # Fast replay only applies to MockFIRM
-            if parsed_args.fast_replay:
-                assert not created_components[1]._data_fetch_thread._args[0]
-            else:
-                assert created_components[1]._data_fetch_thread._args[0]
+            assert created_components[1]._data_fetch_thread._args[0]
 
         # Logger Checks
         assert type(created_components[2]) is MockLogger
@@ -182,11 +180,29 @@ def test_create_components(parsed_args, monkeypatch):
         else:
             assert created_components[2]._delete_log_file is True
 
+    elif parsed_args.mode == "pretend":
+        # We use the REAL FIRM class, but with is_pretend=True
+        assert type(created_components[1]) is FIRM
+        assert created_components[1]._log_file_path == parsed_args.path
+        assert created_components[1].is_pretend is True
+        assert "launch_data/raw_firm_data" in str(created_components[1]._log_file_path)
+
+        # Logger Checks
+        assert type(created_components[2]) is MockLogger
+        if parsed_args.keep_log_file:
+            assert created_components[2]._delete_log_file is False
+        else:
+            assert created_components[2]._delete_log_file is True
+
+        # Servo Checks
+        if parsed_args.real_servo:
+            assert type(created_components[0]) is Servo
+        else:
+            assert type(created_components[0]) is MockServo
+
 
 def test_run_real_flight(monkeypatch):
-    """
-    Tests the run_real_flight function.
-    """
+    """Tests the run_real_flight function."""
     arg_parser_arguments = []
     calls = []
 
@@ -210,9 +226,7 @@ def test_run_real_flight(monkeypatch):
 
 
 def test_run_mock_flight(monkeypatch):
-    """
-    Tests the run_mock_flight function.
-    """
+    """Tests the run_mock_flight function."""
     arg_parser_kwargs = []
     calls = []
 
@@ -237,7 +251,8 @@ def test_run_mock_flight(monkeypatch):
 
 def test_run_flight(monkeypatch, mocked_args_parser):
     """
-    Tests that the run_flight function initializes the components and runs the flight loop.
+    Tests that the run_flight function initializes the components and runs
+    the flight loop.
     """
     calls = []
     called_args = []
