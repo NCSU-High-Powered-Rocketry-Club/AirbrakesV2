@@ -1,8 +1,8 @@
 from firm_client import FIRMClient
-
+from airbrakes.constants import FIRM_PORT
 
 def main() -> None:
-    port = "COM11"  # Update as needed (e.g., "COM8" or "/dev/ttyACM0")
+    port = FIRM_PORT  # Update as needed (e.g., "COM8" or "/dev/ttyACM0")
     baud_rate = 2_000_000
 
     initial_dt = 0

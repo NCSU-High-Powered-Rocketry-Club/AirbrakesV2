@@ -44,7 +44,7 @@ try:
     _t = threading.Thread(
         target=_countdown,
         kwargs={
-            "seconds": 30,
+            "seconds": 180,
             "label": "Calibrating (keep rotating) —",
             "stop_event": _stop_countdown,
         },
@@ -54,7 +54,7 @@ try:
 
     try:
         result = client.run_and_apply_magnetometer_calibration(
-            collection_duration_seconds=30.0, apply_timeout_seconds=1.0
+            collection_duration_seconds=180.0, apply_timeout_seconds=1.0
         )
     finally:
         _stop_countdown.set()
