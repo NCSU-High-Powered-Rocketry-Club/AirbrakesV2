@@ -183,7 +183,7 @@ def target_altitude(request):
     if launch_name == "government_work_1":
         return 360.0  # actual apogee was about 400m
     if launch_name == "government_work_2":
-        return 468.16  # actual apogee was about 518.16m
+        return 674.13  # actual apogee was about 724.13m
     return 1000.0  # Default altitude
 
 
