@@ -1,5 +1,6 @@
 """
-Module for the finite state machine that represents which state of flight the rocket is in.
+Module for the finite state machine that represents which state of flight
+the rocket is in.
 """
 
 from abc import ABC, abstractmethod
@@ -10,11 +11,9 @@ from airbrakes.constants import (
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
     TARGET_APOGEE_METERS,
 )
-from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     from airbrakes.context import Context
@@ -22,9 +21,9 @@ if TYPE_CHECKING:
 
 class State(ABC):
     """
-    Abstract Base class for the states of the air brakes system. Each state will have an update
-    method that will be called every loop iteration and a next_state method that will be called when
-    the state is over.
+    Abstract Base class for the states of the air brakes system. Each state
+    will have an update method that will be called every loop iteration and a
+    next_state method that will be called when the state is over.
 
     For Airbrakes, we will have 5 states:
     1. Standby - when the rocket is on the rail on the ground
@@ -37,14 +36,14 @@ class State(ABC):
         Airbrakes program will end.
     """
 
-    __slots__ = ("context", "start_time_ns")
+    __slots__ = ("context", "start_time_seconds")
 
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
-        self.start_time_ns = context.data_processor.current_timestamp
+        self.start_time_seconds = context.data_processor.current_timestamp_seconds
 
     @property
     def name(self) -> str:
@@ -56,64 +55,55 @@ class State(ABC):
         """
         Called every loop iteration.
 
-        Uses the Airbrakes Context to interact with the hardware and decides when to move to the
-        next state.
+        Uses the Airbrakes Context to interact with the hardware and
+        decides when to move to the next state.
         """
 
     @abstractmethod
     def next_state(self) -> None:
         """
-        We never expect/want to go back a state e.g. We're never going to go from Flight to Motor
-        Burn, so this method just goes to the next state.
+        We never expect/want to go back a state e.g. We're never going to go
+        from Flight to Motor Burn, so this method just goes to the next
+        state.
         """
 
 
 class StandbyState(State):
-    """
-    When the rocket is on the launch rail on the ground.
-    """
+    """When the rocket is on the launch rail on the ground."""
 
     __slots__ = ()
 
     def update(self) -> None:
-        """
-        Checks if the rocket has launched, based on our velocity.
-        """
+        """Checks if the rocket has launched, based on our velocity."""
         data = self.context.data_processor
         # If the velocity of the rocket is above a threshold, the rocket has launched.
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
             self.next_state()
             return
 
-        self.context.data_processor.zero_out_altitude()
-
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
 
 class MotorBurnState(State):
-    """
-    When the motor is burning and the rocket is accelerating.
-    """
+    """When the motor is burning and the rocket is accelerating."""
 
     __slots__ = ()
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.context.launch_time_ns = self.start_time_ns
+        self.context.launch_time_seconds = context.data_processor.current_timestamp_seconds
 
     def update(self) -> None:
         """
-        Checks to see if the velocity has decreased lower than the maximum velocity, indicating the
-        motor has burned out.
+        Checks to see if the velocity has decreased lower than the maximum
+        velocity, indicating the motor has burned out.
         """
         data = self.context.data_processor
 
         # If our current velocity is less than our max velocity, that means we have stopped
         # accelerating. This is the same thing as checking if our accel sign has flipped
-        # We make sure that it is not just a temporary fluctuation by checking if the velocity is a
-        # bit less than the max velocity
-        if data.vertical_velocity < data.max_vertical_velocity * MAX_VELOCITY_THRESHOLD:
+        if data.vertical_velocity < data.max_vertical_velocity:
             self.next_state()
             return
 
@@ -136,7 +126,8 @@ class CoastState(State):
 
     def update(self) -> None:
         """
-        Checks to see if the rocket has reached apogee, indicating the start of free fall.
+        Checks to see if the rocket has reached apogee, indicating the start
+        of free fall.
         """
         # In Coast State we start predicting the apogee
         self.context.predict_apogee()
@@ -159,7 +150,6 @@ class CoastState(State):
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
-            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
@@ -177,19 +167,17 @@ class CoastState(State):
 
 
 class FreeFallState(State):
-    """
-    When the rocket is falling back to the ground after apogee.
-    """
+    """When the rocket is falling back to the ground after apogee."""
 
     __slots__ = ()
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
-        self.context.switch_altitude_back_to_pressure()
 
     def update(self) -> None:
         """
-        Check if the rocket has landed, based on our altitude and a spike in acceleration.
+        Check if the rocket has landed, based on our altitude and a spike in
+        acceleration.
         """
         data = self.context.data_processor
 
@@ -202,7 +190,7 @@ class FreeFallState(State):
 
         # Sometimes the rocket can land and the altitude will be above the ground altitude threshold
         # This is a fallback condition so that we won't be stuck in freefall state.
-        if convert_ns_to_s(data.current_timestamp - self.start_time_ns) >= MAX_FREE_FALL_SECONDS:
+        if data.current_timestamp_seconds - self.start_time_seconds >= MAX_FREE_FALL_SECONDS:
             self.next_state()
 
     def next_state(self) -> None:
@@ -210,15 +198,14 @@ class FreeFallState(State):
 
 
 class LandedState(State):
-    """
-    When the rocket has landed.
-    """
+    """When the rocket has landed."""
 
     __slots__ = ()
 
     def update(self) -> None:
         """
-        We use this method to stop the air brakes system after we have hit our log buffer.
+        We use this method to stop the air brakes system after we have hit
+        our log buffer.
         """
         if self.context.logger.is_log_buffer_full:
             self.context.stop()

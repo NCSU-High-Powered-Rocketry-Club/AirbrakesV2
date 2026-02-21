@@ -15,28 +15,19 @@ def test_deadband():
 
 
 class TestArgumentParsing:
-    """
-    Tests for the argument parsing function (arg_parser()).
-    """
+    """Tests for the updated argument parsing function (arg_parser())."""
 
     def test_default_invocation(self, monkeypatch):
-        """
-        Tests that running the script without arguments results in an error.
-        """
+        """Tests that running without arguments results in an error."""
         monkeypatch.setattr(sys, "argv", ["main.py"])
-
         with pytest.raises(SystemExit):
             arg_parser()
 
     def test_real_mode(self, monkeypatch):
-        """
-        Tests the 'real' mode arguments.
-        """
+        """Tests the 'real' mode arguments and defaults."""
         monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-s"])
 
         args = arg_parser()
-        # This is to ensure that all the arguments are correctly parsed, and to make sure that
-        # if you make a change, you update the test.
         assert args.__dict__.keys() == {"mode", "verbose", "debug", "mock_servo"}
         assert args.mode == "real"
         assert args.verbose is True
@@ -44,9 +35,7 @@ class TestArgumentParsing:
         assert args.mock_servo is True
 
     def test_mock_mode(self, monkeypatch):
-        """
-        Tests the 'mock' mode arguments.
-        """
+        """Tests the 'mock' mode arguments."""
         monkeypatch.setattr(
             sys, "argv", ["main.py", "mock", "-s", "-l", "-f", "-p", "mock/data/path"]
         )
@@ -71,10 +60,17 @@ class TestArgumentParsing:
         assert args.verbose is False
         assert args.debug is False
 
+    def test_pretend_mode(self, monkeypatch):
+        """Tests 'pretend' mode arguments."""
+        path_str = "mock/data/firm.FRM"
+        monkeypatch.setattr(sys, "argv", ["main.py", "pretend", "-p", path_str])
+
+        args = arg_parser()
+        assert args.mode == "pretend"
+        assert args.path == Path(path_str)
+
     def test_verbose_and_debug_exclusivity(self, monkeypatch, capsys):
-        """
-        Tests that the `-v` and `-d` flags are mutually exclusive.
-        """
+        """Tests that the `-v` and `-d` flags are mutually exclusive."""
         monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-d"])
 
         with pytest.raises(SystemExit):
@@ -90,15 +86,12 @@ class TestArgumentParsing:
             ("real", ["-f"]),
             ("real", ["-p", "path/to/log"]),
         ],
-        ids=[
-            "real_with_keep_log",
-            "real_with_fast_replay",
-            "real_with_path",
-        ],
+        ids=["real_keep_log", "real_fast_replay", "real_pretend_firm"],
     )
     def test_invalid_args_in_real_mode(self, monkeypatch, mode, args, capsys):
         """
-        Tests that 'real' mode does not accept arguments meant for 'mock'.
+        Tests that 'real' mode does not accept arguments meant for
+        'mock'.
         """
         monkeypatch.setattr(sys, "argv", ["main.py", mode, *args])
 
@@ -108,26 +101,10 @@ class TestArgumentParsing:
         captured = capsys.readouterr()
         assert "unrecognized arguments" in captured.err
 
-    @pytest.mark.parametrize(
-        "args",
-        [
-            ["mock", "-p", "mock/data/path"],
-        ],
-        ids=["mock_with_path"],
-    )
-    def test_shared_arguments(self, monkeypatch, args):
-        """
-        Tests that shared arguments are correctly parsed across 'mock'.
-        """
-        monkeypatch.setattr(sys, "argv", ["main.py", *args])
-
-        args = arg_parser()
-        if "mock" in args.mode:
-            assert args.path == Path("mock/data/path")
-
     def test_help_output(self, monkeypatch, capsys):
         """
-        Tests that help output includes global and subparser-specific arguments.
+        Tests that help output includes global and subparser-specific
+        arguments.
         """
         monkeypatch.setattr(sys, "argv", ["main.py", "real", "-h"])
 
@@ -153,7 +130,8 @@ class TestArgumentParsing:
 
     def test_real_mode_defaults(self, monkeypatch):
         """
-        Tests that 'real' mode defaults to all real hardware when no flags are provided.
+        Tests that 'real' mode defaults to all real hardware when no flags
+        are provided.
         """
         monkeypatch.setattr(sys, "argv", ["main.py", "real"])
 

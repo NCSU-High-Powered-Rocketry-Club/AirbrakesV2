@@ -1,20 +1,22 @@
 """
-Module which contains the MockServo class and doesn't use the adafruit circuitpython library.
+Module which contains the MockServo class and doesn't use the adafruit
+circuitpython library.
 """
 
 from gpiozero import RotaryEncoder
 from gpiozero.pins.mock import MockFactory, MockPWMPin
 
+from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
-from airbrakes.interfaces.base_servo import BaseServo
 
 
 class MockServo(BaseServo):
     """
-    A custom class that represents a servo motor and the accompanying rotary encoder. The servo
-    controls the extension of the airbrakes while the encoder measures the servo's position. the
-    encoder is controlled using the gpiozero library, which provides a simple interface for
-    controlling GPIO pins on the Raspberry Pi.
+    A custom class that represents a servo motor and the accompanying rotary
+    encoder. The servo controls the extension of the airbrakes while the
+    encoder measures the servo's position. the encoder is controlled using the
+    gpiozero library, which provides a simple interface for controlling GPIO
+    pins on the Raspberry Pi.
 
     The servo we use is the DS3235, which is a coreless digital servo.
     """
@@ -30,10 +32,10 @@ class MockServo(BaseServo):
         """
         Initializes the servo object with the specified GPIO pin.
 
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
-            to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
-            to.
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A
+            of the encoder is connected to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B
+            of the encoder is connected to.
         """
         factory = MockFactory(pin_class=MockPWMPin)
 
@@ -62,9 +64,7 @@ class MockServo(BaseServo):
 
 
 class MockHardwarePWM:
-    """
-    A mock class that simulates the rpi_hardware_pwm.HardwarePWM class.
-    """
+    """A mock class that simulates the rpi_hardware_pwm.HardwarePWM class."""
 
     __slots__ = ("chip", "duty_cycle", "hz", "pwm_channel")
 

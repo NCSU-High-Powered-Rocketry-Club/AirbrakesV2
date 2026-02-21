@@ -14,9 +14,7 @@ from airbrakes.constants import ENCODER_PIN_A, ENCODER_PIN_B
 # from gpiozero.pins.mock import MockFactory, MockPWMPin
 
 class EncoderPositionLabel(Static):
-    """
-    A widget to display the encoder position.
-    """
+    """A widget to display the encoder position."""
 
     position: reactive[float] = reactive(0.0)
 
@@ -25,9 +23,7 @@ class EncoderPositionLabel(Static):
         self.update(f"Encoder Position: {self.position}")
 
 class ServoControllerApp(App):
-    """
-    A Textual App to control the servo and display encoder position.
-    """
+    """A Textual App to control the servo and display encoder position."""
 
     # CSS_PATH = "servo_controller.css"  # Optional: Define custom styles here
 
@@ -39,9 +35,7 @@ class ServoControllerApp(App):
         self.encoder = self.servo.encoder
 
     def compose(self) -> ComposeResult:
-        """
-        Compose the UI layout.
-        """
+        """Compose the UI layout."""
         yield Header()
         yield Container(
             EncoderPositionLabel("Encoder position: 0.0", id="encoder_label"),
@@ -71,8 +65,7 @@ class ServoControllerApp(App):
         yield Footer()
 
     async def on_mount(self):
-        """
-        Called when the app is mounted.
+        """Called when the app is mounted.
 
         Start the encoder updater thread.
         """
@@ -85,17 +78,13 @@ class ServoControllerApp(App):
         self.query_one(".control_section").mount(self.status)
 
     def update_label(self):
-        """
-        Calls the update_position function to update the encoder label.
-        """
+        """Calls the update_position function to update the encoder label."""
         # self.encoder.steps counts the number of steps it has turned, divide by the encoder resolution
         # so that a full revolution of the encoder is either 1.0 or -1.0
         self.encoder_label.update_position(self.encoder.steps)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """
-        Catch button press events and handle them.
-        """
+        """Catch button press events and handle them."""
         match event.button.id:
             case "extend_btn":
                 self.servo.set_extended()
@@ -121,9 +110,7 @@ class ServoControllerApp(App):
                 pass  # Handle unknown buttons if necessary
 
     def handle_set_value(self):
-        """
-        Handle setting the servo value from input.
-        """
+        """Handle setting the servo value from input."""
         input_value = self.servo_input.value.strip()
         try:
             value = float(input_value)
@@ -135,9 +122,7 @@ class ServoControllerApp(App):
             self.status.update("Invalid input! Enter a number between 0 and 180.")
 
     async def on_unmount(self) -> None:
-        """
-        Handle app shutdown.
-        """
+        """Handle app shutdown."""
         self.stop_event.set()
 
 if __name__ == "__main__":

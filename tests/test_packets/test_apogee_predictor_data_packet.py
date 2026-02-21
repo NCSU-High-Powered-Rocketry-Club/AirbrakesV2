@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import (
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
     ApogeePredictorDataPacket,
 )
 
@@ -15,9 +15,7 @@ def apogee_predictor_data_packet():
 
 
 class TestApogeePredictorDataPacket:
-    """
-    Tests for the ApogeePredictorPacket class.
-    """
+    """Tests for the ApogeePredictorPacket class."""
 
     predicted_apogee = 0.45
     height_used_for_prediction = 1.23

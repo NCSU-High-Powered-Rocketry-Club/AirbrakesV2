@@ -17,7 +17,7 @@ import pytest
 from airbrakes.constants import (
     ServoExtension,
 )
-from airbrakes.telemetry.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
     GovernmentWorkLaunchCase1,
@@ -32,7 +32,7 @@ from tests.auxil.launch_cases import (
 )
 
 if TYPE_CHECKING:
-    from airbrakes.telemetry.packets.imu_data_packet import IMUDataPacket
+    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 SNAPSHOT_INTERVAL = 0.001  # seconds
 
@@ -41,11 +41,13 @@ def get_some_packets(
     packet_queue: queue.SimpleQueue, block: bool, max_packets_to_fetch: int = 15
 ) -> list[IMUDataPacket]:
     """
-    Keep this the same as the one in utils.py!.
+    Keep this the same as the one in utils.py.
 
-    This is here because we need to limit the number of packets received for the integration test,
-    so it doesn't skip over data and fails test cases.
-    :param max_packets_to_fetch: The maximum number of packets to fetch. 0 means no limit.
+    This is here because we need to limit the number of packets received
+    for the integration test, so it doesn't skip over data and fails
+    test cases.
+    :param max_packets_to_fetch: The maximum number of packets to fetch.
+        0 means no limit.
     """
     items = []
 
@@ -64,9 +66,11 @@ def get_some_packets(
     return items
 
 
+@pytest.skip(reason="We have no FIRM only datasets for now.", allow_module_level=True)
 class TestIntegration:
     """
-    Tests the full integration of the airbrakes system by using previous launch data.
+    Tests the full integration of the airbrakes system by using previous
+    launch data.
     """
 
     # general method of testing this is capturing the state of the system at different points in
@@ -79,7 +83,8 @@ class TestIntegration:
         monkeypatch,
     ):
         """
-        Tests whether the whole system works, i.e. state changes, correct logged data, etc.
+        Tests whether the whole system works, i.e. state changes, correct
+        logged data, etc.
         """
         # We will be inspecting the state of the system at different points in time.
         # The state of the system is given as a dictionary, with the keys being the "State",
@@ -314,7 +319,8 @@ class TestIntegration:
         """
         Test that the fetched IMU packets are a reasonable size.
 
-        Run with sudo. E.g. $ sudo -E $(which pytest) tests/test_integration.py -m imu_benchmark
+        Run with sudo. E.g. $ sudo -E $(which pytest)
+        tests/test_integration.py -m imu_benchmark
         """
         ab = context
 
@@ -326,9 +332,7 @@ class TestIntegration:
         has_airbrakes_stopped = threading.Event()
 
         def stop_thread():
-            """
-            Stops airbrakes after a set amount of time.
-            """
+            """Stops airbrakes after a set amount of time."""
             ab.stop()
             has_airbrakes_stopped.set()
 
