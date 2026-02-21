@@ -518,5 +518,42 @@
             "target_apogee_meters": 807.72
         },
         "flight_description": "Extra flight for Airbrakes which uses the new apogee prediction (HPRM). This flight also tests mscl-rs. This was done in Dalzell because of accumulated snow in Bayboro. This flight we undershot our apogee because of the motor, but everything else worked flawlessly, including the new apogee prediction."
+    },
+    "jackpot_launch_1.csv": {
+        "date": "2025-02-21T13:54:43.834-05:00",
+        "rocket": {
+            "rocket_Cd": 0.38,
+            "rocket_mass_kg": 18.1437,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
+        "launch_site": {
+            "air_temperature_celsius": 14.0,
+            "air_pressure_mb": 1018.00,
+            "wind_speed_kmh": 5.5,
+            "wind_direction": "NNE",
+            "location": "Bayboro, NC",
+            "launch_coordinates": {
+                "latitude": 35.175930,
+                "longitude": -76.827972
+            },
+            "launch_rod_angle": 20.0
+        },
+        "imu_details": {
+            "imu_model": "FIRM",
+            "raw_packet_frequency": 0.0,
+            "est_packet_frequency": 100.0
+        },
+        "flight_data": {
+            "log_buffer_index": 5000,
+            "apogee_meters": 0.0,
+            "landed_coordinates": {
+                "latitude": 34.052250,
+                "longitude": -80.421620
+            },
+            "landed_coordinates_precision": "",
+            "flight_length_seconds": 0.0,
+            "target_apogee_meters": 1066.8
+        },
+        "flight_description": "First flight with FIRM as the only IMU. As a backup, if airbrakes had not deployed within one second of coast state, they would deploy."
     }
 }
