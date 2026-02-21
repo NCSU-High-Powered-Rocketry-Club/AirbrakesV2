@@ -9,14 +9,14 @@ from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockHardwarePWM, MockServo
 
 approx = pytest.approx
-"""
-Shortcut for pytest.approx, which is used to compare floating point numbers.
-"""
+"""Shortcut for pytest.approx, which is used to compare floating point
+numbers."""
 
 
 class TestBaseServo:
     """
-    Tests the BaseServo class, which controls the servo that extends and retracts the airbrakes.
+    Tests the BaseServo class, which controls the servo that extends and
+    retracts the airbrakes.
     """
 
     def test_slots(self, servo):
@@ -46,8 +46,8 @@ class TestBaseServo:
 
     def test_set_extended(self, servo):
         """
-        Tests that the servo extends to the maximum extension, and that threading is handled
-        correctly.
+        Tests that the servo extends to the maximum extension, and that
+        threading is handled correctly.
         """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         prev_duty_cycle = servo.servo.duty_cycle
@@ -61,8 +61,8 @@ class TestBaseServo:
 
     def test_set_retracted(self, servo):
         """
-        Tests that the servo retracts to the minimum extension, and that threading is handled
-        correctly.
+        Tests that the servo retracts to the minimum extension, and that
+        threading is handled correctly.
         """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         prev_duty_cycle = servo.servo.duty_cycle
@@ -76,8 +76,8 @@ class TestBaseServo:
 
     def test_repeated_extension_retraction(self, servo):
         """
-        Tests that repeatedly extending and retracting the servo works as expected, and has no race
-        conditions with threads.
+        Tests that repeatedly extending and retracting the servo works as
+        expected, and has no race conditions with threads.
         """
         assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
         prev_duty_cycle = servo.servo.duty_cycle
@@ -115,9 +115,7 @@ class TestBaseServo:
         assert servo.servo.duty_cycle != prev_duty_cycle
 
     def test_encoder_get_position(self, servo):
-        """
-        Tests that the encoder reading is correct.
-        """
+        """Tests that the encoder reading is correct."""
         assert servo.get_encoder_reading() == 0
         servo.encoder.steps = 10
         assert servo.get_encoder_reading() == 10
@@ -127,9 +125,7 @@ class TestBaseServo:
         assert servo.get_encoder_reading() == 0
 
     def test_angle_to_duty_cycle(self):
-        """
-        Tests that the angle to duty cycle conversion is correct.
-        """
+        """Tests that the angle to duty cycle conversion is correct."""
         assert Servo._angle_to_duty_cycle(0) == approx(2.5)
         assert Servo._angle_to_duty_cycle(90) == approx(7.5)
         assert Servo._angle_to_duty_cycle(180) == approx(12.5)

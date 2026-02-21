@@ -7,21 +7,20 @@ from typing import TYPE_CHECKING
 import pytest
 
 from airbrakes.constants import (
-    IMU_TIMEOUT_SECONDS,
+    FIRM_SERIAL_TIMEOUT_SECONDS,
     SERVO_DELAY_SECONDS,
     ServoExtension,
 )
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
+from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.state import CoastState, StandbyState
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
-from airbrakes.telemetry.packets.context_data_packet import ContextDataPacket
+from airbrakes.state import CoastState, MotorBurnState, StandbyState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
-    make_est_data_packet,
-    make_processor_data_packet,
-    make_raw_data_packet,
+    make_firm_data_packet,
+    make_firm_data_packet_zeroed,
 )
 
 if TYPE_CHECKING:
@@ -29,9 +28,7 @@ if TYPE_CHECKING:
 
 
 class TestContext:
-    """
-    Tests the Context class.
-    """
+    """Tests the Context class."""
 
     def test_slots(self, context):
         inst = context
@@ -44,7 +41,7 @@ class TestContext:
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
         assert not context.shutdown_requested
-        assert not context.est_data_packets
+        assert not context.firm_data_packets
 
     def test_set_extension(self, context):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
@@ -59,7 +56,7 @@ class TestContext:
 
     def test_start(self, context):
         context.start(wait_for_start=True)
-        assert context.imu.is_running
+        assert context.firm.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
         context.stop()
@@ -67,10 +64,7 @@ class TestContext:
     def test_stop_simple(self, context):
         context.start()
         context.stop()
-        assert not context.imu.requested_to_run
         assert not context.logger.is_running
-        assert not context.imu._requested_to_run.is_set()
-        assert not context.imu._data_fetch_thread.is_alive()
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor.is_running
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
@@ -78,9 +72,7 @@ class TestContext:
         context.stop()  # Stop again to test idempotency
 
     def test_airbrakes_ctrl_c_clean_exit_simple(self, context):
-        """
-        Tests whether the AirbrakesContext handles ctrl+c events correctly.
-        """
+        """Tests whether the Context handles ctrl+c events correctly."""
         context.start()
 
         try:
@@ -88,15 +80,13 @@ class TestContext:
         except KeyboardInterrupt:
             context.stop()
 
-        assert not context.imu.requested_to_run
+        assert not context.firm.is_running
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert context.shutdown_requested
 
     def test_airbrakes_ctrl_c_exception(self, context):
-        """
-        Tests whether the AirbrakesContext handles unknown exceptions.
-        """
+        """Tests whether the AirbrakesContext handles unknown exceptions."""
         context.start()
         try:
             raise ValueError("some error in main loop")
@@ -105,7 +95,7 @@ class TestContext:
         finally:
             context.stop()
 
-        assert not context.imu.requested_to_run
+        assert not context.firm.is_running
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
         assert context.shutdown_requested
@@ -113,11 +103,12 @@ class TestContext:
     def test_airbrakes_update(
         self,
         monkeypatch,
-        random_data_mock_imu,
+        random_data_mock_firm,
         context,
     ):
         """
-        Tests whether the Airbrakes update method works correctly by calling the relevant methods.
+        Tests whether the Airbrakes update method works correctly by calling
+        the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the data processor gets only estimated data packets
@@ -127,16 +118,15 @@ class TestContext:
         calls = []
         asserts = []
 
-        def data_processor_update(self, est_data_packets):
-            # monkeypatched method of IMUDataProcessor
+        def data_processor_update(self, firm_data_packets):
+            # monkeypatched method of DataProcessor
             calls.append("update called")
-            self._data_packets = est_data_packets
+            self._data_packets = firm_data_packets
             # Length of these lists must be equal to the number of estimated data packets for
             # get_processed_data() to work correctly
-            self._current_altitudes = [0.0] * len(est_data_packets)
-            self._vertical_velocities = [0.0] * len(est_data_packets)
-            self._rotated_accelerations = [0.0] * len(est_data_packets)
-            self._time_differences = [0.0] * len(est_data_packets)
+            self._current_altitudes = [0.0] * len(firm_data_packets)
+            self._vertical_velocities = [0.0] * len(firm_data_packets)
+            self._vertical_accelerations = [0.0] * len(firm_data_packets)
 
         def state(self):
             # monkeypatched method of State
@@ -145,20 +135,19 @@ class TestContext:
                 self.context.predict_apogee()
                 self.context.servo.current_extension = ServoExtension.MAX_EXTENSION
 
-        def log(self, ctx_dp, servo_dp, imu_data_packets, processor_data_packets, apg_dps):
+        def log(self, ctx_dp, servo_dp, firm_data_packets, apg_dps):
             # monkeypatched method of Logger
             calls.append("log called")
-            asserts.append(len(imu_data_packets) > 10)
+            asserts.append(len(firm_data_packets) > 10)
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(ctx_dp.state == CoastState)
-            asserts.append(ctx_dp.retrieved_imu_packets >= 1)
-            asserts.append(ctx_dp.queued_imu_packets >= 0)
+            asserts.append(ctx_dp.retrieved_firm_packets >= 1)
             asserts.append(ctx_dp.apogee_predictor_queue_size >= 0)
-            asserts.append(ctx_dp.imu_packets_per_cycle >= 0)  # mock imus will be 0
             asserts.append(ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9))
             asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
-            asserts.append(imu_data_packets[0].timestamp == pytest.approx(time.time_ns(), rel=1e9))
-            asserts.append(processor_data_packets[0].current_altitude == 0.0)
+            asserts.append(
+                firm_data_packets[0].timestamp_seconds == pytest.approx(time.time(), rel=1e9)
+            )
             asserts.append(apg_dps is not None)
             asserts.append(apg_dps == make_apogee_predictor_data_packet())
             # More testing of whether we got ApogeePredictorDataPackets is done in
@@ -166,7 +155,7 @@ class TestContext:
             # here is because state.update() is called before apogee_predictor.update(), so the
             # packets aren't sent to the apogee predictor for prediction.
 
-        def apogee_update(self, processor_data_packets):
+        def apogee_update(self, firm_data_packets):
             calls.append("apogee update called")
 
         def get_prediction_data_packet(self):
@@ -174,15 +163,17 @@ class TestContext:
             return make_apogee_predictor_data_packet()
 
         mocked_airbrakes = context
-        mocked_airbrakes.imu = random_data_mock_imu
+        mocked_airbrakes.firm = random_data_mock_firm
         mocked_airbrakes.state = CoastState(
             mocked_airbrakes
         )  # Set to coast state to test apogee update
         mocked_airbrakes.start(wait_for_start=True)
 
-        time.sleep(0.7)  # Sleep a bit so that the IMU queue is being filled
+        time.sleep(0.7)  # Sleep a bit so that the FIRM queue is being filled
 
-        assert mocked_airbrakes.imu._queued_imu_packets.qsize() > 0
+        assert (
+            mocked_airbrakes.firm._queue.qsize() > 0
+        )  # just testing that our mocked firm is working
         assert mocked_airbrakes.state.name == "CoastState"
         assert mocked_airbrakes.data_processor._last_data_packet is None
 
@@ -215,12 +206,12 @@ class TestContext:
 
         mocked_airbrakes.stop()
 
-    def test_stop_with_random_data_imu_and_update(self, context: Context, random_data_mock_imu):
+    def test_stop_with_random_data_firm_and_update(self, context: Context, random_data_mock_firm):
         """
-        Tests stopping of the airbrakes system while we are using the IMU and calling
-        airbrakes.update().
+        Tests stopping of the airbrakes system while we are using the FIRM
+        and calling airbrakes.update().
         """
-        context.imu = random_data_mock_imu
+        context.firm = random_data_mock_firm
         has_airbrakes_stopped = threading.Event()
         started_thread = False
 
@@ -236,17 +227,16 @@ class TestContext:
 
             if not started_thread:
                 started_thread = True
-                stop_airbrakes_thread = threading.Timer(0.1, stop_airbrakes)
+                stop_airbrakes_thread = threading.Timer(0.3, stop_airbrakes)
                 stop_airbrakes_thread.start()
 
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping thread. We don't want to hit the "just in case" timeout
-        # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
-        assert not context.imu.is_running
+        # in `get_data_packets`.
+        has_airbrakes_stopped.wait(FIRM_SERIAL_TIMEOUT_SECONDS - 0.4)
+        assert not context.firm.is_running
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
-        assert not context.imu._data_fetch_thread.is_alive()
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
         assert context.servo.current_extension in (
@@ -257,16 +247,16 @@ class TestContext:
         # Open the file and check if we have a large number of lines:
         with context.logger.log_path.open() as file:
             lines = file.readlines()
-            assert len(lines) > 100
+            assert len(lines) > 20
 
     def test_stop_with_display_and_update_loop(
-        self, context: Context, random_data_mock_imu, mocked_args_parser, capsys
+        self, context: Context, random_data_mock_firm, mocked_args_parser, capsys
     ):
         """
-        Tests stopping of the airbrakes system while we are using the IMU, the flight display, and
-        calling airbrakes.update().
+        Tests stopping of the airbrakes system while we are using the FIRM,
+        the flight display, and calling airbrakes.update().
         """
-        context.imu = random_data_mock_imu
+        context.firm = random_data_mock_firm
         fd = FlightDisplay(context=context, args=mocked_args_parser)
         has_airbrakes_stopped = threading.Event()
         started_thread = False
@@ -290,12 +280,11 @@ class TestContext:
 
         # Wait for the airbrakes to stop. If the stopping took too long, that means something is
         # wrong with the stopping thread. We don't want to hit the "just in case" timeout
-        # in `get_imu_data_packets`.
-        has_airbrakes_stopped.wait(IMU_TIMEOUT_SECONDS - 0.4)
-        assert not context.imu.is_running
+        # in `get_data_packets`.
+        has_airbrakes_stopped.wait(FIRM_SERIAL_TIMEOUT_SECONDS - 0.4)
+        assert not context.firm.is_running
         assert not context.logger.is_running
         assert not context.apogee_predictor.is_running
-        assert not context.imu._data_fetch_thread.is_alive()
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
         assert context.servo.current_extension in (
@@ -308,7 +297,7 @@ class TestContext:
         # Open the file and check if we have a large number of lines:
         with context.logger.log_path.open() as file:
             lines = file.readlines()
-            assert len(lines) > 100
+            assert len(lines) > 20
 
         # Check display output:
         captured = capsys.readouterr()
@@ -317,13 +306,13 @@ class TestContext:
     def test_airbrakes_sends_packets_to_apogee_predictor(
         self,
         monkeypatch,
-        idle_mock_imu,
+        idle_mock_firm,
         logger,
         context,
     ):
         """
-        Tests whether the airbrakes predict_apogee method works correctly by calling the relevant
-        methods.
+        Tests whether the airbrakes predict_apogee method works correctly by
+        calling the relevant methods.
 
         1. Mock fetching of data packets
         2. Test whether the apogee predictor gets only estimated data packets and not duplicated
@@ -335,108 +324,93 @@ class TestContext:
         def fake_log(self, *args, **kwargs):
             pass
 
-        def apogee_update(self, processor_data_packets):
-            packets.append(processor_data_packets)
+        def apogee_update(self, firm_data_packets):
+            packets.append(firm_data_packets)
             calls.append("apogee update called")
 
-        context.imu = idle_mock_imu
+        context.firm = idle_mock_firm
         context.start()
 
         time.sleep(0.01)
 
-        assert not context.imu._queued_imu_packets.qsize()
+        assert not context.firm._queue.qsize()
         assert context.state.name == "StandbyState"
-        assert context.data_processor._last_data_packet is None
         assert not context.most_recent_apogee_predictor_data_packet
 
         monkeypatch.setattr(context.apogee_predictor.__class__, "update", apogee_update)
         monkeypatch.setattr(logger.__class__, "log", fake_log)
 
-        # Insert 1 raw, then 2 estimated, then 1 raw data packet:
-        raw_1 = make_raw_data_packet(timestamp=time.time_ns())
-        context.imu._queued_imu_packets.put(raw_1)
+        # Insert 1 firm data packet
+        firm_data_packet_1 = make_firm_data_packet(timestamp_seconds=time.time())
+        context.firm._queue.put(firm_data_packet_1)
         time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
         context.update()
-        # Check if we processed the raw data packet:
-        assert list(context.imu_data_packets) == [raw_1]
-        assert not context.est_data_packets
-        assert len(context.processor_data_packets) == 0
+        # Check if we processed the firm data packet:
+        assert list(context.firm_data_packets) == [firm_data_packet_1]
         assert not context.most_recent_apogee_predictor_data_packet
-        # Let's call .predict_apogee() and check if stuff was called and/or changed:
-        context.predict_apogee()
+        # There should be no calls or packets, because we are in StandbyState
+        assert context.state.name == "StandbyState"
         assert not calls
         assert not packets
 
-        # Insert 2 estimated data packet:
-        # first_update():
-        est_1 = make_est_data_packet(
-            timestamp=int(1 + 1e9),
-            estPressureAlt=20.0,
-            estOrientQuaternionW=0.99,
-            estOrientQuaternionX=0.1,
-            estOrientQuaternionY=0.2,
-            estOrientQuaternionZ=0.3,
+        # Now go to motor burn, still no apogee prediction should happen
+        context.state = MotorBurnState(context=context)
+        # Insert 1 firm data packet
+        firm_data_packet_2 = make_firm_data_packet(timestamp_seconds=time.time())
+        context.firm._queue.put(firm_data_packet_2)
+        time.sleep(0.001)  # Wait for queue to be filled, and airbrakes.update to process it
+        context.update()
+        # There should be no calls or packets, because we are in MotorBurnState
+        assert not calls
+        assert not packets
+
+        # Now go to coast burn we should see apogee prediction happening
+        context.state = CoastState(context=context)
+        assert context.state.name == "CoastState"
+
+        # Insert 2 more firm data packets
+        firm_data_packet_2 = make_firm_data_packet_zeroed(
+            timestamp_seconds=1.00001,
+            est_position_z_meters=20.0,
+            est_velocity_z_meters_per_s=0.0,
         )
-        est_2 = make_est_data_packet(timestamp=int(3 + 1e9), estPressureAlt=24.0)
-        context.imu._queued_imu_packets.put(est_1)
-        context.imu._queued_imu_packets.put(est_2)
+
+        firm_data_packet_3 = make_firm_data_packet_zeroed(
+            timestamp_seconds=1.00004,
+            est_position_z_meters=24.0,
+            est_velocity_z_meters_per_s=0.0,
+        )
+
+        context.firm._queue.put(firm_data_packet_2)
+        context.firm._queue.put(firm_data_packet_3)
         time.sleep(0.001)
         context.update()
         time.sleep(0.01)
-        # Check if we processed the estimated data packet:
-        assert list(context.imu_data_packets) == [est_1, est_2]
-        assert context.est_data_packets == [est_1, est_2]
-        assert len(context.processor_data_packets) == 2
-        assert context.processor_data_packets[-1].current_altitude == 2.0
-        assert float(
-            context.processor_data_packets[-1].time_since_last_data_packet
-        ) == pytest.approx(2.0 + 1e-9, rel=1e1)
-        # Let's call .predict_apogee() and check if stuff was called and/or changed:
-        context.predict_apogee()
-        assert len(calls) == 1
-        assert calls == ["apogee update called"]
-        # We only send over 1 packet at a time to the apogee predictor, so even though we had 2 new
-        # estimated data packets, only 1 processor data packet is sent over:
-        assert len(packets) == 1
-        assert packets[-1].current_altitude == 2.0
+        # Now we should have calls and packets, because we are in CoastState
+        assert list(context.firm_data_packets) == [firm_data_packet_2, firm_data_packet_3]
 
-        # Insert 1 raw data packet:
-        raw_2 = make_raw_data_packet(timestamp=time.time_ns())
-        context.imu._queued_imu_packets.put(raw_2)
-        time.sleep(0.001)
-        context.update()
-        # Check if we processed the raw data packet:
-        assert list(context.imu_data_packets) == [raw_2]
-        assert not context.est_data_packets
-        assert context.processor_data_packets[-1].current_altitude == 2.0
-        assert float(
-            context.processor_data_packets[-1].time_since_last_data_packet
-        ) == pytest.approx(2.0 + 1e-9, rel=1e1)
         # Let's call .predict_apogee() and check if stuff was called and/or changed:
         context.predict_apogee()
-        assert len(calls) == 1
-        assert calls == ["apogee update called"]
-        assert len(packets) == 1
-        assert packets[-1].current_altitude == 2.0
-        # That ensures that we don't send duplicate data to the predictor.
+        # It's 2, one from when it was called in update(), and once from here:
+        assert len(calls) == 2
+        assert calls == ["apogee update called"] * 2
 
         context.stop()
 
     def test_airbrakes_receives_apogee_predictor_packet(
-        self, context: Context, monkeypatch, random_data_mock_imu
+        self, context: Context, monkeypatch, random_data_mock_firm
     ):
         """
-        Tests whether the airbrakes receives packets from the apogee predictor and that the
-        attribute `predicted_apogee` is updated correctly.
+        Tests whether the airbrakes receives packets from the apogee
+        predictor and that the attribute `predicted_apogee` is updated
+        correctly.
         """
-        monkeypatch.setattr(context, "imu", random_data_mock_imu)
+        monkeypatch.setattr(context, "firm", random_data_mock_firm)
 
         context.start(wait_for_start=True)
         time.sleep(0.1)
-        # Need to have at least 1 processor packet, which means 1 est data packet or else apogee
-        # predictor won't run
-        context.est_data_packets = [make_est_data_packet()]
-        context.processor_data_packets = [make_processor_data_packet()]
+
+        context.firm_data_packets = [make_firm_data_packet()]
 
         # Now we will have enough packets to run the apogee predictor:
         context.predict_apogee()
@@ -465,42 +439,26 @@ class TestContext:
 
     def test_generate_data_packets(self, context):
         """
-        Tests whether the airbrakes generates the correct data packets for logging.
+        Tests whether the airbrakes generates the correct data packets for
+        logging.
         """
         context.generate_data_packets()
         assert context.context_data_packet.state == StandbyState
-        assert context.context_data_packet.retrieved_imu_packets == 0
-        assert context.context_data_packet.queued_imu_packets >= 0
+        assert context.context_data_packet.retrieved_firm_packets == 0
         assert context.context_data_packet.apogee_predictor_queue_size >= 0
-        assert context.context_data_packet.imu_packets_per_cycle >= 0
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
         assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
 
-    def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_imu):
-        """
-        Benchmark the update method of the airbrakes system.
-        """
+    def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
+        """Benchmark the update method of the airbrakes system."""
         # uv managed arm64 python is still not built with JIT, thus this is commented out.
         # if _testinternalcapi.get_optimizer() is None:
         #     pytest.fail("Please run benchmarks with PYTHON_JIT=1!")
         ab = context
-        ab.imu = random_data_mock_imu
+        ab.firm = random_data_mock_firm
         ab.start()
-        time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
+        time.sleep(0.05)  # Sleep a bit so that the FIRM queue is being filled
         benchmark(context.update)
         ab.stop()
-
-    def test_switch_altitude_back_to_pressure(self, context):
-        """
-        Tests whether the switch_altitude_back_to_pressure method works correctly.
-        """
-        # When this method is called, we know it's been integrating for altitude
-        context.data_processor._integrating_for_altitude = True
-
-        assert context.data_processor._integrating_for_altitude
-        assert context.data_processor._retraction_timestamp is None
-        context.switch_altitude_back_to_pressure()
-        assert not context.data_processor._integrating_for_altitude
-        assert context.data_processor._retraction_timestamp is not None

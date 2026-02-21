@@ -41,9 +41,7 @@ SHORT_HAPPY_MELODY = [
 
 
 class BuzzerValueLabel(Static):
-    """
-    A widget to display the encoder position.
-    """
+    """A widget to display the encoder position."""
 
     value: reactive[float] = reactive(0.0)
 
@@ -52,9 +50,7 @@ class BuzzerValueLabel(Static):
         self.update(f"Buzzer value: {str(self.value)}")
 
 class BuzzerControllerApp(App):
-    """
-    A Textual App to control the servo and display encoder position.
-    """
+    """A Textual App to control the servo and display encoder position."""
 
     # CSS_PATH = "buzzer_control.css"  # Optional: Define custom styles here
 
@@ -64,9 +60,7 @@ class BuzzerControllerApp(App):
         # self.tonal_bz = TonalBuzzer(8)
 
     def compose(self) -> ComposeResult:
-        """
-        Compose the UI layout.
-        """
+        """Compose the UI layout."""
         yield Header()
         yield Container(
             BuzzerValueLabel("Buzzer value: 0.0", id="buzzer_label"),
@@ -91,17 +85,14 @@ class BuzzerControllerApp(App):
         yield Footer()
 
     async def on_mount(self):
-        """
-        Called when the app is mounted.
+        """Called when the app is mounted.
 
         Start the encoder updater thread.
         """
         self.buzzer_label = self.query_one("#buzzer_label", BuzzerValueLabel)
 
     def play_note(self, note, duration):
-        """
-        Play a single note for a given duration.
-        """
+        """Play a single note for a given duration."""
         if note == "REST":
             return 
         else:
@@ -109,9 +100,7 @@ class BuzzerControllerApp(App):
             sleep(duration)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """
-        Catch button press events and handle them.
-        """
+        """Catch button press events and handle them."""
         match event.button.id:
             case "on_buzzer_btn":
                 # self.bz.()

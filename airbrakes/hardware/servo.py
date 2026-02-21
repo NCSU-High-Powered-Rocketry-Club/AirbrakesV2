@@ -1,27 +1,30 @@
 """
-Module which contains the Servo class, representing a servo motor that controls the extension of the
-airbrakes, along with a rotary encoder to measure the servo's position.
+Module which contains the Servo class, representing a servo motor that
+controls the extension of the airbrakes, along with a rotary encoder to measure
+the servo's position.
 """
 
 import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
+from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
     SERVO_OPERATING_FREQUENCY_HZ,
     ServoExtension,
 )
-from airbrakes.interfaces.base_servo import BaseServo
 
 
 class Servo(BaseServo):
     """
-    A custom class that represents a servo motor and the accompanying rotary encoder. The servo
-    controls the extension of the airbrakes while the encoder measures the servo's position. the
-    encoder is controlled using the gpiozero library, which provides a simple interface for
-    controlling GPIO pins on the Raspberry Pi 5.
+    A custom class that represents a servo motor and the accompanying rotary
+    encoder. The servo controls the extension of the airbrakes while the
+    encoder measures the servo's position. the encoder is controlled using the
+    gpiozero library, which provides a simple interface for controlling GPIO
+    pins on the Raspberry Pi 5.
 
-    The servo we use is the DS3235, which is a coreless digital servo. We only use one servo to
-    control the airbrakes, using hardware PWM on the Pi 5.
+    The servo we use is the DS3235, which is a coreless digital servo.
+    We only use one servo to control the airbrakes, using hardware PWM
+    on the Pi 5.
     """
 
     __slots__ = ()
@@ -35,11 +38,12 @@ class Servo(BaseServo):
         """
         Initializes the Servo class.
 
-        :param servo_channel: The PWM channel that the servo is connected to.
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A of the encoder is connected
-            to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B of the encoder is connected
-            to.
+        :param servo_channel: The PWM channel that the servo is
+            connected to.
+        :param encoder_pin_number_a: The GPIO pin that the signal wire A
+            of the encoder is connected to.
+        :param encoder_pin_number_b: The GPIO pin that the signal wire B
+            of the encoder is connected to.
         """
         servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
         servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))

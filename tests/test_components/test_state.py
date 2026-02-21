@@ -9,7 +9,6 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    MAX_VELOCITY_THRESHOLD,
     ServoExtension,
 )
 from airbrakes.context import Context
@@ -21,15 +20,12 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from airbrakes.telemetry.packets.imu_data_packet import EstimatedDataPacket
-from tests.auxil.utils import make_apogee_predictor_data_packet
+from tests.auxil.utils import make_apogee_predictor_data_packet, make_firm_data_packet
 
 
 @pytest.fixture
 def state(context):
-    """
-    Dummy state class to test the base State class.
-    """
+    """Dummy state class to test the base State class."""
 
     class StateImpl(State):
         __slots__ = ()
@@ -77,9 +73,7 @@ def landed_state(context):
 
 
 class TestState:
-    """
-    Tests the base State class.
-    """
+    """Tests the base State class."""
 
     def test_slots(self, state):
         inst = state
@@ -96,9 +90,7 @@ class TestState:
 
 
 class TestStandbyState:
-    """
-    Tests the StandbyState class.
-    """
+    """Tests the StandbyState class."""
 
     def test_slots(self, standby_state):
         inst = standby_state
@@ -132,9 +124,7 @@ class TestStandbyState:
 
 
 class TestMotorBurnState:
-    """
-    Tests the MotorBurnState class.
-    """
+    """Tests the MotorBurnState class."""
 
     def test_slots(self, motor_burn_state):
         inst = motor_burn_state
@@ -144,13 +134,13 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, context):
         assert motor_burn_state.context == context
         assert issubclass(motor_burn_state.__class__, State)
-        assert motor_burn_state.start_time_ns == 0
+        assert motor_burn_state.start_time_seconds == 0
 
     def test_init_launch_time_set(self, motor_burn_state):
         ctx = motor_burn_state.context
-        ctx.data_processor._last_data_packet = EstimatedDataPacket(1000)
+        ctx.data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=1)
         m = MotorBurnState(ctx)
-        assert m.start_time_ns == 1000
+        assert m.start_time_seconds == 1
 
     def test_name(self, motor_burn_state):
         assert motor_burn_state.name == "MotorBurnState"
@@ -164,31 +154,28 @@ class TestMotorBurnState:
         [
             (0.0, 0.0, MotorBurnState),
             (100.0, 100.0, MotorBurnState),
-            (53.9, 54.0, MotorBurnState),  # tests that we don't switch states too early
-            (
-                53.999 - 54.0 * MAX_VELOCITY_THRESHOLD,
-                54.0,
-                CoastState,
-            ),  # tests that the threshold works
+            (53.9, 54.0, CoastState),
         ],
         ids=[
             "at_launchpad",
             "motor_burn",
-            "decreasing_velocity_under_threshold",
-            "decreasing_velocity_over_threshold",
+            "change_to_coast",
         ],
     )
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = EstimatedDataPacket(1.0 * 1e9)
+        motor_burn_state.context.data_processor._last_data_packet = make_firm_data_packet(
+            timestamp_seconds=1.1
+        )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
     def test_motor_burn_fallback(self, motor_burn_state):
         """
-        Test that if we don't get good FIRM data, we transition to coast state after 3 seconds.
+        Test that if we don't get good FIRM data, we transition to coast
+        state after 3 seconds.
         """
         # Test before 3 seconds have passed, we should still be in motor burn state:
 
@@ -202,9 +189,7 @@ class TestMotorBurnState:
 
 
 class TestCoastState:
-    """
-    Tests the CoastState class.
-    """
+    """Tests the CoastState class."""
 
     def test_slots(self, coast_state):
         inst = coast_state
@@ -322,7 +307,8 @@ class TestCoastState:
 
     def test_update_control_only_once(self, coast_state, monkeypatch):
         """
-        Check that we only tell the airbrakes to extend once, and not send the command repeatedly.
+        Check that we only tell the airbrakes to extend once, and not send
+        the command repeatedly.
         """
         calls = 0
 
@@ -347,8 +333,8 @@ class TestCoastState:
 
     def test_update_with_fallback_deploy(self, coast_state, monkeypatch):
         """
-        Check that if we don't have an apogee prediction, but we have been coasting for a while, we
-        deploy the airbrakes as a fallback.
+        Check that if we don't have an apogee prediction, but we have been
+        coasting for a while, we deploy the airbrakes as a fallback.
         """
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
@@ -371,7 +357,8 @@ class TestCoastState:
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
         """
-        Check that if we don't have an apogee prediction, we don't extend the airbrakes.
+        Check that if we don't have an apogee prediction, we don't extend
+        the airbrakes.
         """
         assert not coast_state.context.most_recent_apogee_predictor_data_packet
         coast_state.update()
@@ -379,8 +366,8 @@ class TestCoastState:
 
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
         """
-        Check that if we are extended, and the predicted apogee is less than the target altitude, we
-        retract the airbrakes.
+        Check that if we are extended, and the predicted apogee is less than
+        the target altitude, we retract the airbrakes.
         """
         # set a dummy value to prevent state changes:
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
@@ -392,8 +379,6 @@ class TestCoastState:
                 predicted_apogee=1100.0,
             )
         )
-        # If the airbrakes have been extended, it means we've been integrating for altitude
-        coast_state.context.data_processor._integrating_for_altitude = True
 
         coast_state.update()
         assert coast_state.airbrakes_extended
@@ -409,18 +394,11 @@ class TestCoastState:
 
         coast_state.update()
         assert not coast_state.airbrakes_extended
-        assert not coast_state.context.data_processor._integrating_for_altitude
-        assert (
-            coast_state.context.data_processor._retraction_timestamp
-            == coast_state.context.data_processor.current_timestamp
-        )
         assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
 
 class TestFreeFallState:
-    """
-    Tests the FreeFallState class.
-    """
+    """Tests the FreeFallState class."""
 
     def test_slots(self, free_fall_state):
         inst = free_fall_state
@@ -493,10 +471,10 @@ class TestFreeFallState:
         time_length,
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
-        free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
-        free_fall_state.start_time_ns = 0
-        free_fall_state.context.data_processor._last_data_packet = EstimatedDataPacket(
-            time_length * 1e9
+        free_fall_state.context.data_processor._vertical_accelerations = [vertical_accel]
+        free_fall_state.start_time_seconds = 0
+        free_fall_state.context.data_processor._last_data_packet = make_firm_data_packet(
+            timestamp_seconds=time_length
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
@@ -504,9 +482,7 @@ class TestFreeFallState:
 
 
 class TestLandedState:
-    """
-    Tests the LandedState class.
-    """
+    """Tests the LandedState class."""
 
     def test_slots(self, landed_state):
         inst = landed_state
@@ -521,25 +497,22 @@ class TestLandedState:
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
 
-    def test_update(self, data_processor, logger, random_data_mock_imu, servo, apogee_predictor):
+    def test_update(self, data_processor, logger, random_data_mock_firm, servo, apogee_predictor):
         # Test that calling update before shutdown delay does not shut down the system:
-        context = Context(servo, random_data_mock_imu, logger, data_processor, apogee_predictor)
+        context = Context(servo, random_data_mock_firm, logger, data_processor, apogee_predictor)
         context.start(wait_for_start=True)
         ls = LandedState(context)
         ls.context.state = ls
         ls.update()
         assert context.logger.is_running
-        assert context.imu.is_running
-        assert context.imu._data_fetch_thread.is_alive()
+        assert context.firm.is_running
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)
         assert context.logger.is_log_buffer_full
-        assert context.imu._data_fetch_thread.is_alive()
         ls.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
-        assert not context.imu.requested_to_run
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
         assert not context.logger.is_log_buffer_full
         assert len(context.logger._log_buffer) == 0

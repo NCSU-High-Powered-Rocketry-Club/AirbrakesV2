@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.telemetry.packets.servo_data_packet import ServoDataPacket
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
 @pytest.fixture
@@ -12,9 +12,7 @@ def servo_packet():
 
 
 class TestServoDataPacket:
-    """
-    Tests for the ServoDataPacket class.
-    """
+    """Tests for the ServoDataPacket class."""
 
     set_extension = "0.2"
     encoder_position = "1"

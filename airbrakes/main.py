@@ -11,27 +11,26 @@ from typing import TYPE_CHECKING
 from airbrakes.constants import (
     ENCODER_PIN_A,
     ENCODER_PIN_B,
-    IMU_PORT,
     LOGS_PATH,
     SERVO_CHANNEL,
 )
 from airbrakes.context import Context
-from airbrakes.hardware.imu import IMU
+from airbrakes.data_handling.apogee_predictor import ApogeePredictor
+from airbrakes.data_handling.data_processor import DataProcessor
+from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.firm import FIRM
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.mock.mock_firm import MockFIRM
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
-from airbrakes.telemetry.apogee_predictor import ApogeePredictor
-from airbrakes.telemetry.data_processor import DataProcessor
-from airbrakes.telemetry.logger import Logger
 from airbrakes.utils import arg_parser
 
 if TYPE_CHECKING:
     import argparse
 
-    from airbrakes.interfaces.base_imu import BaseIMU
-    from airbrakes.interfaces.base_servo import BaseServo
+    from airbrakes.base_classes.base_firm import BaseFIRM
+    from airbrakes.base_classes.base_servo import BaseServo
 
 
 def run_real_flight() -> None:
@@ -60,13 +59,27 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
+def run_pretend_flight() -> None:
+    """
+    Entry point for the application to run the pretend flight.
+
+    Entered when run with
+    `uvx --from git+... pretend` or `uv run pretend`.
+    """
+    # Modify sys.argv to include mock as the first argument:
+    sys.argv.insert(1, "pretend")
+    args = arg_parser()
+    run_flight(args)
+
+
 def run_flight(args: argparse.Namespace) -> None:
     """
     Initializes the Airbrakes components and starts the main loop.
 
-    :param args: Command line arguments determining the program configuration.
+    :param args: Command line arguments determining the program
+        configuration.
     """
-    servo, imu, logger, data_processor, apogee_predictor = create_components(args)
+    servo, firm, logger, data_processor, apogee_predictor = create_components(args)
 
     # Assert that we are running in the free-threaded build, and the GIL is disabled:
     if not bool(sysconfig.get_config_var("Py_GIL_DISABLED")) or sys._is_gil_enabled():
@@ -77,7 +90,7 @@ def run_flight(args: argparse.Namespace) -> None:
         )
 
     # Initialize the Airbrakes Context and display
-    context = Context(servo, imu, logger, data_processor, apogee_predictor)
+    context = Context(servo, firm, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(context, args)
 
     # Run the main flight loop
@@ -86,20 +99,24 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[BaseServo, BaseIMU, Logger, DataProcessor, ApogeePredictor]:
+) -> tuple[BaseServo, BaseFIRM, Logger, DataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the air brakes system.
 
-    Depending on its arguments, it will return either mock, or real components.
-    :param args: Command line arguments determining the program configuration.
-    :return: A tuple containing the Servo, IMU, Logger, IMUDataProcessor, and ApogeePredictor
-        objects.
+    Depending on its arguments, it will return either mock, or real
+    components.
+    :param args: Command line arguments determining the program
+        configuration.
+    :return: A tuple containing the Servo, FIRM, Logger, DataProcessor,
+        and ApogeePredictor objects.
     """
-    # TODO: this looks ugly but eventually we will use HPRM to run sims
-    if args.mode in ("mock"):
-        if args.mode == "mock":
-            # Replace hardware with mock objects for simulation
-            imu = MockIMU(
+    if args.mode in ("mock", "pretend"):
+        if args.mode == "pretend":
+            if args.path.suffix != ".FRM":
+                raise ValueError("The pretend FIRM log file must have a .FRM extension.")
+            firm = FIRM(is_pretend=True, log_file_path=args.path)
+        else:
+            firm = MockFIRM(
                 real_time_replay=not args.fast_replay,
                 log_file_path=args.path,
             )
@@ -118,7 +135,8 @@ def create_components(
 
     else:
         # Use real hardware components
-        imu = IMU(IMU_PORT)
+        firm = FIRM()
+
         logger = Logger(LOGS_PATH)
 
         # Maybe use mock components as specified by the command line arguments:
@@ -136,7 +154,7 @@ def create_components(
     # these classes.
     data_processor = DataProcessor()
     apogee_predictor = ApogeePredictor()
-    return servo, imu, logger, data_processor, apogee_predictor
+    return servo, firm, logger, data_processor, apogee_predictor
 
 
 def run_flight_loop(
@@ -145,7 +163,8 @@ def run_flight_loop(
     is_mock: bool,
 ) -> None:
     """
-    Main flight control loop that runs until shutdown is requested or interrupted.
+    Main flight control loop that runs until shutdown is requested or
+    interrupted.
 
     :param context: The AirbrakesContext managing the state machine.
     :param flight_display: Display interface for flight data.
@@ -162,7 +181,7 @@ def run_flight_loop(
             context.update()
 
             # Stop the replay when the data is exhausted
-            if is_mock and not context.imu.is_running:
+            if is_mock and not context.firm.is_running:
                 break
 
     # Handle user interrupt gracefully
@@ -197,6 +216,9 @@ if __name__ == "__main__":
     #   Optional arguments include:
     #     -s, --real-servo   : Uses the real servo instead of a mock one.
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
+    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
+
+    # `uv run pretend [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
 
     # Global options for all modes:

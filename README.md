@@ -214,6 +214,7 @@ cd AirbrakesV2
 
 ### 2. Install the project:
 ```bash
+uv self update
 uv run mock
 ```
 

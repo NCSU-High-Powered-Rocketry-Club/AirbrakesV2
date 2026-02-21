@@ -21,7 +21,8 @@ from airbrakes.constants import (
 
 class StateInformation(msgspec.Struct):
     """
-    Records the values achieved by the airbrakes system in a particular state.
+    Records the values achieved by the airbrakes system in a particular
+    state.
     """
 
     min_velocity: float | None = None
@@ -35,18 +36,16 @@ class StateInformation(msgspec.Struct):
 
 
 class CaseResult(msgspec.Struct):
-    """
-    Records the result of a test case.
-    """
+    """Records the result of a test case."""
 
     case_name: str
     error_cases: dict[str, ValueError] = msgspec.field(default_factory=dict)
-    """
-    The error details of the test case.
+    """The error details of the test case.
 
-    If the test case passed, this will be an empty dict. The keys are the names of the particular
-    test case that failed the test, and the values are the error messages. For example, if the
-    min_velocity was not as expected, the error_cases will be: {     "min_velocity":
+    If the test case passed, this will be an empty dict. The keys are
+    the names of the particular test case that failed the test, and the
+    values are the error messages. For example, if the min_velocity was
+    not as expected, the error_cases will be: {     "min_velocity":
     ValueError("min_velocity failed: Got 5.0") }
     """
 
@@ -73,8 +72,9 @@ class CaseResult(msgspec.Struct):
         """
         Adds a case to the error_cases dictionary if the result is False.
 
-        If there is already an error case, it will overwrite it with the new one. Also modifies the
-        traceback to point to the line where the case was considered.
+        If there is already an error case, it will overwrite it with the
+        new one. Also modifies the traceback to point to the line where
+        the case was considered.
         """
         if not result:
             current_frame = inspect.currentframe()
@@ -101,8 +101,9 @@ class LaunchCase:
     """
     The general test cases for the launch data.
 
-    This is the ideal case. Other launch data classes can inherit from this class and override the
-    methods to test the specific launch data (e.g. failed chute deploy, data cutoffs, etc).
+    This is the ideal case. Other launch data classes can inherit from
+    this class and override the methods to test the specific launch data
+    (e.g. failed chute deploy, data cutoffs, etc).
     """
 
     def __init__(self, states_dict: dict[str, StateInformation], target_apogee: float) -> None:
@@ -116,9 +117,7 @@ class LaunchCase:
         self.target_apogee: float = target_apogee
 
     def all_states_present(self) -> CaseResult:
-        """
-        Tests whether all states are present in the states_dict.
-        """
+        """Tests whether all states are present in the states_dict."""
         # Check we have all the states:
         case_result = CaseResult("states presence")
         case_result.consider_case(
@@ -143,9 +142,7 @@ class LaunchCase:
         return case_result
 
     def standby_case_test(self) -> CaseResult:
-        """
-        Tests the standby case.
-        """
+        """Tests the standby case."""
         case_result = CaseResult("standby case")
         # Check all conditions and update the test_cases dictionary
         case_result.consider_case(
@@ -187,9 +184,7 @@ class LaunchCase:
         return case_result
 
     def motor_burn_case_test(self) -> CaseResult:
-        """
-        Test the motor burn case.
-        """
+        """Test the motor burn case."""
         case_result = CaseResult("motor burn case")
 
         case_result.consider_case(
@@ -231,9 +226,7 @@ class LaunchCase:
         return case_result
 
     def coast_case_test(self) -> CaseResult:
-        """
-        Tests the coast case.
-        """
+        """Tests the coast case."""
         case_result = CaseResult("coast case")
 
         # Velocity checks
@@ -289,9 +282,7 @@ class LaunchCase:
         return case_result
 
     def free_fall_case_test(self) -> CaseResult:
-        """
-        Tests the free fall case.
-        """
+        """Tests the free fall case."""
         case_result = CaseResult("free fall case")
 
         # we have chute deployment, so we shouldn't go that fast
@@ -330,9 +321,7 @@ class LaunchCase:
         return case_result
 
     def landed_case_test(self) -> CaseResult:
-        """
-        Tests the landed case.
-        """
+        """Tests the landed case."""
         case_result = CaseResult("landed case")
         case_result.consider_case(
             "max_avg_vertical_acceleration",
@@ -363,22 +352,16 @@ class LaunchCase:
         return case_result
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
-        """
-        Tests the number of lines in the log file.
-        """
+        """Tests the number of lines in the log file."""
         return lines_in_log_file > 80_000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
-        """
-        Tests if all states were logged.
-        """
+        """Tests if all states were logged."""
         return state_letter_list == ["S", "M", "C", "F", "L"]
 
 
 class PurpleLaunchCase(LaunchCase):
-    """
-    The test case for the purple launch data.
-    """
+    """The test case for the purple launch data."""
 
     def free_fall_case_test(self) -> CaseResult:
         case_result = super().free_fall_case_test()
@@ -392,21 +375,15 @@ class PurpleLaunchCase(LaunchCase):
 
 
 class ShakeNBakeLaunchCase(LaunchCase):
-    """
-    The test case for the shake n bake launch data.
-    """
+    """The test case for the shake n bake launch data."""
 
 
 class GenesisLaunchCase(LaunchCase):
-    """
-    The test case for the genesis launch data.
-    """
+    """The test case for the genesis launch data."""
 
 
 class LegacyLaunchCase(LaunchCase):
-    """
-    The test case for the legacy launch data.
-    """
+    """The test case for the legacy launch data."""
 
     def free_fall_case_test(self) -> CaseResult:
         case_result = super().free_fall_case_test()
@@ -425,9 +402,7 @@ class LegacyLaunchCase(LaunchCase):
 
 
 class PelicanatorLaunchCase1(LaunchCase):
-    """
-    The test case for the pelicanator launch data 1.
-    """
+    """The test case for the pelicanator launch data 1."""
 
     def all_states_present(self) -> CaseResult:
         # Check we have all the states:
@@ -463,9 +438,7 @@ class PelicanatorLaunchCase1(LaunchCase):
         return case_result
 
     def landed_case_test(self) -> CaseResult:
-        """
-        No landed state, just return a CaseResult.
-        """
+        """No landed state, just return a CaseResult."""
         return CaseResult("landed case")
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
@@ -486,21 +459,15 @@ class PelicanatorLaunchCase1(LaunchCase):
 
 
 class PelicanatorLaunchCase2(LaunchCase):
-    """
-    The test case for the pelicanator launch data 2.
-    """
+    """The test case for the pelicanator launch data 2."""
 
 
 class PelicanatorLaunchCase4(LaunchCase):
-    """
-    The test case for the pelicanator launch data 4 (Huntsville 2024-25).
-    """
+    """The test case for the pelicanator launch data 4 (Huntsville 2024-25)."""
 
 
 class GovernmentWorkLaunchCase1(LaunchCase):
-    """
-    The test case for the "governmen't work" launch data (Subscale 2025).
-    """
+    """The test case for the "governmen't work" launch data (Subscale 2025)."""
 
     def coast_case_test(self) -> CaseResult:
         case_result = super().coast_case_test()
@@ -524,7 +491,8 @@ class GovernmentWorkLaunchCase1(LaunchCase):
 
 class GovernmentWorkLaunchCase2(LaunchCase):
     """
-    The test case for the "government work 2" launch data (Subscale Launch 2).
+    The test case for the "government work 2" launch data (Subscale Launch
+    2).
     """
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:

@@ -1,6 +1,4 @@
-"""
-File to handle the display of real-time flight data in the terminal.
-"""
+"""File to handle the display of real-time flight data in the terminal."""
 
 import os
 import threading
@@ -10,7 +8,6 @@ from typing import TYPE_CHECKING
 from colorama import Fore, Style, init
 
 from airbrakes.constants import DisplayEndingType
-from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
     import argparse
@@ -27,8 +24,8 @@ RESET = Style.RESET_ALL
 
 class FlightDisplay:
     """
-    Class related to displaying real-time flight data in the terminal with pretty colors and
-    spacing.
+    Class related to displaying real-time flight data in the terminal with
+    pretty colors and spacing.
     """
 
     MOVE_CURSOR_UP = "\033[F"  # Move cursor up one line
@@ -51,8 +48,9 @@ class FlightDisplay:
         """
         Initializes the FlightDisplay object.
 
-        :param conetxt: The AirbrakesContext object.
-        :param args: Command line arguments determining the program configuration.
+        :param context: The Context object.
+        :param args: Command line arguments determining the program
+            configuration.
         """
         init(autoreset=True)  # Automatically reset colors after each print
         self._context = context
@@ -71,8 +69,8 @@ class FlightDisplay:
         self.end_mock_interrupted = threading.Event()
 
         try:
-            # Try to get the launch file name (only available in MockIMU or SimIMU)
-            self._launch_file = self._context.imu._log_file_path.name
+            # Try to get the launch file name (only available in MockFIRM)
+            self._launch_file = self._context.firm._log_file_path.name
         except AttributeError:  # If it failed, that means we are running a real flight!
             self._launch_file = "N/A"
 
@@ -83,56 +81,47 @@ class FlightDisplay:
         """
         Starts the display and cpu monitoring thread.
 
-        Also prepares the processes for monitoring in the replay. This should only be done *after*
-        context.start() is called, because we need the thread IDs.
+        Also prepares the processes for monitoring in the replay. This
+        should only be done *after* context.start() is called, because
+        we need the thread IDs.
         """
         self._running = True
         self._display_update_thread.start()
 
     def stop(self) -> None:
-        """
-        Stops the display thread.
-        """
+        """Stops the display thread."""
         self._running = False
         self._display_update_thread.join()
 
     def sound_alarm_if_imu_is_having_issues(self) -> None:
         """
-        Sounds an audible alarm if the IMU has invalid fields or large change in velocity.
+        Sounds an audible alarm if the IMU has invalid fields or large
+        change in velocity.
 
-        This is most useful on real flights, where it is hard to see the display due to sunlight.
+        This is most useful on real flights, where it is hard to see the
+        display due to sunlight.
         """
-        has_invalid_fields = False
         has_large_velocity = False
         imu_queue_backlog = False
-        pitch_drift = False
 
         # If the absolute value of our velocity is large in standby state, we have a problem:
         if abs(self._context.data_processor.vertical_velocity) > 2:
             has_large_velocity = True
 
-        # While normally it is bad practice to access private variables, we kind of consider the
-        # display outside of/an addon to the main program, so we are okay with it here.
-        invalid_fields = self._context.data_processor._last_data_packet.invalid_fields
-        has_invalid_fields = bool(invalid_fields)
-
-        if self._context.imu.imu_packets_per_cycle > 30:
+        # If we have too many packets in one iteration, that means the IMU is producing data faster
+        # # than we can consume it, which is a problem:
+        if self._context.context_data_packet.retrieved_firm_packets > 30:
             imu_queue_backlog = True
 
-        if (
-            self._pitch_at_startup
-            and abs(self._context.data_processor.average_pitch - self._pitch_at_startup) > 1
-        ):
-            pitch_drift = True
-
-        if has_invalid_fields or has_large_velocity or imu_queue_backlog or pitch_drift:
+        if has_large_velocity or imu_queue_backlog:
             print("\a", end="")  # \a is the bell character, which makes a beep sound
 
     def update_display(self) -> None:
         """
         Updates the display with real-time data.
 
-        Runs in another thread. Automatically stops when the replay ends.
+        Runs in another thread. Automatically stops when the replay
+        ends.
         """
         # Don't print the flight data if we are in debug mode
         if self._args.debug:
@@ -173,29 +162,16 @@ class FlightDisplay:
 
         :param end_type: The type of ending for the flight data display.
         """
-        current_queue_size = self._context.imu.queued_imu_packets
-        fetched_packets_in_main = self._context.context_data_packet.retrieved_imu_packets
-        fetched_packets_from_imu = (
-            self._context.imu.imu_packets_per_cycle if self._args.mode == "real" else "N/A"
-        )
+        fetched_packets_in_main = self._context.context_data_packet.retrieved_firm_packets
 
         data_processor = self._context.data_processor
 
-        invalid_fields = data_processor._last_data_packet.invalid_fields
-        if invalid_fields:
-            invalid_fields = f"{RESET}{R}{invalid_fields}{R}{RESET}"
-
         time_since_launch = (
-            convert_ns_to_s(
-                self._context.data_processor.current_timestamp - self._context.launch_time_ns
-            )
-            if self._context.launch_time_ns
+            self._context.data_processor.current_timestamp_seconds
+            - self._context.launch_time_seconds
+            if self._context.launch_time_seconds
             else 0
         )
-
-        # Assign the startup pitch value when it is available:
-        if not self._pitch_at_startup:
-            self._pitch_at_startup = data_processor.average_pitch
 
         # Prepare output
         output = [
@@ -219,14 +195,10 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
-                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Predicted apogee:                {G}{self._context.most_recent_apogee_predictor_data_packet.predicted_apogee if self._context.most_recent_apogee_predictor_data_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-                    f"IMU Data Queue Size:             {G}{current_queue_size:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Fetched packets from IMU:        {G}{fetched_packets_from_imu:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._context.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501
-                    f"Invalid fields:                  {G}{invalid_fields!s:<25}{G}{RESET}",
                     # Use htop -H -p <PID> to see thread CPU usage
                     f"Current process ID:              {G}{self._current_pid:<10}{RESET} ",
                 ]

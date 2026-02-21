@@ -27,9 +27,7 @@ def main():
 
 # function pcaScenario 
 def pcaScenario():
-    """
-    Scenario to test servo.
-    """
+    """Scenario to test servo."""
     for j in range(MIN_ANG,MAX_ANG,1):
         print(f"Send angle {j}")
         # time.sleep(0.01)
