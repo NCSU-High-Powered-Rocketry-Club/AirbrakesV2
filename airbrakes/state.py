@@ -2,6 +2,7 @@
 Module for the finite state machine that represents which state of flight the rocket is in.
 """
 
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -37,7 +38,7 @@ class State(ABC):
         Airbrakes program will end.
     """
 
-    __slots__ = ("context", "start_time_ns")
+    __slots__ = ("context", "start_motor_burn_time_s", "start_time_ns")
 
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
@@ -45,6 +46,7 @@ class State(ABC):
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
         self.start_time_ns = context.data_processor.current_timestamp
+        self.start_motor_burn_time_s = 0
 
     @property
     def name(self) -> str:
@@ -101,6 +103,7 @@ class MotorBurnState(State):
     def __init__(self, context: Context):
         super().__init__(context)
         self.context.launch_time_ns = self.start_time_ns
+        self.start_motor_burn_time_s = time.time()
 
     def update(self) -> None:
         """
@@ -117,6 +120,13 @@ class MotorBurnState(State):
             self.next_state()
             return
 
+        # Fallback! If FIRM data wasn't good, we need to transition to coast state:
+        time_since_burn = time.time() - self.start_motor_burn_time_s
+
+        if time_since_burn > 3:
+            self.next_state()
+            return
+
     def next_state(self) -> None:
         self.context.state = CoastState(self.context)
 
@@ -128,11 +138,12 @@ class CoastState(State):
     This is the state we actually control the air brakes extension.
     """
 
-    __slots__ = ("airbrakes_extended",)
+    __slots__ = ("airbrakes_extended", "has_airbrakes_ever_extended")
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.airbrakes_extended = False
+        self.has_airbrakes_ever_extended = False
 
     def update(self) -> None:
         """
@@ -157,10 +168,19 @@ class CoastState(State):
         if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
+            self.has_airbrakes_ever_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()
             self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
+
+        # If airbrakes hasn't deployed within one second, we will deploy it because we have to pass
+        # VDF:
+        time_since_motor_burn_s = time.time() - self.start_motor_burn_time_s
+        if not self.has_airbrakes_ever_extended and time_since_motor_burn_s >= 4:
+            self.context.extend_airbrakes()
+            self.airbrakes_extended = True
+            self.has_airbrakes_ever_extended = True
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.
