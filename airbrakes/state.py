@@ -45,7 +45,7 @@ class State(ABC):
         # At the very beginning of each state, we retract the air brakes
         self.context.retract_airbrakes()
         self.start_time_seconds = context.data_processor.current_timestamp_seconds
-        self.start_motor_burn_time_s = 0
+        # self.start_motor_burn_time_s = 0
 
     @property
     def name(self) -> str:
@@ -128,12 +128,19 @@ class CoastState(State):
     This is the state we actually control the air brakes extension.
     """
 
-    __slots__ = ("airbrakes_extended", "has_airbrakes_ever_extended")
+    __slots__ = (
+        "airbrakes_extended",
+        "has_airbrakes_ever_extended",
+        "is_overriding",
+        "start_time2",
+    )
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.airbrakes_extended = False
         self.has_airbrakes_ever_extended = False
+        self.is_overriding = False
+        self.start_time2 = time.time()
 
     def update(self) -> None:
         """
@@ -160,16 +167,18 @@ class CoastState(State):
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
             self.has_airbrakes_ever_extended = True
-        elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
+        elif (
+            apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended
+        ) and not self.is_overriding:
             self.context.retract_airbrakes()
             self.airbrakes_extended = False
 
         # If airbrakes hasn't deployed within one second, we will deploy it because we have to pass
         # VDF:
-        time_since_motor_burn_s = time.time() - self.start_motor_burn_time_s
-        if not self.has_airbrakes_ever_extended and time_since_motor_burn_s >= 4:
+        if not self.has_airbrakes_ever_extended and (time.time() - self.start_time2) >= 1:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
+            self.is_overriding = True
             self.has_airbrakes_ever_extended = True
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
