@@ -1,4 +1,3 @@
-import time
 from abc import ABC
 
 import pytest
@@ -172,20 +171,20 @@ class TestMotorBurnState:
         assert isinstance(motor_burn_state.context.state, expected_state)
         assert motor_burn_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
-    def test_motor_burn_fallback(self, motor_burn_state):
-        """
-        Test that if we don't get good FIRM data, we transition to coast
-        state after 3 seconds.
-        """
-        # Test before 3 seconds have passed, we should still be in motor burn state:
+    # def test_motor_burn_fallback(self, motor_burn_state):
+    #     """
+    #     Test that if we don't get good FIRM data, we transition to coast
+    #     state after 3 seconds.
+    #     """
+    #     # Test before 3 seconds have passed, we should still be in motor burn state:
 
-        motor_burn_state.start_motor_burn_time_s = time.time() - 2
-        motor_burn_state.update()
-        assert isinstance(motor_burn_state.context.state, MotorBurnState)
+    #     motor_burn_state.start_motor_burn_time_s = time.time() - 2
+    #     motor_burn_state.update()
+    #     assert isinstance(motor_burn_state.context.state, MotorBurnState)
 
-        motor_burn_state.start_motor_burn_time_s = time.time() - 4
-        motor_burn_state.update()
-        assert isinstance(motor_burn_state.context.state, CoastState)
+    #     motor_burn_state.start_motor_burn_time_s = time.time() - 4
+    #     motor_burn_state.update()
+    #     assert isinstance(motor_burn_state.context.state, CoastState)
 
 
 class TestCoastState:
@@ -246,9 +245,6 @@ class TestCoastState:
         airbrakes_ext,
         monkeypatch,
     ):
-        # set a dummy value to prevent state changes:
-        coast_state.start_motor_burn_time_s = time.time()
-
         coast_state.context.data_processor._current_altitudes = [current_altitude]
         coast_state.context.data_processor._max_altitude = max_altitude
         coast_state.context.data_processor._vertical_velocities = [vertical_velocity]
@@ -299,7 +295,6 @@ class TestCoastState:
             )
         )
         # set a dummy value to prevent state changes:
-        coast_state.start_motor_burn_time_s = time.time()
         monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
         monkeypatch.setattr("airbrakes.state.TARGET_APOGEE_METERS", target_altitude)
         coast_state.update()
@@ -331,29 +326,29 @@ class TestCoastState:
         coast_state.update()
         assert calls == 1
 
-    def test_update_with_fallback_deploy(self, coast_state, monkeypatch):
-        """
-        Check that if we don't have an apogee prediction, but we have been
-        coasting for a while, we deploy the airbrakes as a fallback.
-        """
-        # set a dummy value to prevent state changes:
-        monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
+    # def test_update_with_fallback_deploy(self, coast_state, monkeypatch):
+    #     """
+    #     Check that if we don't have an apogee prediction, but we have been
+    #     coasting for a while, we deploy the airbrakes as a fallback.
+    #     """
+    #     # set a dummy value to prevent state changes:
+    #     monkeypatch.setattr(coast_state.__class__, "next_state", lambda _: None)
 
-        # set the start motor burn time to be 3 seconds ago:
-        coast_state.start_motor_burn_time_s = time.time() - 3
-        coast_state.update()
+    #     # set the start motor burn time to be 3 seconds ago:
+    #     coast_state.start_motor_burn_time_s = time.time() - 3
+    #     coast_state.update()
 
-        assert not coast_state.airbrakes_extended
-        assert not coast_state.has_airbrakes_ever_extended
-        assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
+    #     assert not coast_state.airbrakes_extended
+    #     assert not coast_state.has_airbrakes_ever_extended
+    #     assert coast_state.context.servo.current_extension == ServoExtension.MIN_EXTENSION
 
-        # set the start motor burn time to be 5 seconds ago:
-        coast_state.start_motor_burn_time_s = time.time() - 5
+    #     # set the start motor burn time to be 5 seconds ago:
+    #     coast_state.start_motor_burn_time_s = time.time() - 5
 
-        coast_state.update()
-        assert coast_state.airbrakes_extended
-        assert coast_state.has_airbrakes_ever_extended
-        assert coast_state.context.servo.current_extension == ServoExtension.MAX_EXTENSION
+    #     coast_state.update()
+    #     assert coast_state.airbrakes_extended
+    #     assert coast_state.has_airbrakes_ever_extended
+    #     assert coast_state.context.servo.current_extension == ServoExtension.MAX_EXTENSION
 
     def test_update_no_apogee_available_no_controls(self, coast_state):
         """

@@ -17,6 +17,15 @@ class BaseFIRM(ABC):
 
     @property
     @abstractmethod
+    def requested_to_run(self) -> bool:
+        """
+        Returns whether the thread fetching data from FIRM has been requested to run.
+
+        :return: True if the thread is requested to run, False otherwise.
+        """
+
+    @property
+    @abstractmethod
     def is_running(self) -> bool:
         """
         Returns whether FIRM is running.
@@ -33,10 +42,12 @@ class BaseFIRM(ABC):
         """Stops the FIRM client for fetching data packets."""
 
     @abstractmethod
-    def get_data_packets(self) -> list[FIRMDataPacket]:
+    def get_data_packets(self, block: bool = True) -> list[FIRMDataPacket]:
         """
         Returns all available FIRM data packets from the queued FIRM
         packets.
+
+        :param block: If True, blocks until at least one data packet is available.
 
         :return: A list containing the latest FIRM data packets from the
             FIRM packet queue.

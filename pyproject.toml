@@ -72,9 +72,9 @@ python-preference = "only-managed"
 [tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
 
-#[tool.hatch.build.targets.wheel.force-include]
-## specify one launch file so that the mock flight can be run as a demo with uvx.
-#"launch_data/genesis_launch_1.csv" = "/launch_data/genesis_launch_1.csv"
+[tool.hatch.build.targets.wheel.force-include]
+# specify one launch file so that the mock flight can be run as a demo with uvx.
+"launch_data/jackpot_launch_1.csv" = "/launch_data/jackpot_launch_1.csv"
 
 # RUFF:
 [tool.ruff]
@@ -117,7 +117,6 @@ omit = [
     "*/tests/*",
     "*/site-packages/*",
     "airbrakes/mock/*",
-    "airbrakes/simulation/*",
     "airbrakes/main.py",
 ]
 

@@ -24,6 +24,7 @@ DEFAULT_TRACES = [
     ("est_acceleration_z_gs", "Estimated Z Accel (g)"),
     ("predicted_apogee", "Predicted Apogee"),
     ("encoder_position", "Encoder Position"),
+    ("pressure_pascals", "Pressure (Pa)"),
 ]
 
 

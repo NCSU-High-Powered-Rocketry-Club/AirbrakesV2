@@ -28,15 +28,8 @@ if TYPE_CHECKING:
 
 LOG_PATH = Path("tests/logs")
 # Get all csv files in the launch_data directory:
-# LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
-# # Remove the genesis_launch_1.csv file since it's almost the same as genesis_launch_2.csv:
-# LAUNCH_DATA.remove(Path("launch_data/genesis_launch_1.csv"))
-# # Remove the legacy_launch_2.csv file since it failed
-# LAUNCH_DATA.remove(Path("launch_data/legacy_launch_2.csv"))
-# # Use the filenames as the ids for the fixtures:
-# LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
-LAUNCH_DATA = []
-LAUNCH_DATA_IDS = []
+LAUNCH_DATA = list(Path("launch_data").glob("*.csv"))
+LAUNCH_DATA_IDS = [log.stem for log in LAUNCH_DATA]
 
 
 @pytest.fixture
