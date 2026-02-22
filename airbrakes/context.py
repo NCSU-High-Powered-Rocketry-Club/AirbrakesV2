@@ -142,7 +142,6 @@ class Context:
         logging, and logs all relevant data.
         """
         self.firm_data_packets = self.firm.get_data_packets()
-        # print(len(self.firm_data_packets))
 
         # This should not happen generally, since we wait for FIRM packets. Only happens at the end
         # of the flight in a mock replay.
