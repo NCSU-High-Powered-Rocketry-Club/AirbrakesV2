@@ -32,6 +32,11 @@ class FIRM(BaseFIRM):
     def is_running(self) -> bool:
         return self.firm_client.is_running()
 
+    @property
+    def requested_to_run(self) -> bool:
+        """Returns whether the thread fetching data from FIRM has been requested to run."""
+        return self.is_running
+
     def start(self) -> None:
         """Starts the FIRM client for fetching data packets."""
         self.firm_client.start()
@@ -45,7 +50,7 @@ class FIRM(BaseFIRM):
         self.firm_client.stop()
         super().stop()
 
-    def get_data_packets(self) -> list[FIRMDataPacket]:
+    def get_data_packets(self, block: bool = True) -> list[FIRMDataPacket]:
         """
         Returns all available FIRM data packets from the queued FIRM
         packets.
@@ -58,4 +63,4 @@ class FIRM(BaseFIRM):
             return []
 
         # Otherwise we just return the data packets like normal
-        return self.firm_client.get_data_packets(block=True)
+        return self.firm_client.get_data_packets(block=block)

@@ -185,7 +185,7 @@ def test_create_components(parsed_args, monkeypatch):
         assert type(created_components[1]) is FIRM
         assert created_components[1]._log_file_path == parsed_args.path
         assert created_components[1].is_pretend is True
-        assert "launch_data/raw_firm_data" in str(created_components[1]._log_file_path)
+        assert "raw_firm_data" in str(created_components[1]._log_file_path)
 
         # Logger Checks
         assert type(created_components[2]) is MockLogger

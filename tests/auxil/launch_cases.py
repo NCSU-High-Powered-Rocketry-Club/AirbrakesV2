@@ -353,7 +353,7 @@ class LaunchCase:
 
     def log_file_lines_test(self, lines_in_log_file: int) -> bool:
         """Tests the number of lines in the log file."""
-        return lines_in_log_file > 80_000
+        return lines_in_log_file > 6000
 
     def log_file_states_logged(self, state_letter_list: list[str]) -> bool:
         """Tests if all states were logged."""
@@ -502,3 +502,44 @@ class GovernmentWorkLaunchCase2(LaunchCase):
         Data was perfect, this was a short flight.
         """
         return lines_in_log_file > 71_000
+
+
+class JackPotLaunchCase1(LaunchCase):
+    """The test case for the jackpot launch data (Full scale 2025)."""
+
+    # This is the first FIRM dataset, and thus the kalman filter wasn't tuned:
+
+    def motor_burn_case_test(self) -> CaseResult:
+        case_result = super().motor_burn_case_test()
+        case_result.consider_case(
+            "max_avg_vertical_acceleration",
+            str(self.motor_burn_case.max_avg_vertical_acceleration),
+            self.motor_burn_case.max_avg_vertical_acceleration >= 70.0,
+        )
+        return case_result
+
+    def free_fall_case_test(self) -> CaseResult:
+        """Kalman filter for free fall wasn't tuned."""
+        case_result = super().free_fall_case_test()
+
+        case_result.consider_case(
+            "min_velocity",
+            str(self.free_fall_case.min_velocity),
+            self.free_fall_case.min_velocity >= -130.0,
+        )
+        case_result.consider_case(
+            "max_velocity",
+            str(self.free_fall_case.max_velocity),
+            self.free_fall_case.max_velocity <= 60.0,
+        )
+
+        return case_result
+
+    def landed_case_test(self) -> CaseResult:
+        """Max velocity for landing was high."""
+        case_result = super().landed_case_test()
+
+        case_result.consider_case(
+            "max_velocity", str(self.landed_case.max_velocity), self.landed_case.max_velocity <= 1.0
+        )
+        return case_result

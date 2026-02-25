@@ -213,14 +213,14 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 1066.8  # 3500 ft
+TARGET_APOGEE_METERS = 1036.32  # 3400 ft
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
 and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 18.1437  # 4.770
+ROCKET_DRY_MASS_KG: float = 16.848
 """The mass of the entire rocket without propellant in kilograms."""
 
 ROCKET_CD: float = 0.38
