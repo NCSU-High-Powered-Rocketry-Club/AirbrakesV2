@@ -20,6 +20,7 @@ from airbrakes.constants import (
 
 if TYPE_CHECKING:
     import gpiozero
+    from ina219 import INA219
     from rpi_hardware_pwm import HardwarePWM
 
     from airbrakes.mock.mock_servo import MockHardwarePWM
@@ -45,6 +46,7 @@ class BaseServo(ABC):
         "_go_to_min_no_buzz",
         "current_extension",
         "encoder",
+        "ina",
         "servo",
     )
 
@@ -52,6 +54,7 @@ class BaseServo(ABC):
         self,
         encoder: gpiozero.RotaryEncoder,
         servo: HardwarePWM | MockHardwarePWM,
+        ina: INA219 | None,
     ) -> None:
         """
         Initializes the servo and the encoder.
@@ -66,11 +69,31 @@ class BaseServo(ABC):
 
         self.encoder = encoder
 
+        self.ina = ina
+
         # We have to use threading to avoid blocking the main thread because our extension methods
         # need to run at a specific time. Yes this is bad practice but we had a mechanical issue and
         # we had to fix it in code.
         self._go_to_max_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_max_no_buzz)
         self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
+
+    @abstractmethod
+    def get_battery_volts(self) -> float:
+        """
+        Gets the current battery voltage.
+
+        :return: The current battery voltage in volts.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_system_current_milliamps(self) -> float:
+        """
+        Gets the current system current draw.
+
+        :return: The current system current draw in milliamps.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def _set_extension(self, extension: ServoExtension) -> None:

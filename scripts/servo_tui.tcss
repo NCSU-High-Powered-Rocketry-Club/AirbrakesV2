@@ -1,0 +1,246 @@
+/* ==========================================================================
+   Servo & Encoder TUI — stylesheet
+   Designed for vertical / narrow terminals (width ≤ height) first.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Screen / root
+   -------------------------------------------------------------------------- */
+Screen {
+    background: $surface;
+    layout: vertical;
+}
+
+Header {
+    dock: top;
+}
+
+Footer {
+    dock: bottom;
+}
+
+/* --------------------------------------------------------------------------
+   Scrollable outer wrapper
+   -------------------------------------------------------------------------- */
+#scroll-root {
+    width: 1fr;
+    height: 1fr;
+    overflow-y: auto;
+    overflow-x: hidden;
+    layout: vertical;
+    padding: 0 1;
+}
+
+/* --------------------------------------------------------------------------
+   Top info row: [Encoder] [AngleDisplay] [Current (A)]
+   -------------------------------------------------------------------------- */
+#info-row {
+    width: 1fr;
+    height: auto;
+    layout: horizontal;
+    align: center middle;
+    margin-top: 1;
+    margin-bottom: 0;
+}
+
+#encoder-box {
+    width: 1fr;
+    height: auto;
+    min-height: 4;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+EncoderBox {
+    width: 1fr;
+    height: auto;
+    padding-left: 1;
+    content-align: left middle;
+    color: $text;
+    border: round $accent-darken-1;
+    border-title-align: left;
+}
+
+AngleDisplay {
+    width: auto;
+    height: auto;
+    color: $accent;
+    text-align: center;
+    padding: 0 2;
+}
+
+#current-box {
+    width: 1fr;
+    height: auto;
+    text-align: center;
+    content-align: center middle;
+}
+
+CurrentBox {
+    width: 1fr;
+    height: auto;
+    text-align: left;
+    content-align: left middle;
+    padding-left: 1;
+    color: $text;
+    border: round $success-darken-1;
+    border-title-align: left;
+}
+
+/* --------------------------------------------------------------------------
+   Mode indicator bar
+   -------------------------------------------------------------------------- */
+#mode-indicator {
+    width: 1fr;
+    height: 1;
+    text-align: center;
+    margin-top: 1;
+    margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Normal mode panel
+   -------------------------------------------------------------------------- */
+#normal-panel {
+    width: 1fr;
+    height: auto;
+    layout: vertical;
+    margin-top: 1;
+}
+
+/* --- Extend / Retract row — horizontal by default --- */
+#control-row {
+    width: 1fr;
+    height: auto;
+    layout: horizontal;
+    align: center middle;
+    margin-bottom: 1;
+}
+
+#control-row Button {
+    width: 1fr;
+    min-width: 10;
+    margin: 0 1;
+    height: 3;
+}
+
+/* Vertical stacking when terminal is narrow */
+#control-row.control-col {
+    layout: vertical;
+    align: center top;
+}
+
+#control-row.control-col Button {
+    width: 1fr;
+    min-width: 0;
+    margin: 0 0 1 0;
+    height: 3;
+}
+
+/* --- MIN / MIN_NO_BUZZ / MAX / MAX_NO_BUZZ row — horizontal by default --- */
+#precise-row {
+    width: 1fr;
+    height: auto;
+    layout: horizontal;
+    align: center middle;
+}
+
+#precise-row Button {
+    width: 1fr;
+    min-width: 10;
+    margin: 0 1;
+    height: 3;
+}
+
+/* Vertical stacking when terminal is narrow */
+#precise-row.precise-col {
+    layout: vertical;
+    align: center top;
+}
+
+#precise-row.precise-col Button {
+    width: 1fr;
+    min-width: 0;
+    margin: 0 0 1 0;
+    height: 3;
+}
+
+/* --------------------------------------------------------------------------
+   Tuning mode panel
+   -------------------------------------------------------------------------- */
+#tuning-panel {
+    width: 1fr;
+    height: auto;
+    layout: vertical;
+    margin-top: 1;
+}
+
+#tuning-hint {
+    width: 1fr;
+    height: 2;
+    text-align: center;
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+/* --- Four constant-save buttons — horizontal by default --- */
+#tuning-buttons {
+    width: 1fr;
+    height: auto;
+    layout: horizontal;
+    align: center middle;
+}
+
+#tuning-buttons Button {
+    width: 1fr;
+    min-width: 12;
+    margin: 0 1;
+    height: 4;
+}
+
+/* Vertical stacking when terminal is narrow */
+#tuning-buttons.tuning-col {
+    layout: vertical;
+    align: center top;
+}
+
+#tuning-buttons.tuning-col Button {
+    width: 1fr;
+    min-width: 0;
+    margin: 0 0 1 0;
+    height: 3;
+}
+
+/* --------------------------------------------------------------------------
+   Current graph
+   -------------------------------------------------------------------------- */
+#graph-container {
+    width: 1fr;
+    height: 18;
+    min-height: 14;
+    border: round $primary-darken-2;
+    margin-top: 1;
+    margin-bottom: 1;
+    layout: vertical;
+}
+
+#graph-title {
+    height: 1;
+    width: 1fr;
+    text-align: center;
+    color: $text-muted;
+    background: $panel;
+    text-style: bold;
+}
+
+PlotWidget {
+    width: 1fr;
+    height: 1fr;
+}
+
+/* --------------------------------------------------------------------------
+   Utility
+   -------------------------------------------------------------------------- */
+.hidden {
+    display: none;
+}

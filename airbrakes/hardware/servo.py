@@ -5,11 +5,16 @@ the servo's position.
 """
 
 import gpiozero
+from ina219 import INA219
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
+    I2C_ADDRESS,
+    I2C_BUS,
+    MAX_EXPECTED_AMPS,
     SERVO_OPERATING_FREQUENCY_HZ,
+    SHUNT_OHMS,
     ServoExtension,
 )
 
@@ -57,7 +62,35 @@ class Servo(BaseServo):
             encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
         )
 
-        super().__init__(encoder=encoder, servo=servo)
+        ina = INA219(
+            shunt_ohms=SHUNT_OHMS,
+            address=I2C_ADDRESS,
+            max_expected_amps=MAX_EXPECTED_AMPS,
+            busnum=I2C_BUS,
+        )
+        ina.configure(
+            # sample the current faster (84us per sample instead of 532us per sample with ADC_12BIT,
+            # which is the default setting). We lose about ~8mA of resolution.
+            shunt_adc=INA219.ADC_9BIT
+        )
+
+        super().__init__(encoder=encoder, servo=servo, ina=ina)
+
+    def get_battery_volts(self) -> float:
+        """
+        Gets the battery voltage from the INA219 sensor.
+
+        :return: The battery voltage in volts.
+        """
+        return self.ina.supply_voltage()
+
+    def get_system_current_milliamps(self) -> float:
+        """
+        Gets the current system current draw from the INA219 sensor.
+
+        :return: The current system current draw in milliamps.
+        """
+        return self.ina.current()
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
