@@ -135,17 +135,17 @@ will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
-# T = N/f => T = N/1000
+# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 100 + 0 = 100 Hz
+# T = N/f => T = N/100
 
-IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 5 seconds of data
+IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
 """The maximum number of data packets to log in the StandbyState and
 LandedState.
 
 This is to prevent log file sizes from growing too large. Some of our
 2023-2024 launches were >300 mb.
 """
-LOG_BUFFER_SIZE = 5000
+LOG_BUFFER_SIZE = 500
 """Buffer size if CAPACITY is reached.
 
 Once the state changes, this buffer will be logged to make sure we don't
