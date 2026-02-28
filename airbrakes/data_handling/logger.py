@@ -155,6 +155,8 @@ class Logger:
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
                 encoder_position=servo_data_packet.encoder_position,
+                battery_voltage=servo_data_packet.battery_voltage,
+                current_milliamps=servo_data_packet.current_milliamps,
                 # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
                 temperature_celsius=firm_data_packet.temperature_celsius,

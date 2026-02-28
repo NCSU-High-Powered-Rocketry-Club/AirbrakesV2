@@ -50,7 +50,25 @@ class MockServo(BaseServo):
 
         servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
-        super().__init__(encoder=encoder, servo=servo)
+        super().__init__(encoder=encoder, servo=servo, ina=None)
+
+    def get_battery_volts(self) -> float:
+        """
+        Gets the current system voltage in volts. Since this is a mock servo,
+        it always returns 0.
+
+        :return: The current system voltage in volts.
+        """
+        return 0.0
+
+    def get_system_current_milliamps(self) -> float:
+        """
+        Gets the current system current in milliamps. Since this is a mock
+        servo, it always returns 0.
+
+        :return: The current system current in milliamps.
+        """
+        return 0.0
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
