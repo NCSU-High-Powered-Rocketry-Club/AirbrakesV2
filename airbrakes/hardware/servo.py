@@ -5,7 +5,6 @@ the servo's position.
 """
 
 import gpiozero
-from ina219 import INA219
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.base_classes.base_servo import BaseServo
@@ -55,6 +54,9 @@ class Servo(BaseServo):
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
         from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
+
+        # This library fails to import on Windows due to smbus2:
+        from ina219 import INA219  # noqa: PLC0415
 
         # max_steps=0 indicates that the encoder's `value` property will never change. We will
         # only use the integer value, which is the `steps` property.
