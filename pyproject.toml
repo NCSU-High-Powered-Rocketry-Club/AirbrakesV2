@@ -31,6 +31,7 @@ polars-runtime-32 = [
     { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-manylinux_2_31_x86_64.whl", marker = "platform_machine == 'x86_64'" },
     { url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl", marker = "platform_machine == 'AMD64'" }
 ]
+pi-ina219 = { git = "https://github.com/chrisb2/pi_ina219.git", branch = "convert-to-smbus2"}
 
 [project.optional-dependencies]
 # Need to run `sudo apt install liblgpio-dev swig` to build and install everything encoder related.

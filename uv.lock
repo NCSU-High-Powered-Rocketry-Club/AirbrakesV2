@@ -17,25 +17,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "adafruit-gpio"
-version = "1.0.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "adafruit-pureio" },
-    { name = "spidev" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/db/1c/2dc8a674514219f287fa344e44cadfd77b3e2878d6ff602a8c2149b50dd8/Adafruit_GPIO-1.0.3.tar.gz", hash = "sha256:d6465b92c866c51ca8f3bc1e8f2ec36f5ccdb46d0fd54101c1109756d4a2dcd0", size = 24522, upload-time = "2017-06-06T18:44:52.234Z" }
-
-[[package]]
-name = "adafruit-pureio"
-version = "1.1.11"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e5/b7/f1672435116822079bbdab42163f9e6424769b7db778873d95d18c085230/Adafruit_PureIO-1.1.11.tar.gz", hash = "sha256:c4cfbb365731942d1f1092a116f47dfdae0aef18c5b27f1072b5824ad5ea8c7c", size = 35511, upload-time = "2023-05-25T19:01:34.654Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/9d/28e9d12f36e13c5f2acba3098187b0e931290ecd1d8df924391b5ad2db19/Adafruit_PureIO-1.1.11-py3-none-any.whl", hash = "sha256:281ab2099372cc0decc26326918996cbf21b8eed694ec4764d51eefa029d324e", size = 10678, upload-time = "2023-05-25T19:01:32.397Z" },
-]
-
-[[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -178,7 +159,7 @@ requires-dist = [
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = ">=2024.0.10" },
-    { name = "pi-ina219", specifier = ">=1.4.1" },
+    { name = "pi-ina219", git = "https://github.com/chrisb2/pi_ina219.git?branch=convert-to-smbus2" },
     { name = "polars", specifier = "==1.37.1" },
     { name = "polars-runtime-32", marker = "platform_machine != 'AMD64' and platform_machine != 'aarch64' and platform_machine != 'x86_64'" },
     { name = "polars-runtime-32", marker = "platform_machine == 'AMD64'", url = "https://github.com/harshil21/polars-runtime-32-ft/releases/download/v1.37.1/polars_runtime_32-1.37.1-cp314-cp314t-win_amd64.whl" },
@@ -694,14 +675,11 @@ wheels = [
 
 [[package]]
 name = "pi-ina219"
-version = "1.4.1"
-source = { registry = "https://pypi.org/simple" }
+version = "2.0.0"
+source = { git = "https://github.com/chrisb2/pi_ina219.git?branch=convert-to-smbus2#b2e1d5439e3c653b55a9fab9ba905e0f7ce5f409" }
 dependencies = [
-    { name = "adafruit-gpio" },
     { name = "mock" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/b7/7fb7bc5d9caac0581a24bce30ceb260898cb8ef7efe2be34f115e87afbbe/pi_ina219-1.4.1-py2.py3-none-any.whl", hash = "sha256:ddff5c9b7538beeb8ecd41e96947de5fb2aea9eaf993294845eb5383fe235222", size = 10125, upload-time = "2023-04-23T03:00:51.482Z" },
+    { name = "smbus2" },
 ]
 
 [[package]]
@@ -1068,10 +1046,13 @@ wheels = [
 ]
 
 [[package]]
-name = "spidev"
-version = "3.8"
+name = "smbus2"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/67/87/039b6eeea781598015b538691bc174cc0bf77df9d4d2d3b8bf9245c0de8c/spidev-3.8.tar.gz", hash = "sha256:2bc02fb8c6312d519ebf1f4331067427c0921d3f77b8bcaf05189a2e8b8382c0", size = 13893, upload-time = "2025-09-15T18:56:20.672Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/36/afafd43770caae69f04e21402552a8f94a072def46a002fab9357f4852ce/smbus2-0.6.0.tar.gz", hash = "sha256:9b5ff1e998e114730f9dfe0c4babbef06c92468cfb61eaa684e30f225661b95b", size = 17403, upload-time = "2025-12-20T09:02:52.017Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/cf/2e1d6805da6f9c9b3a4358076ff2e072d828ba7fed124edc1b729e210c55/smbus2-0.6.0-py2.py3-none-any.whl", hash = "sha256:03d83d2a9a4afc5ddca0698ccabf101cb3de52bc5aefd7b76778ffb27ff654e0", size = 11849, upload-time = "2025-12-20T09:02:51.219Z" },
+]
 
 [[package]]
 name = "swig"
