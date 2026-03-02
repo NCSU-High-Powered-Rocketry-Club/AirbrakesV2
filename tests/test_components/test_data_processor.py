@@ -1,6 +1,6 @@
 import math
 import random
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import numpy as np
 import polars as pl
@@ -10,9 +10,6 @@ from firm_client import FIRMDataPacket
 
 from airbrakes.data_handling.data_processor import DataProcessor
 from tests.auxil.utils import make_firm_data_packet, make_firm_data_packet_zeroed
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 def generate_altitude_sine_wave(
@@ -295,3 +292,34 @@ class TestDataProcessor:
         d.update([make_firm_data_packet(est_position_z_meters=20)])
         assert d.current_altitude == 20.0
         assert d.max_altitude == 50.0
+
+    @pytest.mark.parametrize(
+        "launch_data",
+        [
+            *list(Path("launch_data/").glob("*.csv")),
+        ],
+        ids=[
+            *[p.name for p in Path("launch_data/").glob("*.csv")],
+        ],
+    )
+    def test_pitch_calculation(self, data_processor, launch_data):
+        """
+        Tests that the pitch calculation is correct.
+        """
+        # Ignore govt work 2 since the pitch was intentionally at 13 degrees:
+        if launch_data.name == "government_work_2.csv":
+            pytest.skip(
+                "government_work_2.csv has an intentional pitch of 13 degrees, which is above the"
+                "5 degree threshold for this test"
+            )
+        elif launch_data.name == "jackpot_launch_1.csv":
+            pytest.skip(
+                "jackpot_launch_1.csv has an intentional pitch of 18 degrees, which is above the"
+                "5 degree threshold for this test"
+            )
+        # Load a single est data packet from the CSV file
+        d = data_processor
+        est_data_packets = load_data_packets(launch_data, 1)
+        # Call first update with the loaded packet
+        d.update(est_data_packets)
+        assert 0.0 <= d.average_pitch <= 5.0, f"Wrong pitch: {d.average_pitch}"

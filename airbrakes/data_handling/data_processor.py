@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
+import quaternion
 
 from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED
 
@@ -23,6 +24,7 @@ class DataProcessor:
         "_current_altitudes",
         "_data_packets",
         "_last_data_packet",
+        "_longitudinal_axis",
         "_max_altitude",
         "_max_vertical_velocity",
         "_vertical_accelerations",
@@ -43,8 +45,10 @@ class DataProcessor:
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._max_altitude: np.float64 = np.float64(0.0)
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
-        self._last_data_packet: FIRMDataPacket | None = None
+        self._last_data_packet: FIRMDataPacket = None
         self._data_packets: list[FIRMDataPacket] = []
+        # The axis the IMU is on:
+        self._longitudinal_axis: quaternion.quaternion = quaternion.quaternion(0, 0, 0, 0)
 
     @property
     def max_altitude(self) -> float:
@@ -88,6 +92,32 @@ class DataProcessor:
         return float(self._max_vertical_velocity)
 
     @property
+    def average_pitch(self) -> float:
+        """
+        The average pitch of the rocket in degrees.
+
+        0 degrees is nose up, 90 degrees is horizontal, and 180 degrees is nose down.
+        """
+        current_orientation_quat = quaternion.from_float_array(
+            [
+                self._last_data_packet.est_quaternion_w,
+                self._last_data_packet.est_quaternion_x,
+                self._last_data_packet.est_quaternion_y,
+                self._last_data_packet.est_quaternion_z,
+            ],
+        )
+        if self._last_data_packet is not None:
+            rotated = (
+                current_orientation_quat
+                * self._longitudinal_axis
+                * current_orientation_quat.conjugate()
+            )
+            current_orientation = rotated.vec
+            dot_product = np.clip(np.dot(current_orientation, [0, 0, 1]), -1.0, 1.0)
+            return np.degrees(np.arccos(dot_product))
+        return 0.0
+
+    @property
     def average_vertical_acceleration(self) -> float:
         """
         The average vertical acceleration of the rocket in m/s^2.
@@ -125,16 +155,7 @@ class DataProcessor:
 
         # If this is the first update, we can't calculate anything yet
         if self._last_data_packet is None:
-            self._last_data_packet = self._data_packets[-1]
-            self._vertical_accelerations[0] = (
-                self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
-            )
-            self._vertical_velocities[0] = self._last_data_packet.est_velocity_z_meters_per_s
-            self._current_altitudes[0] = self._last_data_packet.est_position_z_meters
-            self._max_altitude = np.float64(self._last_data_packet.est_position_z_meters)
-            self._max_vertical_velocity = np.float64(
-                self._last_data_packet.est_velocity_z_meters_per_s
-            )
+            self._first_update()
             return
 
         self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
@@ -155,3 +176,60 @@ class DataProcessor:
 
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
+
+    def _first_update(self) -> None:
+        """
+        Sets up the initial values for the data processor.
+
+        This includes setting the initial altitude, and the initial orientation of the rocket. This
+        should only be called once, when the first estimated data packets are passed in.
+        """
+        self._last_data_packet = self._data_packets[-1]
+        self._vertical_accelerations[0] = (
+            self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+        )
+        self._vertical_velocities[0] = self._last_data_packet.est_velocity_z_meters_per_s
+        self._current_altitudes[0] = self._last_data_packet.est_position_z_meters
+        self._max_altitude = np.float64(self._last_data_packet.est_position_z_meters)
+        self._max_vertical_velocity = np.float64(self._last_data_packet.est_velocity_z_meters_per_s)
+
+        # Get the longitudinal axis the IMU is on:
+        current_orientation_quat = quaternion.from_float_array(
+            [
+                self._last_data_packet.est_quaternion_w,
+                self._last_data_packet.est_quaternion_x,
+                self._last_data_packet.est_quaternion_y,
+                self._last_data_packet.est_quaternion_z,
+            ]
+        )
+
+        # Since we don't have a gravity vector, we use quaternions from FIRM, which are in the
+        # global frame:
+        # Credit to Gemini 3.1 Pro for the following code:
+        candidate_axes = [
+            np.array([1.0, 0.0, 0.0]),
+            np.array([-1.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0]),
+            np.array([0.0, -1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0]),
+            np.array([0.0, 0.0, -1.0]),
+        ]
+
+        best_axis: npt.NDArray[np.float64] = np.array([0.0, 0.0, 0.0])
+        max_z = -float("inf")
+
+        for axis in candidate_axes:
+            # Convert candidate to quaternion for rotation
+            axis_quat = quaternion.from_float_array([0.0, axis[0], axis[1], axis[2]])
+            # Rotate candidate to world frame
+            rotated = current_orientation_quat * axis_quat * current_orientation_quat.conjugate()
+
+            # We want the axis most aligned with the sky (Positive Z)
+            if rotated.z > max_z:
+                max_z = rotated.z
+                best_axis = axis
+
+        # Set the true longitudinal axis dynamically
+        self._longitudinal_axis = quaternion.from_float_array(
+            [0.0, best_axis[0], best_axis[1], best_axis[2]]
+        )

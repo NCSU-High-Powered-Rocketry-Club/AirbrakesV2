@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from colorama import Fore, Style, init
 
+import airbrakes.constants
 from airbrakes.constants import DisplayEndingType
 
 if TYPE_CHECKING:
@@ -103,6 +104,7 @@ class FlightDisplay:
         """
         has_large_velocity = False
         imu_queue_backlog = False
+        pitch_drift = False
 
         # If the absolute value of our velocity is large in standby state, we have a problem:
         if abs(self._context.data_processor.vertical_velocity) > 2:
@@ -113,7 +115,13 @@ class FlightDisplay:
         if self._context.context_data_packet.retrieved_firm_packets > 30:
             imu_queue_backlog = True
 
-        if has_large_velocity or imu_queue_backlog:
+        if (
+            self._pitch_at_startup
+            and abs(self._context.data_processor.average_pitch - self._pitch_at_startup) > 1
+        ):
+            pitch_drift = True
+
+        if has_large_velocity or imu_queue_backlog or pitch_drift:
             print("\a", end="")  # \a is the bell character, which makes a beep sound
 
     def update_display(self) -> None:
@@ -173,11 +181,16 @@ class FlightDisplay:
             else 0
         )
 
+        # Assign the startup pitch value when it is available:
+        if not self._pitch_at_startup:
+            self._pitch_at_startup = data_processor.average_pitch
+
         # Prepare output
         output = [
             self._display_header,
             f"Replay file:                  {C}{self._launch_file}{RESET}",
             f"Time since replay start:      {C}{time.time() - self._start_time:<10.2f}{RESET} {R}s{RESET}",  # noqa: E501
+            f"Set Target Apogee:            {C}{airbrakes.constants.TARGET_APOGEE_METERS:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"{Y}{'=' * 12} REAL TIME FLIGHT DATA {'=' * 12}{RESET}",
             # Format time as MM:SS:
             f"Launch time:               {G}T+{time.strftime('%M:%S', time.gmtime(time_since_launch))}{RESET}",  # noqa: E501
@@ -195,6 +208,7 @@ class FlightDisplay:
             output.extend(
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
+                    f"Average pitch:                   {G}{data_processor.average_pitch:<10.2f}{RESET} {R}deg{RESET}",  # noqa: E501
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Predicted apogee:                {G}{self._context.most_recent_apogee_predictor_data_packet.predicted_apogee if self._context.most_recent_apogee_predictor_data_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
