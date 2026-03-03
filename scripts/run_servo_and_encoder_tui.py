@@ -300,6 +300,7 @@ class ServoControllerApp(App[None]):
             # ── Current graph ─────────────────────────────────────────
             with Vertical(id="graph-container"):
                 yield Static("⚡ Current Draw — last 5 s", id="graph-title")
+                yield Static("", id="graph-stats")
                 yield PlotWidget(id="current-plot", allow_pan_and_zoom=False)
 
         yield Footer()
@@ -529,6 +530,23 @@ class ServoControllerApp(App[None]):
 
         times, milliamps = self._current_monitor.history()
         amps = [v / 1000.0 for v in milliamps]
+
+        # Update min/max stats label
+        try:
+            stats = self.query_one("#graph-stats", Static)
+            if len(amps) > 1:
+                lo = min(amps)
+                hi = max(amps)
+                lo_color = "green" if lo < 2.0 else ("yellow" if lo < 5.0 else "red")
+                hi_color = "green" if hi < 2.0 else ("yellow" if hi < 5.0 else "red")
+                stats.update(
+                    f"[bold]Min:[/bold] [{lo_color}]{lo:.4f} A[/{lo_color}]"
+                    f"   [bold]Max:[/bold] [{hi_color}]{hi:.4f} A[/{hi_color}]"
+                )
+            else:
+                stats.update("")
+        except Exception:
+            pass
 
         try:
             plot.clear()

@@ -233,6 +233,14 @@ CurrentBox {
     text-style: bold;
 }
 
+#graph-stats {
+    height: 1;
+    width: 1fr;
+    text-align: center;
+    color: $text;
+    background: $panel;
+}
+
 PlotWidget {
     width: 1fr;
     height: 1fr;
