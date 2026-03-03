@@ -50,14 +50,14 @@ if TYPE_CHECKING:
 
 CONSTANTS_FILE = Path("airbrakes/constants.py")
 
-# Current sensor polling — 0.5 ms to capture transients
-CURRENT_POLL_INTERVAL_S = 0.0005
+# Current sensor polling — 0.1 ms to capture transients
+CURRENT_POLL_INTERVAL_S = 0.0001
 
 # Rolling buffer: keep last 5 seconds of current data
 CURRENT_HISTORY_SECONDS = 5.0
 
 # How often the TUI refreshes each section
-GRAPH_REFRESH_INTERVAL_S = 0.5
+GRAPH_REFRESH_INTERVAL_S = 0.4
 CURRENT_DISPLAY_REFRESH_S = 0.1
 
 # How often we read servo.current_extension to keep Digits in sync
@@ -91,7 +91,7 @@ def _patch_constant_in_file(file_path: Path, attr_name: str, new_value: int | fl
 # ---------------------------------------------------------------------------
 
 class CurrentMonitor:
-    """Polls the current sensor at ~0.5 ms and maintains a rolling 5-second buffer."""
+    """Polls the current sensor at ~0.1 ms and maintains a rolling 5-second buffer."""
 
     def __init__(self, servo: "BaseServo", window: float = CURRENT_HISTORY_SECONDS) -> None:
         self._servo = servo
