@@ -50,8 +50,8 @@ if TYPE_CHECKING:
 
 CONSTANTS_FILE = Path("airbrakes/constants.py")
 
-# Current sensor polling — 0.1 ms to capture transients
-CURRENT_POLL_INTERVAL_S = 0.0001
+# Current sensor polling — capture transients
+CURRENT_POLL_INTERVAL_S = 1e-4  # 100 us
 
 # Rolling buffer: keep last 5 seconds of current data
 CURRENT_HISTORY_SECONDS = 5.0
@@ -164,10 +164,11 @@ class EncoderBox(Static):
 
 
 class CurrentBox(Static):
-    """Shows the live current draw in amps, centered and
- color-coded."""
+    """Shows the live current draw in amps, and the voltage, centered and
+    color-coded."""
 
     ma: reactive[float] = reactive(0.0)
+    volts: reactive[float] = reactive(0.0)
 
     def render(self) -> str:
         amps = self.ma / 1000.0
@@ -177,7 +178,7 @@ class CurrentBox(Static):
             color = "yellow"
         else:
             color = "red"
-        return f"[{color}]{amps:.4f} A[/{color}]"
+        return f"[{color}]{amps:.2f} A[/{color}] | {self.volts:.2f} V"
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +234,7 @@ class ServoControllerApp(App[None]):
 
                 with Container(id="current-box"):
                     cb = CurrentBox(id="current-widget")
-                    cb.border_title = "Current (A)"
+                    cb.border_title = "Current and Voltage"
                     yield cb
 
             # ── Mode indicator ────────────────────────────────────────
@@ -516,7 +517,10 @@ class ServoControllerApp(App[None]):
     def _refresh_current(self) -> None:
         try:
             mA = self._current_monitor.latest_ma()
-            self.query_one("#current-widget", CurrentBox).ma = mA
+            volts = self.servo.get_battery_volts()
+            widget = self.query_one("#current-widget", CurrentBox)
+            widget.ma = mA
+            widget.volts = volts
         except Exception:
             pass
 
