@@ -90,7 +90,7 @@ class TestContext:
         context.start()
         try:
             raise ValueError("some error in main loop")
-        except (KeyboardInterrupt, ValueError):
+        except KeyboardInterrupt, ValueError:
             pass
         finally:
             context.stop()
