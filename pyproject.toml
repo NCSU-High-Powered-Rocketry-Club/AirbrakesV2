@@ -3,7 +3,7 @@ name = "AirbrakesV2"
 description = "Logic for air brakes as a part of the NASA Student Launch Competition"
 # We use Python 3.14t only! There is currently no way to specify this in pyproject.toml
 requires-python = ">=3.14, <3.15"
-version = "3.0.0"
+version = "3.0.1"
 readme = "README.md"
 dependencies = [
     "gpiozero",
@@ -14,7 +14,7 @@ dependencies = [
     "textual",
     "numpy-quaternion>=2024.0.10",
     # Pinned versions because we need python 3.14 free threading wheels:
-    "polars==1.37.1",
+    "polars==1.38.1",
     "polars-runtime-32",
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
