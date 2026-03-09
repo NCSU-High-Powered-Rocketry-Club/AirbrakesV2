@@ -67,7 +67,7 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
             try:
                 # Try converting to float and format with the given precision
                 new_d[k] = f"{float(v):.8f}"
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 # If conversion fails, just convert the value to a plain string
                 new_d[k] = str(v)
         else:
