@@ -135,8 +135,7 @@ will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 100 + 0 = 100 Hz
-# T = N/f => T = N/100
+# FIRM outputs data at 100 hz, so T = N / 100
 
 IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
 """The maximum number of data packets to log in the StandbyState and
