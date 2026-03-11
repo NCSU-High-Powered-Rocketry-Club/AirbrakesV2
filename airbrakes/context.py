@@ -174,11 +174,21 @@ class Context:
 
     def extend_airbrakes(self) -> None:
         """Extends the air brakes to the maximum extension."""
+        self.data_processor.prepare_for_extending_airbrakes()
         self.servo.set_extended()
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
         self.servo.set_retracted()
+
+    def switch_altitude_back_to_pressure(self) -> None:
+        """
+        Switches the altitude back to pressure, after airbrakes have been retracted.
+        """
+        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
+        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
+        # want this to be called every time.
+        self.data_processor.prepare_for_retracting_airbrakes()
 
     def predict_apogee(self) -> None:
         """

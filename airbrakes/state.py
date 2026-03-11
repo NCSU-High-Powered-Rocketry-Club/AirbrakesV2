@@ -167,6 +167,7 @@ class CoastState(State):
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             # ) and not self.is_overriding:
             self.context.retract_airbrakes()
+            self.context.switch_altitude_back_to_pressure()
             self.airbrakes_extended = False
 
         # If airbrakes hasn't deployed within one second, we will deploy it because we have to pass
