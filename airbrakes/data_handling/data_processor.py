@@ -34,6 +34,7 @@ class DataProcessor:
         "_time_differences",
         "_previous_altitude",
         "_initial_altitude",
+        "_vertical_velocities_raw_accel",
     )
 
     def __init__(self):
@@ -59,6 +60,7 @@ class DataProcessor:
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._previous_altitude: np.float64 = np.float64(0.0)
         self._initial_altitude: float | None= None
+        self._vertical_velocities_raw_accel: npt.NDArray[np.float64] | None = np.array([0.0])
 
     @property
     def max_altitude(self) -> float:
@@ -137,7 +139,7 @@ class DataProcessor:
 
         self._time_differences = self._calculate_time_differences()
         self._data_packets = data_packets
-        self._vertical_velocities = self._calculate_vertical_velocity()
+        self._vertical_velocities_raw_accel = self._calculate_vertical_velocity()
 
         # If this is the first update, we can' t calculate anything yet
         if self._last_data_packet is None:
@@ -214,7 +216,7 @@ class DataProcessor:
             # Integrate the vertical velocities to get altitudes:
             # Start with the previous altitude and add the cumulative sum of (velocity * dt).
             altitudes = self._previous_altitude + np.cumsum(
-                self._vertical_velocities * self._time_differences
+                self._vertical_velocities_raw_accel * self._time_differences
             )
         else:
             altitudes = np.array(
