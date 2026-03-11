@@ -27,6 +27,13 @@ class DataProcessor:
         "_max_vertical_velocity",
         "_vertical_accelerations",
         "_vertical_velocities",
+        "_integrating_for_altitude",
+        "_retraction_timestamp",
+        "_rotated_raw_accelerations",
+        "_previous_vertical_velocity",
+        "_time_differences",
+        "_previous_altitude",
+        "_initial_altitude",
     )
 
     def __init__(self):
@@ -41,10 +48,17 @@ class DataProcessor:
         self._vertical_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
+        self._rotated_raw_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._max_altitude: np.float64 = np.float64(0.0)
         self._max_vertical_velocity: np.float64 = np.float64(0.0)
         self._last_data_packet: FIRMDataPacket | None = None
         self._data_packets: list[FIRMDataPacket] = []
+        self._integrating_for_altitude = False
+        self._retraction_timestamp: float | None = None
+        self._previous_vertical_velocity: np.float64 = np.float64(0.0)
+        self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
+        self._previous_altitude: np.float64 = np.float64(0.0)
+        self._initial_altitude: float | None= None
 
     @property
     def max_altitude(self) -> float:
@@ -121,11 +135,16 @@ class DataProcessor:
         if not data_packets:
             return
 
+        self._time_differences = self._calculate_time_differences()
         self._data_packets = data_packets
+        self._vertical_velocities = self._calculate_vertical_velocity()
 
-        # If this is the first update, we can't calculate anything yet
+        # If this is the first update, we can' t calculate anything yet
         if self._last_data_packet is None:
             self._last_data_packet = self._data_packets[-1]
+            self._initial_altitude = float(np.mean(
+                [data_packet.est_position_z_meters for data_packet in self._data_packets],
+            ))
             self._vertical_accelerations[0] = (
                 self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
             )
@@ -137,6 +156,9 @@ class DataProcessor:
             )
             return
 
+        self._rotated_raw_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
+            (packet.derived_raw_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
+        )
         self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
             (packet.est_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
         )
@@ -155,3 +177,101 @@ class DataProcessor:
 
         # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
+
+    def prepare_for_extending_airbrakes(self) -> None:
+        """
+        When we extend the airbrakes, it messes with the pressure sensor which messes up the
+        altitude data.
+
+        Additionally, the velocity data could have accumulated error due to the strong acceleration
+        from the motor burn. Because of these things, this function makes the data processor start
+        integrating for altitude.
+        """
+        self._integrating_for_altitude = True
+
+    def prepare_for_retracting_airbrakes(self) -> None:
+        """
+        After we retract airbrakes, we want to switch back to using pressure altitude, but we need
+        to wait a little bit of time for the pressure to stabilize.
+        """
+        self._integrating_for_altitude = False
+        self._retraction_timestamp = self.current_timestamp_seconds
+
+    def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the current altitudes, by zeroing out the initial altitude.
+
+        It either uses the altitude from the pressure sensor, or integrates acceleration for the
+        altitude.
+        :return: A numpy array of the current altitudes of the rocket at each data point
+        """
+        # While the airbrakes are extended, we integrate acceleration for the altitude rather than
+        # using the pressure sensor data. This is because the pressure sensor data is unreliable
+        # when the airbrakes are extended as the pressure gets fucky
+        if self._integrating_for_altitude or (
+                self._retraction_timestamp is not None
+        ):
+            # Integrate the vertical velocities to get altitudes:
+            # Start with the previous altitude and add the cumulative sum of (velocity * dt).
+            altitudes = self._previous_altitude + np.cumsum(
+                self._vertical_velocities * self._time_differences
+            )
+        else:
+            altitudes = np.array(
+                [
+                    data_packet.est_position_z_meters - self._initial_altitude
+                    for data_packet in self._data_packets
+                ],
+            )
+
+            # Update the stored previous altitude for the next calculation.
+        self._previous_altitude = altitudes[-1]
+
+        # Get the pressure altitudes from the data points and zero out the initial altitude
+        return altitudes
+
+    def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the velocity of the rocket based on the rotated acceleration.
+
+        Integrates that acceleration to get the velocity.
+        :return: A numpy array of the vertical velocity of the rocket at each data packet
+        """
+        # Gets the vertical accelerations from the rotated vertical acceleration. gravity needs to
+        # be subtracted from vertical acceleration, Then deadbanded.
+
+        # Using np.where() is faster than using our deadband() function by about ~15%
+        vertical_accelerations = self._rotated_raw_accelerations - GRAVITY_METERS_PER_SECOND_SQUARED
+
+        # Integrate the accelerations to get the velocities
+        vertical_velocities = self._previous_vertical_velocity + np.cumsum(
+            vertical_accelerations * self._time_differences
+        )
+
+        # Store the last calculated vertical velocity.
+        self._previous_vertical_velocity = vertical_velocities[-1]
+
+        return vertical_velocities
+
+    def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
+        """
+        Calculates the time difference between each data packet and the previous data packet.
+
+        This cannot be called on the first update as _last_data_packet is None. Units are in
+        seconds.
+        :return: A numpy array of the time difference between each data packet and the previous data
+            packet.
+        """
+        # calculate the time differences between each data packet
+        # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
+        # We are using the last data packet to calculate the time difference between the last data
+        # packet from the previous loop, and the first data packet from the current loop
+
+        timestamps_in_seconds = np.array(
+            [
+                data_packet.timestamp
+                for data_packet in [self._last_data_packet, *self._data_packets]
+            ]
+        )
+        # Not using np.diff() results in a ~40% speedup!
+        return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
