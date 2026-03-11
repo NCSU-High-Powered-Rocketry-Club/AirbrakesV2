@@ -137,7 +137,6 @@ class DataProcessor:
         if not data_packets:
             return
 
-        self._time_differences = self._calculate_time_differences()
         self._data_packets = data_packets
         self._vertical_velocities_raw_accel = self._calculate_vertical_velocity()
 
@@ -158,6 +157,7 @@ class DataProcessor:
             )
             return
 
+        self._time_differences = self._calculate_time_differences()
         self._rotated_raw_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
             (packet.derived_raw_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
         )
@@ -271,7 +271,7 @@ class DataProcessor:
 
         timestamps_in_seconds = np.array(
             [
-                data_packet.timestamp
+                data_packet.timestamp_seconds
                 for data_packet in [self._last_data_packet, *self._data_packets]
             ]
         )
