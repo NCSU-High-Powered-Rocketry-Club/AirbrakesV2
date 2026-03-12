@@ -93,6 +93,8 @@ class TestLogger:
     sample_ldp = LoggerDataPacket(
         state_letter="S",
         set_extension="0.0",
+        battery_voltage="3.7",
+        current_milliamps="500.0",
         timestamp_seconds=4,
         encoder_position=None,
         retrieved_firm_packets=None,

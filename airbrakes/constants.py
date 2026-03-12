@@ -80,6 +80,27 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 56
 
 
+SHUNT_OHMS = 0.01
+"""
+Airbender v0.2 uses a 0.01 ohm shunt resistor to measure the current in the entire system, including
+the Pi.
+"""
+
+MAX_EXPECTED_AMPS = 8.0
+"""
+The maximum expected current, including transients for the system.
+"""
+
+I2C_ADDRESS = 0x40
+"""
+Airbender v0.2 sets the I2C address of the INA219 current sensor to 0x40.
+"""
+
+I2C_BUS = 1
+"""
+The I2C bus the sensor is connected to on the Raspberry Pi.
+"""
+
 # -------------------------------------------------------
 # Encoder Configuration
 # -------------------------------------------------------

@@ -18,7 +18,7 @@ class MockServo(BaseServo):
     gpiozero library, which provides a simple interface for controlling GPIO
     pins on the Raspberry Pi.
 
-    The servo we use is the DS3235, which is a coreless digital servo.
+    The servo we use is the SPV-0508, which is a coreless digital servo.
     """
 
     __slots__ = ()
@@ -50,7 +50,38 @@ class MockServo(BaseServo):
 
         servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
-        super().__init__(encoder=encoder, servo=servo)
+        super().__init__(encoder=encoder, servo=servo, ina=None)
+
+    def start(self) -> None:
+        """
+        Starts the servo by starting the PWM signal with the initial duty cycle
+        corresponding to the minimum extension with no buzzing.
+        """
+        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+
+    def stop(self) -> None:
+        """
+        Stops the servo by stopping the PWM signal.
+        """
+        self.servo.stop()
+
+    def get_battery_volts(self) -> float:
+        """
+        Gets the current system voltage in volts. Since this is a mock servo,
+        it always returns 0.
+
+        :return: The current system voltage in volts.
+        """
+        return 0.0
+
+    def get_system_current_milliamps(self) -> float:
+        """
+        Gets the current system current in milliamps. Since this is a mock
+        servo, it always returns 0.
+
+        :return: The current system current in milliamps.
+        """
+        return 0.0
 
     def _set_extension(self, extension: ServoExtension) -> None:
         """
@@ -80,6 +111,20 @@ class MockHardwarePWM:
         self.hz: int = hz
         self.chip: int = chip
         self.duty_cycle: float = 0.0
+
+    def start(self, initial_duty_cycle: float) -> None:
+        """
+        Starts the PWM signal with the specified initial duty cycle.
+
+        :param initial_duty_cycle: The initial duty cycle to use.
+        """
+        self.duty_cycle = initial_duty_cycle
+
+    def stop(self) -> None:
+        """
+        Stops the PWM signal.
+        """
+        self.duty_cycle = 0.0
 
     def change_duty_cycle(self, duty_cycle: float) -> None:
         """

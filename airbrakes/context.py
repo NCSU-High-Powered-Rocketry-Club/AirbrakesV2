@@ -86,8 +86,8 @@ class Context:
         self.shutdown_requested = False
         self.firm_data_packets: list[FIRMDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
-        self.context_data_packet: ContextDataPacket | None = None
-        self.servo_data_packet: ServoDataPacket | None = None
+        self.context_data_packet: ContextDataPacket = None
+        self.servo_data_packet: ServoDataPacket = None
 
         # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_seconds: float = 0
@@ -107,6 +107,7 @@ class Context:
         self.firm.start()
         self.logger.start()
         self.apogee_predictor.start()
+        self.servo.start()
 
         if wait_for_start:
             # Wait for all processes to start. It is assumed that once FIRM is running, all other
@@ -130,6 +131,7 @@ class Context:
         self.firm.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
+        self.servo.stop()
 
     def update(self) -> None:
         """
@@ -211,4 +213,6 @@ class Context:
         self.servo_data_packet = ServoDataPacket(
             set_extension=self.servo.current_extension,
             encoder_position=self.servo.get_encoder_reading(),
+            battery_voltage=f"{self.servo.get_battery_volts()}",
+            current_milliamps=f"{self.servo.get_system_current_milliamps()}",
         )
