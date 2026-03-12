@@ -78,13 +78,24 @@ class BaseServo(ABC):
         self._go_to_min_no_buzz = threading.Timer(SERVO_DELAY_SECONDS, self._set_min_no_buzz)
 
     @abstractmethod
+    def start(self) -> None:
+        """
+        Starts the servo by starting the PWM signal.
+        """
+
+    @abstractmethod
+    def stop(self) -> None:
+        """
+        Stops the servo by stopping the PWM signal.
+        """
+
+    @abstractmethod
     def get_battery_volts(self) -> float:
         """
         Gets the current battery voltage.
 
         :return: The current battery voltage in volts.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def get_system_current_milliamps(self) -> float:
@@ -93,7 +104,6 @@ class BaseServo(ABC):
 
         :return: The current system current draw in milliamps.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def _set_extension(self, extension: ServoExtension) -> None:

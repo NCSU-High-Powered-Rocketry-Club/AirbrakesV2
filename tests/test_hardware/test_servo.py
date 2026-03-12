@@ -34,6 +34,28 @@ class TestBaseServo:
         assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
         assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
 
+    def test_start(self, servo):
+        """
+        Tests that start() activates the PWM signal at the duty cycle
+        corresponding to MIN_NO_BUZZ, leaving current_extension unchanged.
+        """
+        # Before start(), the duty cycle should be 0 (PWM not yet started)
+        assert servo.servo.duty_cycle == 0.0
+        servo.start()
+        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value)
+        assert servo.servo.duty_cycle == approx(expected_duty_cycle)
+        # current_extension should not be mutated by start()
+        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
+
+    def test_stop(self, servo):
+        """
+        Tests that stop() zeroes the duty cycle of the PWM signal.
+        """
+        servo.start()
+        assert servo.servo.duty_cycle != 0.0
+        servo.stop()
+        assert servo.servo.duty_cycle == 0.0
+
     def test_set_extension(self, servo):
         prev_duty_cycle = servo.servo.duty_cycle
         servo._set_extension(ServoExtension.MAX_EXTENSION)

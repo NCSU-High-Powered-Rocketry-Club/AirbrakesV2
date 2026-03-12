@@ -107,6 +107,7 @@ class Context:
         self.firm.start()
         self.logger.start()
         self.apogee_predictor.start()
+        self.servo.start()
 
         if wait_for_start:
             # Wait for all processes to start. It is assumed that once FIRM is running, all other
@@ -130,6 +131,7 @@ class Context:
         self.firm.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
+        self.servo.stop()
 
     def update(self) -> None:
         """

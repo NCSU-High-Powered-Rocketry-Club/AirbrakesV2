@@ -50,7 +50,6 @@ class Servo(BaseServo):
             of the encoder is connected to.
         """
         servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
-        servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
         from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
@@ -77,6 +76,19 @@ class Servo(BaseServo):
         )
 
         super().__init__(encoder=encoder, servo=servo, ina=ina)
+
+    def start(self) -> None:
+        """
+        Starts the servo by starting the PWM signal with the initial duty cycle
+        corresponding to the minimum extension with no buzzing.
+        """
+        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+
+    def stop(self) -> None:
+        """
+        Stops the servo by stopping the PWM signal.
+        """
+        self.servo.stop()
 
     def get_battery_volts(self) -> float:
         """
