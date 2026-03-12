@@ -87,7 +87,7 @@ class Context:
 
         self.shutdown_requested = False
         self.firm_data_packets: list[FIRMDataPacket] = []
-        processor_data_packets: list[ProcessorDataPacket] = []
+        self.processor_data_packets: list[ProcessorDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None

@@ -32,7 +32,6 @@ class DataProcessor:
         "_max_vertical_velocity",
         "_previous_altitude",
         "_previous_vertical_velocity",
-        "_retraction_timestamp",
         "_rotated_raw_accelerations",
         "_time_differences",
         "_vertical_accelerations",
@@ -58,7 +57,6 @@ class DataProcessor:
         self._last_data_packet: FIRMDataPacket | None = None
         self._data_packets: list[FIRMDataPacket] = []
         self._integrating_for_altitude = False
-        self._retraction_timestamp: float | None = None
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._previous_altitude: np.float64 = np.float64(0.0)
         self._initial_altitude: float | None= None
@@ -190,7 +188,6 @@ class DataProcessor:
         to wait a little bit of time for the pressure to stabilize.
         """
         self._integrating_for_altitude = False
-        self._retraction_timestamp = self.current_timestamp_seconds
 
     def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
         """
@@ -203,9 +200,7 @@ class DataProcessor:
         # While the airbrakes are extended, we integrate acceleration for the altitude rather than
         # using the pressure sensor data. This is because the pressure sensor data is unreliable
         # when the airbrakes are extended as the pressure gets fucky
-        if self._integrating_for_altitude or (
-                self._retraction_timestamp is not None
-        ):
+        if self._integrating_for_altitude:
             # Integrate the vertical velocities to get altitudes:
             # Start with the previous altitude and add the cumulative sum of (velocity * dt).
             altitudes = self._previous_altitude + np.cumsum(
