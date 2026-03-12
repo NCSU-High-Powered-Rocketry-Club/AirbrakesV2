@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 
 
 class Context:
@@ -43,6 +44,7 @@ class Context:
         "launch_time_seconds",
         "logger",
         "most_recent_apogee_predictor_data_packet",
+        "processor_data_packets",
         "servo",
         "servo_data_packet",
         "shutdown_requested",
@@ -85,6 +87,7 @@ class Context:
 
         self.shutdown_requested = False
         self.firm_data_packets: list[FIRMDataPacket] = []
+        processor_data_packets: list[ProcessorDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
@@ -142,6 +145,7 @@ class Context:
         logging, and logs all relevant data.
         """
         self.firm_data_packets = self.firm.get_data_packets()
+        self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
         # This should not happen generally, since we wait for FIRM packets. Only happens at the end
         # of the flight in a mock replay.
@@ -179,16 +183,8 @@ class Context:
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
-        self.servo.set_retracted()
-
-    def switch_altitude_back_to_pressure(self) -> None:
-        """
-        Switches the altitude back to pressure, after airbrakes have been retracted.
-        """
-        # This isn't in retract_airbrakes because we only want to call this after the airbrakes
-        # have been extended. We call retract_airbrakes at the beginning of every state, so we don't
-        # want this to be called every time.
         self.data_processor.prepare_for_retracting_airbrakes()
+        self.servo.set_retracted()
 
     def predict_apogee(self) -> None:
         """
@@ -198,9 +194,9 @@ class Context:
         This should only be called in the coast state, before we start
         controlling the air brakes.
         """
-        if self.firm_data_packets:
+        if self.processor_data_packets:
             # We pass in the most recent FIRM Data Packet to the apogee predictor
-            self.apogee_predictor.update(self.firm_data_packets[-1])
+            self.apogee_predictor.update(self.processor_data_packets[-1])
 
     def generate_data_packets(self) -> None:
         """
@@ -212,7 +208,7 @@ class Context:
         self.context_data_packet = ContextDataPacket(
             state=type(self.state),
             retrieved_firm_packets=len(self.firm_data_packets),
-            apogee_predictor_queue_size=self.apogee_predictor.firm_data_packet_queue_size,
+            apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
         )
 

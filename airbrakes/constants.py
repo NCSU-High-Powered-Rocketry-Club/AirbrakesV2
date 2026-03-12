@@ -213,7 +213,7 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 1036.32  # 3400 ft
+TARGET_APOGEE_METERS = 300.32  # 3400 ft
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend

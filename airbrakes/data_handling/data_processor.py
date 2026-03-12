@@ -6,6 +6,9 @@ import numpy as np
 import numpy.typing as npt
 
 from airbrakes.constants import GRAVITY_METERS_PER_SECOND_SQUARED
+from airbrakes.data_handling.packets.processor_data_packet import (
+    ProcessorDataPacket,
+)
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
@@ -22,18 +25,18 @@ class DataProcessor:
     __slots__ = (
         "_current_altitudes",
         "_data_packets",
+        "_initial_altitude",
+        "_integrating_for_altitude",
         "_last_data_packet",
         "_max_altitude",
         "_max_vertical_velocity",
-        "_vertical_accelerations",
-        "_vertical_velocities",
-        "_integrating_for_altitude",
+        "_previous_altitude",
+        "_previous_vertical_velocity",
         "_retraction_timestamp",
         "_rotated_raw_accelerations",
-        "_previous_vertical_velocity",
         "_time_differences",
-        "_previous_altitude",
-        "_initial_altitude",
+        "_vertical_accelerations",
+        "_vertical_velocities",
         "_vertical_velocities_raw_accel",
     )
 
@@ -56,11 +59,9 @@ class DataProcessor:
         self._data_packets: list[FIRMDataPacket] = []
         self._integrating_for_altitude = False
         self._retraction_timestamp: float | None = None
-        self._previous_vertical_velocity: np.float64 = np.float64(0.0)
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._previous_altitude: np.float64 = np.float64(0.0)
         self._initial_altitude: float | None= None
-        self._vertical_velocities_raw_accel: npt.NDArray[np.float64] | None = np.array([0.0])
 
     @property
     def max_altitude(self) -> float:
@@ -138,7 +139,6 @@ class DataProcessor:
             return
 
         self._data_packets = data_packets
-        self._vertical_velocities_raw_accel = self._calculate_vertical_velocity()
 
         # If this is the first update, we can' t calculate anything yet
         if self._last_data_packet is None:
@@ -152,24 +152,17 @@ class DataProcessor:
             self._vertical_velocities[0] = self._last_data_packet.est_velocity_z_meters_per_s
             self._current_altitudes[0] = self._last_data_packet.est_position_z_meters
             self._max_altitude = np.float64(self._last_data_packet.est_position_z_meters)
-            self._max_vertical_velocity = np.float64(
-                self._last_data_packet.est_velocity_z_meters_per_s
-            )
+            self._max_vertical_velocity = max(self._vertical_velocities)
             return
 
         self._time_differences = self._calculate_time_differences()
-        self._rotated_raw_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
-            (packet.derived_raw_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
-        )
         self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
             (packet.est_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
         )
         self._vertical_velocities = np.fromiter(
-            (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64
-        )
-        self._current_altitudes = np.fromiter(
-            (packet.est_position_z_meters for packet in self._data_packets), dtype=np.float64
-        )
+            (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64)
+
+        self._current_altitudes = self._calculate_current_altitudes()
 
         self._max_vertical_velocity = max(
             self._vertical_velocities.max(), self._max_vertical_velocity
@@ -216,7 +209,7 @@ class DataProcessor:
             # Integrate the vertical velocities to get altitudes:
             # Start with the previous altitude and add the cumulative sum of (velocity * dt).
             altitudes = self._previous_altitude + np.cumsum(
-                self._vertical_velocities_raw_accel * self._time_differences
+                self._vertical_velocities * self._time_differences
             )
         else:
             altitudes = np.array(
@@ -231,29 +224,6 @@ class DataProcessor:
 
         # Get the pressure altitudes from the data points and zero out the initial altitude
         return altitudes
-
-    def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
-        """
-        Calculates the velocity of the rocket based on the rotated acceleration.
-
-        Integrates that acceleration to get the velocity.
-        :return: A numpy array of the vertical velocity of the rocket at each data packet
-        """
-        # Gets the vertical accelerations from the rotated vertical acceleration. gravity needs to
-        # be subtracted from vertical acceleration, Then deadbanded.
-
-        # Using np.where() is faster than using our deadband() function by about ~15%
-        vertical_accelerations = self._rotated_raw_accelerations - GRAVITY_METERS_PER_SECOND_SQUARED
-
-        # Integrate the accelerations to get the velocities
-        vertical_velocities = self._previous_vertical_velocity + np.cumsum(
-            vertical_accelerations * self._time_differences
-        )
-
-        # Store the last calculated vertical velocity.
-        self._previous_vertical_velocity = vertical_velocities[-1]
-
-        return vertical_velocities
 
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
@@ -277,3 +247,20 @@ class DataProcessor:
         )
         # Not using np.diff() results in a ~40% speedup!
         return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
+
+    def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
+        """
+        Processes the data points and returns a list of ProcessorDataPackets. These will correspond
+        one-to-one with the estimated data packets most recently passed in by update().
+
+        The length of the list should be the same as the length of the list of estimated data
+        packets most recently passed in by update()
+        :return: A list of ProcessorDataPacket objects.
+        """
+        return [
+            ProcessorDataPacket(
+                current_altitude=float(self._current_altitudes[i]),
+                vertical_velocity = float(self._vertical_velocities[i])
+            )
+            for i in range(len(self._data_packets))
+        ]
