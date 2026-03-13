@@ -157,7 +157,7 @@ lose data.
 # FIRM Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "/dev/ttyACM0"
+FIRM_PORT = "COM8"
 
 FIRM_BAUD_RATE = 2_000_000
 
@@ -213,22 +213,22 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 300.32  # 3400 ft
+TARGET_APOGEE_METERS = 1036.32  # 3400 ft
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
 and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 16.848
+ROCKET_DRY_MASS_KG: float = 4.67
 """The mass of the entire rocket without propellant in kilograms."""
 
-ROCKET_CD: float = 0.38
+ROCKET_CD: float = 0.55
 """The drag coefficient of the rocket with airbrakes all the way retracted."""
 
 # This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
 # calculate cross-sectional area.
-ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (6.0 * 0.0254 / 2) ** 2
+ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
 """The cross-sectional area of the rocket in square meters, with airbrakes all
 the way retracted."""
 

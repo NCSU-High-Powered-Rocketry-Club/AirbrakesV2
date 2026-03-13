@@ -145,8 +145,6 @@ class Context:
         logging, and logs all relevant data.
         """
         self.firm_data_packets = self.firm.get_data_packets()
-        self.processor_data_packets = self.data_processor.get_processor_data_packets()
-
         # This should not happen generally, since we wait for FIRM packets. Only happens at the end
         # of the flight in a mock replay.
         if not self.firm_data_packets:
@@ -154,7 +152,7 @@ class Context:
 
         # Update the data processor with the new data packets.
         self.data_processor.update(self.firm_data_packets)
-
+        self.processor_data_packets = self.data_processor.get_processor_data_packets()
         # Gets the most recent Apogee Predictor Data Packets, this will only have new data if we are
         # in coast and have called predict_apogee(), and the apogee predictor has had time to
         # process the data and predict the apogee.

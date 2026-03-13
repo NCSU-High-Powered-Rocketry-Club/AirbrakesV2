@@ -6,10 +6,10 @@ import numpy as np
 import polars as pl
 import pytest
 import quaternion
-from firm_client import FIRMDataPacket
 
 from airbrakes.data_handling.data_processor import DataProcessor
-from tests.auxil.utils import make_firm_data_packet, make_firm_data_packet_zeroed
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from tests.auxil.utils import make_processor_data_packet, make_processor_data_packet_zeroed
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -43,7 +43,7 @@ def generate_altitude_sine_wave(
     return altitudes
 
 
-def load_data_packets(csv_path: Path, n_packets: int) -> list[FIRMDataPacket]:
+def load_data_packets(csv_path: Path, n_packets: int) -> list[ProcessorDataPacket]:
     """
     Reads csv log files containing data packets to use for testing. Will
     read the first n_packets amount of estimated data packets.
@@ -53,7 +53,7 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[FIRMDataPacket]:
     :return: list containing n_packets amount of estimated data packets
     """
     data_packets = []
-    needed_columns = list(set(FIRMDataPacket.__struct_fields__) - {"invalid_fields"})
+    needed_columns = list(set(ProcessorDataPacket.__struct_fields__) - {"invalid_fields"})
     df = pl.read_csv(
         csv_path,
         columns=needed_columns,
@@ -63,9 +63,9 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[FIRMDataPacket]:
     for row in df.iter_rows(named=True):
         # Convert the named tuple to a dictionary and remove any NaN values:
         row_dict = {k: v for k, v in row.items() if v is not None}
-        # Create an FIRMDataPacket instance from the dictionary
-        if row_dict.get("est_position_z_meters"):
-            packet = FIRMDataPacket(**row_dict)
+        # Create an ProcessorDataPacket instance from the dictionary
+        if row_dict.get("current_altitude"):
+            packet = ProcessorDataPacket(**row_dict)
         else:
             continue
         data_packets.append(packet)
@@ -85,27 +85,13 @@ class TestDataProcessor:
     """Tests the DataProcessor class."""
 
     packets = [
-        make_firm_data_packet_zeroed(
-            timestamp_seconds=1,
-            est_acceleration_x_gs=1,
-            est_acceleration_y_gs=2,
-            est_acceleration_z_gs=3,
-            est_position_z_meters=20,
-            est_quaternion_w=0.1,
-            est_quaternion_x=0.2,
-            est_quaternion_y=0.3,
-            est_quaternion_z=0.4,
+        make_processor_data_packet_zeroed(
+            current_altitude=1,
+            vertical_velocity=1,
         ),
-        make_firm_data_packet_zeroed(
-            timestamp_seconds=2,
-            est_acceleration_x_gs=2,
-            est_acceleration_y_gs=3,
-            est_acceleration_z_gs=4,
-            est_position_z_meters=21,
-            est_quaternion_w=0.1,
-            est_quaternion_x=0.2,
-            est_quaternion_y=0.3,
-            est_quaternion_z=0.4,
+        make_processor_data_packet_zeroed(
+            current_altitude=2,
+            vertical_velocity=2,
         ),
     ]
 
@@ -162,39 +148,39 @@ class TestDataProcessor:
         [
             (
                 [
-                    make_firm_data_packet(
-                        timestamp_seconds=0,
-                        est_position_z_meters=20,
+                    make_processor_data_packet(
+                        current_altitude=0,
+                        vertical_velocity=20,
                     )
                 ],
                 20.0,
             ),
             (
                 [
-                    make_firm_data_packet(
-                        timestamp_seconds=1,
-                        est_position_z_meters=20,
+                    make_processor_data_packet(
+                        current_altitude=1,
+                        vertical_velocity=20,
                     ),
-                    make_firm_data_packet(
-                        timestamp_seconds=2,
-                        est_position_z_meters=30,
+                    make_processor_data_packet(
+                        current_altitude=2,
+                        vertical_velocity=30,
                     ),
                 ],
                 30.0,
             ),
             (
                 [
-                    make_firm_data_packet(
-                        timestamp_seconds=1,
-                        est_position_z_meters=20,
+                    make_processor_data_packet(
+                        current_altitude=1,
+                        vertical_velocity=20,
                     ),
-                    make_firm_data_packet(
-                        timestamp_seconds=2,
-                        est_position_z_meters=30,
+                    make_processor_data_packet(
+                        current_altitude=2,
+                        vertical_velocity=30,
                     ),
-                    make_firm_data_packet(
-                        timestamp_seconds=3,
-                        est_position_z_meters=40,
+                    make_processor_data_packet(
+                        current_altitude=3,
+                        vertical_velocity=40,
                     ),
                 ],
                 40.0,
@@ -238,9 +224,9 @@ class TestDataProcessor:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [
-                    make_firm_data_packet(
+                    make_processor_data_packet(
                         timestamp_seconds=i,
-                        est_position_z_meters=alt,
+                        current_altitude=alt,
                     )
                     for alt in altitudes[i : i + 10]
                 ]
@@ -273,7 +259,7 @@ class TestDataProcessor:
         """
         assert data_processor.current_timestamp_seconds == 0
 
-        data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=123)
+        data_processor._last_data_packet = make_processor_data_packet(timestamp_seconds=123)
         assert data_processor.current_timestamp_seconds == 123
 
     def test_consecutive_updates(self, data_processor):
@@ -281,17 +267,17 @@ class TestDataProcessor:
         d = data_processor
 
         # 1. First Update (Init)
-        d.update([make_firm_data_packet(est_position_z_meters=10)])
+        d.update([make_processor_data_packet(current_altitude=10)])
         assert d.max_altitude == 10.0
 
         # 2. Second Update (Normal flow)
         # Provide a higher altitude
-        d.update([make_firm_data_packet(est_position_z_meters=50)])
+        d.update([make_processor_data_packet(current_altitude=50)])
         assert d.current_altitude == 50.0
         assert d.max_altitude == 50.0
 
         # 3. Third Update (Lower altitude)
         # Current should drop, Max should stay high
-        d.update([make_firm_data_packet(est_position_z_meters=20)])
+        d.update([make_processor_data_packet(current_altitude=20)])
         assert d.current_altitude == 20.0
         assert d.max_altitude == 50.0

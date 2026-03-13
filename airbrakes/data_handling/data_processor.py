@@ -31,12 +31,10 @@ class DataProcessor:
         "_max_altitude",
         "_max_vertical_velocity",
         "_previous_altitude",
-        "_previous_vertical_velocity",
         "_rotated_raw_accelerations",
         "_time_differences",
         "_vertical_accelerations",
         "_vertical_velocities",
-        "_vertical_velocities_raw_accel",
     )
 
     def __init__(self):
@@ -59,7 +57,7 @@ class DataProcessor:
         self._integrating_for_altitude = False
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._previous_altitude: np.float64 = np.float64(0.0)
-        self._initial_altitude: float | None= None
+        self._initial_altitude: float | None = None
 
     @property
     def max_altitude(self) -> float:
@@ -138,19 +136,32 @@ class DataProcessor:
 
         self._data_packets = data_packets
 
-        # If this is the first update, we can' t calculate anything yet
+        # If this is the first update, initialize arrays from the full batch.
         if self._last_data_packet is None:
             self._last_data_packet = self._data_packets[-1]
-            self._initial_altitude = float(np.mean(
-                [data_packet.est_position_z_meters for data_packet in self._data_packets],
-            ))
-            self._vertical_accelerations[0] = (
-                self._last_data_packet.est_acceleration_z_gs * GRAVITY_METERS_PER_SECOND_SQUARED
+            self._initial_altitude = float(
+                np.mean([data_packet.est_position_z_meters for data_packet in self._data_packets]),
             )
-            self._vertical_velocities[0] = self._last_data_packet.est_velocity_z_meters_per_s
-            self._current_altitudes[0] = self._last_data_packet.est_position_z_meters
-            self._max_altitude = np.float64(self._last_data_packet.est_position_z_meters)
-            self._max_vertical_velocity = max(self._vertical_velocities)
+            self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
+                (packet.est_acceleration_z_gs for packet in self._data_packets),
+                dtype=np.float64,
+            )
+            self._vertical_velocities = np.fromiter(
+                (packet.est_velocity_z_meters_per_s for packet in self._data_packets),
+                dtype=np.float64,
+            )
+            self._current_altitudes = np.fromiter(
+                (
+                    packet.est_position_z_meters - self._initial_altitude
+                    for packet in self._data_packets
+                ),
+                dtype=np.float64,
+            )
+            self._previous_altitude = self._current_altitudes[-1]
+            self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
+            self._max_vertical_velocity = max(
+                self._vertical_velocities.max(), self._max_vertical_velocity
+            )
             return
 
         self._time_differences = self._calculate_time_differences()
@@ -255,7 +266,7 @@ class DataProcessor:
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
-                vertical_velocity = float(self._vertical_velocities[i])
+                vertical_velocity=float(self._vertical_velocities[i]),
             )
             for i in range(len(self._data_packets))
         ]
