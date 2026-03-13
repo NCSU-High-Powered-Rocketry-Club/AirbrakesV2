@@ -3,6 +3,7 @@ Module for the finite state machine that represents which state of flight
 the rocket is in.
 """
 
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -127,17 +128,17 @@ class CoastState(State):
 
     __slots__ = (
         "airbrakes_extended",
-        # "has_airbrakes_ever_extended",
-        # "is_overriding",
-        # "start_time2",
+        "has_airbrakes_ever_extended",
+        "is_overriding",
+        "start_time2",
     )
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.airbrakes_extended = False
-        # self.has_airbrakes_ever_extended = False
-        # self.is_overriding = False
-        # self.start_time2 = time.time()
+        self.has_airbrakes_ever_extended = False
+        self.is_overriding = False
+        self.start_time2 = time.time()
 
     def update(self) -> None:
         """
@@ -160,22 +161,26 @@ class CoastState(State):
             else 0.0
         )
 
-        if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
+        if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended and not self.is_overriding:
             self.context.extend_airbrakes()
             self.airbrakes_extended = True
-            # self.has_airbrakes_ever_extended = True
-        elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
-            # ) and not self.is_overriding:
+            self.has_airbrakes_ever_extended = True
+        elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended and not self.is_overriding:
             self.context.retract_airbrakes()
             self.airbrakes_extended = False
 
         # If airbrakes hasn't deployed within one second, we will deploy it because we have to pass
         # VDF:
-        # if not self.has_airbrakes_ever_extended and (time.time() - self.start_time2) >= 1:
-        #     self.context.extend_airbrakes()
-        #     self.airbrakes_extended = True
-        #     self.is_overriding = True
-        #     self.has_airbrakes_ever_extended = True
+        time_since_start_time = time.time() - self.start_time2
+
+        if not self.has_airbrakes_ever_extended and 1 <= time_since_start_time <= 2:
+            self.context.extend_airbrakes()
+            self.airbrakes_extended = True
+            self.is_overriding = True
+            self.has_airbrakes_ever_extended = True
+        elif self.is_overriding and time_since_start_time > 2:
+            self.context.retract_airbrakes()
+            self.airbrakes_extended = False
 
         # If our velocity is less than 0 and our altitude is less than 95% of our max altitude, we
         # are in free fall.

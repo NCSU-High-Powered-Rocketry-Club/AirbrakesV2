@@ -4,6 +4,8 @@ import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
+from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg
+
 # -------------------------------------------------------
 # Main Configuration
 # -------------------------------------------------------
@@ -73,11 +75,11 @@ class ServoExtension(Enum):
     """
 
     # in degrees:
-    MIN_EXTENSION = 25
-    MIN_NO_BUZZ = 30
+    MIN_EXTENSION = 112
+    MIN_NO_BUZZ = 113
 
-    MAX_EXTENSION = 60
-    MAX_NO_BUZZ = 56
+    MAX_EXTENSION = 151
+    MAX_NO_BUZZ = 146
 
 
 SHUNT_OHMS = 0.01
@@ -208,7 +210,7 @@ early.
 """
 
 # ----------------- Freefall to Landing -----------------
-MAX_FREE_FALL_SECONDS = 300.0
+MAX_FREE_FALL_SECONDS = 345.0
 """The maximum amount of time in seconds that the rocket can be in freefall
 before we consider it to have landed.
 
@@ -233,17 +235,21 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 1036.32  # 3400 ft
+TARGET_APOGEE_METERS = convert_ft_to_m(4000.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
 and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 16.848
+ROCKET_WET_MASS_KG = convert_lbs_to_kg(39.1)
+
+PROPELLANT_MASS_KG = convert_lbs_to_kg(4.409)
+
+ROCKET_DRY_MASS_KG: float = ROCKET_WET_MASS_KG - PROPELLANT_MASS_KG
 """The mass of the entire rocket without propellant in kilograms."""
 
-ROCKET_CD: float = 0.38
+ROCKET_CD: float = 0.393
 """The drag coefficient of the rocket with airbrakes all the way retracted."""
 
 # This is the diameter of the rocket in inches converted to meters, turned into radius, then used to

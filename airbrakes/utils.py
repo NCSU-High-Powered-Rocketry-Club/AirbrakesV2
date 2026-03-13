@@ -20,6 +20,26 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
+def convert_ft_to_m(ft: float) -> float:
+    """
+    Converts feet to meters.
+
+    :param ft: Distance in feet.
+    :return: Distance in meters.
+    """
+    return ft * 0.3048
+
+
+def convert_lbs_to_kg(lb: float) -> float:
+    """
+    Converts pounds to kilograms.
+
+    :param lb: Mass in pounds.
+    :return: Mass in kilograms.
+    """
+    return lb * 0.45359237
+
+
 def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.
