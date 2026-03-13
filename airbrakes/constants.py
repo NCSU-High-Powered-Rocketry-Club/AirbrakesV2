@@ -4,6 +4,8 @@ import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
+from airbrakes.utils import convert_feet_to_meters
+
 # -------------------------------------------------------
 # Main Configuration
 # -------------------------------------------------------
@@ -177,7 +179,7 @@ lose data.
 # FIRM Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "COM8"
+FIRM_PORT = "/dev/ttyACM0"
 
 FIRM_BAUD_RATE = 2_000_000
 
@@ -208,7 +210,7 @@ early.
 """
 
 # ----------------- Freefall to Landing -----------------
-MAX_FREE_FALL_SECONDS = 300.0
+MAX_FREE_FALL_SECONDS = 345.0
 """The maximum amount of time in seconds that the rocket can be in freefall
 before we consider it to have landed.
 
@@ -233,22 +235,22 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = 1036.32  # 3400 ft
+TARGET_APOGEE_METERS = convert_feet_to_meters(4000.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
 and retract the air brakes.
 """
 
-ROCKET_DRY_MASS_KG: float = 4.67
+ROCKET_DRY_MASS_KG: float = 16.848
 """The mass of the entire rocket without propellant in kilograms."""
 
-ROCKET_CD: float = 0.55
+ROCKET_CD: float = 0.393
 """The drag coefficient of the rocket with airbrakes all the way retracted."""
 
 # This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
 # calculate cross-sectional area.
-ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (4.0 * 0.0254 / 2) ** 2
+ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (6.0 * 0.0254 / 2) ** 2
 """The cross-sectional area of the rocket in square meters, with airbrakes all
 the way retracted."""
 
