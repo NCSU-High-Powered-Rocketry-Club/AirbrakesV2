@@ -209,6 +209,7 @@ class ServoControllerApp(App[None]):
         else:
             from airbrakes.hardware.servo import Servo
             self.servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            self.servo.start()
 
         self.encoder = self.servo.encoder
         self._current_monitor = CurrentMonitor(self.servo)
@@ -322,6 +323,7 @@ class ServoControllerApp(App[None]):
 
     def on_unmount(self) -> None:
         self._current_monitor.stop()
+        self.servo.stop()
 
     # ── Resize — reflow buttons to avoid squishing ───────────────────────
     def on_resize(self, event: Resize) -> None:

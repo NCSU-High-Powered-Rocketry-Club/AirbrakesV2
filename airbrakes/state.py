@@ -2,6 +2,7 @@
 Module for the finite state machine that represents which state of flight
 the rocket is in.
 """
+
 import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
