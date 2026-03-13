@@ -29,6 +29,7 @@ def make_firm_data_packet_zeroed(**kwargs) -> FIRMDataPacket:
     dummy_values = dict.fromkeys(FIRMDataPacket.__struct_fields__, 0.0)
     return FIRMDataPacket(**{**dummy_values, **kwargs})
 
+
 def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
     """
     Creates a ProcessorDataPacket with the specified keyword arguments.
@@ -37,6 +38,7 @@ def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
     """
     dummy_values = dict.fromkeys(ProcessorDataPacket.__struct_fields__, 1.987654321)
     return ProcessorDataPacket(**{**dummy_values, **kwargs})
+
 
 def make_processor_data_packet_zeroed(**kwargs) -> ProcessorDataPacket:
     """

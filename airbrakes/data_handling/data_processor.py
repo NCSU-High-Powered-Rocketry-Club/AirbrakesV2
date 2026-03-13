@@ -169,7 +169,8 @@ class DataProcessor:
             (packet.est_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
         )
         self._vertical_velocities = np.fromiter(
-            (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64)
+            (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64
+        )
 
         self._current_altitudes = self._calculate_current_altitudes()
 
@@ -267,7 +268,7 @@ class DataProcessor:
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
                 vertical_velocity=float(self._vertical_velocities[i]),
-                timestamp_seconds=float(self._data_packets[i].timestamp_seconds)
+                timestamp_seconds=float(self._data_packets[i].timestamp_seconds),
             )
             for i in range(len(self._data_packets))
         ]

@@ -33,9 +33,9 @@ class ApogeePredictor:
 
     def __init__(self) -> None:
         # Single input queue: main thread -> prediction thread
-        self._processor_data_packet_queue: queue.SimpleQueue[ProcessorDataPacket | Literal["STOP"]] = (
-            queue.SimpleQueue()
-        )
+        self._processor_data_packet_queue: queue.SimpleQueue[
+            ProcessorDataPacket | Literal["STOP"]
+        ] = queue.SimpleQueue()
 
         self._apogee_predictor_packet_queue: queue.SimpleQueue[ApogeePredictorDataPacket] = (
             queue.SimpleQueue()
@@ -130,7 +130,9 @@ class ApogeePredictor:
 
         # Keep checking for new data packets until the stop signal is received:
         while True:
-            processor_data_packets = get_all_packets_from_queue(self._processor_data_packet_queue, block=True)
+            processor_data_packets = get_all_packets_from_queue(
+                self._processor_data_packet_queue, block=True
+            )
 
             # If we got a stop signal in this batch, exit the loop
             if STOP_SIGNAL in processor_data_packets:

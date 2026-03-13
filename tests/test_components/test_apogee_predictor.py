@@ -65,11 +65,7 @@ class TestApogeePredictor:
         [
             # Hovering case: v = 0, a ≈ g, should give apogee basically at current altitude.
             (
-                [
-                    make_processor_data_packet_zeroed(
-                        current_altitude=100.0, vertical_velocity=0.0
-                    )
-                ]
+                [make_processor_data_packet_zeroed(current_altitude=100.0, vertical_velocity=0.0)]
                 * 10,
                 100,
             ),
@@ -129,9 +125,7 @@ class TestApogeePredictor:
 
         last_packet = firm_data_packets[-1]
 
-        assert prediction.height_used_for_prediction == pytest.approx(
-            last_packet.current_altitude
-        )
+        assert prediction.height_used_for_prediction == pytest.approx(last_packet.current_altitude)
         assert prediction.velocity_used_for_prediction == pytest.approx(
             last_packet.vertical_velocity
         )
