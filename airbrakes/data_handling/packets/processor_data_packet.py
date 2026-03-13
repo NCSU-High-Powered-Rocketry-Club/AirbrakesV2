@@ -23,3 +23,8 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     """
     The vertical velocity of the rocket in meters per second.
     """
+
+    timestamp_seconds: float
+    """
+    The timestamp of the packet in seconds.
+    """

@@ -413,6 +413,7 @@ class TestContext:
         context.firm_data_packets = [make_firm_data_packet()]
 
         # Now we will have enough packets to run the apogee predictor:
+        context.update()
         context.predict_apogee()
 
         # Nothing should be fetched yet:

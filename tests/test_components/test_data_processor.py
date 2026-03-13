@@ -9,7 +9,7 @@ import quaternion
 
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
-from tests.auxil.utils import make_processor_data_packet, make_processor_data_packet_zeroed
+from tests.auxil.utils import make_firm_data_packet, make_processor_data_packet_zeroed
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -148,42 +148,42 @@ class TestDataProcessor:
         [
             (
                 [
-                    make_processor_data_packet(
-                        current_altitude=0,
-                        vertical_velocity=20,
+                    make_firm_data_packet(
+                        est_position_z_meters=0,
+                        est_velocity_z_meters_per_s=20,
                     )
                 ],
-                20.0,
+                0.0,
             ),
             (
                 [
-                    make_processor_data_packet(
-                        current_altitude=1,
-                        vertical_velocity=20,
+                    make_firm_data_packet(
+                        est_position_z_meters=1,
+                        est_velocity_z_meters_per_s=20,
                     ),
-                    make_processor_data_packet(
-                        current_altitude=2,
-                        vertical_velocity=30,
+                    make_firm_data_packet(
+                        est_position_z_meters=2,
+                        est_velocity_z_meters_per_s=30,
                     ),
                 ],
-                30.0,
+                0.5,
             ),
             (
                 [
-                    make_processor_data_packet(
-                        current_altitude=1,
-                        vertical_velocity=20,
+                    make_firm_data_packet(
+                        est_position_z_meters=1,
+                        est_velocity_z_meters_per_s=20,
                     ),
-                    make_processor_data_packet(
-                        current_altitude=2,
-                        vertical_velocity=30,
+                    make_firm_data_packet(
+                        est_position_z_meters=2,
+                        est_velocity_z_meters_per_s=30,
                     ),
-                    make_processor_data_packet(
-                        current_altitude=3,
-                        vertical_velocity=40,
+                    make_firm_data_packet(
+                        est_position_z_meters=3,
+                        est_velocity_z_meters_per_s=40,
                     ),
                 ],
-                40.0,
+                1.0,
             ),
         ],
         ids=["one_data_packet", "two_data_packets", "three_data_packets"],
@@ -206,13 +206,17 @@ class TestDataProcessor:
         assert len(d._data_packets) == len(data_packets)
         assert d.current_timestamp_seconds == data_packets[-1].timestamp_seconds
 
-        # On the first update we set the first values directly from the last data packet and return
-        assert len(d._current_altitudes) == 1
-        assert len(d._vertical_velocities) == 1
+        # On first update, arrays are initialized from the full batch.
+        assert len(d._current_altitudes) == len(data_packets)
+        assert len(d._vertical_velocities) == len(data_packets)
 
         assert d._vertical_velocities[0] == data_packets[0].est_velocity_z_meters_per_s
-        assert d.current_altitude == data_packets[-1].est_position_z_meters
-        assert d._max_altitude == d.max_altitude == max_alt
+
+        initial_altitude = np.mean([packet.est_position_z_meters for packet in data_packets])
+        expected_current_altitude = data_packets[-1].est_position_z_meters - initial_altitude
+        assert d.current_altitude == pytest.approx(expected_current_altitude)
+        assert d._max_altitude == pytest.approx(max_alt)
+        assert d.max_altitude == pytest.approx(max_alt)
 
     def test_max_altitude(self, data_processor):
         """
@@ -224,14 +228,15 @@ class TestDataProcessor:
         for i in range(0, len(altitudes), 10):
             d.update(
                 [
-                    make_processor_data_packet(
+                    make_firm_data_packet(
                         timestamp_seconds=i,
-                        current_altitude=alt,
+                        est_position_z_meters=alt,
                     )
                     for alt in altitudes[i : i + 10]
                 ]
             )
-        assert d.max_altitude == pytest.approx(max(altitudes))
+        initial_altitude = np.mean(altitudes[:10])
+        assert d.max_altitude == pytest.approx(max(altitudes) - initial_altitude)
 
     def test_properties_values(self, data_processor):
         """
@@ -259,7 +264,7 @@ class TestDataProcessor:
         """
         assert data_processor.current_timestamp_seconds == 0
 
-        data_processor._last_data_packet = make_processor_data_packet(timestamp_seconds=123)
+        data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=123)
         assert data_processor.current_timestamp_seconds == 123
 
     def test_consecutive_updates(self, data_processor):
@@ -267,17 +272,18 @@ class TestDataProcessor:
         d = data_processor
 
         # 1. First Update (Init)
-        d.update([make_processor_data_packet(current_altitude=10)])
-        assert d.max_altitude == 10.0
+        d.update([make_firm_data_packet(est_position_z_meters=10)])
+        assert d.current_altitude == 0.0
+        assert d.max_altitude == 0.0
 
         # 2. Second Update (Normal flow)
         # Provide a higher altitude
-        d.update([make_processor_data_packet(current_altitude=50)])
-        assert d.current_altitude == 50.0
-        assert d.max_altitude == 50.0
+        d.update([make_firm_data_packet(est_position_z_meters=50)])
+        assert d.current_altitude == 40.0
+        assert d.max_altitude == 40.0
 
         # 3. Third Update (Lower altitude)
         # Current should drop, Max should stay high
-        d.update([make_processor_data_packet(current_altitude=20)])
-        assert d.current_altitude == 20.0
-        assert d.max_altitude == 50.0
+        d.update([make_firm_data_packet(est_position_z_meters=20)])
+        assert d.current_altitude == 10.0
+        assert d.max_altitude == 40.0

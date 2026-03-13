@@ -267,6 +267,7 @@ class DataProcessor:
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
                 vertical_velocity=float(self._vertical_velocities[i]),
+                timestamp_seconds=float(self._data_packets[i].timestamp_seconds)
             )
             for i in range(len(self._data_packets))
         ]
