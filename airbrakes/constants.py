@@ -80,6 +80,27 @@ class ServoExtension(Enum):
     MAX_NO_BUZZ = 56
 
 
+SHUNT_OHMS = 0.01
+"""
+Airbender v0.2 uses a 0.01 ohm shunt resistor to measure the current in the entire system, including
+the Pi.
+"""
+
+MAX_EXPECTED_AMPS = 8.0
+"""
+The maximum expected current, including transients for the system.
+"""
+
+I2C_ADDRESS = 0x40
+"""
+Airbender v0.2 sets the I2C address of the INA219 current sensor to 0x40.
+"""
+
+I2C_BUS = 1
+"""
+The I2C bus the sensor is connected to on the Raspberry Pi.
+"""
+
 # -------------------------------------------------------
 # Encoder Configuration
 # -------------------------------------------------------
@@ -135,17 +156,16 @@ will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# f = EstimatedDataPacket.frequency + RawDataPacket.frequency = 500 + 500 = 1000 Hz
-# T = N/f => T = N/1000
+# FIRM outputs data at 100 hz, so T = N / 100
 
-IDLE_LOG_CAPACITY = 5000  # Using the formula above, this is 5 seconds of data
+IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
 """The maximum number of data packets to log in the StandbyState and
 LandedState.
 
 This is to prevent log file sizes from growing too large. Some of our
 2023-2024 launches were >300 mb.
 """
-LOG_BUFFER_SIZE = 5000
+LOG_BUFFER_SIZE = 500
 """Buffer size if CAPACITY is reached.
 
 Once the state changes, this buffer will be logged to make sure we don't

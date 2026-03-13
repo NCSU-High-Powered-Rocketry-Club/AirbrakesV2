@@ -8,6 +8,8 @@ def servo_packet():
     return ServoDataPacket(
         set_extension="0.2",
         encoder_position="1",
+        battery_voltage=3.7,
+        current_milliamps=500.0,
     )
 
 

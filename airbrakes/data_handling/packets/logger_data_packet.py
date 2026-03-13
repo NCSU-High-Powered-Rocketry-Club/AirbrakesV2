@@ -18,6 +18,8 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     # Fields in ServoDataPacket
     set_extension: str | None
     encoder_position: int | None
+    battery_voltage: str | None
+    current_milliamps: str | None
 
     # FIRMDataPacket Fields
     timestamp_seconds: float | None = None
@@ -50,11 +52,9 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_z: float | None = None
 
     # Apogee Predictor Data Packet Fields
-    # These fields are "str" because they were numpy.float64, which is converted to a string
-    # when encoded in the logger. Encoding directly to string with 8 decimal places truncation.
-    predicted_apogee: str | None = None
-    height_used_for_prediction: str | None = None
-    velocity_used_for_prediction: str | None = None
+    predicted_apogee: float | None = None
+    height_used_for_prediction: float | None = None
+    velocity_used_for_prediction: float | None = None
 
     # Other fields in ContextDataPacket
     retrieved_firm_packets: int | None

@@ -15,6 +15,7 @@ from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, MotorBurnState, StandbyState
 from tests.auxil.utils import (
@@ -55,19 +56,32 @@ class TestContext:
         assert context.servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_start(self, context):
+        """
+        Tests that start() brings up all subsystems, including activating the
+        servo PWM at the duty cycle corresponding to MIN_NO_BUZZ.
+        """
         context.start(wait_for_start=True)
         assert context.firm.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
+        # Servo PWM should be live with the MIN_NO_BUZZ duty cycle after start()
+        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value)
+        assert context.servo.servo.duty_cycle == pytest.approx(expected_duty_cycle)
         context.stop()
 
     def test_stop_simple(self, context):
+        """
+        Tests that stop() shuts down all subsystems and zeroes the servo PWM
+        duty cycle (i.e. the PWM signal is stopped).
+        """
         context.start()
         context.stop()
         assert not context.logger.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor.is_running
         assert context.servo.current_extension == ServoExtension.MIN_EXTENSION  # set to "0"
+        # Servo PWM duty cycle should be zeroed after stop()
+        assert context.servo.servo.duty_cycle == 0.0
         assert context.shutdown_requested
         context.stop()  # Stop again to test idempotency
 
