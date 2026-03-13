@@ -14,6 +14,7 @@ from airbrakes.constants import STOP_SIGNAL, ServoExtension
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     JackPotLaunchCase1,
+    JackPotLaunchCase2,
     StateInformation,
 )
 
@@ -92,6 +93,8 @@ class TestIntegration:
 
         if launch_name == "jackpot_launch_1":
             launch_case = JackPotLaunchCase1
+        elif launch_name == "jackpot_launch_2":
+            launch_case = JackPotLaunchCase2
         else:
             raise ValueError(f"Unknown launch name: {launch_name}")
 

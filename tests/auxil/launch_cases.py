@@ -543,3 +543,44 @@ class JackPotLaunchCase1(LaunchCase):
             "max_velocity", str(self.landed_case.max_velocity), self.landed_case.max_velocity <= 1.0
         )
         return case_result
+
+
+class JackPotLaunchCase2(LaunchCase):
+    """The test case for the jackpot launch data (Full scale 2025)."""
+
+    # This is the first FIRM dataset, and thus the kalman filter wasn't tuned:
+
+    def motor_burn_case_test(self) -> CaseResult:
+        case_result = super().motor_burn_case_test()
+        case_result.consider_case(
+            "max_avg_vertical_acceleration",
+            str(self.motor_burn_case.max_avg_vertical_acceleration),
+            self.motor_burn_case.max_avg_vertical_acceleration >= 70.0,
+        )
+        return case_result
+
+    def free_fall_case_test(self) -> CaseResult:
+        """Kalman filter for free fall wasn't tuned."""
+        case_result = super().free_fall_case_test()
+
+        case_result.consider_case(
+            "min_velocity",
+            str(self.free_fall_case.min_velocity),
+            self.free_fall_case.min_velocity >= -130.0,
+        )
+        case_result.consider_case(
+            "max_velocity",
+            str(self.free_fall_case.max_velocity),
+            self.free_fall_case.max_velocity <= 60.0,
+        )
+
+        return case_result
+
+    def landed_case_test(self) -> CaseResult:
+        """Max velocity for landing was high."""
+        case_result = super().landed_case_test()
+
+        case_result.consider_case(
+            "max_velocity", str(self.landed_case.max_velocity), self.landed_case.max_velocity <= 1.0
+        )
+        return case_result

@@ -539,7 +539,7 @@
             "launch_rod_angle": 20.0
         },
         "imu_details": {
-            "imu_model": "FIRM",
+            "imu_model": "FIRM v0.1",
             "raw_packet_frequency": 100.0,
             "est_packet_frequency": 0.0
         },
@@ -555,5 +555,42 @@
             "target_apogee_meters": 1036.32
         },
         "flight_description": "First flight with FIRM as the only IMU. As a backup, if airbrakes had not deployed within one second of coast state, they would deploy. During the flight, they deployed almost immediately in coast, and they failed to retract quick enough due to the servo stall (they were supposed to retract 0.4 seconds after coast). FIRM's kalman filter still needed to be tuned as our predicted apogee was all over the place."
+    },
+    "jackpot_launch_2.csv": {
+        "date": "2025-03-14T13:23:58.254-04:00",
+        "rocket": {
+            "rocket_Cd": 0.393,
+            "rocket_mass_kg": 15.736,
+            "rocket_cross_sectional_area_m2": 0.0182414692475
+        },
+        "launch_site": {
+            "air_temperature_celsius": 20.0,
+            "air_pressure_mb": 1015.14,
+            "wind_speed_kmh": 5.5,
+            "wind_direction": "NNE",
+            "location": "Bayboro, NC",
+            "launch_coordinates": {
+                "latitude": 35.175830,
+                "longitude": -76.828230
+            },
+            "launch_rod_angle": 2.0
+        },
+        "imu_details": {
+            "imu_model": "FIRM v1.0",
+            "raw_packet_frequency": 100.0,
+            "est_packet_frequency": 0.0
+        },
+        "flight_data": {
+            "log_buffer_index": 500,
+            "apogee_meters": 762.28,
+            "landed_coordinates": {
+                "latitude": 35.180298,
+                "longitude": -76.817123
+            },
+            "landed_coordinates_precision": "Within 1-2 meters.",
+            "flight_length_seconds": 54.84,
+            "target_apogee_meters": 1219.2
+        },
+        "flight_description": "Second flight with FIRM. As a backup, if airbrakes had not deployed within one second of coast state, they would deploy. They would also retract after 1 second if that happened."
     }
 }
