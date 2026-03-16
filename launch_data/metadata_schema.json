@@ -11,7 +11,7 @@
             "rocket": {
                 "type": "object",
                 "properties": {
-                    "rocket_mass_kg": {
+                    "rocket_dry_mass_kg": {
                         "type": ["number", "null"]
                     },
                     "rocket_Cd": {
@@ -19,10 +19,13 @@
                     },
                     "rocket_cross_sectional_area_m2": {
                         "type": ["number", "null"]
+                    },
+                    "motor": {
+                        "type": "string"
                     }
                 },
                 "required": [
-                    "rocket_mass_kg",
+                    "rocket_dry_mass_kg",
                     "rocket_Cd",
                     "rocket_cross_sectional_area_m2"
                 ],

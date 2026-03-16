@@ -72,7 +72,7 @@ class MockFIRM(BaseFIRM):
             if potential_files:
                 self._log_file_path = potential_files[0]
             else:
-                self._log_file_path = Path("launch_data/jackpot_launch_1.csv")
+                self._log_file_path = Path("launch_data/real_firm_launches/jackpot_launch_1.csv")
 
         self._log_file_path = self._log_file_path
 
@@ -176,7 +176,7 @@ class MockFIRM(BaseFIRM):
         rocket_data = metadata.get("rocket", {})
         return RocketParameters(
             rocket_Cd=rocket_data.get("rocket_Cd"),
-            rocket_mass_kg=rocket_data.get("rocket_mass_kg"),
+            rocket_mass_kg=rocket_data.get("rocket_dry_mass_kg"),
             rocket_cross_sectional_area_m2=rocket_data.get("rocket_cross_sectional_area_m2"),
         )
 

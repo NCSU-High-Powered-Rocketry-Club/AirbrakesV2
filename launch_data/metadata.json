@@ -4,7 +4,7 @@
         "date": "2023-12-16T17:11:35.000-05:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": null,
+            "rocket_dry_mass_kg": null,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -40,7 +40,7 @@
         "date": "2024-09-28T14:51:21.437-04:00",
         "rocket": {
             "rocket_Cd": 0.41,
-            "rocket_mass_kg": 13.44,
+            "rocket_dry_mass_kg": 13.44,
             "rocket_cross_sectional_area_m2": 0.0182414692475
         },
         "launch_site": {
@@ -76,7 +76,7 @@
         "date": "2024-11-16T13:54:22.792-05:00",
         "rocket": {
             "rocket_Cd": 0.46,
-            "rocket_mass_kg": 6.622449,
+            "rocket_dry_mass_kg": 6.622449,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -113,7 +113,7 @@
         "date": "2024-11-16T16:55:20.731-05:00",
         "rocket": {
             "rocket_Cd": 0.46,
-            "rocket_mass_kg": 6.622449,
+            "rocket_dry_mass_kg": 6.622449,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -149,7 +149,7 @@
         "date": "2025-01-25T13:39:19.385-05:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": 5.1,
+            "rocket_dry_mass_kg": 5.1,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -185,7 +185,7 @@
         "date": "2025-01-25T16:13:17.074-05:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": 5.1,
+            "rocket_dry_mass_kg": 5.1,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -221,7 +221,7 @@
         "date": "2025-02-22T15:42:17.202-05:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": null,
+            "rocket_dry_mass_kg": null,
             "rocket_cross_sectional_area_m2": 0.0182414692475
         },
         "launch_site": {
@@ -257,7 +257,7 @@
         "date": "2025-03-08T14:19:33.411-05:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": null,
+            "rocket_dry_mass_kg": null,
             "rocket_cross_sectional_area_m2": 0.0182414692475
         },
         "launch_site": {
@@ -293,7 +293,7 @@
         "date": "2025-04-05T14:38:37.408-04:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": null,
+            "rocket_dry_mass_kg": null,
             "rocket_cross_sectional_area_m2": 0.0182414692475
         },
         "launch_site": {
@@ -329,7 +329,7 @@
         "date": "2025-05-04T09:45:10.931-06:00",
         "rocket": {
             "rocket_Cd": 0.425,
-            "rocket_mass_kg": 14.5,
+            "rocket_dry_mass_kg": 14.5,
             "rocket_cross_sectional_area_m2": 0.0182414692475
         },
         "launch_site": {
@@ -365,7 +365,7 @@
         "date": "2025-10-18T14:31:10.931-04:00",
         "rocket": {
             "rocket_Cd": null,
-            "rocket_mass_kg": null,
+            "rocket_dry_mass_kg": null,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -401,7 +401,7 @@
         "date": "2025-11-01T14:53:21.171-04:00",
         "rocket": {
             "rocket_Cd": 0.55,
-            "rocket_mass_kg": 4.67,
+            "rocket_dry_mass_kg": 4.67,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -437,7 +437,7 @@
         "date": "2025-12-13T14:53:21.171-04:00",
         "rocket": {
             "rocket_Cd": 0.55,
-            "rocket_mass_kg": 4.67,
+            "rocket_dry_mass_kg": 4.67,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -473,7 +473,7 @@
         "date": "2025-02-07T14:54:43.834-05:00",
         "rocket": {
             "rocket_Cd": 0.55,
-            "rocket_mass_kg": 4.77,
+            "rocket_dry_mass_kg": 4.77,
             "rocket_cross_sectional_area_m2": 0.008107319665
         },
         "launch_site": {
@@ -509,8 +509,9 @@
         "date": "2025-02-21T12:10:58.254-05:00",
         "rocket": {
             "rocket_Cd": 0.38,
-            "rocket_mass_kg": 16.848,
-            "rocket_cross_sectional_area_m2": 0.0182414692475
+            "rocket_dry_mass_kg": 16.848,
+            "rocket_cross_sectional_area_m2": 0.0182414692475,
+            "motor": "L1390G-P"
         },
         "launch_site": {
             "air_temperature_celsius": 14.0,
@@ -540,14 +541,15 @@
             "flight_length_seconds": 54.84,
             "target_apogee_meters": 1036.32
         },
-        "flight_description": "First flight with FIRM as the only IMU. As a backup, if airbrakes had not deployed within one second of coast state, they would deploy. During the flight, they deployed almost immediately in coast, and they failed to retract quick enough due to the servo stall (they were supposed to retract 0.4 seconds after coast). FIRM's kalman filter still needed to be tuned as our predicted apogee was all over the place."
+        "flight_description": "First flight with FIRM as the only IMU. As a backup, if airbrakes had not deployed within one second of coast state, they would deploy. During the flight, they deployed almost immediately in coast, and they failed to retract quick enough due to the servo stall (they were supposed to retract 0.4 seconds after coast). FIRM's kalman filter still needed to be tuned as our predicted apogee was all over the place. There was no encoder for this launch."
     },
     "jackpot_launch_2.csv": {
         "date": "2025-03-14T16:46:00.000-04:00",
         "rocket": {
             "rocket_Cd": 0.393,
-            "rocket_mass_kg": 15.736,
-            "rocket_cross_sectional_area_m2": 0.0182414692475
+            "rocket_dry_mass_kg": 15.736,
+            "rocket_cross_sectional_area_m2": 0.0182414692475,
+            "motor": "L1390G-P"
         },
         "launch_site": {
             "air_temperature_celsius": 19.4,
@@ -573,10 +575,10 @@
                 "latitude": 35.1734900,
                 "longitude": -76.8269900
             },
-            "landed_coordinates_precision": "Within 1-2 meters.",
+            "landed_coordinates_precision": "Within 1-2 meters. Derived from Fluctus data.",
             "flight_length_seconds": 120.2,
             "target_apogee_meters": 1219.2
         },
-        "flight_description": "Second flight with FIRM. This was the first flight with FIRM v1.0 and the first flight with Airbender (specifically, v0.2), it also featured an add on proto-board for making our 82 kg-cm servo work properly. We did not seal the airbrakes internally which resulted in a massive pressure spike when they deployed. Additionally, the fin slots were not filed down properly which caused the airbrakes to momentarily get stuck, halfway deployed, until they were able to fully deploy. FIRM did not give the best data which caused apogee prediction to predict a much higher apogee than it should of, resulting in the airbrakes staying deployed for the entire flight. Also, main deployed at apogee."
+        "flight_description": "Second flight with FIRM. This was the first flight with FIRM v1.0 and the first flight with Airbender (specifically, v0.2), it also featured an add on proto-board for making our 82 kg-cm servo work properly. We did not seal the airbrakes internally which resulted in a massive pressure spike when they deployed. Additionally, the fin slots were not filed down properly which caused the airbrakes to momentarily get stuck, halfway deployed, until they were able to fully deploy. FIRM did not give the best data which caused apogee prediction to predict a much higher apogee than it should of, resulting in the airbrakes staying deployed for the entire flight. Also, main deployed at apogee. There was no encoder for this launch."
     }
 }
