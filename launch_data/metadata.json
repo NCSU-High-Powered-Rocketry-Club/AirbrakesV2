@@ -19,10 +19,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -56,10 +55,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -93,10 +91,9 @@
             },
             "launch_rod_angle": 6.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -131,10 +128,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -168,10 +164,9 @@
             },
             "launch_rod_angle": 2.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -205,10 +200,9 @@
             },
             "launch_rod_angle": 3.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 100.0,
-            "est_packet_frequency": 50.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 150.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -242,10 +236,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -279,10 +272,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -316,10 +308,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -353,10 +344,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -390,10 +380,9 @@
             },
             "launch_rod_angle": 5.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 1000.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1500.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -427,10 +416,9 @@
             },
             "launch_rod_angle": 2.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -464,10 +452,9 @@
             },
             "launch_rod_angle": 2.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -501,10 +488,9 @@
             },
             "launch_rod_angle": 13.0
         },
-        "imu_details": {
-            "imu_model": "Parker-LORD 3DM-CX5-15",
-            "raw_packet_frequency": 500.0,
-            "est_packet_frequency": 500.0
+        "ins_details": {
+            "ins_model": "Parker-LORD 3DM-CX5-15",
+            "data_packet_frequency": 1000.0
         },
         "flight_data": {
             "log_buffer_index": 5000,
@@ -538,10 +524,9 @@
             },
             "launch_rod_angle": 20.0
         },
-        "imu_details": {
-            "imu_model": "FIRM v0.1",
-            "raw_packet_frequency": 100.0,
-            "est_packet_frequency": 0.0
+        "ins_details": {
+            "ins_model": "FIRM v0.1",
+            "data_packet_frequency": 100.0
         },
         "flight_data": {
             "log_buffer_index": 503,
@@ -575,10 +560,9 @@
             },
             "launch_rod_angle": 1.5
         },
-        "imu_details": {
-            "imu_model": "FIRM v1.0",
-            "raw_packet_frequency": 100.0,
-            "est_packet_frequency": 0.0
+        "ins_details": {
+            "ins_model": "FIRM v1.0",
+            "data_packet_frequency": 100.0
         },
         "flight_data": {
             "log_buffer_index": 500,

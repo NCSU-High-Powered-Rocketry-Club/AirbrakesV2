@@ -74,23 +74,19 @@
                 ],
                 "additionalProperties": false
             },
-            "imu_details": {
+            "ins_details": {
                 "type": "object",
                 "properties": {
-                    "imu_model": {
+                    "ins_model": {
                         "type": "string"
                     },
-                    "raw_packet_frequency": {
-                        "type": "number"
-                    },
-                    "est_packet_frequency": {
+                    "data_packet_frequency": {
                         "type": "number"
                     }
                 },
                 "required": [
-                    "imu_model",
-                    "raw_packet_frequency",
-                    "est_packet_frequency"
+                    "ins_model",
+                    "data_packet_frequency"
                 ],
                 "additionalProperties": false
             },
@@ -143,7 +139,7 @@
         "required": [
             "date",
             "launch_site",
-            "imu_details",
+            "ins_details",
             "flight_data",
             "flight_description"
         ],

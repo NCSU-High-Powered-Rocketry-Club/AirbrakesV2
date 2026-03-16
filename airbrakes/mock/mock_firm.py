@@ -65,7 +65,7 @@ class MockFIRM(BaseFIRM):
         if self._log_file_path is None:
             # Default to finding the first CSV in launch_data
             root_dir = Path(__file__).parent.parent.parent
-            launch_data_dir = root_dir / "launch_data"
+            launch_data_dir = root_dir / "launch_data/real_firm_launches"
 
             # Use glob to find files
             potential_files = list(launch_data_dir.rglob("*.csv"))
@@ -234,7 +234,7 @@ class MockFIRM(BaseFIRM):
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
-        launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
+        launch_raw_data_packet_rate = 1 / self.file_metadata["ins_details"]["data_packet_frequency"]
 
         collected_data: pl.DataFrame = self._scan_csv(start_index=start_index).collect()
 
