@@ -46,7 +46,6 @@ class DataProcessor:
         etc. All numbers in this class are handled with numpy. This
         class also has properties to return some of these values.
         """
-        self._vertical_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._rotated_raw_accelerations: npt.NDArray[np.float64] = np.array([0.0])
@@ -143,7 +142,7 @@ class DataProcessor:
                 np.mean([data_packet.est_position_z_meters for data_packet in self._data_packets]),
             )
             self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
-                (packet.est_acceleration_z_gs for packet in self._data_packets),
+                (packet.raw_rotated_acceleration_z_gs for packet in self._data_packets),
                 dtype=np.float64,
             )
             self._vertical_velocities = np.fromiter(
@@ -166,7 +165,8 @@ class DataProcessor:
 
         self._time_differences = self._calculate_time_differences()
         self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
-            (packet.est_acceleration_z_gs for packet in self._data_packets), dtype=np.float64
+            (packet.raw_rotated_acceleration_z_gs for packet in self._data_packets),
+            dtype=np.float64,
         )
         self._vertical_velocities = np.fromiter(
             (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64

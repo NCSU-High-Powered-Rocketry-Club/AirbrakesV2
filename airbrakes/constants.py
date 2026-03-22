@@ -4,7 +4,7 @@ import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
-from airbrakes.utils import convert_feet_to_meters, convert_ft_to_m, convert_lbs_to_kg
+from airbrakes.utils import convert_feet_to_meters, convert_lbs_to_kg
 
 # -------------------------------------------------------
 # Main Configuration

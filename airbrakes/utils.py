@@ -21,7 +21,8 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
 
 
 def convert_feet_to_meters(feet: float) -> float:
-    """Converts feet to meters.
+    """
+    Converts feet to meters.
 
     :param feet: Distance in feet.
     :return: Distance in meters.
@@ -30,7 +31,8 @@ def convert_feet_to_meters(feet: float) -> float:
 
 
 def convert_ft_to_m(ft: float) -> float:
-    """Converts feet to meters.
+    """
+    Converts feet to meters.
 
     Kept for backward compatibility; prefer :func:`convert_feet_to_meters`.
 
