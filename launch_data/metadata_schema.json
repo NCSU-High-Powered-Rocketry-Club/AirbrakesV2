@@ -27,7 +27,8 @@
                 "required": [
                     "rocket_dry_mass_kg",
                     "rocket_Cd",
-                    "rocket_cross_sectional_area_m2"
+                    "rocket_cross_sectional_area_m2",
+                    "motor"
                 ],
                 "additionalProperties": false
             },
@@ -76,7 +77,8 @@
                     "wind_direction",
                     "location",
                     "launch_coordinates",
-                    "launch_rod_angle"
+                    "launch_rod_angle",
+                    "launch_rod_length_ft"
                 ],
                 "additionalProperties": false
             },
