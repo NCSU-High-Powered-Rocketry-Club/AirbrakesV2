@@ -20,14 +20,24 @@ def convert_unknown_type_to_float(obj_type: Any) -> float:
     return float(obj_type)
 
 
-def convert_ft_to_m(ft: float) -> float:
+def convert_feet_to_meters(feet: float) -> float:
+    """Converts feet to meters.
+
+    :param feet: Distance in feet.
+    :return: Distance in meters.
     """
-    Converts feet to meters.
+    return feet * 0.3048
+
+
+def convert_ft_to_m(ft: float) -> float:
+    """Converts feet to meters.
+
+    Kept for backward compatibility; prefer :func:`convert_feet_to_meters`.
 
     :param ft: Distance in feet.
     :return: Distance in meters.
     """
-    return ft * 0.3048
+    return convert_feet_to_meters(ft)
 
 
 def convert_lbs_to_kg(lb: float) -> float:

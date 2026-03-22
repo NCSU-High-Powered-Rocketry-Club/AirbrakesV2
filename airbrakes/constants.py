@@ -4,7 +4,7 @@ import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
-from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg
+from airbrakes.utils import convert_feet_to_meters, convert_ft_to_m, convert_lbs_to_kg
 
 # -------------------------------------------------------
 # Main Configuration
@@ -235,7 +235,7 @@ data showed softer landings.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = convert_ft_to_m(4000.0)
+TARGET_APOGEE_METERS = convert_feet_to_meters(4000.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
