@@ -65,14 +65,14 @@ class MockFIRM(BaseFIRM):
         if self._log_file_path is None:
             # Default to finding the first CSV in launch_data
             root_dir = Path(__file__).parent.parent.parent
-            launch_data_dir = root_dir / "launch_data"
+            launch_data_dir = root_dir / "launch_data/real_firm_launches"
 
             # Use glob to find files
             potential_files = list(launch_data_dir.rglob("*.csv"))
             if potential_files:
                 self._log_file_path = potential_files[0]
             else:
-                self._log_file_path = Path("launch_data/jackpot_launch_1.csv")
+                self._log_file_path = Path("launch_data/real_firm_launches/jackpot_launch_1.csv")
 
         self._log_file_path = self._log_file_path
 
@@ -176,7 +176,7 @@ class MockFIRM(BaseFIRM):
         rocket_data = metadata.get("rocket", {})
         return RocketParameters(
             rocket_Cd=rocket_data.get("rocket_Cd"),
-            rocket_mass_kg=rocket_data.get("rocket_mass_kg"),
+            rocket_mass_kg=rocket_data.get("rocket_dry_mass_kg"),
             rocket_cross_sectional_area_m2=rocket_data.get("rocket_cross_sectional_area_m2"),
         )
 
@@ -234,7 +234,7 @@ class MockFIRM(BaseFIRM):
         """
         start_index = self._calculate_start_index() if start_after_log_buffer else 0
 
-        launch_raw_data_packet_rate = 1 / self.file_metadata["imu_details"]["raw_packet_frequency"]
+        launch_raw_data_packet_rate = 1 / self.file_metadata["ins_details"]["data_packet_frequency"]
 
         collected_data: pl.DataFrame = self._scan_csv(start_index=start_index).collect()
 
