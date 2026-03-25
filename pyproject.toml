@@ -20,7 +20,7 @@ dependencies = [
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
     "hprm>=0.1.7",
-    "firm-client>=1.2.1",
+    "firm-client>=1.2.2",
     "pi-ina219>=1.4.1",
 ]
 

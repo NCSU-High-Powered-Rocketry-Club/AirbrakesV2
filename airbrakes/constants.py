@@ -4,7 +4,7 @@ import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
-from airbrakes.utils import convert_feet_to_meters, convert_lbs_to_kg
+from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg
 
 # -------------------------------------------------------
 # Main Configuration
@@ -222,20 +222,16 @@ worst case scenario of the main parachute deploying at apogee.
 GROUND_ALTITUDE_METERS = 10.0
 """The zeroed-out altitude (final altitude minus initial altitude) in meters
 that the rocket must be under before we consider it to have landed."""
-LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 30.0
+LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 20.0
 """The acceleration in m/s^2 that the rocket must be above before we consider
 it to have landed.
-
-Upon landing, the rocket has a large spike in acceleration that is used
-to detect landing. Lowered from 50.0 to 30.0 after Huntsville launch
-data showed softer landings.
 """
 
 # -------------------------------------------------------
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = convert_feet_to_meters(4000.0)
+TARGET_APOGEE_METERS = convert_ft_to_m(4000.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
