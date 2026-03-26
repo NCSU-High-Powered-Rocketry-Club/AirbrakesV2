@@ -46,6 +46,7 @@ class DataProcessor:
         etc. All numbers in this class are handled with numpy. This
         class also has properties to return some of these values.
         """
+        self._vertical_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._rotated_raw_accelerations: npt.NDArray[np.float64] = np.array([0.0])

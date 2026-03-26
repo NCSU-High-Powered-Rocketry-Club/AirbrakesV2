@@ -55,13 +55,14 @@ def convert_dict_vals_to_str(d: dict[str, float], truncation: bool = True) -> di
     """
     Converts all values in the dictionary to strings.
 
-    Applies truncation for floats by default. Drops None values.
+    Applies truncation for floats by default. Drops only None values.
     """
     new_d = {}
     for k, v in d.items():
         if isinstance(v, int):
             new_d[k] = str(v)
-        elif v is None or not v:  # Skip None values
+        elif v is None:  # Keep valid zeros (0 / 0.0), skip only missing values (some derived
+            # fields will be 0)
             continue
         elif truncation:
             try:
