@@ -222,13 +222,9 @@ worst case scenario of the main parachute deploying at apogee.
 GROUND_ALTITUDE_METERS = 10.0
 """The zeroed-out altitude (final altitude minus initial altitude) in meters
 that the rocket must be under before we consider it to have landed."""
-LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 30.0
+LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 20.0
 """The acceleration in m/s^2 that the rocket must be above before we consider
 it to have landed.
-
-Upon landing, the rocket has a large spike in acceleration that is used
-to detect landing. Lowered from 50.0 to 30.0 after Huntsville launch
-data showed softer landings.
 """
 
 # -------------------------------------------------------
