@@ -31,6 +31,7 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     raw_rotated_acceleration_x_gs: float | None = None
     raw_rotated_acceleration_y_gs: float | None = None
     raw_rotated_acceleration_z_gs: float | None = None
+    est_tilt_angle_degrees: float | None = None
     raw_angular_rate_x_deg_per_s: float | None = None
     raw_angular_rate_y_deg_per_s: float | None = None
     raw_angular_rate_z_deg_per_s: float | None = None
@@ -44,7 +45,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_x: float | None = None
     est_quaternion_y: float | None = None
     est_quaternion_z: float | None = None
-    est_tilt_angle_degrees: float | None = None
 
     # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None = None
