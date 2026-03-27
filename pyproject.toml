@@ -73,11 +73,6 @@ build-backend = "hatchling.build"
 [tool.uv]
 python-preference = "only-managed"
 
-environments = [
-    "sys_platform == 'win32' and platform_machine == 'AMD64'",
-    "sys_platform != 'win32' and platform_machine == 'aarch64'",
-]
-
 # HATCH:
 [tool.hatch.build.targets.wheel]
 packages = ["airbrakes"]
