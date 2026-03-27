@@ -11,7 +11,7 @@
             "rocket": {
                 "type": "object",
                 "properties": {
-                    "rocket_mass_kg": {
+                    "rocket_dry_mass_kg": {
                         "type": ["number", "null"]
                     },
                     "rocket_Cd": {
@@ -19,12 +19,16 @@
                     },
                     "rocket_cross_sectional_area_m2": {
                         "type": ["number", "null"]
+                    },
+                    "motor": {
+                        "type": "string"
                     }
                 },
                 "required": [
-                    "rocket_mass_kg",
+                    "rocket_dry_mass_kg",
                     "rocket_Cd",
-                    "rocket_cross_sectional_area_m2"
+                    "rocket_cross_sectional_area_m2",
+                    "motor"
                 ],
                 "additionalProperties": false
             },
@@ -61,6 +65,9 @@
                     },
                     "launch_rod_angle": {
                         "type": "number"
+                    },
+                    "launch_rod_length_ft": {
+                        "type": "number"
                     }
                 },
                 "required": [
@@ -70,27 +77,24 @@
                     "wind_direction",
                     "location",
                     "launch_coordinates",
-                    "launch_rod_angle"
+                    "launch_rod_angle",
+                    "launch_rod_length_ft"
                 ],
                 "additionalProperties": false
             },
-            "imu_details": {
+            "ins_details": {
                 "type": "object",
                 "properties": {
-                    "imu_model": {
+                    "ins_model": {
                         "type": "string"
                     },
-                    "raw_packet_frequency": {
-                        "type": "number"
-                    },
-                    "est_packet_frequency": {
+                    "data_packet_frequency": {
                         "type": "number"
                     }
                 },
                 "required": [
-                    "imu_model",
-                    "raw_packet_frequency",
-                    "est_packet_frequency"
+                    "ins_model",
+                    "data_packet_frequency"
                 ],
                 "additionalProperties": false
             },
@@ -143,7 +147,7 @@
         "required": [
             "date",
             "launch_site",
-            "imu_details",
+            "ins_details",
             "flight_data",
             "flight_description"
         ],

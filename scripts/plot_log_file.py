@@ -20,11 +20,13 @@ import plotly.graph_objects as go
 DEFAULT_TRACES = [
     # (column_name, pretty_label)
     ("est_position_z_meters", "Estimated Z Position (m)"),
+    ("height_used_for_prediction", "est_height"),
     ("est_velocity_z_meters_per_s", "Estimated Z Velocity (m/s)"),
     ("est_acceleration_z_gs", "Estimated Z Accel (g)"),
     ("predicted_apogee", "Predicted Apogee"),
-    ("encoder_position", "Encoder Position"),
-    ("pressure_pascals", "Pressure (Pa)"),
+    ("set_extension", "servo"),
+    ("current_milliamps", "current_milliamps"),
+    ("pressure_pascals", "pressure_pascals")
 ]
 
 

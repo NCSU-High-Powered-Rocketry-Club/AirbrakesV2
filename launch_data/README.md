@@ -63,3 +63,5 @@ There is a video of the launch from the rocket's perspective in the `videos` fol
 
 We provide additional context about the launch in the metadata.json file. The date of the launch is
 calculated from the timestamp of the first motor burn packet.
+
+Now to get the windspeeds and directions in the area, we use https://aloft.onrender.com/.
