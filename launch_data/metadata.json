@@ -85,10 +85,10 @@
       "motor": "L1390G-P"
     },
     "launch_site": {
-      "air_temperature_celsius": 19.4,
+      "air_temperature_celsius": 25.2,
       "air_pressure_mb": 1018.6,
-      "wind_speed_kmh": 4.4,
-      "wind_direction": "SW",
+      "wind_speed_kmh": 15.5,
+      "wind_direction": "S",
       "location": "Monterey, VA",
       "launch_coordinates": {
         "latitude": 38.37576,
@@ -112,6 +112,6 @@
       "flight_length_seconds": 69.0,
       "target_apogee_meters": 1219.2
     },
-    "flight_description": "Emergency flight in Virginia. Airbrakes worked, but the estimated apogee overpredicted, resulting in a 300ft undershoot of target apogee."
+    "flight_description": "Emergency flight in Virginia. Airbrakes worked, but the estimated apogee overpredicted, resulting in a 300ft undershoot of target apogee. Main parachute lines got twisted, resulting in a rapid descent."
   }
 }
