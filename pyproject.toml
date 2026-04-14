@@ -71,6 +71,8 @@ build-backend = "hatchling.build"
 
 # UV:
 [tool.uv]
+exclude-newer = "7 days"
+exclude-newer-package = { firm-client = "1 second", hprm = "1 second" }
 python-preference = "only-managed"
 
 # HATCH:
