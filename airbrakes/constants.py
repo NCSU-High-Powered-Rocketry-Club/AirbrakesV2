@@ -60,7 +60,7 @@ time to move to the desired position.
 """
 
 
-class eServoExtension(Enum):
+class ServoExtension(Enum):
     """
     Enum that represents the extension of the servo motor.
 
