@@ -60,7 +60,7 @@ time to move to the desired position.
 """
 
 
-class ServoExtension(Enum):
+class eServoExtension(Enum):
     """
     Enum that represents the extension of the servo motor.
 
@@ -78,8 +78,8 @@ class ServoExtension(Enum):
     MIN_EXTENSION = 112
     MIN_NO_BUZZ = 113
 
-    MAX_EXTENSION = 151
-    MAX_NO_BUZZ = 146
+    MAX_EXTENSION = 130
+    MAX_NO_BUZZ = 125
 
 
 SHUNT_OHMS = 0.01
