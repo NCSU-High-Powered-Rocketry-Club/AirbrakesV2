@@ -17,12 +17,12 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-03-25T02:06:22.303347111Z"
+exclude-newer = "2026-04-07T05:02:44.044503624Z"
 exclude-newer-span = "P7D"
 
 [options.exclude-newer-package]
-hprm = { timestamp = "2026-04-01T02:06:21.303362223Z", span = "PT1S" }
-firm-client = { timestamp = "2026-04-01T02:06:21.303352659Z", span = "PT1S" }
+hprm = { timestamp = "2026-04-14T05:02:43.044563794Z", span = "PT1S" }
+firm-client = { timestamp = "2026-04-14T05:02:43.044545374Z", span = "PT1S" }
 
 [[package]]
 name = "aiohappyeyeballs"
