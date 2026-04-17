@@ -282,3 +282,41 @@ class TestDataProcessor:
         d.update([make_firm_data_packet(est_position_z_meters=20)])
         assert d.current_altitude == 10.0
         assert d.max_altitude == 40.0
+
+    def test_pressure_switch_delay(self, data_processor) -> None:
+        """
+        Tests that pressure altitude is only used after the stabilization window.
+        """
+        d = data_processor
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=10.0,
+                    est_position_z_meters=0.0,
+                    est_velocity_z_meters_per_s=5.0,
+                )
+            ]
+        )
+        d.prepare_for_retracting_airbrakes()
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=10.5,
+                    est_position_z_meters=20.0,
+                    est_velocity_z_meters_per_s=5.0,
+                )
+            ]
+        )
+        assert d.current_altitude == pytest.approx(2.5)
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=11.0,
+                    est_position_z_meters=30.0,
+                    est_velocity_z_meters_per_s=5.0,
+                )
+            ]
+        )
+        assert d.current_altitude == pytest.approx(30.0)
+
