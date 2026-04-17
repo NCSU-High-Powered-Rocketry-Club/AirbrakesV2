@@ -8,7 +8,6 @@ from pathlib import Path
 import msgspec
 import polars as pl
 from firm_client import FIRMDataPacket
-from numpy import inexact
 
 import airbrakes.constants
 from airbrakes.base_classes.base_firm import BaseFIRM
@@ -186,12 +185,16 @@ class MockFIRM(BaseFIRM):
     def _scan_csv(self, *, start_index: int = 0, **kwargs) -> pl.LazyFrame:
         """Prepares the Polars LazyFrame with only the columns we need."""
         # 1. Get all headers present in the CSV
-        excluded_columns = ["est_tilt_angle_degrees",
-                            "est_mach_number",
-                            "raw_rotated_acceleration_x_gs",
-                            "raw_rotated_acceleration_y_gs",
-                            "raw_rotated_acceleration_z_gs"]
-        self._headers = [h for h in pl.scan_csv(self._log_file_path).collect_schema().names()
+        excluded_columns = [
+            "est_tilt_angle_degrees",
+            "est_mach_number",
+            "raw_rotated_acceleration_x_gs",
+            "raw_rotated_acceleration_y_gs",
+            "raw_rotated_acceleration_z_gs",
+        ]
+        self._headers = [
+            h
+            for h in pl.scan_csv(self._log_file_path).collect_schema().names()
             if h not in excluded_columns
         ]
 

@@ -319,4 +319,3 @@ class TestDataProcessor:
             ]
         )
         assert d.current_altitude == pytest.approx(30.0)
-
