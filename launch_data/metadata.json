@@ -80,7 +80,7 @@
     "date": "2026-04-04T14:40:00.000-04:00",
     "rocket": {
       "rocket_Cd": 0.393,
-      "rocket_dry_mass_kg": 37.591,
+      "rocket_dry_mass_kg": 17.05099,
       "rocket_cross_sectional_area_m2": 0.0182414692475,
       "motor": "L1390G-P"
     },
