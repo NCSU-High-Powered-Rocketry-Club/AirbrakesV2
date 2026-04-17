@@ -114,8 +114,6 @@ class TestDataProcessor:
         assert isinstance(d._current_altitudes, np.ndarray)
         assert list(d._current_altitudes) == [0.0]
         assert d._last_data_packet is None
-        assert isinstance(d._vertical_accelerations, np.ndarray)
-        assert d._vertical_accelerations == np.array([0.0])
         assert d._data_packets == []
 
         # Test properties on init
@@ -124,7 +122,6 @@ class TestDataProcessor:
         assert d.vertical_velocity == 0.0
         assert d.max_vertical_velocity == 0.0
         assert d.current_timestamp_seconds == 0
-        assert d.average_vertical_acceleration == 0.0
 
     def test_first_update_no_data_packets(self, data_processor):
         """
@@ -246,13 +243,11 @@ class TestDataProcessor:
         d = data_processor
         d._current_altitudes = np.array([100.0])
         d._vertical_velocities = np.array([50.0])
-        d._vertical_accelerations = np.array([10.0, 20.0])
         d._max_altitude = np.float64(150.0)
         d._max_vertical_velocity = np.float64(60.0)
 
         assert d.current_altitude == 100.0
         assert d.vertical_velocity == 50.0
-        assert d.average_vertical_acceleration == 15.0  # Mean of 10 and 20
         assert d.max_altitude == 150.0
         assert d.max_vertical_velocity == 60.0
         assert isinstance(d.current_altitude, float)

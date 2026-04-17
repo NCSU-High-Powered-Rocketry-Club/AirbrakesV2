@@ -20,10 +20,8 @@ def main() -> None:
                     Raw Accel (G):      x={packet.raw_acceleration_x_gs: >8.4f}, y={packet.raw_acceleration_y_gs: >8.4f}, z={packet.raw_acceleration_z_gs: >8.4f}
                     Raw Gyro (d/s):     x={packet.raw_angular_rate_x_deg_per_s: >8.4f}, y={packet.raw_angular_rate_y_deg_per_s: >8.4f}, z={packet.raw_angular_rate_z_deg_per_s: >8.4f}
                     Mag Field (uT):     x={packet.magnetic_field_x_microteslas: >8.4f}, y={packet.magnetic_field_y_microteslas: >8.4f}, z={packet.magnetic_field_z_microteslas: >8.4f}
-                    Est Pos (m):        x={packet.est_position_x_meters: >8.4f}, y={packet.est_position_y_meters: >8.4f}, z={packet.est_position_z_meters: >8.4f}
-                    Est Vel (m/s):      x={packet.est_velocity_x_meters_per_s: >8.4f}, y={packet.est_velocity_y_meters_per_s: >8.4f}, z={packet.est_velocity_z_meters_per_s: >8.4f}
-                    Est Accel (G):      x={packet.est_acceleration_x_gs: >8.4f}, y={packet.est_acceleration_y_gs: >8.4f}, z={packet.est_acceleration_z_gs: >8.4f}
-                    Est Rate (rad/s):   x={packet.est_angular_rate_x_rad_per_s: >8.4f}, y={packet.est_angular_rate_y_rad_per_s: >8.4f}, z={packet.est_angular_rate_z_rad_per_s: >8.4f}
+                    Est Pos (m):        z={packet.est_position_z_meters: >8.4f}
+                    Est Vel (m/s):      z={packet.est_velocity_z_meters_per_s: >8.4f}
                     Est Quat:           w={packet.est_quaternion_w: >6.3f}, x={packet.est_quaternion_x: >6.3f}, y={packet.est_quaternion_y: >6.3f}, z={packet.est_quaternion_z: >6.3f}
                     -------------------------------------------
                     """)
