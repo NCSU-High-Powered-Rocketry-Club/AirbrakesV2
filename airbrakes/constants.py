@@ -260,3 +260,6 @@ the way retracted."""
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
 """The acceleration due to gravity in meters per second squared, used for
 apogee prediction."""
+
+SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
+"""It takes the pressure a little bit of time to stabilize after airbrakes retract."""
