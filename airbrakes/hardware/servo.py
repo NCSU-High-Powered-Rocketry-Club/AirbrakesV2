@@ -4,15 +4,18 @@ controls the extension of the airbrakes, along with a rotary encoder to measure
 the servo's position.
 """
 
+import gpiod
 import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
+    CHIP_PATH,
     I2C_ADDRESS,
     I2C_BUS,
     MAX_EXPECTED_AMPS,
     SERVO_OPERATING_FREQUENCY_HZ,
+    SERVO_SWITCH_PIN,
     SHUNT_OHMS,
     ServoExtension,
 )
@@ -31,7 +34,7 @@ class Servo(BaseServo):
     on the Pi 5.
     """
 
-    __slots__ = ()
+    __slots__ = ("servo_line",)
 
     def __init__(
         self,
@@ -49,6 +52,13 @@ class Servo(BaseServo):
         :param encoder_pin_number_b: The GPIO pin that the signal wire B
             of the encoder is connected to.
         """
+        # Request control of a GPIO pin from the kernel
+        self.servo_line = gpiod.request_lines(
+            path=CHIP_PATH,
+            consumer="airbrakes-servo",
+            config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
+        )
+
         servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
         # This library can only be imported on the raspberry pi. It's why the import is here.
@@ -82,12 +92,18 @@ class Servo(BaseServo):
         Starts the servo by starting the PWM signal with the initial duty cycle
         corresponding to the minimum extension with no buzzing.
         """
+        # Switch on the servo switch
+        self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
+
         self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
 
     def stop(self) -> None:
         """
         Stops the servo by stopping the PWM signal.
         """
+        # Switch off the servo switch
+        self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.INACTIVE)
+
         self.servo.stop()
 
     def get_battery_volts(self) -> float:
