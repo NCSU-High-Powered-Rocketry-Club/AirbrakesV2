@@ -4,7 +4,13 @@ controls the extension of the airbrakes, along with a rotary encoder to measure
 the servo's position.
 """
 
-import gpiod
+import contextlib
+
+# Can only be imported on Linux:
+with contextlib.suppress(ImportError):
+    import gpiod
+
+
 import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
@@ -105,6 +111,9 @@ class Servo(BaseServo):
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.INACTIVE)
 
         self.servo.stop()
+
+        # Release the gpio pin back to the kernel
+        self.servo_line.release()
 
     def get_battery_volts(self) -> float:
         """

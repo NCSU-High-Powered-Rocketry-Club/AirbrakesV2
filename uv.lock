@@ -17,12 +17,12 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-11T04:21:13.693747574Z"
+exclude-newer = "2026-04-11T05:03:40.755416519Z"
 exclude-newer-span = "P7D"
 
 [options.exclude-newer-package]
-hprm = { timestamp = "2026-04-18T04:21:12.693766111Z", span = "PT1S" }
-firm-client = { timestamp = "2026-04-18T04:21:12.693757222Z", span = "PT1S" }
+hprm = { timestamp = "2026-04-18T05:03:39.755437093Z", span = "PT1S" }
+firm-client = { timestamp = "2026-04-18T05:03:39.755427519Z", span = "PT1S" }
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -116,7 +116,7 @@ source = { editable = "." }
 dependencies = [
     { name = "colorama" },
     { name = "firm-client" },
-    { name = "gpiod" },
+    { name = "gpiod", marker = "sys_platform == 'linux'" },
     { name = "gpiozero" },
     { name = "hprm" },
     { name = "msgspec" },
@@ -162,7 +162,7 @@ profiling = [
 requires-dist = [
     { name = "colorama" },
     { name = "firm-client", specifier = ">=1.2.2" },
-    { name = "gpiod", specifier = ">=2.4.2" },
+    { name = "gpiod", marker = "sys_platform == 'linux'", specifier = ">=2.4.2" },
     { name = "gpiozero" },
     { name = "hprm", specifier = ">=0.1.7" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
