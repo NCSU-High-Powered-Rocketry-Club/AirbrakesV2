@@ -78,8 +78,8 @@ class ServoExtension(Enum):
     MIN_EXTENSION = 122
     MIN_NO_BUZZ = 125
 
-    MAX_EXTENSION = 157
-    MAX_NO_BUZZ = 156
+    MAX_EXTENSION = 135  # 157
+    MAX_NO_BUZZ = 132  # 156
 
 
 SHUNT_OHMS = 0.01
