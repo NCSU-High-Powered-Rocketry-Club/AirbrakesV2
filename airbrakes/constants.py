@@ -103,6 +103,16 @@ I2C_BUS = 1
 The I2C bus the sensor is connected to on the Raspberry Pi.
 """
 
+CHIP_PATH = "/dev/gpiochip0"
+"""
+The GPIO bus we want to control for the servo
+"""
+
+SERVO_SWITCH_PIN = 26
+"""
+The GPIO pin which controls the servo switch which is wired via Airbender
+"""
+
 # -------------------------------------------------------
 # Encoder Configuration
 # -------------------------------------------------------
