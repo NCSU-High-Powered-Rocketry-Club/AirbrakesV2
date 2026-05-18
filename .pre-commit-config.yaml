@@ -14,7 +14,7 @@ repos:
       - id: ruff-format
   # Validate the metadata.json file against the JSON Schema
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.1
+    rev: 0.37.2
     hooks:
       - id: check-metaschema
         files: metadata.json
