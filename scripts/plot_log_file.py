@@ -22,11 +22,11 @@ DEFAULT_TRACES = [
     ("est_position_z_meters", "Estimated Z Position (m)"),
     ("height_used_for_prediction", "est_height"),
     ("est_velocity_z_meters_per_s", "Estimated Z Velocity (m/s)"),
-    ("est_acceleration_z_gs", "Estimated Z Accel (g)"),
+    ("raw_rotated_acceleration_z_gs", "Raw Z Accel (g)"),
     ("predicted_apogee", "Predicted Apogee"),
     ("set_extension", "servo"),
-    ("current_milliamps", "current_milliamps"),
-    ("pressure_pascals", "pressure_pascals")
+    # ("current_milliamps", "current_milliamps"),
+    # ("pressure_pascals", "pressure_pascals")
 ]
 
 
