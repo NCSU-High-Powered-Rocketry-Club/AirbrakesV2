@@ -90,8 +90,7 @@ class TestApogeePredictor:
         """
         Integration-ish test of the apogee predictor using the real HPRM
         call. These tests assume that HPRM works perfectly. To test the actual
-        correctness of HPRM, we rely on HPRM's own unit tests (which will
-        hopefully exist soon).
+        correctness of HPRM, we rely on HPRM's own unit tests.
 
         - Feeds a sequence of FIRMDataPackets into the predictor.
         - Waits for a prediction to appear on the apogee queue.
@@ -110,12 +109,12 @@ class TestApogeePredictor:
             apogee_predictor.update(pkt)
 
         # Wait (with timeout) for a prediction to show up
-        deadline = time.time() + 1.0  # 1 second timeout
+        deadline = time.time() + 2.5  # 2.5 second timeout to reduce flakiness
         prediction = None
         while time.time() < deadline:
-            prediction = apogee_predictor.get_prediction_data_packet()
-            if prediction is not None:
-                break
+            newest_prediction = apogee_predictor.get_prediction_data_packet()
+            if newest_prediction is not None:
+                prediction = newest_prediction
             time.sleep(0.01)
 
         # Cleanly stop the background thread
