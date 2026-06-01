@@ -113,5 +113,43 @@
       "target_apogee_meters": 1219.2
     },
     "flight_description": "Emergency flight in Virginia. Airbrakes worked, but the estimated apogee overpredicted, resulting in a 300ft undershoot of target apogee. Main parachute lines got twisted, resulting in a rapid descent."
+  },
+  "jackpot_launch_4.csv": {
+    "date": "2026-04-24T12:00:00.000-04:00",
+    "rocket": {
+      "rocket_Cd": 0.393,
+      "rocket_dry_mass_kg": 16.601,
+      "rocket_cross_sectional_area_m2": 0.0182414692475,
+      "motor": "L1390G-P"
+    },
+    "launch_site": {
+      "air_temperature_celsius": 24.7,
+      "air_pressure_mb": 1017.6,
+      "wind_speed_kmh": 17.1,
+      "wind_direction": "SW",
+      "location": "Huntsville, AL",
+      "launch_coordinates": {
+        "latitude": 34.893931,
+        "longitude": -86.616503
+      },
+      "launch_rod_angle": 3.0,
+      "launch_rod_length_ft": 12.0
+    },
+    "ins_details": {
+      "ins_model": "FIRM v1.0",
+      "data_packet_frequency": 100.0
+    },
+    "flight_data": {
+      "log_buffer_index": 500,
+      "apogee_meters": 1403.9,
+      "landed_coordinates": {
+        "latitude": 34.891956,
+        "longitude": -86.618172
+      },
+      "landed_coordinates_precision": "From fluctus data",
+      "flight_length_seconds": 98.0,
+      "target_apogee_meters": 1402.1
+    },
+    "flight_description": "This was our 2025-2026 competition launch for NASA Student Launch. We were the 3rd rocket in the second volley. Our target apogee was 4600 ft and we hit 4606 ft, winning the altitude award. Our flight performed well with recovery working nominally. Due to a malfunction in FIRM, airbrakes over predicted apogee, resulting in airbrakes staying retracted for most of the flight. Due to sheer luck, our rocket was very close to hitting apogee, and once FIRM corrected its data, airbrakes briefly deployed near apogee."
   }
 }
