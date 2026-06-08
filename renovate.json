@@ -1,0 +1,12 @@
+{
+  "extends": ["config:recommended"],
+
+  "schedule": ["before 2am on the first day of the month"],
+
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "monthly dependency update bundle"
+    }
+  ]
+}
