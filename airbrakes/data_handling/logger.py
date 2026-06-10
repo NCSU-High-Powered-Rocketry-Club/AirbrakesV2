@@ -57,7 +57,7 @@ class Logger:
         "log_path",
     )
 
-    def __init__(self, log_dir: Path) -> None:
+    def __init__(self, log_dir: 'Path') -> None:
         """
         Initializes the logger object.
 
@@ -119,10 +119,10 @@ class Logger:
 
     @staticmethod
     def _prepare_logger_packets(
-        context_data_packet: ContextDataPacket,
-        servo_data_packet: ServoDataPacket,
-        firm_data_packets: list[FIRMDataPacket],
-        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
+        context_data_packet: 'ContextDataPacket',
+        servo_data_packet: 'ServoDataPacket',
+        firm_data_packets: list['FIRMDataPacket'],
+        apogee_predictor_data_packet: 'ApogeePredictorDataPacket' | None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -132,7 +132,7 @@ class Logger:
         :param firm_data_packets: The FIRM data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
-        :return: A deque of LoggerDataPacket objects.
+        :return: A list of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
@@ -154,7 +154,6 @@ class Logger:
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
-                encoder_position=servo_data_packet.encoder_position,
                 battery_voltage=servo_data_packet.battery_voltage,
                 current_milliamps=servo_data_packet.current_milliamps,
                 # FIRMDataPacket Fields
@@ -217,10 +216,10 @@ class Logger:
 
     def log(
         self,
-        context_data_packet: ContextDataPacket,
-        servo_data_packet: ServoDataPacket,
-        firm_data_packets: list[FIRMDataPacket],
-        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
+        context_data_packet: 'ContextDataPacket',
+        servo_data_packet: 'ServoDataPacket',
+        firm_data_packets: list['FIRMDataPacket'],
+        apogee_predictor_data_packet: 'ApogeePredictorDataPacket' | None,
     ) -> None:
         """
         Logs the current state, extension, and FIRM data to the CSV file.
@@ -314,15 +313,4 @@ class Logger:
                     # During our Pelicanator 1 flight, the rocket fell and had a very hard impact
                     # causing the pi to lose power. This caused us to lose a lot of lines of data
                     # that were not written to the log file. To prevent this from happening again,
-                    # we flush the logger 1000 lines (equivalent to 1 second).
-                    if number_of_lines_logged % NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING == 0:
-                        # Tell Python to flush the data. This gives the data to the OS, and it is
-                        # stored as a dirty page cache (in memory) until the OS decides to write it
-                        # to disk. Technically python automatically flushes the data when the python
-                        # buffer is full (8192 bytes, which would be about 25 lines of data).
-                        file_writer.flush()
-                        # Tell the OS to write the file to disk from the dirty page cache. This
-                        # ensures that the data is written to disk and not just stored in memory.
-                        # This operation is the one which is actually "blocking" when talking about
-                        # file I/O.
-                        os.fsync(file_writer.fileno())
+                    # we flush the logger

@@ -1,7 +1,6 @@
 """
 Module which contains the Servo class, representing a servo motor that
-controls the extension of the airbrakes, along with a rotary encoder to measure
-the servo's position.
+controls the extension of the airbrakes.
 """
 
 import contextlib
@@ -10,8 +9,6 @@ import contextlib
 with contextlib.suppress(ImportError):
     import gpiod
 
-
-import gpiozero
 from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.base_classes.base_servo import BaseServo
@@ -20,6 +17,10 @@ from airbrakes.constants import (
     I2C_ADDRESS,
     I2C_BUS,
     MAX_EXPECTED_AMPS,
+    SERVO_MAX_ANGLE_DEGREES,
+    SERVO_MAX_PULSE_WIDTH_US,
+    SERVO_MIN_ANGLE_DEGREES,
+    SERVO_MIN_PULSE_WIDTH_US,
     SERVO_OPERATING_FREQUENCY_HZ,
     SERVO_SWITCH_PIN,
     SHUNT_OHMS,
@@ -29,35 +30,25 @@ from airbrakes.constants import (
 
 class Servo(BaseServo):
     """
-    A custom class that represents a servo motor and the accompanying rotary
-    encoder. The servo controls the extension of the airbrakes while the
-    encoder measures the servo's position. the encoder is controlled using the
-    gpiozero library, which provides a simple interface for controlling GPIO
-    pins on the Raspberry Pi 5.
+    A custom class that represents a servo motor. The servo controls 
+    the extension of the airbrakes.
 
     The servo we use is the DS3235, which is a coreless digital servo.
     We only use one servo to control the airbrakes, using hardware PWM
     on the Pi 5.
     """
 
-    __slots__ = ("servo_line",)
+    __slots__ = ("current_extension", "ina", "servo", "servo_line")
 
-    def __init__(
-        self,
-        servo_channel: int,
-        encoder_pin_number_a: int,
-        encoder_pin_number_b: int,
-    ) -> None:
+    def __init__(self, servo_channel: int) -> None:
         """
         Initializes the Servo class.
 
         :param servo_channel: The PWM channel that the servo is
             connected to.
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A
-            of the encoder is connected to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B
-            of the encoder is connected to.
         """
+        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
+
         # Request control of a GPIO pin from the kernel
         self.servo_line = gpiod.request_lines(
             path=CHIP_PATH,
@@ -65,43 +56,32 @@ class Servo(BaseServo):
             config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
         )
 
-        servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
-
-        # This library can only be imported on the raspberry pi. It's why the import is here.
-        from gpiozero.pins.lgpio import LGPIOFactory as Factory  # noqa: PLC0415
+        self.servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
 
         # This library fails to import on Windows due to smbus2:
         from ina219 import INA219  # noqa: PLC0415
 
-        # max_steps=0 indicates that the encoder's `value` property will never change. We will
-        # only use the integer value, which is the `steps` property.
-        encoder = gpiozero.RotaryEncoder(
-            encoder_pin_number_a, encoder_pin_number_b, max_steps=0, pin_factory=Factory()
-        )
-
-        ina = INA219(
+        self.ina = INA219(
             shunt_ohms=SHUNT_OHMS,
             address=I2C_ADDRESS,
             max_expected_amps=MAX_EXPECTED_AMPS,
             busnum=I2C_BUS,
         )
-        ina.configure(
+        self.ina.configure(
             # sample the current faster (84us per sample instead of 532us per sample with ADC_12BIT,
             # which is the default setting). We lose about ~8mA of resolution.
             shunt_adc=INA219.ADC_9BIT
         )
 
-        super().__init__(encoder=encoder, servo=servo, ina=ina)
-
     def start(self) -> None:
         """
         Starts the servo by starting the PWM signal with the initial duty cycle
-        corresponding to the minimum extension with no buzzing.
+        corresponding to the minimum extension.
         """
         # Switch on the servo switch
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
 
-        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_EXTENSION.value))
 
     def stop(self) -> None:
         """
@@ -114,6 +94,22 @@ class Servo(BaseServo):
 
         # Release the gpio pin back to the kernel
         self.servo_line.release()
+
+    def extend_airbrakes(self) -> None:
+        """
+        Extends the servo to the maximum extension.
+        """
+        self.current_extension = ServoExtension.MAX_EXTENSION
+        duty_cycle: float = self._angle_to_duty_cycle(self.current_extension.value)
+        self.servo.change_duty_cycle(duty_cycle)
+
+    def retract_airbrakes(self) -> None:
+        """
+        Retracts the servo to the minimum extension.
+        """
+        self.current_extension = ServoExtension.MIN_EXTENSION
+        duty_cycle: float = self._angle_to_duty_cycle(self.current_extension.value)
+        self.servo.change_duty_cycle(duty_cycle)
 
     def get_battery_volts(self) -> float:
         """
@@ -131,12 +127,34 @@ class Servo(BaseServo):
         """
         return self.ina.current()
 
-    def _set_extension(self, extension: ServoExtension) -> None:
+    @staticmethod
+    def _angle_to_pulse_width(angle: float) -> float:
         """
-        Sets the servo to the specified extension.
+        Converts an angle in degrees to a pulse width in microseconds for a
+        servo motor.
 
-        :param extension: The extension to set the servo to.
+        :param angle: The angle in degrees (0 to 180).
+        :return: The corresponding pulse width in microseconds.
         """
-        super()._set_extension(extension)
-        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
+        # Clamp the angle to the valid range:
+        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
+
+        return SERVO_MIN_PULSE_WIDTH_US + (
+            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
+            * (angle - SERVO_MIN_ANGLE_DEGREES)
+            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
+        )
+
+    @staticmethod
+    def _angle_to_duty_cycle(angle: float) -> float:
+        """
+        Converts an angle in degrees to a duty cycle percentage for a servo
+        motor.
+
+        :param angle: The angle in degrees.
+        :return: The corresponding duty cycle percentage.
+        """
+        pulse_us = Servo._angle_to_pulse_width(angle)
+
+        duty_cycle: float = (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
+        return duty_cycle
