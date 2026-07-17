@@ -17,12 +17,12 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-11T05:03:40.755416519Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P7D"
 
 [options.exclude-newer-package]
-hprm = { timestamp = "2026-04-18T05:03:39.755437093Z", span = "PT1S" }
-firm-client = { timestamp = "2026-04-18T05:03:39.755427519Z", span = "PT1S" }
+hprm = { timestamp = "0001-01-01T00:00:00Z", span = "PT1S" }
+firm-client = { timestamp = "0001-01-01T00:00:00Z", span = "PT1S" }
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -164,7 +164,7 @@ requires-dist = [
     { name = "firm-client", specifier = ">=1.2.2" },
     { name = "gpiod", marker = "sys_platform == 'linux'", specifier = ">=2.4.2" },
     { name = "gpiozero" },
-    { name = "hprm", specifier = ">=0.1.7" },
+    { name = "hprm", specifier = ">=0.2.0" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
@@ -363,14 +363,16 @@ wheels = [
 
 [[package]]
 name = "hprm"
-version = "0.1.7"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/41/9a/22e70ad216b6a8d303c75ac78aed1800bdd682cee25d211754a68b25f31a/hprm-0.1.7.tar.gz", hash = "sha256:70f1ff1547fbd10277da156a970b8abce1acf7724aef3f435240b5e81219198f", size = 161285, upload-time = "2026-01-26T08:46:01.595Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/56/61f26a815e9181e943fdaf43edc36ad84d30eb0902a393652197622312bb/hprm-0.2.0.tar.gz", hash = "sha256:542485e903f33a57892af5169a0446e2a1ba651c22f3312e5a743570692bb462", size = 195798, upload-time = "2026-06-20T05:19:46.907Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/f6/fc306c918716253e117501d9a87a05d995cd010e4b26c3e2b3bedaffa7ef/hprm-0.1.7-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:b56d61d24f3e4707c4722d210e1b0a6b7d91ff3c0f595f9d81670ca8c3552c54", size = 284081, upload-time = "2026-01-26T08:45:56.937Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/2d/7c5357878b6575e90c3211bf3ffe895778d33bcadaf83eff6fcb223460a6/hprm-0.1.7-cp314-cp314-win_amd64.whl", hash = "sha256:4d437748e2ebb329a0e337596d0b16b614ec06edf5b1acac66fa068450817270", size = 393426, upload-time = "2026-01-26T08:45:58.143Z" },
-    { url = "https://files.pythonhosted.org/packages/46/7c/f8a607ac42e037ebbe6d73a6556debf5d991e0c88d998f456a9de18c9316/hprm-0.1.7-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:a48a8de06fa03df9cf9a2972b07d249d1c1c6f6fa6b96014eff7bd72eca476fa", size = 283536, upload-time = "2026-01-26T08:45:59.442Z" },
-    { url = "https://files.pythonhosted.org/packages/67/cd/9f3b4360864fe15c430d76ef9cb66d42588e1913454aa7c8e8f8fc6e54ad/hprm-0.1.7-cp314-cp314t-win_amd64.whl", hash = "sha256:7bd1f5657480c40f2a910a11c329f42eb10d40c8aa970fc75e4acd42e3d1a41b", size = 179313, upload-time = "2026-01-26T08:46:00.434Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/4e/2a1cc23e40f3d688f7e7ea3e2c2dec7c7937218ebe44149677ccc9294c00/hprm-0.2.0-cp314-cp314-manylinux_2_31_aarch64.whl", hash = "sha256:9cfd29145791d65e1c0b8ae1f90ab4dc78cb67cec83bf0f65f2b470ac0c7a6c6", size = 290212, upload-time = "2026-06-20T05:20:57.485Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/48/3826175eaf5843a566b5ecadb7e62526e7c1209e2816e0755e4e6003a1d6/hprm-0.2.0-cp314-cp314-manylinux_2_31_x86_64.whl", hash = "sha256:b2b7e7d6a10d1224eb10681f9a679fa4547bddbad876fb307a99c59c09800542", size = 298530, upload-time = "2026-06-20T08:37:16.212Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/a0/12993dc97137506d62f851fb3a1613b5a95745eb8611beeca4ec58d8ae26/hprm-0.2.0-cp314-cp314-win_amd64.whl", hash = "sha256:45ddcc80638548e51648f66008f5cd9c1fbed84620cb2abb6ce287f8716f28d8", size = 182490, upload-time = "2026-06-20T05:20:49.935Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/f5/ce8712d0fd813d22e3cbc94738dd3caa4c07430b0c84676589de38e63f6c/hprm-0.2.0-cp314-cp314t-manylinux_2_31_aarch64.whl", hash = "sha256:ae270d6681c785fec8e186ef4de464fa5c3947ed425ec00f37f24d9bddde94ea", size = 289447, upload-time = "2026-06-20T05:19:41.871Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/19/505bd99560e3d2133486a93f059c8808de6e8e0464e1031942f4f2a97498/hprm-0.2.0-cp314-cp314t-manylinux_2_31_x86_64.whl", hash = "sha256:505e738938a032eb2ab62f58678ad2c18cee70da9a7378cbb5db9a2ef63b8ee9", size = 298862, upload-time = "2026-06-20T08:36:49.679Z" },
+    { url = "https://files.pythonhosted.org/packages/92/40/7323ba1dd67ff30119e3d93ad646816b33d1099edaa63f0486f4bf7b3275/hprm-0.2.0-cp314-cp314t-win_amd64.whl", hash = "sha256:5cded711cfee7cc3349282781e8407b773fe8b9f3c887a7cd59b2d37b8e51d52", size = 182758, upload-time = "2026-06-20T05:19:54.065Z" },
 ]
 
 [[package]]

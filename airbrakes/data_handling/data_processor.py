@@ -243,6 +243,16 @@ class DataProcessor:
         # Get the pressure altitudes from the data points and zero out the initial altitude
         return altitudes
 
+    def _calculate_horizontal_velocity(self, vertical_velocity: float, tilt_angle_degrees: float,) -> float:
+        """
+        Calculates the horizontal velocity from the rocket's vertical velocity and tilt tilt angle.
+        """
+        angle_radians = np.radians(tilt_angle_degrees)
+        horizontal_velocity = vertical_velocity * np.tan(angle_radians)
+
+        # Get the current horizontal velocity
+        return horizontal_velocity
+
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data packet and the previous data packet.
@@ -279,6 +289,12 @@ class DataProcessor:
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
                 vertical_velocity=float(self._vertical_velocities[i]),
+                horizontal_velocity=self._calculate_horizontal_velocity(
+                    float(self._vertical_velocities[i]),
+                    self._data_packets[i].est_tilt_angle_degrees,
+                    ),
+                tilt_angle_degrees=float(self._data_packets[i].est_tilt_angle_degrees),
+                angular_rate=0.0,
                 timestamp_seconds=float(self._data_packets[i].timestamp_seconds),
             )
             for i in range(len(self._data_packets))
