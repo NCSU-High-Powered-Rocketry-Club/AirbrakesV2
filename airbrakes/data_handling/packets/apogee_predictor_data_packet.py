@@ -12,9 +12,18 @@ class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     height_used_for_prediction: float
     """The altitude used for the apogee prediction in meters."""
 
-    velocity_used_for_prediction: float
+    vertical_velocity_meters_per_s_used_for_prediction: float
     """The vertical velocity used for the apogee prediction in meters per
     second."""
 
-    # TODO: implement once apogee prediction uses 3DOF
-    # pitch_used_for_prediction: float
+    horizontal_velocity_meters_per_s_used_for_prediction: float
+    """The horizontal velocity used for the apogee prediction in meters per
+    second."""
+
+    tilt_angle_degrees_used_for_prediction: float
+    """The tilt angle used for the apogee prediction in degrees."""
+
+    angular_rate_deg_per_s_used_for_prediction: float
+    """The angular rate used for the apogee prediction in degrees per
+    second."""
+

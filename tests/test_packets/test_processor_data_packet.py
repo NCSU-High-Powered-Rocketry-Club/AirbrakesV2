@@ -7,7 +7,7 @@ from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataP
 def processor_data_packet():
     return ProcessorDataPacket(
         current_altitude=TestProcessorDataPacket.current_altitude,
-        vertical_velocity=TestProcessorDataPacket.vertical_velocity,
+        vertical_velocity_meters_per_s=TestProcessorDataPacket.vertical_velocity,
         timestamp_seconds=TestProcessorDataPacket.timestamp_seconds,
     )
 

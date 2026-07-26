@@ -121,8 +121,8 @@ class ApogeePredictor:
         rocket = Rocket(
             constants.ROCKET_DRY_MASS_KG,
             constants.ROCKET_CD,
-            constants.ROCKET_AREA_DRAG_M2,
-            constants.ROCKET_AREA_LIFT_M2,
+            constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
+            constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
             constants.ROCKET_MOMENT_OF_INERTIA_KG_M2,
             constants.ROCKET_STAB_MARGIN_DIMENSIONAL_M,
             constants.ROCKET_CL_A,
@@ -146,9 +146,9 @@ class ApogeePredictor:
                 x=0.0,
                 y=most_recent_packet.current_altitude,
                 angle=math.radians(most_recent_packet.tilt_angle_degrees),
-                vx=most_recent_packet.horizontal_velocity,
-                vy=most_recent_packet.vertical_velocity,
-                angular_rate=most_recent_packet.angular_rate,
+                vx=most_recent_packet.horizontal_velocity_meters_per_s,
+                vy=most_recent_packet.vertical_velocity_meters_per_s,
+                angular_rate=most_recent_packet.angular_rate_deg_per_s,
                 )
 
             apogee = rocket.predict_apogee_3dof(
@@ -156,22 +156,14 @@ class ApogeePredictor:
                 integration_method=OdeMethod.RK45,
             )
 
-            # To view relevant data from the processor data packet, only to help implement 3DOF and
-            # see where things might be going wrong.
-            print(
-                    f"tilt={most_recent_packet.tilt_angle_degrees:.2f}°, "
-                    f"vx={most_recent_packet.horizontal_velocity:.2f} m/s, "
-                    f"vy={most_recent_packet.vertical_velocity:.2f} m/s, "
-                    f"angular_rate={most_recent_packet.angular_rate:.2f}, "
-                    f"apogee={apogee:.2f} m"
-                )
-
             # Push a prediction packet back to the main thread.
-            # TODO: add more stuff to the packet
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(
                     apogee,
                     most_recent_packet.current_altitude,
-                    most_recent_packet.vertical_velocity,
+                    most_recent_packet.vertical_velocity_meters_per_s,
+                    most_recent_packet.horizontal_velocity_meters_per_s,
+                    most_recent_packet.tilt_angle_degrees,
+                    most_recent_packet.angular_rate_deg_per_s
                 )
             )

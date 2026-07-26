@@ -264,12 +264,6 @@ ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (6.0 * 0.0254 / 2) ** 2
 """The cross-sectional area of the rocket in square meters, with airbrakes all
 the way retracted."""
 
-ROCKET_AREA_DRAG_M2: float = ROCKET_CROSS_SECTIONAL_AREA_M2
-"""The aerodynamic reference area used by HPRM when computing drag forces."""
-
-ROCKET_AREA_LIFT_M2: float = ROCKET_CROSS_SECTIONAL_AREA_M2
-"""The aerodynamic reference area used by HPRM when computing lift forces."""
-
 ROCKET_MOMENT_OF_INERTIA_KG_M2: float = 11.45
 """The moment of inertia of the rocket in kg * m^2, with airbrakes all the way retracted."""
 
@@ -280,7 +274,7 @@ ROCKET_STAB_MARGIN_DIMENSIONAL_M: float = ROCKET_STAB_MARGIN_CAL * (6.0 * 0.0254
 """The static stability margin of the rocket in meters"""
 
 # TODO: Verify CL_A with aerodynamic analysis.
-ROCKET_CL_A: float = 0.2 
+ROCKET_CL_A: float = 0.2
 """The lift curve slope of the rocket"""
 
 # ----------------------------------------
