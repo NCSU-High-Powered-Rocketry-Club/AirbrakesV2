@@ -119,10 +119,10 @@ class Logger:
 
     @staticmethod
     def _prepare_logger_packets(
-        context_data_packet: 'ContextDataPacket',
-        servo_data_packet: 'ServoDataPacket',
-        firm_data_packets: list['FIRMDataPacket'],
-        apogee_predictor_data_packet: 'ApogeePredictorDataPacket' | None,
+        context_data_packet: ContextDataPacket,
+        servo_data_packet: ServoDataPacket,
+        firm_data_packets: list[FIRMDataPacket],
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -216,10 +216,10 @@ class Logger:
 
     def log(
         self,
-        context_data_packet: 'ContextDataPacket',
-        servo_data_packet: 'ServoDataPacket',
-        firm_data_packets: list['FIRMDataPacket'],
-        apogee_predictor_data_packet: 'ApogeePredictorDataPacket' | None,
+        context_data_packet: ContextDataPacket,
+        servo_data_packet: ServoDataPacket,
+        firm_data_packets: list[FIRMDataPacket],
+        apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> None:
         """
         Logs the current state, extension, and FIRM data to the CSV file.
