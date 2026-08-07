@@ -4,6 +4,10 @@
     "config:best-practices",
     // Opt-in to updating the pre-commit-config.yaml file too:
     ":enablePreCommit",
+    // Put every dependency update, including pre-commit hooks, in one PR:
+    "group:all",
+    // Open the grouped PR on the first day of each month:
+    "schedule:monthly",
     ":prConcurrentLimitNone"  // No limits on the number of open PRs.
   ],
 
@@ -16,26 +20,17 @@
   // Let Renovate decide how to update. See docs: https://docs.renovatebot.com/configuration-options/#rangestrategy
   "rangeStrategy": "auto",
 
-  // Update the lock files:
+  // Standalone lock-file maintenance cannot be grouped with dependency updates. Lock files are
+  // still updated as part of the monthly dependency PR.
   "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["* 0-3 * * 1"],  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
-    "automerge": true
+    "enabled": false
   },
 
   // Enable automerge globally:
   "automerge": true,
 
-  // Group package updates together:
+  // Package-specific exceptions:
   "packageRules": [
-    // Linting dependencies in pyproject.toml in sync with the pre-commit-config hooks:
-    // Unfortunately it seems we need to do this for every dependency group (https://github.com/python-telegram-bot/python-telegram-bot/pull/4887#discussion_r2272025832):
-    {
-      "description": "Group Ruff updates together",
-      "matchPackageNames": ["ruff", "astral-sh/ruff-pre-commit"],
-      "groupName": "Ruff"
-    },
-
     // Don't automatically upgrade python version:
     {
       "matchPackageNames": ["python"],
@@ -48,9 +43,6 @@
       "matchDepTypes": ["project.dependencies", "project.optional-dependencies"],
       "automerge": false
     }
-  ],
-
-  // schedule to allow PR's from Renovate:
-  "schedule": ["* 0-3 * * 1"]  // https://docs.renovatebot.com/presets-schedule/#scheduleearlymondays
+  ]
 
 }
