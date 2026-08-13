@@ -1,7 +1,6 @@
 """Module for logging data to a CSV file in real time."""
 
 import csv
-import os
 import queue
 import threading
 import typing
@@ -13,7 +12,6 @@ import msgspec
 from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
-    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
@@ -57,7 +55,7 @@ class Logger:
         "log_path",
     )
 
-    def __init__(self, log_dir: 'Path') -> None:
+    def __init__(self, log_dir: Path) -> None:
         """
         Initializes the logger object.
 

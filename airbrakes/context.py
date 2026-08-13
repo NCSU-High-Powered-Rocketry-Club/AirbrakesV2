@@ -53,11 +53,11 @@ class Context:
 
     def __init__(
         self,
-        servo: 'BaseServo',
-        firm: 'BaseFIRM',
-        logger: 'Logger',
-        data_processor: 'DataProcessor',
-        apogee_predictor: 'ApogeePredictor',
+        servo: BaseServo,
+        firm: BaseFIRM,
+        logger: Logger,
+        data_processor: DataProcessor,
+        apogee_predictor: ApogeePredictor,
     ) -> None:
         """
         Initializes Context with the specified hardware objects, Logger,
@@ -77,18 +77,18 @@ class Context:
             predicts what the apogee of the rocket will be based on the
             processed data.
         """
-        self.servo: 'BaseServo' = servo
-        self.firm: 'BaseFIRM' = firm
-        self.logger: 'Logger' = logger
-        self.data_processor: 'DataProcessor' = data_processor
-        self.apogee_predictor: 'ApogeePredictor' = apogee_predictor
+        self.servo: BaseServo = servo
+        self.firm: BaseFIRM = firm
+        self.logger: Logger = logger
+        self.data_processor: DataProcessor = data_processor
+        self.apogee_predictor: ApogeePredictor = apogee_predictor
         # The rocket starts in the StandbyState
         self.state: State = StandbyState(self)
 
         self.shutdown_requested = False
-        self.firm_data_packets: list['FIRMDataPacket'] = []
-        self.processor_data_packets: list['ProcessorDataPacket'] = []
-        self.most_recent_apogee_predictor_data_packet: 'ApogeePredictorDataPacket' | None = None
+        self.firm_data_packets: list[FIRMDataPacket] = []
+        self.processor_data_packets: list[ProcessorDataPacket] = []
+        self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket = None
         self.servo_data_packet: ServoDataPacket = None
 
@@ -212,7 +212,8 @@ class Context:
             update_timestamp_ns=time.time_ns(),
         )
 
-        # Creates a Servo Data Packet to log the current extension of the servo and the electrical metrics.
+        # Creates a Servo Data Packet to log the current extension
+        # of the servo and the electrical metrics.
         self.servo_data_packet = ServoDataPacket(
             set_extension=self.servo.current_extension,
             battery_voltage=f"{self.servo.get_battery_volts()}",

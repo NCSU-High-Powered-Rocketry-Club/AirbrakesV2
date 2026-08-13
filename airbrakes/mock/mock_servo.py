@@ -17,31 +17,26 @@ class MockServo(BaseServo):
         """
         Initializes the mock servo object.
         """
-        pass
 
     def start(self) -> None:
         """
         Starts the servo.
         """
-        pass
 
     def stop(self) -> None:
         """
         Stops the servo.
         """
-        pass
 
     def extend_airbrakes(self) -> None:
         """
         Extends the servo to deploy the airbrakes (Mock).
         """
-        pass
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the servo to close the airbrakes (Mock).
         """
-        pass
 
     def get_battery_volts(self) -> float:
         """

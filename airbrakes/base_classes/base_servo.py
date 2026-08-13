@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 
 class BaseServo(ABC):
     """
-    A custom class that represents a servo interface. The servo controls 
-    the extension of the airbrakes.
+    A custom class that represents a servo interface.
+    The servo controls the extension of airbrakes.
     """
 
     __slots__ = ()

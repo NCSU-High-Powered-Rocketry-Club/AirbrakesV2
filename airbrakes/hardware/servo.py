@@ -30,8 +30,8 @@ from airbrakes.constants import (
 
 class Servo(BaseServo):
     """
-    A custom class that represents a servo motor. The servo controls 
-    the extension of the airbrakes.
+    A custom class that represents a servo motor.
+    The servo controls the extension of airbrakes.
 
     The servo we use is the DS3235, which is a coreless digital servo.
     We only use one servo to control the airbrakes, using hardware PWM
