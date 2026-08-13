@@ -1,6 +1,5 @@
 import pytest
 
-from airbrakes.constants import ServoExtension
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
@@ -69,7 +68,7 @@ class TestBaseServo:
         assert Servo._angle_to_duty_cycle(180) == approx(12.5)
         assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
         assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping
-        
+
     def test_get_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
         assert servo.get_battery_volts() == 0.0

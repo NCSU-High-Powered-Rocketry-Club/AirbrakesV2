@@ -18,6 +18,14 @@ class MockServo(BaseServo):
         Initializes the mock servo object.
         """
 
+    def __init__(self, servo_channel: int, encoder_pin_a: int, encoder_pin_b: int) -> None:
+        """
+        Initializes the mock servo object.
+        :param servo_channel: The PWM channel for the servo
+        :param encoder_pin_a: GPIO pin A for the encoder
+        :param encoder_pin_b: GPIO pin B for the encoder
+        """
+
     def start(self) -> None:
         """
         Starts the servo.
