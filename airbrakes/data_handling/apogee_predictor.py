@@ -118,13 +118,16 @@ class ApogeePredictor:
 
         Runs in a separate thread.
         """
+
+        stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
+
         rocket = Rocket(
             constants.ROCKET_DRY_MASS_KG,
             constants.ROCKET_CD,
             constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
             constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
             constants.ROCKET_MOMENT_OF_INERTIA_KG_M2,
-            constants.ROCKET_STAB_MARGIN_DIMENSIONAL_M,
+            stability_margin_m,
             constants.ROCKET_CL_A,
         )
 

@@ -1,6 +1,5 @@
 """Contains the constants used in the Airbrakes module."""
 
-import math
 from enum import Enum, StrEnum
 from pathlib import Path
 
@@ -258,9 +257,10 @@ ROCKET_DRY_MASS_KG: float = ROCKET_WET_MASS_KG - PROPELLANT_MASS_KG
 ROCKET_CD: float = 0.393
 """The drag coefficient of the rocket with airbrakes all the way retracted."""
 
-# This is the diameter of the rocket in inches converted to meters, turned into radius, then used to
-# calculate cross-sectional area.
-ROCKET_CROSS_SECTIONAL_AREA_M2: float = math.pi * (6.0 * 0.0254 / 2) ** 2
+ROCKET_DIAMETER_M: float = 6.0 * 0.0254
+"""The diameter of the rocket in meters, with airbrakes all the way retracted."""
+
+ROCKET_CROSS_SECTIONAL_AREA_M2: float = 0.0182414692475
 """The cross-sectional area of the rocket in square meters, with airbrakes all
 the way retracted."""
 
@@ -270,10 +270,7 @@ ROCKET_MOMENT_OF_INERTIA_KG_M2: float = 11.45
 ROCKET_STAB_MARGIN_CAL: float = 3.24
 """The stability margin of the rocket measured in calipers"""
 
-ROCKET_STAB_MARGIN_DIMENSIONAL_M: float = ROCKET_STAB_MARGIN_CAL * (6.0 * 0.0254)
-"""The static stability margin of the rocket in meters"""
-
-# TODO: Verify CL_A with aerodynamic analysis.
+# TODO: Need to verify with aerodynamic analysis.
 ROCKET_CL_A: float = 0.2
 """The lift curve slope of the rocket"""
 
