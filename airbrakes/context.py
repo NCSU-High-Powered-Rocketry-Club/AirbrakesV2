@@ -170,7 +170,7 @@ class Context:
         # Create Context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
-        # This if statement is just because my ide is being dumb, but it's not possible for them to 
+        # This if statement is just because my ide is being dumb, but it's not possible for them to
         # be None here
         if self.context_data_packet is not None and self.servo_data_packet is not None:
             # Logs all the packet types from each of the relevant processes
