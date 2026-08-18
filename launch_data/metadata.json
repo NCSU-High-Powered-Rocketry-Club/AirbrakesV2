@@ -50,7 +50,7 @@
       "rocket_cross_sectional_area_m2": 0.0182414692475,
       "rocket_diameter_m": 0.1524,
       "rocket_moment_of_inertia_kg_m2": 11.45,
-      "rocket_stab_margin_cal": 0,
+      "rocket_stab_margin_cal": 3.3,
       "rocket_cl_a": 0.2,
       "motor": "L1390G-P"
     },
