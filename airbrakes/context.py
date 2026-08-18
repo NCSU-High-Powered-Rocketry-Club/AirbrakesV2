@@ -6,7 +6,7 @@ rocket.
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS
+from airbrakes.constants import BUSY_WAIT_SECONDS, ServoExtension
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.state import StandbyState, State
@@ -89,8 +89,8 @@ class Context:
         self.firm_data_packets: list[FIRMDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
-        self.context_data_packet: ContextDataPacket = None
-        self.servo_data_packet: ServoDataPacket = None
+        self.context_data_packet: ContextDataPacket | None = None
+        self.servo_data_packet: ServoDataPacket | None = None
 
         # Keeps track of the launch time, used for calculating convergence time
         self.launch_time_seconds: float = 0
@@ -168,13 +168,16 @@ class Context:
         # Create Context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
-        # Logs all the packet types from each of the relevant processes
-        self.logger.log(
-            self.context_data_packet,
-            self.servo_data_packet,
-            self.firm_data_packets,
-            self.most_recent_apogee_predictor_data_packet,
-        )
+        # This if statement is just because my ide is being dumb, but it's not possible for them to 
+        # be None here
+        if self.context_data_packet is not None and self.servo_data_packet is not None:
+            # Logs all the packet types from each of the relevant processes
+            self.logger.log(
+                self.context_data_packet,
+                self.servo_data_packet,
+                self.firm_data_packets,
+                self.most_recent_apogee_predictor_data_packet,
+            )
 
     def extend_airbrakes(self) -> None:
         """Extends the air brakes to the maximum extension."""
@@ -183,8 +186,13 @@ class Context:
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
-        self.data_processor.prepare_for_retracting_airbrakes()
-        self.servo.set_retracted()
+        # We don't want to retract the air brakes if they are already retracted
+        if self.servo.current_extension in (
+            ServoExtension.MAX_EXTENSION,
+            ServoExtension.MAX_NO_BUZZ,
+        ):
+            self.data_processor.prepare_for_retracting_airbrakes()
+            self.servo.set_retracted()
 
     def predict_apogee(self) -> None:
         """

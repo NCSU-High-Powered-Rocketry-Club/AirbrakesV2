@@ -150,6 +150,6 @@
       "flight_length_seconds": 98.0,
       "target_apogee_meters": 1402.1
     },
-    "flight_description": "This was our 2025-2026 competition launch for NASA Student Launch. We were the 3rd rocket in the second volley. Our target apogee was 4600 ft and we hit 4606 ft, winning the altitude award. Our flight performed well with recovery working nominally. Due to a malfunction in FIRM, airbrakes over predicted apogee, resulting in airbrakes staying retracted for most of the flight. Due to sheer luck, our rocket was very close to hitting apogee, and once FIRM corrected its data, airbrakes briefly deployed near apogee."
+    "flight_description": "This was our 2025-2026 competition launch for NASA Student Launch. We were the 3rd rocket in the second volley. Our target apogee was 4600 ft and we hit 4606 ft, winning the altitude award. Our flight performed well with recovery working nominally. Due to a malfunction in FIRM, airbrakes under predicted apogee, resulting in airbrakes staying retracted for most of the flight. Due to sheer luck, our rocket was very close to hitting apogee, and once FIRM corrected its data, airbrakes briefly deployed near apogee."
   }
 }
