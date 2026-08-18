@@ -111,6 +111,8 @@ class Context:
         self.logger.start()
         self.apogee_predictor.start()
         self.servo.start()
+        # TODO: once we merge Manu's PR we can move this into the servo.start method
+        self.servo.set_retracted()
 
         if wait_for_start:
             # Wait for all processes to start. It is assumed that once FIRM is running, all other
