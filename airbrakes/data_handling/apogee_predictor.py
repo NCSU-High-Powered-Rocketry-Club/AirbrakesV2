@@ -115,10 +115,8 @@ class ApogeePredictor:
         """
         Responsible for fetching data packets, updating internal state, and
         finally predicting the apogee using the chosen method (e.g. HPRM).
-
         Runs in a separate thread.
         """
-
         stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
 
         rocket = Rocket(
@@ -152,7 +150,7 @@ class ApogeePredictor:
                 vx=most_recent_packet.horizontal_velocity_meters_per_s,
                 vy=most_recent_packet.vertical_velocity_meters_per_s,
                 angular_rate=most_recent_packet.angular_rate_deg_per_s,
-                )
+            )
 
             apogee = rocket.predict_apogee_3dof(
                 initial_state,
@@ -167,6 +165,6 @@ class ApogeePredictor:
                     most_recent_packet.vertical_velocity_meters_per_s,
                     most_recent_packet.horizontal_velocity_meters_per_s,
                     most_recent_packet.tilt_angle_degrees,
-                    most_recent_packet.angular_rate_deg_per_s
+                    most_recent_packet.angular_rate_deg_per_s,
                 )
             )

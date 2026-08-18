@@ -243,7 +243,6 @@ class DataProcessor:
         # Get the pressure altitudes from the data points and zero out the initial altitude
         return altitudes
 
-
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
         """
         Calculates the time difference between each data packet and the previous data packet.

@@ -98,7 +98,9 @@ class MockFIRM(BaseFIRM):
                 self.rocket_parameters.rocket_moment_of_inertia_kg_m2
             )
         if self.rocket_parameters.rocket_stab_margin_cal is not None:
-            airbrakes.constants.ROCKET_STAB_MARGIN_CAL = self.rocket_parameters.rocket_stab_margin_cal
+            airbrakes.constants.ROCKET_STAB_MARGIN_CAL = (
+                self.rocket_parameters.rocket_stab_margin_cal
+            )
         if self.rocket_parameters.rocket_cl_a is not None:
             airbrakes.constants.ROCKET_CL_A = self.rocket_parameters.rocket_cl_a
 

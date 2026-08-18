@@ -26,4 +26,3 @@ class ApogeePredictorDataPacket(msgspec.Struct, tag=True, array_like=True):
     angular_rate_deg_per_s_used_for_prediction: float
     """The angular rate used for the apogee prediction in degrees per
     second."""
-

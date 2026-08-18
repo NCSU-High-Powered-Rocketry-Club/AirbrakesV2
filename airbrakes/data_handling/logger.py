@@ -19,7 +19,6 @@ from airbrakes.constants import (
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import LandedState, StandbyState
 from airbrakes.utils import get_all_packets_from_queue
-from tests.test_packets.test_apogee_predictor_data_packet import apogee_predictor_data_packet
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -153,9 +152,7 @@ class Logger:
                 vertical_velocity_meters_per_s_used_for_prediction = (
                     apogee_predictor_data_packet.vertical_velocity_meters_per_s_used_for_prediction
                 )
-                horizontal_velocity_meters_per_s_used_for_prediction = (
-                apogee_predictor_data_packet.horizontal_velocity_meters_per_s_used_for_prediction
-                )
+                horizontal_velocity_meters_per_s_used_for_prediction = apogee_predictor_data_packet.horizontal_velocity_meters_per_s_used_for_prediction
                 tilt_angle_degrees_used_for_prediction = (
                     apogee_predictor_data_packet.tilt_angle_degrees_used_for_prediction
                 )
