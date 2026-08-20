@@ -111,7 +111,17 @@ class Servo(BaseServo):
         duty_cycle: float = self._angle_to_duty_cycle(self.current_extension.value)
         self.servo.change_duty_cycle(duty_cycle)
 
-    def get_battery_volts(self) -> float:
+    @property
+    def servo_extension(self) -> ServoExtension:
+        """
+        Gets the extension most recently commanded to the servo.
+
+        :return: The commanded servo extension.
+        """
+        return self.current_extension
+
+    @property
+    def battery_volts(self) -> float:
         """
         Gets the battery voltage from the INA219 sensor.
 
@@ -119,7 +129,8 @@ class Servo(BaseServo):
         """
         return self.ina.supply_voltage()
 
-    def get_system_current_milliamps(self) -> float:
+    @property
+    def system_current_milliamps(self) -> float:
         """
         Gets the current system current draw from the INA219 sensor.
 

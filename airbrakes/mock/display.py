@@ -187,7 +187,7 @@ class FlightDisplay:
             f"Current height:            {G}{data_processor.current_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Max height so far:         {G}{data_processor.max_altitude:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
             f"Predicted apogee:          {G}{self._context.most_recent_apogee_predictor_data_packet.predicted_apogee if self._context.most_recent_apogee_predictor_data_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
-            f"Airbrakes extension:       {G}{self._context.servo.current_extension.value:<10}{RESET} {R}deg{RESET}",  # noqa: E501
+            f"Airbrakes extension:       {G}{self._context.servo.servo_extension.value:<10}{RESET} {R}deg{RESET}",  # noqa: E501
         ]
 
         # Adds additional info to the display if -v was specified
@@ -196,8 +196,8 @@ class FlightDisplay:
                 [
                     f"{Y}{'=' * 18} DEBUG INFO {'=' * 17}{RESET}",
                     f"Average acceleration:            {G}{data_processor.average_vertical_acceleration:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
-                    f"Voltage (volts):                 {G}{self._context.servo.get_battery_volts():<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
-                    f"Current (mA):                    {G}{self._context.servo.get_system_current_milliamps():<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
+                    f"Voltage (volts):                 {G}{self._context.servo.battery_volts:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
+                    f"Current (mA):                    {G}{self._context.servo.system_current_milliamps:<10.2f}{RESET} {R}m/s^2{RESET}",  # noqa: E501
                     f"Predicted apogee:                {G}{self._context.most_recent_apogee_predictor_data_packet.predicted_apogee if self._context.most_recent_apogee_predictor_data_packet else 0:<10.2f}{RESET} {R}m{RESET}",  # noqa: E501
                     f"Fetched packets in Main:         {G}{fetched_packets_in_main:<10}{RESET} {R}packets{RESET}",  # noqa: E501
                     f"Log buffer size:                 {G}{len(self._context.logger._log_buffer):<10}{RESET} {R}packets{RESET}",  # noqa: E501

@@ -4,7 +4,13 @@ Base class for the Servo.
 This will serve as the base for real servo and the mock servo.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from airbrakes.constants import ServoExtension
 
 
 class BaseServo(ABC):
@@ -39,16 +45,27 @@ class BaseServo(ABC):
         Retracts the servo to close the airbrakes.
         """
 
+    @property
     @abstractmethod
-    def get_battery_volts(self) -> float:
+    def servo_extension(self) -> ServoExtension:
+        """
+        Gets the extension most recently commanded to the servo.
+
+        :return: The commanded servo extension.
+        """
+
+    @property
+    @abstractmethod
+    def battery_volts(self) -> float:
         """
         Gets the current battery voltage.
 
         :return: The current battery voltage in volts.
         """
 
+    @property
     @abstractmethod
-    def get_system_current_milliamps(self) -> float:
+    def system_current_milliamps(self) -> float:
         """
         Gets the current system current draw.
 

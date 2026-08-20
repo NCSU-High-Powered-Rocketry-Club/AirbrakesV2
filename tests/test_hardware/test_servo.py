@@ -1,5 +1,6 @@
 import pytest
 
+from airbrakes.constants import ServoExtension
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
@@ -44,12 +45,14 @@ class TestBaseServo:
         Tests that the servo extends to the maximum extension.
         """
         servo.extend_airbrakes()
+        assert servo.servo_extension == ServoExtension.MAX_EXTENSION
 
     def test_set_retracted(self, servo):
         """
         Tests that the servo retracts to the minimum extension.
         """
         servo.retract_airbrakes()
+        assert servo.servo_extension == ServoExtension.MIN_EXTENSION
 
     def test_repeated_extension_retraction(self, servo):
         """
@@ -69,10 +72,10 @@ class TestBaseServo:
         assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
         assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping
 
-    def test_get_battery_volts(self, servo):
+    def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
-        assert servo.get_battery_volts() == 0.0
+        assert servo.battery_volts == 0.0
 
-    def test_get_system_current_milliamps(self, servo):
+    def test_system_current_milliamps(self, servo):
         """Tests that the mock system current returns a safe default."""
-        assert servo.get_system_current_milliamps() == 0.0
+        assert servo.system_current_milliamps == 0.0

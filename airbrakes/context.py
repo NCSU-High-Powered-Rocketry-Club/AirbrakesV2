@@ -215,7 +215,7 @@ class Context:
         # Creates a Servo Data Packet to log the current extension
         # of the servo and the electrical metrics.
         self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.current_extension,
-            battery_voltage=f"{self.servo.get_battery_volts()}",
-            current_milliamps=f"{self.servo.get_system_current_milliamps()}",
+            set_extension=self.servo.servo_extension,
+            battery_voltage=f"{self.servo.battery_volts}",
+            current_milliamps=f"{self.servo.system_current_milliamps}",
         )
