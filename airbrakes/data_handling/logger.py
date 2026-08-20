@@ -1,6 +1,7 @@
 """Module for logging data to a CSV file in real time."""
 
 import csv
+import os
 import queue
 import threading
 import typing
@@ -12,6 +13,7 @@ import msgspec
 from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
+    NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
     STOP_SIGNAL,
 )
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
@@ -311,4 +313,15 @@ class Logger:
                     # During our Pelicanator 1 flight, the rocket fell and had a very hard impact
                     # causing the pi to lose power. This caused us to lose a lot of lines of data
                     # that were not written to the log file. To prevent this from happening again,
-                    # we flush the logger
+                    # we flush the logger 1000 lines (equivalent to 1 second).
+                    if number_of_lines_logged % NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING == 0:
+                        # Tell Python to flush the data. This gives the data to the OS, and it is
+                        # stored as a dirty page cache (in memory) until the OS decides to write it
+                        # to disk. Technically python automatically flushes the data when the python
+                        # buffer is full (8192 bytes, which would be about 25 lines of data).
+                        file_writer.flush()
+                        # Tell the OS to write the file to disk from the dirty page cache. This
+                        # ensures that the data is written to disk and not just stored in memory.
+                        # This operation is the one which is actually "blocking" when talking about
+                        # file I/O.
+                        os.fsync(file_writer.fileno())
