@@ -4,6 +4,7 @@ controls the extension of the airbrakes.
 """
 
 import contextlib
+import threading
 
 # Can only be imported on Linux:
 with contextlib.suppress(ImportError):
@@ -17,6 +18,7 @@ from airbrakes.constants import (
     I2C_ADDRESS,
     I2C_BUS,
     MAX_EXPECTED_AMPS,
+    SERVO_DELAY_SECONDS,
     SERVO_MAX_ANGLE_DEGREES,
     SERVO_MAX_PULSE_WIDTH_US,
     SERVO_MIN_ANGLE_DEGREES,
@@ -38,7 +40,14 @@ class Servo(BaseServo):
     on the Pi 5.
     """
 
-    __slots__ = ("current_extension", "ina", "servo", "servo_line")
+    __slots__ = (
+        "_go_to_max_no_buzz",
+        "_go_to_min_no_buzz",
+        "current_extension",
+        "ina",
+        "servo",
+        "servo_line",
+    )
 
     def __init__(self, servo_channel: int) -> None:
         """
@@ -47,7 +56,9 @@ class Servo(BaseServo):
         :param servo_channel: The PWM channel that the servo is
             connected to.
         """
-        self.current_extension: ServoExtension = ServoExtension.MIN_EXTENSION
+        self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
+        self._go_to_max_no_buzz: threading.Timer | None = None
+        self._go_to_min_no_buzz: threading.Timer | None = None
 
         # Request control of a GPIO pin from the kernel
         self.servo_line = gpiod.request_lines(
@@ -76,17 +87,20 @@ class Servo(BaseServo):
     def start(self) -> None:
         """
         Starts the servo by starting the PWM signal with the initial duty cycle
-        corresponding to the minimum extension.
+        corresponding to the minimum extension without buzzing.
         """
         # Switch on the servo switch
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
 
-        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_EXTENSION.value))
+        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
 
     def stop(self) -> None:
         """
         Stops the servo by stopping the PWM signal.
         """
+        self._cancel_timer("_go_to_max_no_buzz")
+        self._cancel_timer("_go_to_min_no_buzz")
+
         # Switch off the servo switch
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.INACTIVE)
 
@@ -99,17 +113,35 @@ class Servo(BaseServo):
         """
         Extends the servo to the maximum extension.
         """
-        self.current_extension = ServoExtension.MAX_EXTENSION
-        duty_cycle: float = self._angle_to_duty_cycle(self.current_extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
+        self._cancel_timer("_go_to_min_no_buzz")
+        self._set_extension(ServoExtension.MAX_EXTENSION)
+        self._go_to_max_no_buzz = threading.Timer(
+            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MAX_NO_BUZZ,)
+        )
+        self._go_to_max_no_buzz.start()
 
     def retract_airbrakes(self) -> None:
         """
         Retracts the servo to the minimum extension.
         """
-        self.current_extension = ServoExtension.MIN_EXTENSION
-        duty_cycle: float = self._angle_to_duty_cycle(self.current_extension.value)
+        self._cancel_timer("_go_to_max_no_buzz")
+        self._set_extension(ServoExtension.MIN_EXTENSION)
+        self._go_to_min_no_buzz = threading.Timer(
+            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MIN_NO_BUZZ,)
+        )
+        self._go_to_min_no_buzz.start()
+
+    def _set_extension(self, extension: ServoExtension) -> None:
+        """Sets the servo extension and corresponding PWM duty cycle."""
+        self.current_extension = extension
+        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
         self.servo.change_duty_cycle(duty_cycle)
+
+    def _cancel_timer(self, timer_name: str) -> None:
+        """Cancels the pending transition stored in the named timer slot."""
+        timer = getattr(self, timer_name)
+        if timer is not None:
+            timer.cancel()
 
     @property
     def servo_extension(self) -> ServoExtension:

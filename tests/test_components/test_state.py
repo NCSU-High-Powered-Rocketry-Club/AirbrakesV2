@@ -81,7 +81,7 @@ class TestState:
 
     def test_init(self, state, context):
         assert state.context == context
-        assert context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -169,7 +169,7 @@ class TestMotorBurnState:
         )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert motor_burn_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
 
     # def test_motor_burn_fallback(self, motor_burn_state):
     #     """
@@ -197,7 +197,7 @@ class TestCoastState:
 
     def test_init(self, coast_state, context):
         assert coast_state.context == context
-        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(coast_state.__class__, State)
 
     def test_name(self, coast_state):
@@ -213,17 +213,17 @@ class TestCoastState:
             "airbrakes_ext",
         ),
         [
-            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_EXTENSION),
-            (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_EXTENSION),
-            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MIN_EXTENSION),
-            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MIN_EXTENSION),
+            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_NO_BUZZ),
+            (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_NO_BUZZ),
+            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MIN_NO_BUZZ),
+            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MIN_NO_BUZZ),
             (
                 200.1 * MAX_ALTITUDE_THRESHOLD,
                 200.1,
                 0.0,
                 200.1,
                 FreeFallState,
-                ServoExtension.MIN_EXTENSION,
+                ServoExtension.MIN_NO_BUZZ,
             ),
         ],
         ids=[
@@ -271,9 +271,9 @@ class TestCoastState:
         ),
         [
             (1100.0, 1130.2, ServoExtension.MAX_EXTENSION),
-            (1152.1, 1150.1, ServoExtension.MIN_EXTENSION),
-            (1168.1, 1160.1, ServoExtension.MIN_EXTENSION),
-            (1170.1, 1170.1, ServoExtension.MIN_EXTENSION),
+            (1152.1, 1150.1, ServoExtension.MIN_NO_BUZZ),
+            (1168.1, 1160.1, ServoExtension.MIN_NO_BUZZ),
+            (1170.1, 1170.1, ServoExtension.MIN_NO_BUZZ),
             (1189.4, 1190.1, ServoExtension.MAX_EXTENSION),
             (1191.9, 1200.5, ServoExtension.MAX_EXTENSION),
         ],
@@ -357,7 +357,7 @@ class TestCoastState:
         """
         assert not coast_state.context.most_recent_apogee_predictor_data_packet
         coast_state.update()
-        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
         """
@@ -402,7 +402,7 @@ class TestFreeFallState:
 
     def test_init(self, free_fall_state, context):
         assert free_fall_state.context == context
-        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(free_fall_state.__class__, State)
 
     def test_name(self, free_fall_state):
@@ -473,7 +473,7 @@ class TestFreeFallState:
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
 
 
 class TestLandedState:
@@ -486,7 +486,7 @@ class TestLandedState:
 
     def test_init(self, landed_state, context):
         assert landed_state.context == context
-        assert landed_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert landed_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):
