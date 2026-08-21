@@ -1,4 +1,3 @@
-import math
 import queue
 import threading
 import time
@@ -66,14 +65,15 @@ class TestApogeePredictor:
         [
             # Hovering case: v = 0, a ≈ g, should give apogee basically at current altitude.
             # TODO: Investgate why HPRM panics when vertical velocity is exactly 0.0
-            # For this reason, We used a very small vertical velocity of 0.01 m/s.
+            # For this reason, a very small vertical velocity of 0.01 m/s was used.
             (
-                [make_processor_data_packet_zeroed(
-                    current_altitude=100.0,
-                    vertical_velocity_meters_per_s=0.01,
-                    horizontal_velocity_meters_per_s=0.0,
-                    tilt_angle_degrees=0.0,
-                    angular_rate_deg_per_s=0.0,
+                [
+                    make_processor_data_packet_zeroed(
+                        current_altitude=100.0,
+                        vertical_velocity_meters_per_s=0.01,
+                        horizontal_velocity_meters_per_s=0.0,
+                        tilt_angle_degrees=0.0,
+                        angular_rate_deg_per_s=0.0,
                     )
                 ]
                 * 10,
@@ -87,7 +87,7 @@ class TestApogeePredictor:
                         ),
                         vertical_velocity_meters_per_s=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
                         horizontal_velocity_meters_per_s=0.0,
-                        tilt_angle_degrees=float(15 * i/ 69),
+                        tilt_angle_degrees=float(15 * i / 69),
                         angular_rate_deg_per_s=0.0,
                     )
                     for i in range(70)
