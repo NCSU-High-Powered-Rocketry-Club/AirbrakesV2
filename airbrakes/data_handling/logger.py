@@ -152,9 +152,11 @@ class Logger:
                 vertical_velocity_meters_per_s_used_for_prediction = (
                     apogee_predictor_data_packet.vertical_velocity_meters_per_s_used_for_prediction
                 )
+                # fmt: off
                 horizontal_velocity_meters_per_s_used_for_prediction = (
                     apogee_predictor_data_packet.horizontal_velocity_meters_per_s_used_for_prediction
                 )
+                # fmt: on
                 tilt_angle_degrees_used_for_prediction = (
                     apogee_predictor_data_packet.tilt_angle_degrees_used_for_prediction
                 )
