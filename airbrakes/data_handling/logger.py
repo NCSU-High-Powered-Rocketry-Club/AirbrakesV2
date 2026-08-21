@@ -141,13 +141,27 @@ class Logger:
             # Apogee Predictor fields default to none if no packet is provided
             predicted_apogee = None
             height_used_for_prediction = None
-            velocity_used_for_prediction = None
+            vertical_velocity_meters_per_s_used_for_prediction = None
+            horizontal_velocity_meters_per_s_used_for_prediction = None
+            tilt_angle_degrees_used_for_prediction = None
+            angular_rate_deg_per_s_used_for_prediction = None
 
             if apogee_predictor_data_packet:
                 predicted_apogee = apogee_predictor_data_packet.predicted_apogee
                 height_used_for_prediction = apogee_predictor_data_packet.height_used_for_prediction
-                velocity_used_for_prediction = (
-                    apogee_predictor_data_packet.velocity_used_for_prediction
+                vertical_velocity_meters_per_s_used_for_prediction = (
+                    apogee_predictor_data_packet.vertical_velocity_meters_per_s_used_for_prediction
+                )
+                # fmt: off
+                horizontal_velocity_meters_per_s_used_for_prediction = (
+                    apogee_predictor_data_packet.horizontal_velocity_meters_per_s_used_for_prediction
+                )
+                # fmt: on
+                tilt_angle_degrees_used_for_prediction = (
+                    apogee_predictor_data_packet.tilt_angle_degrees_used_for_prediction
+                )
+                angular_rate_deg_per_s_used_for_prediction = (
+                    apogee_predictor_data_packet.angular_rate_deg_per_s_used_for_prediction
                 )
 
             logger_packet = LoggerDataPacket(
@@ -184,7 +198,10 @@ class Logger:
                 # Apogee Predictor Data Packet Fields
                 predicted_apogee=predicted_apogee,
                 height_used_for_prediction=height_used_for_prediction,
-                velocity_used_for_prediction=velocity_used_for_prediction,
+                vertical_velocity_meters_per_s_used_for_prediction=vertical_velocity_meters_per_s_used_for_prediction,
+                horizontal_velocity_meters_per_s_used_for_prediction=horizontal_velocity_meters_per_s_used_for_prediction,
+                tilt_angle_degrees_used_for_prediction=tilt_angle_degrees_used_for_prediction,
+                angular_rate_deg_per_s_used_for_prediction=angular_rate_deg_per_s_used_for_prediction,
                 # Remaining Context Fields
                 retrieved_firm_packets=context_data_packet.retrieved_firm_packets,
                 apogee_predictor_queue_size=context_data_packet.apogee_predictor_queue_size,

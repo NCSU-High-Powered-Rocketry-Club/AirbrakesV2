@@ -22,6 +22,10 @@ class RocketParameters(msgspec.Struct):
     rocket_Cd: float | None
     rocket_mass_kg: float | None
     rocket_cross_sectional_area_m2: float | None
+    rocket_diameter_m: float | None
+    rocket_moment_of_inertia_kg_m2: float | None
+    rocket_stab_margin_cal: float | None
+    rocket_cl_a: float | None
 
 
 class MockFIRM(BaseFIRM):
@@ -85,10 +89,22 @@ class MockFIRM(BaseFIRM):
             airbrakes.constants.ROCKET_DRY_MASS_KG = self.rocket_parameters.rocket_mass_kg
         if self.rocket_parameters.rocket_Cd is not None:
             airbrakes.constants.ROCKET_CD = self.rocket_parameters.rocket_Cd
+        if self.rocket_parameters.rocket_diameter_m is not None:
+            airbrakes.constants.ROCKET_DIAMETER_M = self.rocket_parameters.rocket_diameter_m
         if self.rocket_parameters.rocket_cross_sectional_area_m2 is not None:
             airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2 = (
                 self.rocket_parameters.rocket_cross_sectional_area_m2
             )
+        if self.rocket_parameters.rocket_moment_of_inertia_kg_m2 is not None:
+            airbrakes.constants.ROCKET_MOMENT_OF_INERTIA_KG_M2 = (
+                self.rocket_parameters.rocket_moment_of_inertia_kg_m2
+            )
+        if self.rocket_parameters.rocket_stab_margin_cal is not None:
+            airbrakes.constants.ROCKET_STAB_MARGIN_CAL = (
+                self.rocket_parameters.rocket_stab_margin_cal
+            )
+        if self.rocket_parameters.rocket_cl_a is not None:
+            airbrakes.constants.ROCKET_CL_A = self.rocket_parameters.rocket_cl_a
 
         # Set up a queue and thread
         self._queued_packets: queue.SimpleQueue[FIRMDataPacket | str] = queue.SimpleQueue()
@@ -178,6 +194,10 @@ class MockFIRM(BaseFIRM):
             rocket_Cd=rocket_data.get("rocket_Cd"),
             rocket_mass_kg=rocket_data.get("rocket_dry_mass_kg"),
             rocket_cross_sectional_area_m2=rocket_data.get("rocket_cross_sectional_area_m2"),
+            rocket_diameter_m=rocket_data.get("rocket_diameter_m"),
+            rocket_moment_of_inertia_kg_m2=rocket_data.get("rocket_moment_of_inertia_kg_m2"),
+            rocket_stab_margin_cal=rocket_data.get("rocket_stab_margin_cal"),
+            rocket_cl_a=rocket_data.get("rocket_cl_a"),
         )
 
     # ------------------------ THREAD METHODS -------------------------

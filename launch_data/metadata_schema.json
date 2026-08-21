@@ -20,6 +20,18 @@
                     "rocket_cross_sectional_area_m2": {
                         "type": ["number", "null"]
                     },
+                    "rocket_diameter_m": {
+                        "type": ["number", "null"]
+                    },
+                    "rocket_moment_of_inertia_kg_m2": {
+                        "type": ["number", "null"]
+                    },
+                    "rocket_stab_margin_cal": {
+                        "type": ["number", "null"]
+                    },
+                    "rocket_cl_a": {
+                        "type": ["number", "null"]
+                    },
                     "motor": {
                         "type": "string"
                     }
@@ -28,6 +40,10 @@
                     "rocket_dry_mass_kg",
                     "rocket_Cd",
                     "rocket_cross_sectional_area_m2",
+                    "rocket_diameter_m",
+                    "rocket_moment_of_inertia_kg_m2",
+                    "rocket_stab_margin_cal",
+                    "rocket_cl_a",
                     "motor"
                 ],
                 "additionalProperties": false

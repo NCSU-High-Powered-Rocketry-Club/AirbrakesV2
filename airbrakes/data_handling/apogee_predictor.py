@@ -1,10 +1,11 @@
 """Module for predicting apogee."""
 
+import math
 import queue
 import threading
 from typing import TYPE_CHECKING, Literal, cast
 
-from hprm import AdaptiveTimeStep, ModelType, OdeMethod, Rocket
+from hprm import InitialState3DOF, OdeMethod, Rocket
 
 from airbrakes import constants
 from airbrakes.constants import (
@@ -114,18 +115,18 @@ class ApogeePredictor:
         """
         Responsible for fetching data packets, updating internal state, and
         finally predicting the apogee using the chosen method (e.g. HPRM).
-
         Runs in a separate thread.
         """
+        stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
+
         rocket = Rocket(
             constants.ROCKET_DRY_MASS_KG,
             constants.ROCKET_CD,
             constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
-            # Rest of these are unused for 1D modeling
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            constants.ROCKET_CROSS_SECTIONAL_AREA_M2,
+            constants.ROCKET_MOMENT_OF_INERTIA_KG_M2,
+            stability_margin_m,
+            constants.ROCKET_CL_A,
         )
 
         # Keep checking for new data packets until the stop signal is received:
@@ -140,25 +141,30 @@ class ApogeePredictor:
 
             most_recent_packet = cast("ProcessorDataPacket", processor_data_packets[-1])
 
-            adaptive_time_step = AdaptiveTimeStep.default()
-            adaptive_time_step.dt_max = 1
-
             # Compute apogee given the latest state and history
 
-            apogee = rocket.predict_apogee(
-                most_recent_packet.current_altitude,
-                most_recent_packet.vertical_velocity,
-                ModelType.OneDOF,
-                OdeMethod.RK45,
-                adaptive_time_step,
+            initial_state = InitialState3DOF(
+                x=0.0,
+                y=most_recent_packet.current_altitude,
+                angle=math.radians(most_recent_packet.tilt_angle_degrees),
+                vx=most_recent_packet.horizontal_velocity_meters_per_s,
+                vy=most_recent_packet.vertical_velocity_meters_per_s,
+                angular_rate=math.radians(most_recent_packet.angular_rate_deg_per_s),
+            )
+
+            apogee = rocket.predict_apogee_3dof(
+                initial_state,
+                integration_method=OdeMethod.RK45,
             )
 
             # Push a prediction packet back to the main thread.
-            # TODO: add more stuff to the packet
             self._apogee_predictor_packet_queue.put(
                 ApogeePredictorDataPacket(
                     apogee,
                     most_recent_packet.current_altitude,
-                    most_recent_packet.vertical_velocity,
+                    most_recent_packet.vertical_velocity_meters_per_s,
+                    most_recent_packet.horizontal_velocity_meters_per_s,
+                    most_recent_packet.tilt_angle_degrees,
+                    most_recent_packet.angular_rate_deg_per_s,
                 )
             )

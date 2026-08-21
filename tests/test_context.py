@@ -448,7 +448,19 @@ class TestContext:
             context.most_recent_apogee_predictor_data_packet.height_used_for_prediction is not None
         )
         assert (
-            context.most_recent_apogee_predictor_data_packet.velocity_used_for_prediction
+            context.most_recent_apogee_predictor_data_packet.vertical_velocity_meters_per_s_used_for_prediction
+            is not None
+        )
+        assert (
+            context.most_recent_apogee_predictor_data_packet.horizontal_velocity_meters_per_s_used_for_prediction
+            is not None
+        )
+        assert (
+            context.most_recent_apogee_predictor_data_packet.tilt_angle_degrees_used_for_prediction
+            is not None
+        )
+        assert (
+            context.most_recent_apogee_predictor_data_packet.angular_rate_deg_per_s_used_for_prediction
             is not None
         )
 

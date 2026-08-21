@@ -49,7 +49,10 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None = None
     height_used_for_prediction: float | None = None
-    velocity_used_for_prediction: float | None = None
+    vertical_velocity_meters_per_s_used_for_prediction: float | None = None
+    horizontal_velocity_meters_per_s_used_for_prediction: float | None = None
+    tilt_angle_degrees_used_for_prediction: float | None = None
+    angular_rate_deg_per_s_used_for_prediction: float | None = None
 
     # Other fields in ContextDataPacket
     retrieved_firm_packets: int | None

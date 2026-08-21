@@ -87,11 +87,17 @@ class TestDataProcessor:
     packets = [
         make_processor_data_packet_zeroed(
             current_altitude=1,
-            vertical_velocity=1,
+            vertical_velocity_meters_per_s=1,
+            horizontal_velocity_meters_per_s=1,
+            tilt_angle_degrees=1,
+            angular_rate_deg_per_s=1,
         ),
         make_processor_data_packet_zeroed(
             current_altitude=2,
-            vertical_velocity=2,
+            vertical_velocity_meters_per_s=2,
+            horizontal_velocity_meters_per_s=2,
+            tilt_angle_degrees=2,
+            angular_rate_deg_per_s=2,
         ),
     ]
 

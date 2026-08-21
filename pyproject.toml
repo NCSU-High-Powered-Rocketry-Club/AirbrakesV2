@@ -19,7 +19,7 @@ dependencies = [
     # Please see library docs for usage and installation on the Pi 4/5. You need to add
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
-    "hprm>=0.1.7",
+    "hprm>=0.2.0",
     "firm-client>=1.2.2",
     "pi-ina219>=1.4.1",
     "gpiod>=2.4.2; platform_system == 'Linux'",

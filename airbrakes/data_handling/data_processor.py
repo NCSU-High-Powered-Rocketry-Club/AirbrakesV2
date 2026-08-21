@@ -280,10 +280,18 @@ class DataProcessor:
         packets most recently passed in by update()
         :return: A list of ProcessorDataPacket objects.
         """
+        # TODO: Horizontal velocity is currently unavailable. Using an estimate of 0 m/s until a
+        # proper estimate of the velocity magnitude is available.
+        # TODO: The angular rate is currently unavailable. Using an estimate of 0 deg/s until a
+        # proper estimate of the angular rate is available.
+
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
-                vertical_velocity=float(self._vertical_velocities[i]),
+                vertical_velocity_meters_per_s=float(self._vertical_velocities[i]),
+                horizontal_velocity_meters_per_s=0.0,
+                tilt_angle_degrees=float(self._data_packets[i].est_tilt_angle_degrees),
+                angular_rate_deg_per_s=0.0,
                 timestamp_seconds=float(self._data_packets[i].timestamp_seconds),
             )
             for i in range(len(self._data_packets))
