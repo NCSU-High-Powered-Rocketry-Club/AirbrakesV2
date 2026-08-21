@@ -240,7 +240,7 @@ it to have landed.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = convert_ft_to_m(4000.0)
+TARGET_APOGEE_METERS = convert_ft_to_m(40000.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend

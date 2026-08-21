@@ -37,7 +37,7 @@ class TestContext:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, context):
-        assert context.servo.current_extension == ServoExtension.MIN_EXTENSION
+        assert context.servo.current_extension == ServoExtension.MIN_NO_BUZZ
         assert isinstance(context.data_processor, DataProcessor)
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
@@ -64,8 +64,8 @@ class TestContext:
         assert context.firm.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
-        # Servo PWM should be live with the MIN_NO_BUZZ duty cycle after start()
-        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value)
+        # Servo PWM should be live with the MIN_EXTENSION duty cycle after start()
+        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_EXTENSION.value)
         assert context.servo.servo.duty_cycle == pytest.approx(expected_duty_cycle)
         context.stop()
 
@@ -476,7 +476,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == ServoExtension.MIN_EXTENSION
+        assert context.servo_data_packet.set_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
         """Benchmark the update method of the airbrakes system."""

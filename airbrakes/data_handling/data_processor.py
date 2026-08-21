@@ -229,15 +229,20 @@ class DataProcessor:
             altitudes = self._previous_altitude + np.cumsum(
                 self._vertical_velocities * self._time_differences
             )
-        else:
+        elif self._initial_altitude is not None:
             altitudes = np.array(
                 [
                     data_packet.est_position_z_meters - self._initial_altitude
                     for data_packet in self._data_packets
                 ],
             )
+        else:
+            # If we don't have an initial altitude, we just use the raw altitudes .-.
+            altitudes = np.array(
+                [data_packet.est_position_z_meters for data_packet in self._data_packets],
+            )
 
-            # Update the stored previous altitude for the next calculation.
+        # Update the stored previous altitude for the next calculation.
         self._previous_altitude = altitudes[-1]
 
         # Get the pressure altitudes from the data points and zero out the initial altitude
