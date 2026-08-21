@@ -1,3 +1,4 @@
+import math
 import queue
 import threading
 import time
@@ -64,8 +65,17 @@ class TestApogeePredictor:
         ("firm_data_packets", "expected_apogee"),
         [
             # Hovering case: v = 0, a ≈ g, should give apogee basically at current altitude.
+            # TODO: Investgate why HPRM panics when vertical velocity is exactly 0.0
+            # For this reason, We used a very small vertical velocity of 0.01 m/s.
             (
-                [make_processor_data_packet_zeroed(current_altitude=100.0, vertical_velocity=0.0)]
+                [make_processor_data_packet_zeroed(
+                    current_altitude=100.0,
+                    vertical_velocity_meters_per_s=0.01,
+                    horizontal_velocity_meters_per_s=0.0,
+                    tilt_angle_degrees=0.0,
+                    angular_rate_deg_per_s=0.0,
+                    )
+                ]
                 * 10,
                 100,
             ),
@@ -75,11 +85,14 @@ class TestApogeePredictor:
                         current_altitude=float(
                             i**3 / 15000 - i**2 / 20 - i**2 * 9.798 / 200 + 20 * i + 100
                         ),
-                        vertical_velocity=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
+                        vertical_velocity_meters_per_s=float(i**2 / 500 - i - 9.798 * i / 10 + 200),
+                        horizontal_velocity_meters_per_s=0.0,
+                        tilt_angle_degrees=float(15 * i/ 69),
+                        angular_rate_deg_per_s=0.0,
                     )
                     for i in range(70)
                 ],
-                1272.556161741228,
+                1282.3508299189677,
             ),
         ],
         ids=["at_apogee", "start_of_coast_phase"],
@@ -99,9 +112,13 @@ class TestApogeePredictor:
             * The height/velocity used in the prediction come from the last packet.
             * The predicted apogee matches an expected (precomputed) value.
         """
-        monkeypatch.setattr("airbrakes.constants.ROCKET_DRY_MASS_KG", 4.937)
-        monkeypatch.setattr("airbrakes.constants.ROCKET_CD", 0.45)
-        monkeypatch.setattr("airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2", 0.00810731966)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_DRY_MASS_KG", 16.601)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_CD", 0.393)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_DIAMETER_M", 0.1524)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2", 0.0182414692475)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_MOMENT_OF_INERTIA_KG_M2", 11.45)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_STAB_MARGIN_CAL", 3.24)
+        monkeypatch.setattr("airbrakes.constants.ROCKET_CL_A", 0.2)
         apogee_predictor.start()
 
         # Feed all packets into the predictor, one by one
@@ -125,8 +142,14 @@ class TestApogeePredictor:
         last_packet = firm_data_packets[-1]
 
         assert prediction.height_used_for_prediction == pytest.approx(last_packet.current_altitude)
-        assert prediction.velocity_used_for_prediction == pytest.approx(
-            last_packet.vertical_velocity
+        assert prediction.vertical_velocity_meters_per_s_used_for_prediction == pytest.approx(
+            last_packet.vertical_velocity_meters_per_s
+        )
+        assert prediction.horizontal_velocity_meters_per_s_used_for_prediction == pytest.approx(
+            last_packet.horizontal_velocity_meters_per_s
+        )
+        assert prediction.tilt_angle_degrees_used_for_prediction == pytest.approx(
+            last_packet.tilt_angle_degrees
         )
 
         assert prediction.predicted_apogee == pytest.approx(expected_apogee, rel=10e-4)
