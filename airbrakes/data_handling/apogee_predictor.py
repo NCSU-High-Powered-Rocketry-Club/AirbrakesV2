@@ -149,7 +149,7 @@ class ApogeePredictor:
                 angle=math.radians(most_recent_packet.tilt_angle_degrees),
                 vx=most_recent_packet.horizontal_velocity_meters_per_s,
                 vy=most_recent_packet.vertical_velocity_meters_per_s,
-                angular_rate=most_recent_packet.angular_rate_deg_per_s,
+                angular_rate=math.radians(most_recent_packet.angular_rate_deg_per_s),
             )
 
             apogee = rocket.predict_apogee_3dof(

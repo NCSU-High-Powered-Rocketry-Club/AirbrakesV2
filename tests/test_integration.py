@@ -251,16 +251,41 @@ class TestIntegration:
             .to_list()
         )
 
-        velocities_used_for_prediction_in_coast = (
-            coast_df.filter(pl.col("velocity_used_for_prediction").is_not_null())
-            .get_column("velocity_used_for_prediction")
+        vertical_velocities_meters_per_s_used_for_prediction_in_coast = (
+            coast_df.filter(
+                pl.col("vertical_velocity_meters_per_s_used_for_prediction").is_not_null()
+            )
+            .get_column("vertical_velocity_meters_per_s_used_for_prediction")
+            .to_list()
+        )
+
+        horizontal_velocities_meters_per_s_used_for_prediction_in_coast = (
+            coast_df.filter(
+                pl.col("horizontal_velocity_meters_per_s_used_for_prediction").is_not_null()
+            )
+            .get_column("horizontal_velocity_meters_per_s_used_for_prediction")
+            .to_list()
+        )
+
+        tilt_angles_degrees_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("tilt_angle_degrees_used_for_prediction").is_not_null())
+            .get_column("tilt_angle_degrees_used_for_prediction")
+            .to_list()
+        )
+
+        angular_rates_deg_per_s_used_for_prediction_in_coast = (
+            coast_df.filter(pl.col("angular_rate_deg_per_s_used_for_prediction").is_not_null())
+            .get_column("angular_rate_deg_per_s_used_for_prediction")
             .to_list()
         )
 
         # Predicted apogees and values used for prediction should be present in coast state
         assert len(pred_apogees_in_coast) > 0
         assert len(heights_used_for_prediction_in_coast) > 0
-        assert len(velocities_used_for_prediction_in_coast) > 0
+        assert len(vertical_velocities_meters_per_s_used_for_prediction_in_coast) > 0
+        assert len(horizontal_velocities_meters_per_s_used_for_prediction_in_coast) > 0
+        assert len(tilt_angles_degrees_used_for_prediction_in_coast) > 0
+        assert len(angular_rates_deg_per_s_used_for_prediction_in_coast) > 0
 
         # Check if extensions are valid floats
         valid_extensions = [

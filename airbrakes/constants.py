@@ -268,7 +268,7 @@ ROCKET_MOMENT_OF_INERTIA_KG_M2: float = 11.45
 """The moment of inertia of the rocket in kg * m^2, with airbrakes all the way retracted."""
 
 ROCKET_STAB_MARGIN_CAL: float = 3.24
-"""The stability margin of the rocket measured in calipers"""
+"""The stability margin of the rocket measured in calibers"""
 
 # TODO: Need to verify with aerodynamic analysis.
 ROCKET_CL_A: float = 0.2

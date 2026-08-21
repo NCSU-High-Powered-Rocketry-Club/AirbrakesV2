@@ -89,6 +89,8 @@ class MockFIRM(BaseFIRM):
             airbrakes.constants.ROCKET_DRY_MASS_KG = self.rocket_parameters.rocket_mass_kg
         if self.rocket_parameters.rocket_Cd is not None:
             airbrakes.constants.ROCKET_CD = self.rocket_parameters.rocket_Cd
+        if self.rocket_parameters.rocket_diameter_m is not None:
+            airbrakes.constants.ROCKET_DIAMETER_M = self.rocket_parameters.rocket_diameter_m
         if self.rocket_parameters.rocket_cross_sectional_area_m2 is not None:
             airbrakes.constants.ROCKET_CROSS_SECTIONAL_AREA_M2 = (
                 self.rocket_parameters.rocket_cross_sectional_area_m2

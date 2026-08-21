@@ -64,7 +64,7 @@ class TestApogeePredictor:
         ("firm_data_packets", "expected_apogee"),
         [
             # Hovering case: v = 0, a ≈ g, should give apogee basically at current altitude.
-            # TODO: Investgate why HPRM panics when vertical velocity is exactly 0.0
+            # TODO: Investigate why HPRM panics when vertical velocity is exactly 0.0
             # For this reason, a very small vertical velocity of 0.01 m/s was used.
             (
                 [
