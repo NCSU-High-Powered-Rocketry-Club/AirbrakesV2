@@ -120,7 +120,7 @@ class TestIntegration:
                 if ab.state.name not in states_dict:
                     # Reset the current state velocities and altitudes
                     states_dict[ab.state.name] = StateInformation(
-                        extensions=[ab.servo.current_extension]
+                        extensions=[ab.servo.servo_extension]
                     )
 
                 # Let's update all our values:
@@ -150,7 +150,7 @@ class TestIntegration:
                 state_info.min_altitude = min(
                     ab.data_processor.current_altitude, state_info.min_altitude
                 )
-                state_info.extensions.append(ab.servo.current_extension)
+                state_info.extensions.append(ab.servo.servo_extension)
                 state_info.max_velocity = max(
                     ab.data_processor.vertical_velocity, state_info.max_velocity
                 )

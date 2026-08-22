@@ -16,9 +16,6 @@ class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     set_extension: ServoExtension
     """The set extension of the servo."""
 
-    encoder_position: int | None
-    """The position the encoder is currently reading."""
-
     battery_voltage: str | None
     """The current battery voltage in volts."""
 

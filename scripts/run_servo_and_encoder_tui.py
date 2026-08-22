@@ -60,7 +60,7 @@ CURRENT_HISTORY_SECONDS = 5.0
 GRAPH_REFRESH_INTERVAL_S = 0.4
 CURRENT_DISPLAY_REFRESH_S = 0.1
 
-# How often we read servo.current_extension to keep Digits in sync
+# How often we read the commanded servo extension to keep Digits in sync
 SERVO_STATE_REFRESH_S = 0.2
 
 # Degrees nudged per arrow-key press in tuning mode
@@ -113,7 +113,7 @@ class CurrentMonitor:
     def _run(self) -> None:
         while not self._stop.is_set():
             now = time.monotonic()
-            mA = self._servo.get_system_current_milliamps()
+            mA = self._servo.system_current_milliamps
             cutoff = now - self._window
             with self._lock:
                 self._buf.append((now, mA))
@@ -198,7 +198,7 @@ class ServoControllerApp(App[None]):
 
     # ── Reactive state ───────────────────────────────────────────────────
     tuning_mode: reactive[bool] = reactive(False)
-    # current_angle is a *display* value kept in sync with servo.current_extension
+    # current_angle is a display value kept in sync with the commanded servo extension.
     current_angle: reactive[float] = reactive(float(ServoExtension.MIN_NO_BUZZ.value))
 
     # ── Init ─────────────────────────────────────────────────────────────
@@ -359,7 +359,7 @@ class ServoControllerApp(App[None]):
         self._update_mode_indicator()
         if is_tuning:
             # Seed tuning angle from whatever the servo is currently at
-            self._tuning_angle = float(self.servo.current_extension.value)
+            self._tuning_angle = float(self.servo.servo_extension.value)
             self.current_angle = self._tuning_angle
 
     # ── Key actions ──────────────────────────────────────────────────────
@@ -411,7 +411,7 @@ class ServoControllerApp(App[None]):
 
     # ── Internal helpers ─────────────────────────────────────────────────
     def _sync_angle_from_servo(self) -> None:
-        """Read servo.current_extension and update the Digits widget.
+        """Read the servo extension and update the Digits widget.
 
         Called on a fast timer so the UI automatically reflects the deferred
         _NO_BUZZ transition that BaseServo fires ~1 s after set_extended /
@@ -420,7 +420,7 @@ class ServoControllerApp(App[None]):
         """
         if self.tuning_mode:
             return
-        angle = float(self.servo.current_extension.value)
+        angle = float(self.servo.servo_extension.value)
         # Only trigger a reactive update (and thus a redraw) when the value
         # actually changes, to avoid unnecessary work.
         if angle != self.current_angle:
@@ -519,7 +519,7 @@ class ServoControllerApp(App[None]):
     def _refresh_current(self) -> None:
         try:
             mA = self._current_monitor.latest_ma()
-            volts = self.servo.get_battery_volts()
+            volts = self.servo.battery_volts
             widget = self.query_one("#current-widget", CurrentBox)
             widget.ma = mA
             widget.volts = volts

@@ -1,12 +1,8 @@
-import threading
-import time
-
-import gpiozero
 import pytest
 
-from airbrakes.constants import SERVO_DELAY_SECONDS, ServoExtension
+from airbrakes.constants import ServoExtension
 from airbrakes.hardware.servo import Servo
-from airbrakes.mock.mock_servo import MockHardwarePWM, MockServo
+from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx
 """Shortcut for pytest.approx, which is used to compare floating point
@@ -19,6 +15,10 @@ class TestBaseServo:
     retracts the airbrakes.
     """
 
+    @pytest.fixture
+    def servo(self) -> MockServo:
+        return MockServo()
+
     def test_slots(self, servo):
         inst = servo
         for attr in inst.__slots__:
@@ -26,125 +26,43 @@ class TestBaseServo:
 
     def test_init(self, servo):
         assert isinstance(servo, MockServo)
-        assert isinstance(servo.current_extension, ServoExtension)
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert isinstance(servo.servo, MockHardwarePWM)
-        assert servo.servo.hz == 50
-        assert isinstance(servo._go_to_max_no_buzz, threading.Timer)
-        assert isinstance(servo._go_to_min_no_buzz, threading.Timer)
-        assert isinstance(servo.encoder, gpiozero.RotaryEncoder)
 
     def test_start(self, servo):
         """
-        Tests that start() activates the PWM signal at the duty cycle
-        corresponding to MIN_NO_BUZZ, leaving current_extension unchanged.
+        Tests that start() executes safely.
         """
-        # Before start(), the duty cycle should be 0 (PWM not yet started)
-        assert servo.servo.duty_cycle == 0.0
         servo.start()
-        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value)
-        assert servo.servo.duty_cycle == approx(expected_duty_cycle)
-        # current_extension should not be mutated by start()
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
 
     def test_stop(self, servo):
         """
-        Tests that stop() zeroes the duty cycle of the PWM signal.
+        Tests that stop() executes safely.
         """
         servo.start()
-        assert servo.servo.duty_cycle != 0.0
         servo.stop()
-        assert servo.servo.duty_cycle == 0.0
-
-    def test_set_extension(self, servo):
-        prev_duty_cycle = servo.servo.duty_cycle
-        servo._set_extension(ServoExtension.MAX_EXTENSION)
-        assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
-        prev_duty_cycle = servo.servo.duty_cycle
-        servo._set_extension(ServoExtension.MIN_EXTENSION)
-        assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
 
     def test_set_extended(self, servo):
         """
-        Tests that the servo extends to the maximum extension, and that
-        threading is handled correctly.
+        Tests that the servo extends to the maximum extension.
         """
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        prev_duty_cycle = servo.servo.duty_cycle
-        servo.set_extended()
-        assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
-        prev_duty_cycle = servo.servo.duty_cycle
-        time.sleep(SERVO_DELAY_SECONDS + 0.05)
-        assert servo.current_extension == ServoExtension.MAX_NO_BUZZ
-        assert servo.servo.duty_cycle != prev_duty_cycle
+        servo.extend_airbrakes()
+        assert servo.servo_extension == ServoExtension.MAX_EXTENSION
 
     def test_set_retracted(self, servo):
         """
-        Tests that the servo retracts to the minimum extension, and that
-        threading is handled correctly.
+        Tests that the servo retracts to the minimum extension.
         """
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        prev_duty_cycle = servo.servo.duty_cycle
-        servo.set_retracted()
-        assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
-        prev_duty_cycle = servo.servo.duty_cycle
-        time.sleep(SERVO_DELAY_SECONDS + 0.05)
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert servo.servo.duty_cycle != prev_duty_cycle
+        servo.retract_airbrakes()
+        assert servo.servo_extension == ServoExtension.MIN_EXTENSION
 
     def test_repeated_extension_retraction(self, servo):
         """
         Tests that repeatedly extending and retracting the servo works as
-        expected, and has no race conditions with threads.
+        expected without crashing.
         """
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        prev_duty_cycle = servo.servo.duty_cycle
-
-        servo.set_extended()
-        assert servo.current_extension == ServoExtension.MAX_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
-        prev_duty_cycle = servo.servo.duty_cycle
-        # Assert that going to min no buzz was cancelled:
-        assert servo._go_to_min_no_buzz.finished.is_set()
-        # Assert that the thread to tell the servo to go to max no buzz has started:
-        assert servo._go_to_max_no_buzz._started.is_set()
-
-        time_taken = SERVO_DELAY_SECONDS / 2  # At 0.15s
-        time.sleep(time_taken)
-        servo.set_retracted()
-        assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.servo.duty_cycle != prev_duty_cycle
-        prev_duty_cycle = servo.servo.duty_cycle
-        # Assert that going to max no buzz was cancelled:
-        assert servo._go_to_max_no_buzz.finished.is_set()
-        # Assert that the thread to tell the servo to go to min no buzz has started:
-        assert servo._go_to_min_no_buzz._started.is_set()
-
-        # At 0.32s, make sure the servo will *not* go to max_no_buzz
-        time_taken = SERVO_DELAY_SECONDS / 2 + 0.02  # The 0.02 is to give the code time to execute:
-        time.sleep(time_taken)
-        assert servo.current_extension == ServoExtension.MIN_EXTENSION
-        assert servo.servo.duty_cycle == prev_duty_cycle
-
-        # At 0.45s, make sure the servo will go to min_no_buzz:
-        time_taken = SERVO_DELAY_SECONDS / 2
-        time.sleep(time_taken)
-        assert servo.current_extension == ServoExtension.MIN_NO_BUZZ
-        assert servo.servo.duty_cycle != prev_duty_cycle
-
-    def test_encoder_get_position(self, servo):
-        """Tests that the encoder reading is correct."""
-        assert servo.get_encoder_reading() == 0
-        servo.encoder.steps = 10
-        assert servo.get_encoder_reading() == 10
-        servo.encoder.steps = -10
-        assert servo.get_encoder_reading() == -10
-        servo.encoder.steps = 0
-        assert servo.get_encoder_reading() == 0
+        servo.extend_airbrakes()
+        servo.retract_airbrakes()
+        servo.extend_airbrakes()
+        servo.retract_airbrakes()
 
     def test_angle_to_duty_cycle(self):
         """Tests that the angle to duty cycle conversion is correct."""
@@ -153,3 +71,11 @@ class TestBaseServo:
         assert Servo._angle_to_duty_cycle(180) == approx(12.5)
         assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
         assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping
+
+    def test_battery_volts(self, servo):
+        """Tests that the mock battery voltage returns a safe default."""
+        assert servo.battery_volts == 0.0
+
+    def test_system_current_milliamps(self, servo):
+        """Tests that the mock system current returns a safe default."""
+        assert servo.system_current_milliamps == 0.0

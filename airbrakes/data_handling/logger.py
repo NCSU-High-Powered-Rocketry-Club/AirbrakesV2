@@ -132,7 +132,7 @@ class Logger:
         :param firm_data_packets: The FIRM data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
-        :return: A deque of LoggerDataPacket objects.
+        :return: A list of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
@@ -168,7 +168,6 @@ class Logger:
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
                 set_extension=str(servo_data_packet.set_extension.value),
-                encoder_position=servo_data_packet.encoder_position,
                 battery_voltage=servo_data_packet.battery_voltage,
                 current_milliamps=servo_data_packet.current_milliamps,
                 # FIRMDataPacket Fields

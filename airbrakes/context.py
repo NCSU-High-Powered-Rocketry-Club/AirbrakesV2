@@ -111,8 +111,7 @@ class Context:
         self.logger.start()
         self.apogee_predictor.start()
         self.servo.start()
-        # TODO: once we merge Manu's PR we can move this into the servo.start method
-        self.servo.set_retracted()
+        self.servo.retract_airbrakes()
 
         if wait_for_start:
             # Wait for all processes to start. It is assumed that once FIRM is running, all other
@@ -184,17 +183,17 @@ class Context:
     def extend_airbrakes(self) -> None:
         """Extends the air brakes to the maximum extension."""
         self.data_processor.prepare_for_extending_airbrakes()
-        self.servo.set_extended()
+        self.servo.extend_airbrakes()
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
         # We don't want to retract the air brakes if they are already retracted
-        if self.servo.current_extension in (
+        if self.servo.servo_extension in (
             ServoExtension.MAX_EXTENSION,
             ServoExtension.MAX_NO_BUZZ,
         ):
             self.data_processor.prepare_for_retracting_airbrakes()
-            self.servo.set_retracted()
+            self.servo.retract_airbrakes()
 
     def predict_apogee(self) -> None:
         """
@@ -222,11 +221,10 @@ class Context:
             update_timestamp_ns=time.time_ns(),
         )
 
-        # Creates a Servo Data Packet to log the current extension of the servo and the position
-        # of the encoder.
+        # Creates a Servo Data Packet to log the current extension
+        # of the servo and the electrical metrics.
         self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.current_extension,
-            encoder_position=self.servo.get_encoder_reading(),
-            battery_voltage=f"{self.servo.get_battery_volts()}",
-            current_milliamps=f"{self.servo.get_system_current_milliamps()}",
+            set_extension=self.servo.servo_extension,
+            battery_voltage=f"{self.servo.battery_volts}",
+            current_milliamps=f"{self.servo.system_current_milliamps}",
         )

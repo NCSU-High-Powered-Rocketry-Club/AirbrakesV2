@@ -17,7 +17,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
 
     # Fields in ServoDataPacket
     set_extension: str | None
-    encoder_position: int | None
     battery_voltage: str | None
     current_milliamps: str | None
 

@@ -3,69 +3,125 @@ Module which contains the MockServo class and doesn't use the adafruit
 circuitpython library.
 """
 
-from gpiozero import RotaryEncoder
-from gpiozero.pins.mock import MockFactory, MockPWMPin
+import threading
 
 from airbrakes.base_classes.base_servo import BaseServo
-from airbrakes.constants import SERVO_OPERATING_FREQUENCY_HZ, ServoExtension
+from airbrakes.constants import (
+    SERVO_DELAY_SECONDS,
+    SERVO_MAX_ANGLE_DEGREES,
+    SERVO_MAX_PULSE_WIDTH_US,
+    SERVO_MIN_ANGLE_DEGREES,
+    SERVO_MIN_PULSE_WIDTH_US,
+    SERVO_OPERATING_FREQUENCY_HZ,
+    ServoExtension,
+)
 
 
 class MockServo(BaseServo):
     """
-    A custom class that represents a servo motor and the accompanying rotary
-    encoder. The servo controls the extension of the airbrakes while the
-    encoder measures the servo's position. the encoder is controlled using the
-    gpiozero library, which provides a simple interface for controlling GPIO
-    pins on the Raspberry Pi.
-
-    The servo we use is the SPV-0508, which is a coreless digital servo.
+    A custom class that represents a mock servo motor.
     """
 
-    __slots__ = ()
+    __slots__ = (
+        "_go_to_max_no_buzz",
+        "_go_to_min_no_buzz",
+        "_servo_extension",
+        "duty_cycle",
+    )
 
     def __init__(
         self,
-        servo_channel: int,
-        encoder_pin_number_a: int,
-        encoder_pin_number_b: int,
+        servo_channel: int | None = None,
+        encoder_pin_a: int | None = None,
+        encoder_pin_b: int | None = None,
     ) -> None:
         """
-        Initializes the servo object with the specified GPIO pin.
+        Initializes the mock servo object.
 
-        :param encoder_pin_number_a: The GPIO pin that the signal wire A
-            of the encoder is connected to.
-        :param encoder_pin_number_b: The GPIO pin that the signal wire B
-            of the encoder is connected to.
+        :param servo_channel: The PWM channel for the servo
+        :param encoder_pin_a: GPIO pin A for the encoder
+        :param encoder_pin_b: GPIO pin B for the encoder.
         """
-        factory = MockFactory(pin_class=MockPWMPin)
-
-        # max_steps=0 indicates that the encoder's `value` property will never change. We will
-        # only use the integer value, which is the `steps` property.
-        encoder = RotaryEncoder(
-            encoder_pin_number_a,
-            encoder_pin_number_b,
-            max_steps=0,
-            pin_factory=factory,
-        )
-
-        servo = MockHardwarePWM(servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
-
-        super().__init__(encoder=encoder, servo=servo, ina=None)
+        _ = servo_channel, encoder_pin_a, encoder_pin_b
+        self._servo_extension = ServoExtension.MIN_NO_BUZZ
+        self.duty_cycle = 0.0
+        self._go_to_max_no_buzz: threading.Timer | None = None
+        self._go_to_min_no_buzz: threading.Timer | None = None
 
     def start(self) -> None:
         """
-        Starts the servo by starting the PWM signal with the initial duty cycle
-        corresponding to the minimum extension with no buzzing.
+        Starts the servo.
         """
-        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        self.duty_cycle = float(ServoExtension.MIN_NO_BUZZ.value)
 
     def stop(self) -> None:
         """
-        Stops the servo by stopping the PWM signal.
+        Stops the servo.
         """
-        self.servo.stop()
+        self._cancel_timer("_go_to_max_no_buzz")
+        self._cancel_timer("_go_to_min_no_buzz")
+        self.duty_cycle = 0.0
 
-    def get_battery_volts(self) -> float:
+    def extend_airbrakes(self) -> None:
+        """
+        Extends the servo to deploy the airbrakes (Mock).
+        """
+        self._cancel_timer("_go_to_min_no_buzz")
+        self._set_extension(ServoExtension.MAX_EXTENSION)
+        self._go_to_max_no_buzz = threading.Timer(
+            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MAX_NO_BUZZ,)
+        )
+        self._go_to_max_no_buzz.start()
+
+    def retract_airbrakes(self) -> None:
+        """
+        Retracts the servo to close the airbrakes (Mock).
+        """
+        self._cancel_timer("_go_to_max_no_buzz")
+        self._set_extension(ServoExtension.MIN_EXTENSION)
+        self._go_to_min_no_buzz = threading.Timer(
+            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MIN_NO_BUZZ,)
+        )
+        self._go_to_min_no_buzz.start()
+
+    def _set_extension(self, extension: ServoExtension) -> None:
+        """Sets the simulated servo extension."""
+        self._servo_extension = extension
+        self.duty_cycle = self._angle_to_duty_cycle(extension.value)
+
+    def _cancel_timer(self, timer_name: str) -> None:
+        """Cancels the pending transition stored in the named timer slot."""
+        timer = getattr(self, timer_name)
+        if timer is not None:
+            timer.cancel()
+
+    @staticmethod
+    def _angle_to_duty_cycle(angle: float) -> float:
+        """Converts a servo angle to a PWM duty cycle percentage."""
+        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
+        pulse_us = SERVO_MIN_PULSE_WIDTH_US + (
+            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
+            * (angle - SERVO_MIN_ANGLE_DEGREES)
+            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
+        )
+        return (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
+
+    @property
+    def servo_extension(self) -> ServoExtension:
+        """
+        Gets the extension most recently commanded to the mock servo.
+
+        :return: The commanded servo extension.
+        """
+        return self._servo_extension
+
+    @property
+    def current_extension(self) -> ServoExtension:
+        """Gets the extension most recently commanded to the mock servo."""
+        return self._servo_extension
+
+    @property
+    def battery_volts(self) -> float:
         """
         Gets the current system voltage in volts. Since this is a mock servo,
         it always returns 0.
@@ -74,7 +130,8 @@ class MockServo(BaseServo):
         """
         return 0.0
 
-    def get_system_current_milliamps(self) -> float:
+    @property
+    def system_current_milliamps(self) -> float:
         """
         Gets the current system current in milliamps. Since this is a mock
         servo, it always returns 0.
@@ -82,54 +139,3 @@ class MockServo(BaseServo):
         :return: The current system current in milliamps.
         """
         return 0.0
-
-    def _set_extension(self, extension: ServoExtension) -> None:
-        """
-        Sets the servo to the specified extension.
-
-        :param extension: The extension to set the servo to.
-        """
-        super()._set_extension(extension)
-        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
-
-
-class MockHardwarePWM:
-    """A mock class that simulates the rpi_hardware_pwm.HardwarePWM class."""
-
-    __slots__ = ("chip", "duty_cycle", "hz", "pwm_channel")
-
-    def __init__(self, pwm_channel: int, hz: int, chip: int) -> None:
-        """
-        Initializes the mock HardwarePWM object.
-
-        :param pwm_channel: The PWM channel to use.
-        :param hz: The frequency to use.
-        :param chip: The chip to use.
-        """
-        self.pwm_channel: int = pwm_channel
-        self.hz: int = hz
-        self.chip: int = chip
-        self.duty_cycle: float = 0.0
-
-    def start(self, initial_duty_cycle: float) -> None:
-        """
-        Starts the PWM signal with the specified initial duty cycle.
-
-        :param initial_duty_cycle: The initial duty cycle to use.
-        """
-        self.duty_cycle = initial_duty_cycle
-
-    def stop(self) -> None:
-        """
-        Stops the PWM signal.
-        """
-        self.duty_cycle = 0.0
-
-    def change_duty_cycle(self, duty_cycle: float) -> None:
-        """
-        Changes the duty cycle of the PWM signal.
-
-        :param duty_cycle: The new duty cycle to use.
-        """
-        self.duty_cycle = duty_cycle

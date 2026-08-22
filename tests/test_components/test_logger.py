@@ -97,7 +97,6 @@ class TestLogger:
         battery_voltage="3.7",
         current_milliamps="500.0",
         timestamp_seconds=4,
-        encoder_position=None,
         retrieved_firm_packets=None,
         apogee_predictor_queue_size=None,
         update_timestamp_ns=None,

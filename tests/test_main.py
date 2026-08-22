@@ -1,9 +1,7 @@
 """Module to test the main script."""
 
 import sys
-from functools import partial
 
-import gpiozero
 import pytest
 
 from airbrakes.constants import LOGS_PATH
@@ -90,21 +88,12 @@ def parsed_args(request, monkeypatch):
 )
 def test_create_components(parsed_args, monkeypatch):
     """Tests whether we create the correct components, given the arguments."""
-    # 1. Mock GPIO for Servo
-    mock_factory = partial(gpiozero.pins.mock.MockFactory, pin_class=gpiozero.pins.mock.MockPWMPin)
 
     def mock_servo__init__(self, *args, **kwargs):
-        """
-        Mock the __init__ of the airbrakes Servo class.
+        pass
 
-        Because the import of LGPIOFactory fails on non-raspberry pi
-        devices, we need to mock the Servo class.
-        """
-
-    monkeypatch.setattr("gpiozero.pins.native.NativeFactory", mock_factory)
     monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", mock_servo__init__)
 
-    # 2. Mock FIRMClient so FIRM() doesn't try to open real serial ports
     class MockFIRMClient:
         def __init__(self, *args, **kwargs):
             pass
@@ -129,51 +118,37 @@ def test_create_components(parsed_args, monkeypatch):
 
     monkeypatch.setattr("airbrakes.hardware.firm.FIRMClient", MockFIRMClient)
 
-    # 3. Create the components
     created_components = create_components(parsed_args)
 
     assert len(created_components) == 5
     assert isinstance(created_components[-1], ApogeePredictor)
     assert isinstance(created_components[-2], DataProcessor)
 
-    # --- REAL MODE CHECKS ---
     if parsed_args.mode == "real":
-        # Servo Checks
         if parsed_args.mock_servo:
             assert type(created_components[0]) is MockServo
-            assert isinstance(
-                created_components[0].encoder.pin_factory, gpiozero.pins.mock.MockFactory
-            )
         else:
             assert type(created_components[0]) is Servo
 
-        # FIRM Checks
-        # In real mode, it must be FIRM, and pretend must be False
         assert type(created_components[1]) is FIRM
         assert created_components[1].is_pretend is False
-
-        # Logger Checks
         assert type(created_components[2]) is Logger
 
-    # --- MOCK MODE CHECKS ---
     elif parsed_args.mode == "mock":
         assert type(created_components[1]) is MockFIRM
         if parsed_args.path:
             assert created_components[1]._log_file_path == parsed_args.path
 
-        # Servo Checks
         if parsed_args.real_servo:
             assert type(created_components[0]) is Servo
         else:
             assert type(created_components[0]) is MockServo
 
-        # Fast replay only applies to MockFIRM
         if parsed_args.fast_replay:
             assert not created_components[1]._data_fetch_thread._args[0]
         else:
             assert created_components[1]._data_fetch_thread._args[0]
 
-        # Logger Checks
         assert type(created_components[2]) is MockLogger
         if parsed_args.keep_log_file:
             assert created_components[2]._delete_log_file is False
@@ -181,20 +156,17 @@ def test_create_components(parsed_args, monkeypatch):
             assert created_components[2]._delete_log_file is True
 
     elif parsed_args.mode == "pretend":
-        # We use the REAL FIRM class, but with is_pretend=True
         assert type(created_components[1]) is FIRM
         assert created_components[1]._log_file_path == parsed_args.path
         assert created_components[1].is_pretend is True
         assert "raw_firm_data" in str(created_components[1]._log_file_path)
 
-        # Logger Checks
         assert type(created_components[2]) is MockLogger
         if parsed_args.keep_log_file:
             assert created_components[2]._delete_log_file is False
         else:
             assert created_components[2]._delete_log_file is True
 
-        # Servo Checks
         if parsed_args.real_servo:
             assert type(created_components[0]) is Servo
         else:
@@ -279,10 +251,7 @@ def test_run_flight(monkeypatch, mocked_args_parser):
     assert len(calls) == 3
     assert calls == ["Context", "FlightDisplay", "run_flight_loop"]
     assert len(called_args) == 2
-    # Check components
     assert len(called_args[0]) == 5
-
-    # Check FlightDisplay args
     assert len(called_args[1]) == 2
     assert isinstance(called_args[1][0], PatchedContext)
     assert called_args[1][1] == mocked_args_parser
