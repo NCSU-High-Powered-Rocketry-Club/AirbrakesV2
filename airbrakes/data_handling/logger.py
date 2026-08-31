@@ -29,8 +29,7 @@ if typing.TYPE_CHECKING:
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-
+    from lewanlib.servo_data_packet import ServoDataPacket
 
 DecodedLoggerDataPacket = list[int | float | str]
 """The type of LoggerDataPacket after an instance of it converted to primitive
@@ -167,9 +166,11 @@ class Logger:
             logger_packet = LoggerDataPacket(
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
-                set_extension=str(servo_data_packet.set_extension.value),
-                battery_voltage=servo_data_packet.battery_voltage,
-                current_milliamps=servo_data_packet.current_milliamps,
+                servo_id=servo_data_packet.servo_id,
+                current_position=servo_data_packet.current_position,
+                angle_offset=servo_data_packet.angle_offset,
+                current_temp=servo_data_packet.current_temp,
+                voltage=servo_data_packet.voltage,
                 # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
                 temperature_celsius=firm_data_packet.temperature_celsius,

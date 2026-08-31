@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 
 from airbrakes.constants import BUSY_WAIT_SECONDS, ServoExtension
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.state import StandbyState, State
+
+from lewanlib.servo_data_packet import ServoDataPacket
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
@@ -166,7 +167,8 @@ class Context:
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        # Create Context Data Packets representing the current state of the air brakes system:
+        # Create Context Data Packets representing the current state of the air brakes system:\
+        self.servo_data_packet = self.servo.get_servo_data_packet()
         self.generate_data_packets()
 
         # This if statement is just because my ide is being dumb, but it's not possible for them to
@@ -219,12 +221,4 @@ class Context:
             retrieved_firm_packets=len(self.firm_data_packets),
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
-        )
-
-        # Creates a Servo Data Packet to log the current extension
-        # of the servo and the electrical metrics.
-        self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.servo_extension,
-            battery_voltage=f"{self.servo.battery_volts}",
-            current_milliamps=f"{self.servo.system_current_milliamps}",
         )

@@ -122,6 +122,8 @@ class DataProcessor:
         :return: the current timestamp of the most recent
             FIRMDataPacket.
         """
+        if not self._last_data_packet:
+            return 0
         try:
             return self._last_data_packet.timestamp_seconds
         except AttributeError:  # If we don't have a last data packet
