@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from airbrakes.constants import ServoExtension
-
+    from lewanlib.servo_data_packet import ServoDataPacket
 
 class BaseServo(ABC):
     """
@@ -70,4 +70,30 @@ class BaseServo(ABC):
         Gets the current system current draw.
 
         :return: The current system current draw in milliamps.
+        """
+
+    @property
+    @abstractmethod
+    def servo_voltage(self) -> float:
+        """
+        Gets the voltage of the servo motor.
+
+        :return: The servo voltage in volts.
+        """
+
+    @property
+    @abstractmethod
+    def servo_temp(self) -> float:
+        """
+        Gets the temperature of the servo motor.
+
+        :return: The servo temperature in degrees Celsius.
+        """
+
+    @abstractmethod
+    def get_servo_data_packet(self) -> ServoDataPacket:
+        """
+        Gets the servo data packet from the servo.
+
+        :return: The servo data packet.
         """

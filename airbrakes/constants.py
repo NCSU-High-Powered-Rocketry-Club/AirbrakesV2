@@ -50,6 +50,16 @@ https://pypi.org/project/rpi-hardware-pwm/
 for more information.
 """
 
+SERVO_ID = 1
+"""The ID of the servo on the Lewan serial bus."""
+
+BAUDRATE = 115200
+"""The serial baud rate used by the Lewan servo bus."""
+
+SERVO_PORT = "/dev/ttyUSB0"
+"""The port the servo is connected to on the Pi."""
+
+
 SERVO_DELAY_SECONDS = 1.0
 """This is how long the servo approximately takes to move from one extreme to
 the other.
