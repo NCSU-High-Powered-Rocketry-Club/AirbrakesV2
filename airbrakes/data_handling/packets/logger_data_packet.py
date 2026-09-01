@@ -21,6 +21,8 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     angle_offset: float| None = None
     current_temp: float | None = None
     voltage: float | None = None
+    battery_volts: float | None = None
+    system_current_milliamps: float | None = None
 
     # FIRMDataPacket Fields
     timestamp_seconds: float | None = None

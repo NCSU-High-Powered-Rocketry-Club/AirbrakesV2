@@ -10,9 +10,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from airbrakes.constants import ServoExtension
-    from lewanlib.servo_data_packet import ServoDataPacket
-
+    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 class BaseServo(ABC):
     """
     A custom class that represents a servo interface.
@@ -47,7 +45,7 @@ class BaseServo(ABC):
 
     @property
     @abstractmethod
-    def servo_extension(self) -> ServoExtension:
+    def servo_extension(self) -> float:
         """
         Gets the extension most recently commanded to the servo.
 
@@ -93,7 +91,7 @@ class BaseServo(ABC):
     @abstractmethod
     def get_servo_data_packet(self) -> ServoDataPacket:
         """
-        Gets the servo data packet from the servo.
+        Creates the servo data packet from the servo data.
 
         :return: The servo data packet.
         """

@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-    from lewanlib.servo_data_packet import ServoDataPacket
+    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 DecodedLoggerDataPacket = list[int | float | str]
 """The type of LoggerDataPacket after an instance of it converted to primitive

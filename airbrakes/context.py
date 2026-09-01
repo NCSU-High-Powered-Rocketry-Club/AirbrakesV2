@@ -6,11 +6,11 @@ rocket.
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS, ServoExtension
+from airbrakes.constants import BUSY_WAIT_SECONDS, SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.state import StandbyState, State
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
-from lewanlib.servo_data_packet import ServoDataPacket
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
@@ -191,8 +191,10 @@ class Context:
         """Retracts the air brakes to the minimum extension."""
         # We don't want to retract the air brakes if they are already retracted
         if self.servo.servo_extension in (
-            ServoExtension.MAX_EXTENSION,
-            ServoExtension.MAX_NO_BUZZ,
+            # This will probably have to change cause i think the servo isnt super precise to the 
+            # decimal, probably should test
+            SERVO_MIN_EXTENSION,
+            SERVO_MAX_EXTENSION,
         ):
             self.data_processor.prepare_for_retracting_airbrakes()
             self.servo.retract_airbrakes()

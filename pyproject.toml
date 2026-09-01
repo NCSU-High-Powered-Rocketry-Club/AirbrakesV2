@@ -73,9 +73,7 @@ build-backend = "hatchling.build"
 
 # UV:
 [tool.uv]
-exclude-newer = "2026-08-28T00:00:00Z"
-exclude-newer-package = { firm-client = "1 second", hprm = "1 second" }
-link-mode = "copy"
+exclude-newer-package = { firm-client = "1 second", hprm = "1 second" , lewanlib = "1 second"}
 python-preference = "only-managed"
 
 # HATCH:

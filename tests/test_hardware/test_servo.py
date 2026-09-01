@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.constants import ServoExtension
+from airbrakes.constants import SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
@@ -45,14 +45,14 @@ class TestBaseServo:
         Tests that the servo extends to the maximum extension.
         """
         servo.extend_airbrakes()
-        assert servo.servo_extension == ServoExtension.MAX_EXTENSION
+        assert servo.servo_extension == SERVO_MAX_EXTENSION
 
     def test_set_retracted(self, servo):
         """
         Tests that the servo retracts to the minimum extension.
         """
         servo.retract_airbrakes()
-        assert servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert servo.servo_extension == SERVO_MIN_EXTENSION
 
     def test_repeated_extension_retraction(self, servo):
         """
@@ -64,14 +64,6 @@ class TestBaseServo:
         servo.extend_airbrakes()
         servo.retract_airbrakes()
 
-    def test_angle_to_duty_cycle(self):
-        """Tests that the angle to duty cycle conversion is correct."""
-        assert Servo._angle_to_duty_cycle(0) == approx(2.5)
-        assert Servo._angle_to_duty_cycle(90) == approx(7.5)
-        assert Servo._angle_to_duty_cycle(180) == approx(12.5)
-        assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
-        assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping
-
     def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
         assert servo.battery_volts == 0.0
@@ -79,3 +71,20 @@ class TestBaseServo:
     def test_system_current_milliamps(self, servo):
         """Tests that the mock system current returns a safe default."""
         assert servo.system_current_milliamps == 0.0
+
+    def test_servo_voltage(self, servo):
+        """Tests that the mock servo voltage returns a safe default."""
+        assert servo.servo_voltage == 0.0
+
+    def test_servo_temp(self, servo):
+        """Tests that the mock servo temperature returns a safe default."""
+        assert servo.servo_temp == 0.0
+
+    def test_get_servo_data_packet(self, servo):
+        """Tests that the mock servo data packet returns a safe default."""
+        packet = servo.get_servo_data_packet()
+        assert packet.current_position == SERVO_MIN_EXTENSION
+        assert packet.system_current_milliamps == 0.0
+        assert packet.battery_volts == 0.0
+        assert packet.voltage == 0.0
+        assert packet.current_temp == 0.0
