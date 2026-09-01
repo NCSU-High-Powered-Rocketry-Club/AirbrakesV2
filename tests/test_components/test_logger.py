@@ -26,6 +26,7 @@ from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_context_data_packet,
     make_firm_data_packet,
+    make_processor_data_packet,
     make_servo_data_packet,
 )
 from tests.conftest import LOG_PATH
@@ -142,6 +143,21 @@ class TestLogger:
 
         # Test only 2 csv files exist:
         assert set(LOG_PATH.glob("log_*.csv")) == {expected_log_path, expected_log_path_2}
+
+    def test_prepare_logger_packets_records_altitude_source(self):
+        """Tests that the logger retains each processor packet's altitude source."""
+        logger_packets = Logger._prepare_logger_packets(
+            make_context_data_packet(state=StandbyState),
+            make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+            [make_firm_data_packet(), make_firm_data_packet()],
+            None,
+            [
+                make_processor_data_packet(integrating_for_altitude="F"),
+                make_processor_data_packet(integrating_for_altitude="T"),
+            ],
+        )
+
+        assert [packet.integrating_for_altitude for packet in logger_packets] == ["F", "T"]
 
     def test_init_log_file_has_correct_headers(self, logger):
         with logger.log_path.open() as f:

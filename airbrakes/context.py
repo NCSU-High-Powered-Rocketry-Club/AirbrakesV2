@@ -178,6 +178,7 @@ class Context:
                 self.servo_data_packet,
                 self.firm_data_packets,
                 self.most_recent_apogee_predictor_data_packet,
+                self.processor_data_packets,
             )
 
     def extend_airbrakes(self) -> None:

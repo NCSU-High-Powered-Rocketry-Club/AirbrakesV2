@@ -54,6 +54,7 @@ class TestLoggerDataPacket:
             firm_dp_fields.union(context_dp_fields_mapped)
             .union(servo_dp_fields)
             .union(apogee_predictor_dp_fields)
+            .union({"integrating_for_altitude"})
         )
         assert log_dp_fields == available_fields, (
             f"Extra fields: {log_dp_fields - available_fields}"
@@ -75,5 +76,9 @@ class TestLoggerDataPacket:
 
         assert (
             log_dp_fields[1:]
-            == servo_dp_fields + firm_dp_fields + apogee_predictor_dp_fields + context_dp_fields[1:]
+            == servo_dp_fields
+            + firm_dp_fields
+            + ["integrating_for_altitude"]
+            + apogee_predictor_dp_fields
+            + context_dp_fields[1:]
         )

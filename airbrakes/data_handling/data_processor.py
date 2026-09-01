@@ -1,6 +1,6 @@
 """Module for processing FIRM data on a higher level."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -31,6 +31,7 @@ class DataProcessor:
         "_data_packets",
         "_initial_altitude",
         "_integrating_for_altitude",
+        "_integrating_for_altitudes",
         "_last_data_packet",
         "_max_altitude",
         "_max_vertical_velocity",
@@ -60,6 +61,7 @@ class DataProcessor:
         self._last_data_packet: FIRMDataPacket | None = None
         self._data_packets: list[FIRMDataPacket] = []
         self._integrating_for_altitude: bool = False
+        self._integrating_for_altitudes: list[Literal["T", "F"]] = ["F"]
         self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._previous_altitude: np.float64 = np.float64(0.0)
         self._initial_altitude: float | None = None
@@ -162,6 +164,9 @@ class DataProcessor:
                 ),
                 dtype=np.float64,
             )
+            self._integrating_for_altitudes = []
+            for _ in self._data_packets:
+                self._integrating_for_altitudes.append("F")
             self._previous_altitude = self._current_altitudes[-1]
             self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
             self._max_vertical_velocity = max(
@@ -218,13 +223,16 @@ class DataProcessor:
         """
         altitudes = np.empty(len(self._data_packets), dtype=np.float64)
         previous_altitude = self._previous_altitude
+        self._integrating_for_altitudes = []
 
         for i, data_packet in enumerate(self._data_packets):
             vertical_velocity = self._vertical_velocities[i]
-
-            if self._requires_integrated_altitude(
+            integrating_for_altitude = self._requires_integrated_altitude(
                 vertical_velocity, data_packet.timestamp_seconds
-            ):
+            )
+            self._integrating_for_altitudes.append("T" if integrating_for_altitude else "F")
+
+            if integrating_for_altitude:
                 altitude = previous_altitude + vertical_velocity * self._time_differences[i]
             elif self._initial_altitude is not None:
                 altitude = data_packet.est_position_z_meters - self._initial_altitude
@@ -301,6 +309,7 @@ class DataProcessor:
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[i]),
+                integrating_for_altitude=self._integrating_for_altitudes[i],
                 vertical_velocity_meters_per_s=float(self._vertical_velocities[i]),
                 horizontal_velocity_meters_per_s=0.0,
                 tilt_angle_degrees=float(self._data_packets[i].est_tilt_angle_degrees),

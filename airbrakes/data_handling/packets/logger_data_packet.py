@@ -1,5 +1,7 @@
 """Module for describing the data packet for the logger to log."""
 
+from typing import Literal
+
 import msgspec
 
 
@@ -45,6 +47,9 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_y: float | None = None
     est_quaternion_z: float | None = None
 
+    # ProcessorDataPacket Fields
+    integrating_for_altitude: Literal["T", "F"] | None = None
+
     # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None = None
     height_used_for_prediction: float | None = None
@@ -54,6 +59,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     angular_rate_deg_per_s_used_for_prediction: float | None = None
 
     # Other fields in ContextDataPacket
-    retrieved_firm_packets: int | None
-    apogee_predictor_queue_size: int | None
-    update_timestamp_ns: int | None
+    retrieved_firm_packets: int | None = None
+    apogee_predictor_queue_size: int | None = None
+    update_timestamp_ns: int | None = None

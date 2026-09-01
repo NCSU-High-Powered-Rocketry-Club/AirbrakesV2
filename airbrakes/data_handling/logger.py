@@ -29,6 +29,7 @@ if typing.TYPE_CHECKING:
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+    from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
@@ -123,6 +124,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
+        processor_data_packets: list[ProcessorDataPacket] | None = None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -132,12 +134,17 @@ class Logger:
         :param firm_data_packets: The FIRM data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
+        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         :return: A list of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
 
-        # zip the FIRM and Processor data packets together
-        for firm_data_packet in firm_data_packets:
+        if processor_data_packets is not None and len(processor_data_packets) != len(
+            firm_data_packets
+        ):
+            raise ValueError("Processor data packets must align with FIRM data packets.")
+
+        for i, firm_data_packet in enumerate(firm_data_packets):
             # Apogee Predictor fields default to none if no packet is provided
             predicted_apogee = None
             height_used_for_prediction = None
@@ -194,6 +201,12 @@ class Logger:
                 est_quaternion_y=firm_data_packet.est_quaternion_y,
                 est_quaternion_z=firm_data_packet.est_quaternion_z,
                 est_tilt_angle_degrees=firm_data_packet.est_tilt_angle_degrees,
+                # ProcessorDataPacket Fields
+                integrating_for_altitude=(
+                    processor_data_packets[i].integrating_for_altitude
+                    if processor_data_packets is not None
+                    else None
+                ),
                 # Apogee Predictor Data Packet Fields
                 predicted_apogee=predicted_apogee,
                 height_used_for_prediction=height_used_for_prediction,
@@ -237,6 +250,7 @@ class Logger:
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
+        processor_data_packets: list[ProcessorDataPacket] | None = None,
     ) -> None:
         """
         Logs the current state, extension, and FIRM data to the CSV file.
@@ -246,6 +260,7 @@ class Logger:
         :param firm_data_packets: The FIRM data packets to log.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
+        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         """
         # We are populating a list with the fields of the logger data packet
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
@@ -253,6 +268,7 @@ class Logger:
             servo_data_packet,
             firm_data_packets,
             apogee_predictor_data_packet,
+            processor_data_packets,
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:

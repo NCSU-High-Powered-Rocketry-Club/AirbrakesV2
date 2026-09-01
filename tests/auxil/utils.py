@@ -74,7 +74,10 @@ def make_processor_data_packet(**kwargs) -> ProcessorDataPacket:
 
     Provides dummy values for arguments not specified.
     """
-    dummy_values = dict.fromkeys(ProcessorDataPacket.__struct_fields__, 1.987654321)
+    dummy_values = {
+        field: "F" if field == "integrating_for_altitude" else 1.987654321
+        for field in ProcessorDataPacket.__struct_fields__
+    }
     return ProcessorDataPacket(**{**dummy_values, **kwargs})
 
 
@@ -84,7 +87,10 @@ def make_processor_data_packet_zeroed(**kwargs) -> ProcessorDataPacket:
 
     Provides zeroes for arguments not specified.
     """
-    dummy_values = dict.fromkeys(ProcessorDataPacket.__struct_fields__, 0.0)
+    dummy_values = {
+        field: "F" if field == "integrating_for_altitude" else 0.0
+        for field in ProcessorDataPacket.__struct_fields__
+    }
     return ProcessorDataPacket(**{**dummy_values, **kwargs})
 
 

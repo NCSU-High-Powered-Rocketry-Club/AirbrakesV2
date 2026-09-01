@@ -7,7 +7,10 @@ import polars as pl
 import pytest
 import quaternion
 
-from airbrakes.constants import TRANSONIC_VELOCITY_METERS_PER_SECOND, SECONDS_UNTIL_PRESSURE_STABILIZATION
+from airbrakes.constants import (
+    SECONDS_UNTIL_PRESSURE_STABILIZATION,
+    TRANSONIC_VELOCITY_METERS_PER_SECOND,
+)
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_firm_data_packet, make_processor_data_packet_zeroed
@@ -54,7 +57,9 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[ProcessorDataPacke
     :return: list containing n_packets amount of estimated data packets
     """
     data_packets = []
-    needed_columns = list(set(ProcessorDataPacket.__struct_fields__) - {"invalid_fields"})
+    needed_columns = list(
+        set(ProcessorDataPacket.__struct_fields__) - {"invalid_fields", "integrating_for_altitude"}
+    )
     df = pl.read_csv(
         csv_path,
         columns=needed_columns,
@@ -64,6 +69,7 @@ def load_data_packets(csv_path: Path, n_packets: int) -> list[ProcessorDataPacke
     for row in df.iter_rows(named=True):
         # Convert the named tuple to a dictionary and remove any NaN values:
         row_dict = {k: v for k, v in row.items() if v is not None}
+        row_dict["integrating_for_altitude"] = "F"
         # Create an ProcessorDataPacket instance from the dictionary
         if row_dict.get("current_altitude"):
             packet = ProcessorDataPacket(**row_dict)
@@ -120,6 +126,7 @@ class TestDataProcessor:
         assert d._max_vertical_velocity == 0.0
         assert isinstance(d._current_altitudes, np.ndarray)
         assert list(d._current_altitudes) == [0.0]
+        assert d._integrating_for_altitudes == ["F"]
         assert d._last_data_packet is None
         assert d._data_packets == []
 
@@ -213,6 +220,7 @@ class TestDataProcessor:
         # On first update, arrays are initialized from the full batch.
         assert len(d._current_altitudes) == len(data_packets)
         assert len(d._vertical_velocities) == len(data_packets)
+        assert d._integrating_for_altitudes == ["F"] * len(data_packets)
 
         assert d._vertical_velocities[0] == data_packets[0].est_velocity_z_meters_per_s
 
@@ -334,7 +342,9 @@ class TestDataProcessor:
 
         initial_altitude = 100.0
 
-        d.update([make_firm_data_packet(timestamp_seconds=0.0, est_position_z_meters=initial_altitude)])
+        d.update(
+            [make_firm_data_packet(timestamp_seconds=0.0, est_position_z_meters=initial_altitude)]
+        )
         d.update(
             [
                 make_firm_data_packet(
@@ -357,7 +367,7 @@ class TestDataProcessor:
                 )
             ]
         )
-        # Then we test that the altitude is now integrating the velocity, since it is above the 
+        # Then we test that the altitude is now integrating the velocity, since it is above the
         # threshold.
         assert d.current_altitude == pytest.approx(20.0 + threshold + 1.0)
 
@@ -412,11 +422,14 @@ class TestDataProcessor:
             ]
         )
 
-        # This just tests that it does the switching on a per-packet basis, and that the altitude 
+        # This just tests that it does the switching on a per-packet basis, and that the altitude
         assert d._current_altitudes == pytest.approx([10.0, 10.0 + transonic_velocity, 30.0])
         assert [
             packet.current_altitude for packet in d.get_processor_data_packets()
         ] == pytest.approx([10.0, 10.0 + transonic_velocity, 30.0])
+        assert [
+            packet.integrating_for_altitude for packet in d.get_processor_data_packets()
+        ] == ["F", "T", "F"]
         assert d.current_altitude == pytest.approx(30.0)
         assert d.max_altitude == pytest.approx(10.0 + transonic_velocity)
 
@@ -442,6 +455,7 @@ class TestDataProcessor:
         # We check that even though the velocity is below the transonic threshold, the altitude is
         # still integrated because we're about to extend the airbrakes
         assert d.current_altitude == pytest.approx(current_velocity * initial_timestamp)
+        assert d.get_processor_data_packets()[-1].integrating_for_altitude == "T"
 
         dt = SECONDS_UNTIL_PRESSURE_STABILIZATION / 2.0
 
@@ -457,7 +471,10 @@ class TestDataProcessor:
         )
         # We're still integrating because the airbrakes are still in the process of
         # retracting
-        assert d.current_altitude == pytest.approx(current_velocity * initial_timestamp + current_velocity * dt)
+        assert d.current_altitude == pytest.approx(
+            current_velocity * initial_timestamp + current_velocity * dt
+        )
+        assert d.get_processor_data_packets()[-1].integrating_for_altitude == "T"
 
         d.update(
             [
@@ -470,6 +487,7 @@ class TestDataProcessor:
         )
         # Now that the airbrakes have fully retracted, we should be back to using pressure altitude
         assert d.current_altitude == pytest.approx(50.0)
+        assert d.get_processor_data_packets()[-1].integrating_for_altitude == "F"
 
         d.update(
             [
@@ -482,6 +500,7 @@ class TestDataProcessor:
         )
         # Now that the velocity is above the transonic threshold, we should be integrating again
         assert d.current_altitude == pytest.approx(50.0 + transonic_velocity)
+        assert d.get_processor_data_packets()[-1].integrating_for_altitude == "T"
 
         d.update(
             [
@@ -492,9 +511,10 @@ class TestDataProcessor:
                 )
             ]
         )
-        # Finally, we should be back to using pressure altitude, since the airbrakes have fully 
+        # Finally, we should be back to using pressure altitude, since the airbrakes have fully
         # retracted and the velocity is below the transonic threshold
         assert d.current_altitude == pytest.approx(80.0)
+        assert d.get_processor_data_packets()[-1].integrating_for_altitude == "F"
 
     def test_first_update_uses_pressure(self, data_processor) -> None:
         """Tests that transonic integration starts from the initialized pressure altitude."""
@@ -510,6 +530,7 @@ class TestDataProcessor:
             ]
         )
         assert data_processor.current_altitude == pytest.approx(0.0)
+        assert data_processor.get_processor_data_packets()[-1].integrating_for_altitude == "F"
 
         data_processor.update(
             [
