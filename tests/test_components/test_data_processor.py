@@ -7,6 +7,7 @@ import polars as pl
 import pytest
 import quaternion
 
+from airbrakes.constants import TRANSONIC_VELOCITY_METERS_PER_SECOND, SECONDS_UNTIL_PRESSURE_STABILIZATION
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from tests.auxil.utils import make_firm_data_packet, make_processor_data_packet_zeroed
@@ -325,3 +326,198 @@ class TestDataProcessor:
             ]
         )
         assert d.current_altitude == pytest.approx(30.0)
+
+    def test_transonic_velocity_threshold(self, data_processor) -> None:
+        """Tests that transonic altitude integration uses the velocity magnitude."""
+        d = data_processor
+        threshold = TRANSONIC_VELOCITY_METERS_PER_SECOND
+
+        initial_altitude = 100.0
+
+        d.update([make_firm_data_packet(timestamp_seconds=0.0, est_position_z_meters=initial_altitude)])
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=1.0,
+                    est_position_z_meters=120.0,
+                    est_velocity_z_meters_per_s=threshold,
+                )
+            ]
+        )
+        # First we test that the altitude is still using pressure altitude, since the velocity is
+        # not above the threshold.
+        assert d.current_altitude == pytest.approx(20.0)
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=2.0,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=threshold + 1.0,
+                )
+            ]
+        )
+        # Then we test that the altitude is now integrating the velocity, since it is above the 
+        # threshold.
+        assert d.current_altitude == pytest.approx(20.0 + threshold + 1.0)
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=3.0,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=-(threshold + 1.0),
+                )
+            ]
+        )
+        # Also lets test it with negative just in case we are some how falling at transonic speeds
+        assert d.current_altitude == pytest.approx(20.0)
+
+        new_altitude = 1234.1
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=3.0,
+                    est_position_z_meters=new_altitude,
+                    est_velocity_z_meters_per_s=1.0,
+                )
+            ]
+        )
+        # Finally lets test that we can switch back to pressure altitude
+        assert d.current_altitude == pytest.approx(new_altitude - initial_altitude)
+
+    def test_transonic_switching_within_batch(self, data_processor) -> None:
+        """Tests that altitude source selection handles every packet in a batch."""
+        d = data_processor
+        transonic_velocity = TRANSONIC_VELOCITY_METERS_PER_SECOND + 1.0
+
+        d.update([make_firm_data_packet(timestamp_seconds=0.0, est_position_z_meters=100.0)])
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=1.0,
+                    est_position_z_meters=110.0,
+                    est_velocity_z_meters_per_s=0.0,
+                ),
+                make_firm_data_packet(
+                    timestamp_seconds=2.0,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=transonic_velocity,
+                ),
+                make_firm_data_packet(
+                    timestamp_seconds=3.0,
+                    est_position_z_meters=130.0,
+                    est_velocity_z_meters_per_s=0.0,
+                ),
+            ]
+        )
+
+        # This just tests that it does the switching on a per-packet basis, and that the altitude 
+        assert d._current_altitudes == pytest.approx([10.0, 10.0 + transonic_velocity, 30.0])
+        assert [
+            packet.current_altitude for packet in d.get_processor_data_packets()
+        ] == pytest.approx([10.0, 10.0 + transonic_velocity, 30.0])
+        assert d.current_altitude == pytest.approx(30.0)
+        assert d.max_altitude == pytest.approx(10.0 + transonic_velocity)
+
+    def test_transonic_switching_and_retract(self, data_processor) -> None:
+        """Tests that airbrake integration and pressure recovery take precedence over speed."""
+        d = data_processor
+        transonic_velocity = TRANSONIC_VELOCITY_METERS_PER_SECOND + 1.0
+
+        initial_timestamp = 1.0
+        current_velocity = 10.0
+
+        d.update([make_firm_data_packet(timestamp_seconds=0.0, est_position_z_meters=100.0)])
+        d.prepare_for_extending_airbrakes()
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=initial_timestamp,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=current_velocity,
+                )
+            ]
+        )
+        # We check that even though the velocity is below the transonic threshold, the altitude is
+        # still integrated because we're about to extend the airbrakes
+        assert d.current_altitude == pytest.approx(current_velocity * initial_timestamp)
+
+        dt = SECONDS_UNTIL_PRESSURE_STABILIZATION / 2.0
+
+        d.prepare_for_retracting_airbrakes()
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=initial_timestamp + dt,
+                    est_position_z_meters=2_000.0,
+                    est_velocity_z_meters_per_s=current_velocity,
+                )
+            ]
+        )
+        # We're still integrating because the airbrakes are still in the process of
+        # retracting
+        assert d.current_altitude == pytest.approx(current_velocity * initial_timestamp + current_velocity * dt)
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=initial_timestamp + dt + SECONDS_UNTIL_PRESSURE_STABILIZATION,
+                    est_position_z_meters=150.0,
+                    est_velocity_z_meters_per_s=10.0,
+                )
+            ]
+        )
+        # Now that the airbrakes have fully retracted, we should be back to using pressure altitude
+        assert d.current_altitude == pytest.approx(50.0)
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=2.75,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=transonic_velocity,
+                )
+            ]
+        )
+        # Now that the velocity is above the transonic threshold, we should be integrating again
+        assert d.current_altitude == pytest.approx(50.0 + transonic_velocity)
+
+        d.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=3.75,
+                    est_position_z_meters=180.0,
+                    est_velocity_z_meters_per_s=10.0,
+                )
+            ]
+        )
+        # Finally, we should be back to using pressure altitude, since the airbrakes have fully 
+        # retracted and the velocity is below the transonic threshold
+        assert d.current_altitude == pytest.approx(80.0)
+
+    def test_first_update_uses_pressure(self, data_processor) -> None:
+        """Tests that transonic integration starts from the initialized pressure altitude."""
+        transonic_velocity = TRANSONIC_VELOCITY_METERS_PER_SECOND + 1.0
+
+        data_processor.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=0.0,
+                    est_position_z_meters=100.0,
+                    est_velocity_z_meters_per_s=transonic_velocity,
+                )
+            ]
+        )
+        assert data_processor.current_altitude == pytest.approx(0.0)
+
+        data_processor.update(
+            [
+                make_firm_data_packet(
+                    timestamp_seconds=1.0,
+                    est_position_z_meters=1_000.0,
+                    est_velocity_z_meters_per_s=transonic_velocity,
+                )
+            ]
+        )
+        assert data_processor.current_altitude == pytest.approx(transonic_velocity)

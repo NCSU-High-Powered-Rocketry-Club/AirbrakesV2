@@ -281,5 +281,11 @@ GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
 """The acceleration due to gravity in meters per second squared, used for
 apogee prediction."""
 
+SPEED_OF_SOUND_METERS_PER_SECOND = 343.0
+"""The assumed speed of sound in meters per second."""
+
+TRANSONIC_VELOCITY_METERS_PER_SECOND = 0.65 * SPEED_OF_SOUND_METERS_PER_SECOND
+"""The speed above which pressure altitude is unreliable, in meters per second."""
+
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """It takes the pressure a little bit of time to stabilize after airbrakes retract."""
