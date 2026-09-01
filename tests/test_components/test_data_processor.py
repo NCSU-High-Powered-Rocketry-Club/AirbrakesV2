@@ -427,9 +427,11 @@ class TestDataProcessor:
         assert [
             packet.current_altitude for packet in d.get_processor_data_packets()
         ] == pytest.approx([10.0, 10.0 + transonic_velocity, 30.0])
-        assert [
-            packet.integrating_for_altitude for packet in d.get_processor_data_packets()
-        ] == ["F", "T", "F"]
+        assert [packet.integrating_for_altitude for packet in d.get_processor_data_packets()] == [
+            "F",
+            "T",
+            "F",
+        ]
         assert d.current_altitude == pytest.approx(30.0)
         assert d.max_altitude == pytest.approx(10.0 + transonic_velocity)
 

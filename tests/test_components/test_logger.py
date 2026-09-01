@@ -150,14 +150,24 @@ class TestLogger:
             make_context_data_packet(state=StandbyState),
             make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
             [make_firm_data_packet(), make_firm_data_packet()],
-            None,
             [
                 make_processor_data_packet(integrating_for_altitude="F"),
                 make_processor_data_packet(integrating_for_altitude="T"),
             ],
+            None,
         )
 
         assert [packet.integrating_for_altitude for packet in logger_packets] == ["F", "T"]
+        for processor_data_packet, logger_data_packet in zip(
+            [
+                make_processor_data_packet(integrating_for_altitude="F"),
+                make_processor_data_packet(integrating_for_altitude="T"),
+            ],
+            logger_packets,
+            strict=True,
+        ):
+            for field in processor_data_packet.__struct_fields__:
+                assert getattr(logger_data_packet, field) == getattr(processor_data_packet, field)
 
     def test_init_log_file_has_correct_headers(self, logger):
         with logger.log_path.open() as f:
@@ -343,6 +353,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             firm_data_packets.copy(),
+            None,
             apogee_predictor_data_packet,
         )
         time.sleep(0.01)  # Give the thread time to log to file
@@ -394,6 +405,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            None,
             apogee_predictor_data_packets,
         )
 
@@ -433,6 +445,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            None,
             apogee_predictor_data_packets,
         )
 
@@ -442,6 +455,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             firm_data_packets * (LOG_BUFFER_SIZE + 10),
+            None,
             apogee_predictor_data_packets,
         )
 
@@ -486,6 +500,7 @@ class TestLogger:
             context_standby,
             servo_packet,
             firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            None,
             apogee_predictor_data_packet,
         )
         time.sleep(0.1)  # Give the thread time to log to file
@@ -498,6 +513,7 @@ class TestLogger:
             context_motor,
             servo_packet,
             firm_data_packets * 8,
+            None,
             apogee_predictor_data_packet,
         )
 
@@ -560,6 +576,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             firm_data_packets * packets_to_log,
+            None,
             apogee_predictor_data_packet,
         )
 
@@ -657,6 +674,7 @@ class TestLogger:
                 context_packet,
                 servo_packet,
                 firm_data_packets.copy(),
+                None,
                 apogee_predictor_data_packet=None,
             )
 

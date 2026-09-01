@@ -141,6 +141,7 @@ class TestContext:
             self._current_altitudes = [0.0] * len(firm_data_packets)
             self._vertical_velocities = [0.0] * len(firm_data_packets)
             self._vertical_accelerations = [0.0] * len(firm_data_packets)
+            self._integrating_for_altitudes = ["F"] * len(firm_data_packets)
 
         def state(self):
             # monkeypatched method of State
@@ -149,10 +150,14 @@ class TestContext:
                 self.context.predict_apogee()
                 self.context.servo.extend_airbrakes()
 
-        def log(self, ctx_dp, servo_dp, firm_data_packets, apg_dps):
+        def log(self, ctx_dp, servo_dp, firm_data_packets, processor_data_packets, apg_dps):
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(firm_data_packets) > 10)
+            asserts.append(len(processor_data_packets) == len(firm_data_packets))
+            asserts.append(
+                all(packet.integrating_for_altitude == "F" for packet in processor_data_packets)
+            )
             asserts.append(isinstance(ctx_dp, ContextDataPacket))
             asserts.append(ctx_dp.state == CoastState)
             asserts.append(ctx_dp.retrieved_firm_packets >= 1)

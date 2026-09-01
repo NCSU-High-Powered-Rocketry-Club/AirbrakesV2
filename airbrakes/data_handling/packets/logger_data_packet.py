@@ -48,7 +48,12 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_z: float | None = None
 
     # ProcessorDataPacket Fields
+    current_altitude: float | None = None
     integrating_for_altitude: Literal["T", "F"] | None = None
+    vertical_velocity_meters_per_s: float | None = None
+    horizontal_velocity_meters_per_s: float | None = None
+    tilt_angle_degrees: float | None = None
+    angular_rate_deg_per_s: float | None = None
 
     # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None = None

@@ -123,8 +123,8 @@ class Logger:
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
+        processor_data_packets: list[ProcessorDataPacket] | None,
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
-        processor_data_packets: list[ProcessorDataPacket] | None = None,
     ) -> list[LoggerDataPacket]:
         """
         Creates a data packet representing a row of data to be logged.
@@ -132,9 +132,9 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
+        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
-        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         :return: A list of LoggerDataPacket objects.
         """
         logger_data_packets: list[LoggerDataPacket] = []
@@ -145,6 +145,9 @@ class Logger:
             raise ValueError("Processor data packets must align with FIRM data packets.")
 
         for i, firm_data_packet in enumerate(firm_data_packets):
+            processor_data_packet = (
+                processor_data_packets[i] if processor_data_packets is not None else None
+            )
             # Apogee Predictor fields default to none if no packet is provided
             predicted_apogee = None
             height_used_for_prediction = None
@@ -178,7 +181,11 @@ class Logger:
                 battery_voltage=servo_data_packet.battery_voltage,
                 current_milliamps=servo_data_packet.current_milliamps,
                 # FIRMDataPacket Fields
-                timestamp_seconds=firm_data_packet.timestamp_seconds,
+                timestamp_seconds=(
+                    processor_data_packet.timestamp_seconds
+                    if processor_data_packet is not None
+                    else firm_data_packet.timestamp_seconds
+                ),
                 temperature_celsius=firm_data_packet.temperature_celsius,
                 pressure_pascals=firm_data_packet.pressure_pascals,
                 raw_acceleration_x_gs=firm_data_packet.raw_acceleration_x_gs,
@@ -202,9 +209,34 @@ class Logger:
                 est_quaternion_z=firm_data_packet.est_quaternion_z,
                 est_tilt_angle_degrees=firm_data_packet.est_tilt_angle_degrees,
                 # ProcessorDataPacket Fields
+                current_altitude=(
+                    processor_data_packet.current_altitude
+                    if processor_data_packet is not None
+                    else None
+                ),
                 integrating_for_altitude=(
-                    processor_data_packets[i].integrating_for_altitude
-                    if processor_data_packets is not None
+                    processor_data_packet.integrating_for_altitude
+                    if processor_data_packet is not None
+                    else None
+                ),
+                vertical_velocity_meters_per_s=(
+                    processor_data_packet.vertical_velocity_meters_per_s
+                    if processor_data_packet is not None
+                    else None
+                ),
+                horizontal_velocity_meters_per_s=(
+                    processor_data_packet.horizontal_velocity_meters_per_s
+                    if processor_data_packet is not None
+                    else None
+                ),
+                tilt_angle_degrees=(
+                    processor_data_packet.tilt_angle_degrees
+                    if processor_data_packet is not None
+                    else None
+                ),
+                angular_rate_deg_per_s=(
+                    processor_data_packet.angular_rate_deg_per_s
+                    if processor_data_packet is not None
                     else None
                 ),
                 # Apogee Predictor Data Packet Fields
@@ -249,8 +281,8 @@ class Logger:
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         firm_data_packets: list[FIRMDataPacket],
+        processor_data_packets: list[ProcessorDataPacket] | None,
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
-        processor_data_packets: list[ProcessorDataPacket] | None = None,
     ) -> None:
         """
         Logs the current state, extension, and FIRM data to the CSV file.
@@ -258,17 +290,17 @@ class Logger:
         :param context_data_packet: The Context Data Packet to log.
         :param servo_data_packet: The Servo Data Packet to log.
         :param firm_data_packets: The FIRM data packets to log.
+        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         :param apogee_predictor_data_packet: The most recent apogee
             predictor data packet to log.
-        :param processor_data_packets: Processed packets aligned with the FIRM data packets.
         """
         # We are populating a list with the fields of the logger data packet
         logger_data_packets: list[LoggerDataPacket] = Logger._prepare_logger_packets(
             context_data_packet,
             servo_data_packet,
             firm_data_packets,
-            apogee_predictor_data_packet,
             processor_data_packets,
+            apogee_predictor_data_packet,
         )
 
         # If we are in Standby or Landed State, we need to buffer the data packets:

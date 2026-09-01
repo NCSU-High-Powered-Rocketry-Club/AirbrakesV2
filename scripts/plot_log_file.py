@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 DEFAULT_TRACES = [
     # (column_name, pretty_label)
     ("est_position_z_meters", "Estimated Z Position (m)"),
+    ("current_altitude", "Processed Current Altitude (m)"),
     ("height_used_for_prediction", "est_height"),
     ("est_velocity_z_meters_per_s", "Estimated Z Velocity (m/s)"),
     ("raw_rotated_acceleration_z_gs", "Raw Z Accel (g)"),

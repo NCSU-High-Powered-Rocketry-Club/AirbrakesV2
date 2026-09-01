@@ -4,6 +4,7 @@ from firm_client import FIRMDataPacket
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from tests.auxil.utils import make_logger_data_packet
 
@@ -30,6 +31,7 @@ class TestLoggerDataPacket:
         context_dp_fields = set(ContextDataPacket.__struct_fields__)
         servo_dp_fields = set(ServoDataPacket.__struct_fields__)
         firm_dp_fields = set(FIRMDataPacket.__struct_fields__)
+        processor_dp_fields = set(ProcessorDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = set(ApogeePredictorDataPacket.__struct_fields__)
 
         # Map Context 'state' -> Logger 'state_letter' for comparisons
@@ -43,6 +45,9 @@ class TestLoggerDataPacket:
         assert firm_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {firm_dp_fields - log_dp_fields}"
         )
+        assert processor_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {processor_dp_fields - log_dp_fields}"
+        )
         assert apogee_predictor_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {apogee_predictor_dp_fields - log_dp_fields}"
         )
@@ -53,8 +58,8 @@ class TestLoggerDataPacket:
         available_fields = (
             firm_dp_fields.union(context_dp_fields_mapped)
             .union(servo_dp_fields)
+            .union(processor_dp_fields)
             .union(apogee_predictor_dp_fields)
-            .union({"integrating_for_altitude"})
         )
         assert log_dp_fields == available_fields, (
             f"Extra fields: {log_dp_fields - available_fields}"
@@ -72,13 +77,16 @@ class TestLoggerDataPacket:
         context_dp_fields = list(ContextDataPacket.__struct_fields__)
         servo_dp_fields = list(ServoDataPacket.__struct_fields__)
         firm_dp_fields = list(FIRMDataPacket.__struct_fields__)
+        processor_dp_fields = [
+            field for field in ProcessorDataPacket.__struct_fields__ if field != "timestamp_seconds"
+        ]
         apogee_predictor_dp_fields = list(ApogeePredictorDataPacket.__struct_fields__)
 
         assert (
             log_dp_fields[1:]
             == servo_dp_fields
             + firm_dp_fields
-            + ["integrating_for_altitude"]
+            + processor_dp_fields
             + apogee_predictor_dp_fields
             + context_dp_fields[1:]
         )
