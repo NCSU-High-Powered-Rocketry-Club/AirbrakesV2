@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-plot_firm_log.py.
-
 Interactive Plotly viewer for FIRM CSV logs.
 
 Usage:

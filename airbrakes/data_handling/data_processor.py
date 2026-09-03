@@ -164,9 +164,7 @@ class DataProcessor:
                 ),
                 dtype=np.float64,
             )
-            self._integrating_for_altitudes = []
-            for _ in self._data_packets:
-                self._integrating_for_altitudes.append("F")
+            self._integrating_for_altitudes = ["F"] * len(self._data_packets)
             self._previous_altitude = self._current_altitudes[-1]
             self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
             self._max_vertical_velocity = max(

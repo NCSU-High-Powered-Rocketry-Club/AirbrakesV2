@@ -336,7 +336,7 @@ class TestDataProcessor:
         assert d.current_altitude == pytest.approx(30.0)
 
     def test_transonic_velocity_threshold(self, data_processor) -> None:
-        """Tests that transonic altitude integration uses the velocity magnitude."""
+        """Tests that transonic altitude integration triggers on absolute vertical velocity."""
         d = data_processor
         threshold = TRANSONIC_VELOCITY_METERS_PER_SECOND
 
