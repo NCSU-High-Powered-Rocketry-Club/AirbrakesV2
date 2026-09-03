@@ -33,9 +33,8 @@ class Servo(BaseServo):
     A custom class that represents a servo motor.
     The servo controls the extension of airbrakes.
 
-    The servo we use is the DS3235, which is a coreless digital servo.
-    We only use one servo to control the airbrakes, using hardware PWM
-    on the Pi 5.
+    GPIO switches servo power on the Raspberry Pi 5, while an INA219 sensor
+    provides supply and current telemetry.
     """
 
     __slots__ = (
@@ -46,9 +45,7 @@ class Servo(BaseServo):
     )
 
     def __init__(self) -> None:
-        """
-        Initializes the Servo class.
-        """
+        """Initialize GPIO power control, the servo bus, and current sensing."""
         self.servo_line = gpiod.request_lines(
                     path=CHIP_PATH,
                     consumer="airbrakes-servo",
@@ -74,18 +71,13 @@ class Servo(BaseServo):
         )
 
     def start(self) -> None:
-        """
-        Starts the servo by starting the PWM signal with the initial duty cycle
-        corresponding to the minimum extension without buzzing.
-        """
+        """Power on the servo and command its minimum extension."""
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
         self.servo.set_powered(True)
         self.retract_airbrakes()
 
     def stop(self) -> None:
-        """
-        Stops the servo by stopping the PWM signal.
-        """
+        """Power off the servo and release its GPIO line."""
         self.servo.set_powered(False)
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.INACTIVE)
 
@@ -93,85 +85,52 @@ class Servo(BaseServo):
         self.servo_line.release()
 
     def extend_airbrakes(self) -> None:
-        """
-        Extends the servo to the maximum extension.
-        """
+        """Command the physical servo to its maximum extension."""
         self.servo.move_time_write(SERVO_MAX_EXTENSION, 0)
 
     def retract_airbrakes(self) -> None:
-        """
-        Retracts the servo to the minimum extension.
-        """
+        """Command the physical servo to its minimum extension."""
         self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
 
     def set_extension(self, angle: float) -> None:
-        """
-        Sets the servo to a specific extension.
+        """Command a specific servo position.
 
-        :param extension: The desired extension of the servo.
+        :param angle: The desired servo position in degrees.
         """
         self.servo.move_time_write(angle, 0)
 
     @property
     def is_powered(self) -> bool:
-        """
-        Checks if the servo is powered on.
-
-        :return: True if the servo is powered on, False otherwise.
-        """
+        """Return whether the physical servo reports that it is powered."""
         return self.servo.is_powered()
 
     @property
     def servo_extension(self) -> float:
-        """
-        Gets the extension most recently commanded to the servo.
-
-        :return: The commanded servo extension.
-        """
+        """Return the physical servo position reported by the Lewan bus."""
         return self.servo.pos_read()
 
     @property
     def battery_volts(self) -> float:
-        """
-        Gets the battery voltage from the INA219 sensor.
-
-        :return: The battery voltage in volts.
-        """
+        """Return the battery voltage measured by the INA219 sensor."""
         return self.ina.supply_voltage()
 
     @property
     def system_current_milliamps(self) -> float:
-        """
-        Gets the current system current draw from the INA219 sensor.
-
-        :return: The current system current draw in milliamps.
-        """
+        """Return the system current measured by the INA219 sensor."""
         return self.ina.current()
 
     @property
     def servo_voltage(self) -> float:
-        """
-        Gets the voltage of the servo motor.
-
-        :return: The servo voltage in volts.
-        """
+        """Return the servo motor voltage reported by the Lewan bus."""
         return self.servo.vin_read()
 
     @property
     def servo_temp(self) -> float:
-        """
-        Gets the temperature of the servo motor.
-
-        :return: The servo temperature in degrees Celsius.
-        """
+        """Return the servo temperature reported by the Lewan bus."""
         return self.servo.temp_read()
 
     def get_servo_data_packet(self) -> ServoDataPacket:
-        """
-        Creates the servo data packet from the servo data.
-
-        :return: The servo data packet.
-        """
+        """Create a data packet from the physical servo's telemetry."""
         return ServoDataPacket(current_position=self.servo_extension,
                                system_current_milliamps=self.system_current_milliamps,
                                battery_volts=self.battery_volts,

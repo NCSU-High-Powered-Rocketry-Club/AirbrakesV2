@@ -19,25 +19,25 @@ class MockServo(BaseServo):
     __slots__ = ("_servo_extension", "extend", "retract", "_is_powered")
 
     def __init__(self) -> None:
-        """Initialize the mock servo in its minimum-safe position."""
+        """Initialize an unpowered mock servo at minimum extension."""
         self._servo_extension = SERVO_MIN_EXTENSION
         self.extend: threading.Timer | None = None
         self.retract: threading.Timer | None = None
         self._is_powered = False
 
     def start(self) -> None:
-        """Start the mock servo; no real hardware is required."""
+        """Power on the mock servo and reset it to minimum extension."""
         self._servo_extension = SERVO_MIN_EXTENSION
         self._is_powered = True
 
     def stop(self) -> None:
-        """Stop the mock servo and cancel any pending motion timers."""
+        """Power off the mock servo and cancel pending motion timers."""
         self._cancel_timer("extend")
         self._cancel_timer("retract")
         self._is_powered = False
 
     def extend_airbrakes(self) -> None:
-        """Command the mock servo to the maximum extension."""
+        """Request maximum extension and schedule its delayed completion."""
         self._cancel_timer("retract")
         self.set_extension(SERVO_MAX_EXTENSION)
         self.extend = threading.Timer(
@@ -48,7 +48,7 @@ class MockServo(BaseServo):
         self.extend.start()
 
     def retract_airbrakes(self) -> None:
-        """Command the mock servo back to the minimum extension."""
+        """Request minimum extension and schedule its delayed completion."""
         self._cancel_timer("extend")
         self.set_extension(SERVO_MIN_EXTENSION)
         self.retract = threading.Timer(
@@ -59,37 +59,37 @@ class MockServo(BaseServo):
         self.retract.start()
 
     def set_extension(self, angle: float) -> None:
-        """Record the position sent to the mocked servo."""
+        """Record a commanded servo position in degrees."""
         self._servo_extension = angle
 
     def _cancel_timer(self, timer_name: str) -> None:
-        """Cancel a pending timer, if present."""
+        """Cancel the pending timer stored under ``timer_name``, if any."""
         timer = getattr(self, timer_name)
         if timer is not None:
             timer.cancel()
 
     @property
     def is_powered(self) -> bool:
-        """Return the power state of the mock servo."""
+        """Return whether the mock servo is powered."""
         return self._is_powered
     @property
     def servo_extension(self) -> float:
-        """Return the most recently commanded extension."""
+        """Return the most recently recorded servo position."""
         return self._servo_extension
 
     @property
     def battery_volts(self) -> float:
-        """Return mock battery voltage in volts."""
+        """Return the mock battery voltage."""
         return 0.0
 
     @property
     def system_current_milliamps(self) -> float:
-        """Return mock system current in milliamps."""
+        """Return the mock system current."""
         return 0.0
 
     @property
     def servo_voltage(self) -> float:
-        """Return mock servo voltage in volts."""
+        """Return the mock servo voltage."""
         return 0.0
 
     @property
@@ -98,11 +98,7 @@ class MockServo(BaseServo):
         return 0.0
 
     def get_servo_data_packet(self) -> ServoDataPacket:
-        """
-        Creates the servo data packet from the mock servo data.
-
-        :return: The servo data packet.
-        """
+        """Create a data packet from the mock servo's telemetry."""
         return ServoDataPacket(
             current_position=self.servo_extension,
             system_current_milliamps=self.system_current_milliamps,

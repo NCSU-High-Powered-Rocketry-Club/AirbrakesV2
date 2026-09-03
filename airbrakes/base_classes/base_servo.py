@@ -1,8 +1,4 @@
-"""
-Base class for the Servo.
-
-This will serve as the base for real servo and the mock servo.
-"""
+"""Define the interface shared by real and simulated airbrake servos."""
 
 from __future__ import annotations
 
@@ -33,82 +29,49 @@ class BaseServo(ABC):
 
     @abstractmethod
     def extend_airbrakes(self) -> None:
-        """
-        Extends the servo to deploy the airbrakes.
-        """
+        """Command the servo to its maximum extension."""
 
     @abstractmethod
     def retract_airbrakes(self) -> None:
-        """
-        Retracts the servo to close the airbrakes.
-        """
+        """Command the servo to its minimum extension."""
 
     @abstractmethod
     def set_extension(self, angle: float) -> None:
-        """
-        Sets the servo to a specific extension.
+        """Command a specific airbrake extension in servo-position degrees.
 
-        :param extension: The desired extension of the servo.
+        :param angle: The desired servo position.
         """
 
     @property
     @abstractmethod
     def is_powered(self) -> bool:
-        """
-        Checks if the servo is powered on.
-
-        :return: True if the servo is powered on, False otherwise.
-        """
+        """Return whether the servo is currently powered."""
 
     @property
     @abstractmethod
     def servo_extension(self) -> float:
-        """
-        Gets the extension most recently commanded to the servo.
-
-        :return: The commanded servo extension.
-        """
+        """Return the servo's current or most recently reported position."""
 
     @property
     @abstractmethod
     def battery_volts(self) -> float:
-        """
-        Gets the current battery voltage.
-
-        :return: The current battery voltage in volts.
-        """
+        """Return the supply voltage in volts."""
 
     @property
     @abstractmethod
     def system_current_milliamps(self) -> float:
-        """
-        Gets the current system current draw.
-
-        :return: The current system current draw in milliamps.
-        """
+        """Return the system current draw in milliamps."""
 
     @property
     @abstractmethod
     def servo_voltage(self) -> float:
-        """
-        Gets the voltage of the servo motor.
-
-        :return: The servo voltage in volts.
-        """
+        """Return the servo motor voltage in volts."""
 
     @property
     @abstractmethod
     def servo_temp(self) -> float:
-        """
-        Gets the temperature of the servo motor.
-
-        :return: The servo temperature in degrees Celsius.
-        """
+        """Return the servo motor temperature in degrees Celsius."""
 
     @abstractmethod
     def get_servo_data_packet(self) -> ServoDataPacket:
-        """
-        Creates the servo data packet from the servo data.
-
-        :return: The servo data packet.
-        """
+        """Create a data packet containing the current servo telemetry."""
