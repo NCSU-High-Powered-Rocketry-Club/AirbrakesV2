@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import polars as pl
 import pytest
-import quaternion
 
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
@@ -105,7 +104,7 @@ class TestDataProcessor:
         inst = DataProcessor()
         for attr in inst.__slots__:
             val = getattr(inst, attr, "err")
-            if isinstance(val, np.ndarray | quaternion.quaternion):
+            if isinstance(val, np.ndarray):
                 continue
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 

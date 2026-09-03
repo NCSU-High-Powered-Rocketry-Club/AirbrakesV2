@@ -16,13 +16,11 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     state_letter: str | None
 
     # Fields in ServoDataPacket
-    servo_id: int | None = None
     current_position: float | None = None
-    angle_offset: float| None = None
     current_temp: float | None = None
     voltage: float | None = None
-    battery_volts: float | None = None
     system_current_milliamps: float | None = None
+    battery_volts: float | None = None
 
     # FIRMDataPacket Fields
     timestamp_seconds: float | None = None

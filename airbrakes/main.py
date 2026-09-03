@@ -8,12 +8,7 @@ import sys
 import sysconfig
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
-    LOGS_PATH,
-    SERVO_CHANNEL,
-)
+from airbrakes.constants import LOGS_PATH
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
@@ -123,13 +118,9 @@ def create_components(
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = (
-            Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            Servo()
             if args.real_servo
-            else MockServo(
-                SERVO_CHANNEL,
-                ENCODER_PIN_A,
-                ENCODER_PIN_B,
-            )
+            else MockServo()
         )
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
 
@@ -140,14 +131,7 @@ def create_components(
         logger = Logger(LOGS_PATH)
 
         # Maybe use mock components as specified by the command line arguments:
-        if args.mock_servo:
-            servo = MockServo(
-                SERVO_CHANNEL,
-                ENCODER_PIN_A,
-                ENCODER_PIN_B,
-            )
-        else:
-            servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+        servo = MockServo() if args.mock_servo else Servo()
 
     # the mock replay, simulation, and real Airbrakes program configuration will all
     # use the DataProcessor class and the ApogeePredictor class. There are no mock versions of

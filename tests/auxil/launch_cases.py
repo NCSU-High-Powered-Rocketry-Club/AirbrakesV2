@@ -14,8 +14,9 @@ import pytest
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    SERVO_MIN_EXTENSION,
+    SERVO_MAX_EXTENSION,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
-    ServoExtension,
 )
 
 
@@ -27,7 +28,7 @@ class StateInformation(msgspec.Struct):
 
     min_velocity: float | None = None
     max_velocity: float | None = None
-    extensions: list[ServoExtension] = []
+    extensions: list[float] = []
     min_altitude: float | None = None
     max_altitude: float | None = None
     min_avg_vertical_acceleration: float | None = None
@@ -176,8 +177,7 @@ class LaunchCase:
             "extensions",
             str(self.standby_case.extensions),
             (
-                ServoExtension.MIN_EXTENSION in self.standby_case.extensions
-                or ServoExtension.MIN_NO_BUZZ in self.standby_case.extensions
+                SERVO_MIN_EXTENSION in self.standby_case.extensions
             ),
         )
 
@@ -218,8 +218,7 @@ class LaunchCase:
             "extensions",
             str(self.motor_burn_case.extensions),
             (
-                ServoExtension.MIN_EXTENSION in self.motor_burn_case.extensions
-                or ServoExtension.MIN_NO_BUZZ in self.motor_burn_case.extensions
+                SERVO_MIN_EXTENSION in self.motor_burn_case.extensions
             ),
         )
 
@@ -272,10 +271,8 @@ class LaunchCase:
             "extensions",
             f"{self.coast_case.extensions=} which should be a superset of the ServoExtensions",
             {
-                ServoExtension.MIN_EXTENSION,
-                ServoExtension.MIN_NO_BUZZ,
-                ServoExtension.MAX_EXTENSION,
-                ServoExtension.MAX_NO_BUZZ,
+                SERVO_MIN_EXTENSION,
+                SERVO_MAX_EXTENSION,
             }.issuperset(set(self.coast_case.extensions)),
         )
 
@@ -314,8 +311,7 @@ class LaunchCase:
             "extensions",
             str(self.free_fall_case.extensions),
             (
-                ServoExtension.MIN_EXTENSION in self.free_fall_case.extensions
-                or ServoExtension.MIN_NO_BUZZ in self.free_fall_case.extensions
+                SERVO_MIN_EXTENSION in self.free_fall_case.extensions
             ),
         )
         return case_result
@@ -345,8 +341,7 @@ class LaunchCase:
         case_result.consider_case(
             "extensions",
             str(self.landed_case.extensions),
-            ServoExtension.MIN_EXTENSION in self.landed_case.extensions
-            or ServoExtension.MIN_NO_BUZZ in self.landed_case.extensions,
+            SERVO_MIN_EXTENSION in self.landed_case.extensions,
         )
 
         return case_result

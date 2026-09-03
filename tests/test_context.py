@@ -1,4 +1,5 @@
 import contextlib
+from multiprocessing import context
 import queue
 import threading
 import time
@@ -48,9 +49,12 @@ class TestContext:
     def test_set_extension(self, context):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         context.extend_airbrakes()
-        assert context.servo.servo_extension == SERVO_MAX_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.servo_extension == SERVO_MIN_EXTENSION + 1
+        assert context.servo.servo_extension == SERVO_MAX_EXTENSION
+        context.retract_airbrakes()
+        time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to retract
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
+
 
     def test_start(self, context):
         """
@@ -155,7 +159,7 @@ class TestContext:
             asserts.append(ctx_dp.retrieved_firm_packets >= 1)
             asserts.append(ctx_dp.apogee_predictor_queue_size >= 0)
             asserts.append(ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9))
-            asserts.append(servo_dp.set_extension == SERVO_MAX_EXTENSION)
+            asserts.append(servo_dp.current_position == SERVO_MAX_EXTENSION)
             asserts.append(
                 firm_data_packets[0].timestamp_seconds == pytest.approx(time.time(), rel=1e9)
             )
@@ -469,7 +473,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == SERVO_MIN_EXTENSION
+        assert context.servo_data_packet.current_position == SERVO_MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
         """Benchmark the update method of the airbrakes system."""

@@ -166,11 +166,11 @@ class Logger:
             logger_packet = LoggerDataPacket(
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
-                servo_id=servo_data_packet.servo_id,
                 current_position=servo_data_packet.current_position,
-                angle_offset=servo_data_packet.angle_offset,
                 current_temp=servo_data_packet.current_temp,
                 voltage=servo_data_packet.voltage,
+                system_current_milliamps=servo_data_packet.system_current_milliamps,
+                battery_volts=servo_data_packet.battery_volts,
                 # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
                 temperature_celsius=firm_data_packet.temperature_celsius,

@@ -1,6 +1,6 @@
 """Contains the constants used in the Airbrakes module."""
 
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 
 from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg

@@ -29,5 +29,4 @@ class TestServoDataPacket:
             ServoDataPacket(current_position=0.5,
                             current_temp=25.0,
                             voltage=3.7,
-                            system_current_milliamps=500.0,
-                            battery_volts=3.7)
+                            system_current_milliamps=500.0)

@@ -73,7 +73,7 @@ NARROW_WIDTH_THRESHOLD = 64
 # ---------------------------------------------------------------------------
 
 def _patch_constant_in_file(file_path: Path, attr_name: str, new_value: int | float) -> None:
-    """Rewrite the numeric value of *attr_name* inside the ServoExtension enum in *file_path*."""
+    """Rewrite the numeric value of *attr_name* inside the servo configuration in *file_path*."""
     text = file_path.read_text()
     # Matches lines like:    MIN_EXTENSION = 25
     pattern = rf"^(\s+{re.escape(attr_name)}\s*=\s*)\S+"
@@ -402,7 +402,7 @@ class ServoControllerApp(App[None]):
             indicator.update("[bold green]●  NORMAL MODE[/bold green]  — press [b]T[/b] to enter Tuning")
 
     def _save_constant(self, attr_name: str, value: float) -> None:
-        """Persist *value* into ServoExtension both live (in-process) and on disk."""
+        """Persist *value* into the servo configuration both live and on disk."""
         int_value = round(value)
 
         # Keep the running process in sync with the value written to disk.
