@@ -177,6 +177,7 @@ class Context:
                 self.context_data_packet,
                 self.servo_data_packet,
                 self.firm_data_packets,
+                self.processor_data_packets,
                 self.most_recent_apogee_predictor_data_packet,
             )
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""plot_firm_log.py.
-
+"""
 Interactive Plotly viewer for FIRM CSV logs.
 
 Usage:
@@ -11,15 +10,19 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import plotly.graph_objects as go
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 DEFAULT_TRACES = [
     # (column_name, pretty_label)
     ("est_position_z_meters", "Estimated Z Position (m)"),
+    ("current_altitude", "Processed Current Altitude (m)"),
     ("height_used_for_prediction", "est_height"),
     ("est_velocity_z_meters_per_s", "Estimated Z Velocity (m/s)"),
     ("raw_rotated_acceleration_z_gs", "Raw Z Accel (g)"),
@@ -72,6 +75,36 @@ def add_state_regions(fig: go.Figure, df: pd.DataFrame, time_col: str = "t") -> 
         )
 
 
+def add_altitude_source_trace(fig: go.Figure, df: pd.DataFrame, time_col: str = "t") -> None:
+    """Adds a stepped right-axis trace for pressure versus integrated altitude."""
+    if "integrating_for_altitude" not in df.columns:
+        return
+
+    source = df["integrating_for_altitude"].astype(str).str.upper().map({"F": 0.0, "T": 1.0})
+    if source.notna().any():
+        fig.add_trace(
+            go.Scatter(
+                x=df[time_col],
+                y=source,
+                mode="lines",
+                name="Altitude source",
+                line_shape="hv",
+                yaxis="y2",
+            )
+        )
+        fig.update_layout(
+            yaxis2={
+                "title": "Altitude source",
+                "overlaying": "y",
+                "side": "right",
+                "range": [-0.05, 1.05],
+                "tickvals": [0, 1],
+                "ticktext": ["Pressure (F)", "Integrated (T)"],
+                "showgrid": False,
+            }
+        )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("csv", type=Path, help="Path to the FIRM CSV log")
@@ -121,6 +154,8 @@ def main() -> None:
             )
         )
 
+    add_altitude_source_trace(fig, df)
+
     # Optional shaded regions for states
     if not args.no_state_shading:
         add_state_regions(fig, df, time_col="t")
@@ -138,7 +173,7 @@ def main() -> None:
     # If user wants an output HTML file
     if args.out is not None:
         fig.write_html(args.out, include_plotlyjs="cdn")
-        print(f"Wrote: {args.out}")
+        print(f"Wrote: {args.out}")  # noqa: T201
     else:
         fig.show()
 
