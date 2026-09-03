@@ -4,72 +4,58 @@ controls the extension of the airbrakes.
 """
 
 import contextlib
-import threading
 
-# Can only be imported on Linux:
+
 with contextlib.suppress(ImportError):
     import gpiod
 
-from rpi_hardware_pwm import HardwarePWM
-
 from airbrakes.base_classes.base_servo import BaseServo
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 from airbrakes.constants import (
+    BAUDRATE,
+    SERVO_PORT,
+    SERVO_ID,
+    SERVO_MIN_EXTENSION,
+    SERVO_MAX_EXTENSION,
     CHIP_PATH,
-    I2C_ADDRESS,
-    I2C_BUS,
-    MAX_EXPECTED_AMPS,
-    SERVO_DELAY_SECONDS,
-    SERVO_MAX_ANGLE_DEGREES,
-    SERVO_MAX_PULSE_WIDTH_US,
-    SERVO_MIN_ANGLE_DEGREES,
-    SERVO_MIN_PULSE_WIDTH_US,
-    SERVO_OPERATING_FREQUENCY_HZ,
     SERVO_SWITCH_PIN,
     SHUNT_OHMS,
-    ServoExtension,
+    I2C_ADDRESS,
+    MAX_EXPECTED_AMPS,
+    I2C_BUS,
 )
 
+from lewanlib.bus import ServoBus
+from lewanlib.servo import Servo as LewanServo
 
 class Servo(BaseServo):
     """
     A custom class that represents a servo motor.
     The servo controls the extension of airbrakes.
 
-    The servo we use is the DS3235, which is a coreless digital servo.
-    We only use one servo to control the airbrakes, using hardware PWM
-    on the Pi 5.
+    GPIO switches servo power on the Raspberry Pi 5, while an INA219 sensor
+    provides supply and current telemetry.
     """
 
     __slots__ = (
-        "_go_to_max_no_buzz",
-        "_go_to_min_no_buzz",
-        "current_extension",
+        "bus",
         "ina",
         "servo",
         "servo_line",
     )
 
-    def __init__(self, servo_channel: int) -> None:
-        """
-        Initializes the Servo class.
-
-        :param servo_channel: The PWM channel that the servo is
-            connected to.
-        """
-        self.current_extension: ServoExtension = ServoExtension.MIN_NO_BUZZ
-        self._go_to_max_no_buzz: threading.Timer | None = None
-        self._go_to_min_no_buzz: threading.Timer | None = None
-
-        # Request control of a GPIO pin from the kernel
+    def __init__(self) -> None:
+        """Initialize GPIO power control, the servo bus, and current sensing."""
         self.servo_line = gpiod.request_lines(
-            path=CHIP_PATH,
-            consumer="airbrakes-servo",
-            config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
-        )
+                    path=CHIP_PATH,
+                    consumer="airbrakes-servo",
+                    config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
+                )
 
-        self.servo = HardwarePWM(pwm_channel=servo_channel, hz=SERVO_OPERATING_FREQUENCY_HZ, chip=0)
+        self.bus = ServoBus(port=SERVO_PORT, baudrate=BAUDRATE, on_exit_power_off=False)
+        self.servo = LewanServo(SERVO_ID, self.bus)
+        self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
 
-        # This library fails to import on Windows due to smbus2:
         from ina219 import INA219  # noqa: PLC0415
 
         self.ina = INA219(
@@ -85,119 +71,68 @@ class Servo(BaseServo):
         )
 
     def start(self) -> None:
-        """
-        Starts the servo by starting the PWM signal with the initial duty cycle
-        corresponding to the minimum extension without buzzing.
-        """
-        # Switch on the servo switch
+        """Power on the servo and command its minimum extension."""
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
-
-        self.servo.start(self._angle_to_duty_cycle(ServoExtension.MIN_NO_BUZZ.value))
+        self.servo.set_powered(True)
+        self.retract_airbrakes()
 
     def stop(self) -> None:
-        """
-        Stops the servo by stopping the PWM signal.
-        """
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._cancel_timer("_go_to_min_no_buzz")
-
-        # Switch off the servo switch
+        """Power off the servo and release its GPIO line."""
+        self.servo.set_powered(False)
         self.servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.INACTIVE)
-
-        self.servo.stop()
 
         # Release the gpio pin back to the kernel
         self.servo_line.release()
 
     def extend_airbrakes(self) -> None:
-        """
-        Extends the servo to the maximum extension.
-        """
-        self._cancel_timer("_go_to_min_no_buzz")
-        self._set_extension(ServoExtension.MAX_EXTENSION)
-        self._go_to_max_no_buzz = threading.Timer(
-            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MAX_NO_BUZZ,)
-        )
-        self._go_to_max_no_buzz.start()
+        """Command the physical servo to its maximum extension."""
+        self.servo.move_time_write(SERVO_MAX_EXTENSION, 0)
 
     def retract_airbrakes(self) -> None:
-        """
-        Retracts the servo to the minimum extension.
-        """
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._set_extension(ServoExtension.MIN_EXTENSION)
-        self._go_to_min_no_buzz = threading.Timer(
-            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MIN_NO_BUZZ,)
-        )
-        self._go_to_min_no_buzz.start()
+        """Command the physical servo to its minimum extension."""
+        self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
 
-    def _set_extension(self, extension: ServoExtension) -> None:
-        """Sets the servo extension and corresponding PWM duty cycle."""
-        self.current_extension = extension
-        duty_cycle: float = self._angle_to_duty_cycle(extension.value)
-        self.servo.change_duty_cycle(duty_cycle)
+    def set_extension(self, angle: float) -> None:
+        """Command a specific servo position.
 
-    def _cancel_timer(self, timer_name: str) -> None:
-        """Cancels the pending transition stored in the named timer slot."""
-        timer = getattr(self, timer_name)
-        if timer is not None:
-            timer.cancel()
+        :param angle: The desired servo position in degrees.
+        """
+        self.servo.move_time_write(angle, 0)
 
     @property
-    def servo_extension(self) -> ServoExtension:
-        """
-        Gets the extension most recently commanded to the servo.
+    def is_powered(self) -> bool:
+        """Return whether the physical servo reports that it is powered."""
+        return self.servo.is_powered()
 
-        :return: The commanded servo extension.
-        """
-        return self.current_extension
+    @property
+    def servo_extension(self) -> float:
+        """Return the physical servo position reported by the Lewan bus."""
+        return self.servo.pos_read()
 
     @property
     def battery_volts(self) -> float:
-        """
-        Gets the battery voltage from the INA219 sensor.
-
-        :return: The battery voltage in volts.
-        """
+        """Return the battery voltage measured by the INA219 sensor."""
         return self.ina.supply_voltage()
 
     @property
     def system_current_milliamps(self) -> float:
-        """
-        Gets the current system current draw from the INA219 sensor.
-
-        :return: The current system current draw in milliamps.
-        """
+        """Return the system current measured by the INA219 sensor."""
         return self.ina.current()
 
-    @staticmethod
-    def _angle_to_pulse_width(angle: float) -> float:
-        """
-        Converts an angle in degrees to a pulse width in microseconds for a
-        servo motor.
+    @property
+    def servo_voltage(self) -> float:
+        """Return the servo motor voltage reported by the Lewan bus."""
+        return self.servo.vin_read()
 
-        :param angle: The angle in degrees (0 to 180).
-        :return: The corresponding pulse width in microseconds.
-        """
-        # Clamp the angle to the valid range:
-        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
+    @property
+    def servo_temp(self) -> float:
+        """Return the servo temperature reported by the Lewan bus."""
+        return self.servo.temp_read()
 
-        return SERVO_MIN_PULSE_WIDTH_US + (
-            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
-            * (angle - SERVO_MIN_ANGLE_DEGREES)
-            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
-        )
-
-    @staticmethod
-    def _angle_to_duty_cycle(angle: float) -> float:
-        """
-        Converts an angle in degrees to a duty cycle percentage for a servo
-        motor.
-
-        :param angle: The angle in degrees.
-        :return: The corresponding duty cycle percentage.
-        """
-        pulse_us = Servo._angle_to_pulse_width(angle)
-
-        duty_cycle: float = (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
-        return duty_cycle
+    def get_servo_data_packet(self) -> ServoDataPacket:
+        """Create a data packet from the physical servo's telemetry."""
+        return ServoDataPacket(current_position=self.servo_extension,
+                               system_current_milliamps=self.system_current_milliamps,
+                               battery_volts=self.battery_volts,
+                               voltage=self.servo_voltage,
+                               current_temp=self.servo_temp)

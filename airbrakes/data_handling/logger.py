@@ -31,7 +31,6 @@ if typing.TYPE_CHECKING:
     from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
-
 DecodedLoggerDataPacket = list[int | float | str]
 """The type of LoggerDataPacket after an instance of it converted to primitive
 type by msgspec.to_builtins."""
@@ -167,9 +166,11 @@ class Logger:
             logger_packet = LoggerDataPacket(
                 # Context and Servo Fields
                 state_letter=context_data_packet.state.__name__[0],
-                set_extension=str(servo_data_packet.set_extension.value),
-                battery_voltage=servo_data_packet.battery_voltage,
-                current_milliamps=servo_data_packet.current_milliamps,
+                current_position=servo_data_packet.current_position,
+                current_temp=servo_data_packet.current_temp,
+                voltage=servo_data_packet.voltage,
+                system_current_milliamps=servo_data_packet.system_current_milliamps,
+                battery_volts=servo_data_packet.battery_volts,
                 # FIRMDataPacket Fields
                 timestamp_seconds=firm_data_packet.timestamp_seconds,
                 temperature_celsius=firm_data_packet.temperature_celsius,

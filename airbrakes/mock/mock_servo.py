@@ -1,20 +1,14 @@
-"""
-Module which contains the MockServo class and doesn't use the adafruit
-circuitpython library.
-"""
+"""Mock implementation of the current Lewan servo interface."""
 
 import threading
 
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
-    SERVO_MAX_ANGLE_DEGREES,
-    SERVO_MAX_PULSE_WIDTH_US,
-    SERVO_MIN_ANGLE_DEGREES,
-    SERVO_MIN_PULSE_WIDTH_US,
-    SERVO_OPERATING_FREQUENCY_HZ,
-    ServoExtension,
+    SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
 )
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
 class MockServo(BaseServo):
@@ -22,120 +16,93 @@ class MockServo(BaseServo):
     A custom class that represents a mock servo motor.
     """
 
-    __slots__ = (
-        "_go_to_max_no_buzz",
-        "_go_to_min_no_buzz",
-        "_servo_extension",
-        "duty_cycle",
-    )
+    __slots__ = ("_servo_extension", "extend", "retract", "_is_powered")
 
-    def __init__(
-        self,
-        servo_channel: int | None = None,
-        encoder_pin_a: int | None = None,
-        encoder_pin_b: int | None = None,
-    ) -> None:
-        """
-        Initializes the mock servo object.
-
-        :param servo_channel: The PWM channel for the servo
-        :param encoder_pin_a: GPIO pin A for the encoder
-        :param encoder_pin_b: GPIO pin B for the encoder.
-        """
-        _ = servo_channel, encoder_pin_a, encoder_pin_b
-        self._servo_extension = ServoExtension.MIN_NO_BUZZ
-        self.duty_cycle = 0.0
-        self._go_to_max_no_buzz: threading.Timer | None = None
-        self._go_to_min_no_buzz: threading.Timer | None = None
+    def __init__(self) -> None:
+        """Initialize an unpowered mock servo at minimum extension."""
+        self._servo_extension = SERVO_MIN_EXTENSION
+        self.extend: threading.Timer | None = None
+        self.retract: threading.Timer | None = None
+        self._is_powered = False
 
     def start(self) -> None:
-        """
-        Starts the servo.
-        """
-        self.duty_cycle = float(ServoExtension.MIN_NO_BUZZ.value)
+        """Power on the mock servo and reset it to minimum extension."""
+        self._servo_extension = SERVO_MIN_EXTENSION
+        self._is_powered = True
 
     def stop(self) -> None:
-        """
-        Stops the servo.
-        """
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._cancel_timer("_go_to_min_no_buzz")
-        self.duty_cycle = 0.0
+        """Power off the mock servo and cancel pending motion timers."""
+        self._cancel_timer("extend")
+        self._cancel_timer("retract")
+        self._is_powered = False
 
     def extend_airbrakes(self) -> None:
-        """
-        Extends the servo to deploy the airbrakes (Mock).
-        """
-        self._cancel_timer("_go_to_min_no_buzz")
-        self._set_extension(ServoExtension.MAX_EXTENSION)
-        self._go_to_max_no_buzz = threading.Timer(
-            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MAX_NO_BUZZ,)
+        """Request maximum extension and schedule its delayed completion."""
+        self._cancel_timer("retract")
+        self.set_extension(SERVO_MAX_EXTENSION)
+        self.extend = threading.Timer(
+            SERVO_DELAY_SECONDS,
+            self.set_extension,
+            args=(SERVO_MAX_EXTENSION,),
         )
-        self._go_to_max_no_buzz.start()
+        self.extend.start()
 
     def retract_airbrakes(self) -> None:
-        """
-        Retracts the servo to close the airbrakes (Mock).
-        """
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._set_extension(ServoExtension.MIN_EXTENSION)
-        self._go_to_min_no_buzz = threading.Timer(
-            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MIN_NO_BUZZ,)
+        """Request minimum extension and schedule its delayed completion."""
+        self._cancel_timer("extend")
+        self.set_extension(SERVO_MIN_EXTENSION)
+        self.retract = threading.Timer(
+            SERVO_DELAY_SECONDS,
+            self.set_extension,
+            args=(SERVO_MIN_EXTENSION,),
         )
-        self._go_to_min_no_buzz.start()
+        self.retract.start()
 
-    def _set_extension(self, extension: ServoExtension) -> None:
-        """Sets the simulated servo extension."""
-        self._servo_extension = extension
-        self.duty_cycle = self._angle_to_duty_cycle(extension.value)
+    def set_extension(self, angle: float) -> None:
+        """Record a commanded servo position in degrees."""
+        self._servo_extension = angle
 
     def _cancel_timer(self, timer_name: str) -> None:
-        """Cancels the pending transition stored in the named timer slot."""
+        """Cancel the pending timer stored under ``timer_name``, if any."""
         timer = getattr(self, timer_name)
         if timer is not None:
             timer.cancel()
 
-    @staticmethod
-    def _angle_to_duty_cycle(angle: float) -> float:
-        """Converts a servo angle to a PWM duty cycle percentage."""
-        angle = max(SERVO_MIN_ANGLE_DEGREES, min(SERVO_MAX_ANGLE_DEGREES, angle))
-        pulse_us = SERVO_MIN_PULSE_WIDTH_US + (
-            (SERVO_MAX_PULSE_WIDTH_US - SERVO_MIN_PULSE_WIDTH_US)
-            * (angle - SERVO_MIN_ANGLE_DEGREES)
-            / (SERVO_MAX_ANGLE_DEGREES - SERVO_MIN_ANGLE_DEGREES)
-        )
-        return (pulse_us / (1_000_000 / SERVO_OPERATING_FREQUENCY_HZ)) * 100
-
     @property
-    def servo_extension(self) -> ServoExtension:
-        """
-        Gets the extension most recently commanded to the mock servo.
-
-        :return: The commanded servo extension.
-        """
-        return self._servo_extension
-
+    def is_powered(self) -> bool:
+        """Return whether the mock servo is powered."""
+        return self._is_powered
     @property
-    def current_extension(self) -> ServoExtension:
-        """Gets the extension most recently commanded to the mock servo."""
+    def servo_extension(self) -> float:
+        """Return the most recently recorded servo position."""
         return self._servo_extension
 
     @property
     def battery_volts(self) -> float:
-        """
-        Gets the current system voltage in volts. Since this is a mock servo,
-        it always returns 0.
-
-        :return: The current system voltage in volts.
-        """
+        """Return the mock battery voltage."""
         return 0.0
 
     @property
     def system_current_milliamps(self) -> float:
-        """
-        Gets the current system current in milliamps. Since this is a mock
-        servo, it always returns 0.
-
-        :return: The current system current in milliamps.
-        """
+        """Return the mock system current."""
         return 0.0
+
+    @property
+    def servo_voltage(self) -> float:
+        """Return the mock servo voltage."""
+        return 0.0
+
+    @property
+    def servo_temp(self) -> float:
+        """Return mock servo temperature in degrees Celsius."""
+        return 0.0
+
+    def get_servo_data_packet(self) -> ServoDataPacket:
+        """Create a data packet from the mock servo's telemetry."""
+        return ServoDataPacket(
+            current_position=self.servo_extension,
+            system_current_milliamps=self.system_current_milliamps,
+            battery_volts=self.battery_volts,
+            voltage=self.servo_voltage,
+            current_temp=self.servo_temp,
+        )

@@ -8,7 +8,8 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    ServoExtension,
+    SERVO_MIN_EXTENSION,
+    SERVO_MAX_EXTENSION,
 )
 from airbrakes.context import Context
 from airbrakes.state import (
@@ -81,7 +82,7 @@ class TestState:
 
     def test_init(self, state, context):
         assert state.context == context
-        assert context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert issubclass(state.__class__, ABC)
 
     def test_name(self, state):
@@ -169,7 +170,7 @@ class TestMotorBurnState:
         )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
-        assert motor_burn_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert motor_burn_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
 
     # def test_motor_burn_fallback(self, motor_burn_state):
     #     """
@@ -197,7 +198,7 @@ class TestCoastState:
 
     def test_init(self, coast_state, context):
         assert coast_state.context == context
-        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert coast_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert issubclass(coast_state.__class__, State)
 
     def test_name(self, coast_state):
@@ -213,17 +214,17 @@ class TestCoastState:
             "airbrakes_ext",
         ),
         [
-            (200.0, 200.0, 100.0, 300.0, CoastState, ServoExtension.MIN_NO_BUZZ),
-            (100.0, 150.0, -20.0, 151.0, FreeFallState, ServoExtension.MIN_NO_BUZZ),
-            (100.0, 400.0, 140.1, 5000.1, CoastState, ServoExtension.MIN_NO_BUZZ),
-            (200.1, 200.1, 0.0, 200.1, CoastState, ServoExtension.MIN_NO_BUZZ),
+            (200.0, 200.0, 100.0, 300.0, CoastState, SERVO_MIN_EXTENSION),
+            (100.0, 150.0, -20.0, 151.0, FreeFallState, SERVO_MIN_EXTENSION),
+            (100.0, 400.0, 140.1, 5000.1, CoastState, SERVO_MIN_EXTENSION),
+            (200.1, 200.1, 0.0, 200.1, CoastState, SERVO_MIN_EXTENSION),
             (
                 200.1 * MAX_ALTITUDE_THRESHOLD,
                 200.1,
                 0.0,
                 200.1,
                 FreeFallState,
-                ServoExtension.MIN_NO_BUZZ,
+                SERVO_MIN_EXTENSION,
             ),
         ],
         ids=[
@@ -270,12 +271,12 @@ class TestCoastState:
             "expected_airbrakes",
         ),
         [
-            (1100.0, 1130.2, ServoExtension.MAX_EXTENSION),
-            (1152.1, 1150.1, ServoExtension.MIN_NO_BUZZ),
-            (1168.1, 1160.1, ServoExtension.MIN_NO_BUZZ),
-            (1170.1, 1170.1, ServoExtension.MIN_NO_BUZZ),
-            (1189.4, 1190.1, ServoExtension.MAX_EXTENSION),
-            (1191.9, 1200.5, ServoExtension.MAX_EXTENSION),
+            (1100.0, 1130.2, SERVO_MAX_EXTENSION),
+            (1152.1, 1150.1, SERVO_MIN_EXTENSION),
+            (1168.1, 1160.1, SERVO_MIN_EXTENSION),
+            (1170.1, 1170.1, SERVO_MIN_EXTENSION),
+            (1189.4, 1190.1, SERVO_MAX_EXTENSION),
+            (1191.9, 1200.5, SERVO_MAX_EXTENSION),
         ],
         ids=[
             "extend_1",
@@ -357,7 +358,7 @@ class TestCoastState:
         """
         assert not coast_state.context.most_recent_apogee_predictor_data_packet
         coast_state.update()
-        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert coast_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
 
     def test_update_retract_airbrakes_from_extended(self, coast_state, monkeypatch):
         """
@@ -377,7 +378,7 @@ class TestCoastState:
 
         coast_state.update()
         assert coast_state.airbrakes_extended
-        assert coast_state.context.servo.servo_extension == ServoExtension.MAX_EXTENSION
+        assert coast_state.context.servo.servo_extension == SERVO_MAX_EXTENSION
 
         # set the predicted apogee to be less than the target altitude, to test that we retract the
         # airbrakes:
@@ -389,7 +390,7 @@ class TestCoastState:
 
         coast_state.update()
         assert not coast_state.airbrakes_extended
-        assert coast_state.context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert coast_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
 
 
 class TestFreeFallState:
@@ -402,7 +403,7 @@ class TestFreeFallState:
 
     def test_init(self, free_fall_state, context):
         assert free_fall_state.context == context
-        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert free_fall_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert issubclass(free_fall_state.__class__, State)
 
     def test_name(self, free_fall_state):
@@ -473,7 +474,7 @@ class TestFreeFallState:
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
-        assert free_fall_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert free_fall_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
 
 
 class TestLandedState:
@@ -486,7 +487,7 @@ class TestLandedState:
 
     def test_init(self, landed_state, context):
         assert landed_state.context == context
-        assert landed_state.context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert landed_state.context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert issubclass(landed_state.__class__, State)
 
     def test_name(self, landed_state):
@@ -508,7 +509,7 @@ class TestLandedState:
         ls.update()
         assert context.shutdown_requested
         assert not context.logger.is_running
-        assert context.servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert not context.logger.is_log_buffer_full
         assert len(context.logger._log_buffer) == 0
 

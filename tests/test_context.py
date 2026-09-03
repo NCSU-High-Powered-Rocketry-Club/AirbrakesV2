@@ -1,4 +1,5 @@
 import contextlib
+from multiprocessing import context
 import queue
 import threading
 import time
@@ -9,7 +10,8 @@ import pytest
 from airbrakes.constants import (
     FIRM_SERIAL_TIMEOUT_SECONDS,
     SERVO_DELAY_SECONDS,
-    ServoExtension,
+    SERVO_MIN_EXTENSION,
+    SERVO_MAX_EXTENSION,
 )
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
@@ -37,7 +39,7 @@ class TestContext:
             assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
 
     def test_init(self, context):
-        assert context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
         assert isinstance(context.data_processor, DataProcessor)
         assert isinstance(context.state, StandbyState)
         assert isinstance(context.apogee_predictor, ApogeePredictor)
@@ -47,13 +49,12 @@ class TestContext:
     def test_set_extension(self, context):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
         context.extend_airbrakes()
-        assert context.servo.servo_extension == ServoExtension.MAX_EXTENSION
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.servo_extension == ServoExtension.MAX_NO_BUZZ
+        assert context.servo.servo_extension == SERVO_MAX_EXTENSION
         context.retract_airbrakes()
-        assert context.servo.servo_extension == ServoExtension.MIN_EXTENSION
-        time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
-        assert context.servo.servo_extension == ServoExtension.MIN_NO_BUZZ
+        time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to retract
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
+
 
     def test_start(self, context):
         """
@@ -64,9 +65,9 @@ class TestContext:
         assert context.firm.is_running
         assert context.logger.is_running
         assert context.apogee_predictor.is_running
-        # Servo PWM should be live with the MIN_EXTENSION duty cycle after start()
-        expected_duty_cycle = Servo._angle_to_duty_cycle(ServoExtension.MIN_EXTENSION.value)
-        assert context.servo.duty_cycle == pytest.approx(expected_duty_cycle)
+        assert context.servo.is_powered
+        # Servo should be at MIN_EXTENSION after start()
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
         context.stop()
 
     def test_stop_simple(self, context):
@@ -79,9 +80,9 @@ class TestContext:
         assert not context.logger.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor.is_running
-        assert context.servo.servo_extension == ServoExtension.MIN_EXTENSION  # set to "0"
-        # Servo PWM duty cycle should be zeroed after stop()
-        assert context.servo.duty_cycle == 0.0
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION  # set to "0"
+        # Servo should be powered off after stop()
+        assert not context.servo.is_powered
         assert context.shutdown_requested
         context.stop()  # Stop again to test idempotency
 
@@ -158,7 +159,7 @@ class TestContext:
             asserts.append(ctx_dp.retrieved_firm_packets >= 1)
             asserts.append(ctx_dp.apogee_predictor_queue_size >= 0)
             asserts.append(ctx_dp.update_timestamp_ns == pytest.approx(time.time_ns(), rel=1e9))
-            asserts.append(servo_dp.set_extension == ServoExtension.MAX_EXTENSION)
+            asserts.append(servo_dp.current_position == SERVO_MAX_EXTENSION)
             asserts.append(
                 firm_data_packets[0].timestamp_seconds == pytest.approx(time.time(), rel=1e9)
             )
@@ -253,10 +254,8 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.servo_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert not context.servo.is_powered
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
 
         # Open the file and check if we have a large number of lines:
         with context.logger.log_path.open() as file:
@@ -301,10 +300,8 @@ class TestContext:
         assert not context.apogee_predictor.is_running
         assert not context.logger._log_thread.is_alive()
         assert not context.apogee_predictor._prediction_thread.is_alive()
-        assert context.servo.servo_extension in (
-            ServoExtension.MIN_EXTENSION,
-            ServoExtension.MIN_NO_BUZZ,
-        )
+        assert context.servo.servo_extension == SERVO_MIN_EXTENSION
+        assert not context.servo.is_powered
 
         assert not fd._running
 
@@ -476,7 +473,7 @@ class TestContext:
         assert context.context_data_packet.update_timestamp_ns == pytest.approx(
             time.time_ns(), rel=1e9
         )
-        assert context.servo_data_packet.set_extension == ServoExtension.MIN_NO_BUZZ
+        assert context.servo_data_packet.current_position == SERVO_MIN_EXTENSION
 
     def test_benchmark_airbrakes_update(self, context, benchmark, random_data_mock_firm):
         """Benchmark the update method of the airbrakes system."""

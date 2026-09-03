@@ -1,23 +1,27 @@
-"""Module for the ServoDataPacket class."""
-
 import msgspec
-
-from airbrakes.constants import ServoExtension  # noqa: TC001 (doesn't work with msgspec)
-
 
 class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """
-    This is a packet of data about the servo.
-
-    It contains the set extension of the servo and the encoder position
-    of the servo.
+    A data packet containing information about the servo's current state.
     """
 
-    set_extension: ServoExtension
-    """The set extension of the servo."""
-
-    battery_voltage: str | None
-    """The current battery voltage in volts."""
-
-    current_milliamps: str | None
-    """The current system current draw in milliamps."""
+    current_position: float
+    """
+    The current position of the servo.
+    """
+    current_temp: float
+    """
+    The current temperature of the servo.
+    """
+    voltage: float
+    """
+    The voltage of the servo.
+    """
+    system_current_milliamps: float
+    """
+    The current system current draw.
+    """
+    battery_volts: float
+    """
+    The battery voltage.
+    """
