@@ -1,6 +1,6 @@
 """
-Servo & Encoder TUI — Enhanced
-================================
+Servo TUI
+=========
 Run from the project root:
     uv run scripts/run_servo_and_encoder_tui.py          # real hardware
     uv run scripts/run_servo_and_encoder_tui.py -s       # mock / simulation
@@ -27,18 +27,16 @@ from textual.widgets import (
     Digits,
     Footer,
     Header,
-    Label,
     Static,
 )
 from textual_plot import HiResMode, PlotWidget
 
 from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
-    SERVO_CHANNEL,
     SERVO_MAX_ANGLE_DEGREES,
-    ServoExtension,
+    SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
 )
+import airbrakes.constants as servo_constants
 from airbrakes.mock.mock_servo import MockServo
 
 if TYPE_CHECKING:
@@ -154,15 +152,6 @@ class AngleDisplay(Digits):
         self.update(f"{value:5.1f}°")
 
 
-class EncoderBox(Static):
-    """Shows the raw encoder step count, centered."""
-
-    steps: reactive[int] = reactive(0)
-
-    def render(self) -> str:
-        return f"{self.steps:+d}"
-
-
 class CurrentBox(Static):
     """Shows the live current draw in amps, and the voltage, centered and
     color-coded."""
@@ -186,7 +175,7 @@ class CurrentBox(Static):
 # ---------------------------------------------------------------------------
 
 class ServoControllerApp(App[None]):
-    """Servo & Encoder TUI — Normal and Tuning modes, vertical-first layout."""
+    """Servo control TUI for the Lewan-based servo."""
 
     CSS_PATH = "servo_tui.tcss"
 
@@ -199,24 +188,23 @@ class ServoControllerApp(App[None]):
     # ── Reactive state ───────────────────────────────────────────────────
     tuning_mode: reactive[bool] = reactive(False)
     # current_angle is a display value kept in sync with the commanded servo extension.
-    current_angle: reactive[float] = reactive(float(ServoExtension.MIN_NO_BUZZ.value))
+    current_angle: reactive[float] = reactive(float(SERVO_MIN_EXTENSION))
 
     # ── Init ─────────────────────────────────────────────────────────────
     def __init__(self, mock_servo: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
         if mock_servo:
-            self.servo: BaseServo = MockServo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            self.servo: BaseServo = MockServo()
         else:
             from airbrakes.hardware.servo import Servo
-            self.servo = Servo(SERVO_CHANNEL, ENCODER_PIN_A, ENCODER_PIN_B)
+            self.servo = Servo()
             self.servo.start()
 
-        self.encoder = self.servo.encoder
         self._current_monitor = CurrentMonitor(self.servo)
 
         # In tuning mode the user drives the angle manually via arrow keys;
         # we track it separately and only sync from the servo in normal mode.
-        self._tuning_angle: float = float(ServoExtension.MIN_NO_BUZZ.value)
+        self._tuning_angle: float = float(SERVO_MIN_EXTENSION)
 
     # ── Compose ──────────────────────────────────────────────────────────
     def compose(self) -> ComposeResult:
@@ -224,13 +212,8 @@ class ServoControllerApp(App[None]):
 
         with VerticalScroll(id="scroll-root"):
 
-            # ── Top info row: [Encoder] [Digits] [Current] ────────────
+            # ── Top info row: [Position] [Current] ───────────────────
             with Horizontal(id="info-row"):
-                with Container(id="encoder-box"):
-                    eb = EncoderBox(id="encoder-widget")
-                    eb.border_title = "Encoder"
-                    yield eb
-
                 yield AngleDisplay(id="angle-display")
 
                 with Container(id="current-box"):
@@ -251,23 +234,13 @@ class ServoControllerApp(App[None]):
 
                 with Horizontal(id="precise-row"):
                     yield Button(
-                        f"MIN  ({ServoExtension.MIN_EXTENSION.value}°)",
+                        f"MIN  ({SERVO_MIN_EXTENSION}°)",
                         id="min-btn",
                         variant="primary",
                     )
                     yield Button(
-                        f"MIN No Buzz  ({ServoExtension.MIN_NO_BUZZ.value}°)",
-                        id="min-no-buzz-btn",
-                        variant="primary",
-                    )
-                    yield Button(
-                        f"MAX  ({ServoExtension.MAX_EXTENSION.value}°)",
+                        f"MAX  ({SERVO_MAX_EXTENSION}°)",
                         id="max-btn",
-                        variant="warning",
-                    )
-                    yield Button(
-                        f"MAX No Buzz  ({ServoExtension.MAX_NO_BUZZ.value}°)",
-                        id="max-no-buzz-btn",
                         variant="warning",
                     )
 
@@ -279,23 +252,13 @@ class ServoControllerApp(App[None]):
                 )
                 with Horizontal(id="tuning-buttons"):
                     yield Button(
-                        f"Set MIN_EXTENSION\n({ServoExtension.MIN_EXTENSION.value}°)",
+                        f"Set MIN_EXTENSION\n({SERVO_MIN_EXTENSION}°)",
                         id="set-min-btn",
                         variant="primary",
                     )
                     yield Button(
-                        f"Set MIN_NO_BUZZ\n({ServoExtension.MIN_NO_BUZZ.value}°)",
-                        id="set-min-no-buzz-btn",
-                        variant="primary",
-                    )
-                    yield Button(
-                        f"Set MAX_EXTENSION\n({ServoExtension.MAX_EXTENSION.value}°)",
+                        f"Set MAX_EXTENSION\n({SERVO_MAX_EXTENSION}°)",
                         id="set-max-btn",
-                        variant="warning",
-                    )
-                    yield Button(
-                        f"Set MAX_NO_BUZZ\n({ServoExtension.MAX_NO_BUZZ.value}°)",
-                        id="set-max-no-buzz-btn",
                         variant="warning",
                     )
 
@@ -309,7 +272,6 @@ class ServoControllerApp(App[None]):
 
     # ── Lifecycle ────────────────────────────────────────────────────────
     def on_mount(self) -> None:
-        self.encoder.when_rotated = self._on_encoder_rotated
         self._current_monitor.start()
 
         # Sync display with whatever the servo starts at
@@ -359,7 +321,7 @@ class ServoControllerApp(App[None]):
         self._update_mode_indicator()
         if is_tuning:
             # Seed tuning angle from whatever the servo is currently at
-            self._tuning_angle = float(self.servo.servo_extension.value)
+            self._tuning_angle = float(self.servo.servo_extension)
             self.current_angle = self._tuning_angle
 
     # ── Key actions ──────────────────────────────────────────────────────
@@ -370,7 +332,7 @@ class ServoControllerApp(App[None]):
         if self.tuning_mode:
             self._nudge_angle(ANGLE_STEP)
         else:
-            self.servo.set_extended()
+            self.servo.extend_airbrakes()
             # Don't touch current_angle here — _sync_angle_from_servo will
             # pick it up: first MAX_EXTENSION, then MAX_NO_BUZZ after the timer.
 
@@ -378,7 +340,7 @@ class ServoControllerApp(App[None]):
         if self.tuning_mode:
             self._nudge_angle(-ANGLE_STEP)
         else:
-            self.servo.set_retracted()
+            self.servo.retract_airbrakes()
             # Same: let _sync_angle_from_servo track the transition.
 
     # ── Event handlers ───────────────────────────────────────────────────
@@ -388,26 +350,18 @@ class ServoControllerApp(App[None]):
             # Normal mode — let the servo handle the state machine;
             # _sync_angle_from_servo will keep the Digits up to date.
             case "extend-btn":
-                self.servo.set_extended()
+                self.servo.extend_airbrakes()
             case "retract-btn":
-                self.servo.set_retracted()
+                self.servo.retract_airbrakes()
             case "min-btn":
-                self.servo._set_extension(ServoExtension.MIN_EXTENSION)
-            case "min-no-buzz-btn":
-                self.servo._set_extension(ServoExtension.MIN_NO_BUZZ)
+                self.servo.set_extension(float(SERVO_MIN_EXTENSION))
             case "max-btn":
-                self.servo._set_extension(ServoExtension.MAX_EXTENSION)
-            case "max-no-buzz-btn":
-                self.servo._set_extension(ServoExtension.MAX_NO_BUZZ)
+                self.servo.set_extension(float(SERVO_MAX_EXTENSION))
             # Tuning mode — save current tuning angle as a named constant
             case "set-min-btn":
                 self._save_constant("MIN_EXTENSION", self._tuning_angle)
-            case "set-min-no-buzz-btn":
-                self._save_constant("MIN_NO_BUZZ", self._tuning_angle)
             case "set-max-btn":
                 self._save_constant("MAX_EXTENSION", self._tuning_angle)
-            case "set-max-no-buzz-btn":
-                self._save_constant("MAX_NO_BUZZ", self._tuning_angle)
 
     # ── Internal helpers ─────────────────────────────────────────────────
     def _sync_angle_from_servo(self) -> None:
@@ -420,7 +374,7 @@ class ServoControllerApp(App[None]):
         """
         if self.tuning_mode:
             return
-        angle = float(self.servo.servo_extension.value)
+        angle = float(self.servo.servo_extension)
         # Only trigger a reactive update (and thus a redraw) when the value
         # actually changes, to avoid unnecessary work.
         if angle != self.current_angle:
@@ -435,8 +389,7 @@ class ServoControllerApp(App[None]):
 
     def _apply_angle(self, angle: float) -> None:
         """Send an arbitrary angle to the servo hardware (tuning mode)."""
-        from airbrakes.base_classes.base_servo import BaseServo as _BS
-        self.servo.servo.change_duty_cycle(_BS._angle_to_duty_cycle(angle))
+        self.servo.set_extension(angle)
 
     def _update_mode_indicator(self) -> None:
         try:
@@ -452,25 +405,8 @@ class ServoControllerApp(App[None]):
         """Persist *value* into ServoExtension both live (in-process) and on disk."""
         int_value = round(value)
 
-        # Dynamic: mutate the live enum member in-place
-        try:
-            member = ServoExtension[attr_name]
-            old_value = member._value_
-            ServoExtension._value2member_map_.pop(old_value, None)
-            member._value_ = int_value
-            ServoExtension._value2member_map_[int_value] = member
-        except (KeyError, AttributeError):
-            pass
-
-        # Also sync via the airbrakes.constants module reference
-        try:
-            import airbrakes.constants as _c
-            m = _c.ServoExtension[attr_name]
-            _c.ServoExtension._value2member_map_.pop(m._value_, None)
-            m._value_ = int_value
-            _c.ServoExtension._value2member_map_[int_value] = m
-        except Exception:
-            pass
+        # Keep the running process in sync with the value written to disk.
+        setattr(servo_constants, f"SERVO_{attr_name}", int_value)
 
         # Static: rewrite the source file so the value survives a restart
         try:
@@ -490,30 +426,17 @@ class ServoControllerApp(App[None]):
         self._refresh_tuning_labels()
 
     def _refresh_tuning_labels(self) -> None:
-        """Update tuning button labels to match the current enum values."""
+        """Update tuning button labels to match the current servo values."""
         pairs = [
-            ("set-min-btn",         "MIN_EXTENSION"),
-            ("set-min-no-buzz-btn", "MIN_NO_BUZZ"),
-            ("set-max-btn",         "MAX_EXTENSION"),
-            ("set-max-no-buzz-btn", "MAX_NO_BUZZ"),
+            ("set-min-btn", "SERVO_MIN_EXTENSION"),
+            ("set-max-btn", "SERVO_MAX_EXTENSION"),
         ]
         for btn_id, attr in pairs:
             try:
-                val = ServoExtension[attr].value
+                val = getattr(servo_constants, attr)
                 self.query_one(f"#{btn_id}", Button).label = f"Set {attr}\n({val}°)"
             except Exception:
                 pass
-
-    # ── Encoder callback (called from gpiozero's background thread) ───────
-    def _on_encoder_rotated(self) -> None:
-        steps = self.encoder.steps
-        self.call_from_thread(self._update_encoder_display, steps)
-
-    def _update_encoder_display(self, steps: int) -> None:
-        try:
-            self.query_one("#encoder-widget", EncoderBox).steps = steps
-        except Exception:
-            pass
 
     # ── Periodic refresh callbacks ────────────────────────────────────────
     def _refresh_current(self) -> None:
@@ -559,8 +482,8 @@ class ServoControllerApp(App[None]):
         except Exception:
             return
 
-        plot.xlabel = "t (s)"
-        plot.ylabel = "A"
+        plot.set_xlabel("t (s)")
+        plot.set_ylabel("A")
         # Pin the x-axis so it always spans the full rolling window;
         # this makes the graph scroll rather than stretch as data fills up.
         # plot.set_xlimits(-CURRENT_HISTORY_SECONDS, 0.0)
@@ -579,7 +502,7 @@ class ServoControllerApp(App[None]):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Servo & Encoder TUI")
+    parser = argparse.ArgumentParser(description="Servo TUI")
     parser.add_argument(
         "--mock-servo", "-s",
         action="store_true",

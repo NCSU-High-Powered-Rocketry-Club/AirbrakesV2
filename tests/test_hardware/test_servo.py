@@ -1,7 +1,6 @@
 import pytest
 
 from airbrakes.constants import SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
-from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx
@@ -53,6 +52,14 @@ class TestBaseServo:
         """
         servo.retract_airbrakes()
         assert servo.servo_extension == SERVO_MIN_EXTENSION
+
+    def test_set_extension(self, servo):
+        """
+        Tests that the servo can be set to a specific extension.
+        """
+        test_extension = (SERVO_MAX_EXTENSION + SERVO_MIN_EXTENSION) / 2
+        servo.set_extension(test_extension)
+        assert servo.servo_extension == test_extension
 
     def test_repeated_extension_retraction(self, servo):
         """

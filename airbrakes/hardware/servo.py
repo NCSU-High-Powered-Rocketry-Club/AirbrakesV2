@@ -40,7 +40,6 @@ class Servo(BaseServo):
 
     __slots__ = (
         "bus",
-        "current_extension",
         "ina",
         "servo",
         "servo_line",
@@ -50,17 +49,16 @@ class Servo(BaseServo):
         """
         Initializes the Servo class.
         """
+        self.servo_line = gpiod.request_lines(
+                    path=CHIP_PATH,
+                    consumer="airbrakes-servo",
+                    config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
+                )
+
         self.bus = ServoBus(port=SERVO_PORT, baudrate=BAUDRATE, on_exit_power_off=False)
         self.servo = LewanServo(SERVO_ID, self.bus)
         self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
-        self.current_extension: float = SERVO_MIN_EXTENSION
 
-        self.servo_line = gpiod.request_lines(
-            path=CHIP_PATH,
-            consumer="airbrakes-servo",
-            config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
-        )
-        
         from ina219 import INA219  # noqa: PLC0415
 
         self.ina = INA219(
@@ -105,6 +103,23 @@ class Servo(BaseServo):
         Retracts the servo to the minimum extension.
         """
         self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
+
+    def set_extension(self, angle: float) -> None:
+        """
+        Sets the servo to a specific extension.
+
+        :param extension: The desired extension of the servo.
+        """
+        self.servo.move_time_write(angle, 0)
+
+    @property
+    def is_powered(self) -> bool:
+        """
+        Checks if the servo is powered on.
+
+        :return: True if the servo is powered on, False otherwise.
+        """
+        return self.servo.is_powered()
 
     @property
     def servo_extension(self) -> float:

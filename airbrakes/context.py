@@ -6,7 +6,7 @@ rocket.
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS, SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
+from airbrakes.constants import BUSY_WAIT_SECONDS, SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION, SERVO_EXTENSION_TOLERANCE
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.state import StandbyState, State
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
@@ -168,7 +168,6 @@ class Context:
         self.state.update()
 
         # Create Context Data Packets representing the current state of the air brakes system:\
-        self.servo_data_packet = self.servo.get_servo_data_packet()
         self.generate_data_packets()
 
         # This if statement is just because my ide is being dumb, but it's not possible for them to
@@ -190,11 +189,10 @@ class Context:
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
         # We don't want to retract the air brakes if they are already retracted
-        if self.servo.servo_extension in (
-            # This will probably have to change cause i think the servo isnt super precise to the 
-            # decimal, probably should test
-            SERVO_MIN_EXTENSION,
-            SERVO_MAX_EXTENSION,
+        if not (
+            SERVO_MIN_EXTENSION - SERVO_EXTENSION_TOLERANCE
+            <= self.servo.servo_extension
+            <= SERVO_MIN_EXTENSION + SERVO_EXTENSION_TOLERANCE
         ):
             self.data_processor.prepare_for_retracting_airbrakes()
             self.servo.retract_airbrakes()
@@ -224,3 +222,4 @@ class Context:
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
         )
+        self.servo_data_packet = self.servo.get_servo_data_packet()

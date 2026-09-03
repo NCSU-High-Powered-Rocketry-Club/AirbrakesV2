@@ -1,12 +1,13 @@
-"""
-Module which contains the MockServo class and doesn't use the adafruit
-circuitpython library.
-"""
+"""Mock implementation of the current Lewan servo interface."""
 
 import threading
 
 from airbrakes.base_classes.base_servo import BaseServo
-from airbrakes.constants import SERVO_DELAY_SECONDS, SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
+from airbrakes.constants import (
+    SERVO_DELAY_SECONDS,
+    SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
+)
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
@@ -15,52 +16,51 @@ class MockServo(BaseServo):
     A custom class that represents a mock servo motor.
     """
 
-    __slots__ = (
-        "_go_to_max_no_buzz",
-        "_go_to_min_no_buzz",
-        "_servo_extension",
-    )
+    __slots__ = ("_servo_extension", "extend", "retract", "_is_powered")
 
     def __init__(self) -> None:
         """Initialize the mock servo in its minimum-safe position."""
         self._servo_extension = SERVO_MIN_EXTENSION
-        self._go_to_max_no_buzz: threading.Timer | None = None
-        self._go_to_min_no_buzz: threading.Timer | None = None
+        self.extend: threading.Timer | None = None
+        self.retract: threading.Timer | None = None
+        self._is_powered = False
 
     def start(self) -> None:
         """Start the mock servo; no real hardware is required."""
         self._servo_extension = SERVO_MIN_EXTENSION
+        self._is_powered = True
 
     def stop(self) -> None:
         """Stop the mock servo and cancel any pending motion timers."""
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._cancel_timer("_go_to_min_no_buzz")
+        self._cancel_timer("extend")
+        self._cancel_timer("retract")
+        self._is_powered = False
 
     def extend_airbrakes(self) -> None:
         """Command the mock servo to the maximum extension."""
-        self._cancel_timer("_go_to_min_no_buzz")
-        self._set_extension(SERVO_MAX_EXTENSION)
-        self._go_to_max_no_buzz = threading.Timer(
+        self._cancel_timer("retract")
+        self.set_extension(SERVO_MAX_EXTENSION)
+        self.extend = threading.Timer(
             SERVO_DELAY_SECONDS,
-            self._set_extension,
+            self.set_extension,
             args=(SERVO_MAX_EXTENSION,),
         )
-        self._go_to_max_no_buzz.start()
+        self.extend.start()
 
     def retract_airbrakes(self) -> None:
         """Command the mock servo back to the minimum extension."""
-        self._cancel_timer("_go_to_max_no_buzz")
-        self._set_extension(SERVO_MIN_EXTENSION)
-        self._go_to_min_no_buzz = threading.Timer(
+        self._cancel_timer("extend")
+        self.set_extension(SERVO_MIN_EXTENSION)
+        self.retract = threading.Timer(
             SERVO_DELAY_SECONDS,
-            self._set_extension,
+            self.set_extension,
             args=(SERVO_MIN_EXTENSION,),
         )
-        self._go_to_min_no_buzz.start()
+        self.retract.start()
 
-    def _set_extension(self, extension: float) -> None:
-        """Update the current commanded servo extension."""
-        self._servo_extension = extension
+    def set_extension(self, angle: float) -> None:
+        """Record the position sent to the mocked servo."""
+        self._servo_extension = angle
 
     def _cancel_timer(self, timer_name: str) -> None:
         """Cancel a pending timer, if present."""
@@ -68,6 +68,10 @@ class MockServo(BaseServo):
         if timer is not None:
             timer.cancel()
 
+    @property
+    def is_powered(self) -> bool:
+        """Return the power state of the mock servo."""
+        return self._is_powered
     @property
     def servo_extension(self) -> float:
         """Return the most recently commanded extension."""

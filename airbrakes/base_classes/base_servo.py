@@ -43,6 +43,23 @@ class BaseServo(ABC):
         Retracts the servo to close the airbrakes.
         """
 
+    @abstractmethod
+    def set_extension(self, angle: float) -> None:
+        """
+        Sets the servo to a specific extension.
+
+        :param extension: The desired extension of the servo.
+        """
+
+    @property
+    @abstractmethod
+    def is_powered(self) -> bool:
+        """
+        Checks if the servo is powered on.
+
+        :return: True if the servo is powered on, False otherwise.
+        """
+
     @property
     @abstractmethod
     def servo_extension(self) -> float:

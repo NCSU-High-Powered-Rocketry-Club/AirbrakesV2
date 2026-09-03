@@ -74,6 +74,9 @@ SERVO_MIN_EXTENSION = 0
 SERVO_MAX_EXTENSION = 180
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
+SERVO_EXTENSION_TOLERANCE = 2
+"""The tolerance in degrees for the servo extension."""
+
 SHUNT_OHMS = 0.01
 """
 Airbender v0.2 uses a 0.01 ohm shunt resistor to measure the current in the entire system, including
