@@ -1,4 +1,7 @@
+"""Data packet containing telemetry from the servo."""
+
 import msgspec
+
 
 class ServoDataPacket(msgspec.Struct, tag=True, array_like=True):
     """

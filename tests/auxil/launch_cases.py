@@ -14,8 +14,8 @@ import pytest
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
-    SERVO_MIN_EXTENSION,
     SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
 )
 
@@ -176,9 +176,7 @@ class LaunchCase:
         case_result.consider_case(
             "extensions",
             str(self.standby_case.extensions),
-            (
-                SERVO_MIN_EXTENSION in self.standby_case.extensions
-            ),
+            (SERVO_MIN_EXTENSION in self.standby_case.extensions),
         )
 
         return case_result
@@ -217,9 +215,7 @@ class LaunchCase:
         case_result.consider_case(
             "extensions",
             str(self.motor_burn_case.extensions),
-            (
-                SERVO_MIN_EXTENSION in self.motor_burn_case.extensions
-            ),
+            (SERVO_MIN_EXTENSION in self.motor_burn_case.extensions),
         )
 
         return case_result
@@ -310,9 +306,7 @@ class LaunchCase:
         case_result.consider_case(
             "extensions",
             str(self.free_fall_case.extensions),
-            (
-                SERVO_MIN_EXTENSION in self.free_fall_case.extensions
-            ),
+            (SERVO_MIN_EXTENSION in self.free_fall_case.extensions),
         )
         return case_result
 

@@ -11,8 +11,8 @@ from airbrakes.constants import (
     IDLE_LOG_CAPACITY,
     LOG_BUFFER_SIZE,
     NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING,
-    SERVO_MIN_EXTENSION,
     SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
     STOP_SIGNAL,
 )
 from airbrakes.data_handling.logger import Logger
@@ -230,11 +230,7 @@ class TestLogger:
                         **convert_dict_vals_to_str(
                             asdict(make_context_data_packet(state=StandbyState))
                         ),
-                        **asdict(
-                            make_servo_data_packet(
-                                current_position=str(SERVO_MIN_EXTENSION)
-                            )
-                        ),
+                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
                 ],
@@ -250,11 +246,7 @@ class TestLogger:
                         **convert_dict_vals_to_str(
                             asdict(make_context_data_packet(state=StandbyState))
                         ),
-                        **asdict(
-                            make_servo_data_packet(
-                                current_position=str(SERVO_MIN_EXTENSION)
-                            )
-                        ),
+                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
                 ]
@@ -271,11 +263,7 @@ class TestLogger:
                         **convert_dict_vals_to_str(
                             asdict(make_context_data_packet(state=MotorBurnState))
                         ),
-                        **asdict(
-                            make_servo_data_packet(
-                                current_position=str(SERVO_MIN_EXTENSION)
-                            )
-                        ),
+                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
                 ],
@@ -291,11 +279,7 @@ class TestLogger:
                         **convert_dict_vals_to_str(
                             asdict(make_context_data_packet(state=CoastState))
                         ),
-                        **asdict(
-                            make_servo_data_packet(
-                                current_position=str(SERVO_MAX_EXTENSION)
-                            )
-                        ),
+                        **asdict(make_servo_data_packet(current_position=str(SERVO_MAX_EXTENSION))),
                         **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
                     }
                 ],

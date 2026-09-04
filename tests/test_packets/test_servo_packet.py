@@ -10,8 +10,9 @@ def servo_packet():
         current_temp=25.0,
         voltage=3.7,
         system_current_milliamps=500.0,
-        battery_volts=3.7
+        battery_volts=3.7,
     )
+
 
 class TestServoDataPacket:
     """Tests for the ServoDataPacket class."""
@@ -26,7 +27,6 @@ class TestServoDataPacket:
 
     def test_required_args(self):
         with pytest.raises(TypeError):
-            ServoDataPacket(current_position=0.5,
-                            current_temp=25.0,
-                            voltage=3.7,
-                            system_current_milliamps=500.0)
+            ServoDataPacket(
+                current_position=0.5, current_temp=25.0, voltage=3.7, system_current_milliamps=500.0
+            )

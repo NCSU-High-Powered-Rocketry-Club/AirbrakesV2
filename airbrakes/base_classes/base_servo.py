@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+
+
 class BaseServo(ABC):
     """
     A custom class that represents a servo interface.
@@ -37,7 +39,8 @@ class BaseServo(ABC):
 
     @abstractmethod
     def set_extension(self, angle: float) -> None:
-        """Command a specific airbrake extension in servo-position degrees.
+        """
+        Command a specific airbrake extension in servo-position degrees.
 
         :param angle: The desired servo position.
         """

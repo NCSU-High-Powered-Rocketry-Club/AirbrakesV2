@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from airbrakes.constants import (FIRM_FREQUENCY, SERVO_MAX_EXTENSION, SERVO_MIN_EXTENSION)
+from airbrakes.constants import FIRM_FREQUENCY
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor

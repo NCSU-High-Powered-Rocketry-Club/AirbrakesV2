@@ -16,7 +16,7 @@ class MockServo(BaseServo):
     A custom class that represents a mock servo motor.
     """
 
-    __slots__ = ("_servo_extension", "extend", "retract", "_is_powered")
+    __slots__ = ("_is_powered", "_servo_extension", "extend", "retract")
 
     def __init__(self) -> None:
         """Initialize an unpowered mock servo at minimum extension."""
@@ -72,6 +72,7 @@ class MockServo(BaseServo):
     def is_powered(self) -> bool:
         """Return whether the mock servo is powered."""
         return self._is_powered
+
     @property
     def servo_extension(self) -> float:
         """Return the most recently recorded servo position."""

@@ -1,5 +1,4 @@
 import contextlib
-from multiprocessing import context
 import queue
 import threading
 import time
@@ -10,14 +9,13 @@ import pytest
 from airbrakes.constants import (
     FIRM_SERIAL_TIMEOUT_SECONDS,
     SERVO_DELAY_SECONDS,
-    SERVO_MIN_EXTENSION,
     SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
 )
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
 from airbrakes.state import CoastState, MotorBurnState, StandbyState
 from tests.auxil.utils import (
@@ -54,7 +52,6 @@ class TestContext:
         context.retract_airbrakes()
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to retract
         assert context.servo.servo_extension == SERVO_MIN_EXTENSION
-
 
     def test_start(self, context):
         """

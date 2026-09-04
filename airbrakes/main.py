@@ -117,11 +117,7 @@ def create_components(
             )
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
-        servo = (
-            Servo()
-            if args.real_servo
-            else MockServo()
-        )
+        servo = Servo() if args.real_servo else MockServo()
         logger = MockLogger(LOGS_PATH, delete_log_file=not args.keep_log_file)
 
     else:

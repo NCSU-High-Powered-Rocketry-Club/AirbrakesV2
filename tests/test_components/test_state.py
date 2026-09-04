@@ -8,8 +8,8 @@ from airbrakes.constants import (
     LOG_BUFFER_SIZE,
     MAX_ALTITUDE_THRESHOLD,
     MAX_FREE_FALL_SECONDS,
-    SERVO_MIN_EXTENSION,
     SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
 )
 from airbrakes.context import Context
 from airbrakes.state import (

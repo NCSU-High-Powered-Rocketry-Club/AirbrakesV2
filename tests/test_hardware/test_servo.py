@@ -1,6 +1,6 @@
 import pytest
 
-from airbrakes.constants import SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION
+from airbrakes.constants import SERVO_MAX_EXTENSION, SERVO_MIN_EXTENSION
 from airbrakes.mock.mock_servo import MockServo
 
 approx = pytest.approx

@@ -5,28 +5,28 @@ controls the extension of the airbrakes.
 
 import contextlib
 
-
 with contextlib.suppress(ImportError):
     import gpiod
 
-from airbrakes.base_classes.base_servo import BaseServo
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-from airbrakes.constants import (
-    BAUDRATE,
-    SERVO_PORT,
-    SERVO_ID,
-    SERVO_MIN_EXTENSION,
-    SERVO_MAX_EXTENSION,
-    CHIP_PATH,
-    SERVO_SWITCH_PIN,
-    SHUNT_OHMS,
-    I2C_ADDRESS,
-    MAX_EXPECTED_AMPS,
-    I2C_BUS,
-)
-
 from lewanlib.bus import ServoBus
 from lewanlib.servo import Servo as LewanServo
+
+from airbrakes.base_classes.base_servo import BaseServo
+from airbrakes.constants import (
+    BAUDRATE,
+    CHIP_PATH,
+    I2C_ADDRESS,
+    I2C_BUS,
+    MAX_EXPECTED_AMPS,
+    SERVO_ID,
+    SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
+    SERVO_PORT,
+    SERVO_SWITCH_PIN,
+    SHUNT_OHMS,
+)
+from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+
 
 class Servo(BaseServo):
     """
@@ -47,10 +47,10 @@ class Servo(BaseServo):
     def __init__(self) -> None:
         """Initialize GPIO power control, the servo bus, and current sensing."""
         self.servo_line = gpiod.request_lines(
-                    path=CHIP_PATH,
-                    consumer="airbrakes-servo",
-                    config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
-                )
+            path=CHIP_PATH,
+            consumer="airbrakes-servo",
+            config={SERVO_SWITCH_PIN: gpiod.LineSettings(direction=gpiod.line.Direction.OUTPUT)},
+        )
 
         self.bus = ServoBus(port=SERVO_PORT, baudrate=BAUDRATE, on_exit_power_off=False)
         self.servo = LewanServo(SERVO_ID, self.bus)
@@ -93,7 +93,8 @@ class Servo(BaseServo):
         self.servo.move_time_write(SERVO_MIN_EXTENSION, 0)
 
     def set_extension(self, angle: float) -> None:
-        """Command a specific servo position.
+        """
+        Command a specific servo position.
 
         :param angle: The desired servo position in degrees.
         """
@@ -131,8 +132,10 @@ class Servo(BaseServo):
 
     def get_servo_data_packet(self) -> ServoDataPacket:
         """Create a data packet from the physical servo's telemetry."""
-        return ServoDataPacket(current_position=self.servo_extension,
-                               system_current_milliamps=self.system_current_milliamps,
-                               battery_volts=self.battery_volts,
-                               voltage=self.servo_voltage,
-                               current_temp=self.servo_temp)
+        return ServoDataPacket(
+            current_position=self.servo_extension,
+            system_current_milliamps=self.system_current_milliamps,
+            battery_volts=self.battery_volts,
+            voltage=self.servo_voltage,
+            current_temp=self.servo_temp,
+        )
