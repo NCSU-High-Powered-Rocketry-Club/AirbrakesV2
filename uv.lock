@@ -17,12 +17,10 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
-exclude-newer-span = "P7D"
 
 [options.exclude-newer-package]
-hprm = { timestamp = "0001-01-01T00:00:00Z", span = "PT1S" }
-firm-client = { timestamp = "0001-01-01T00:00:00Z", span = "PT1S" }
+hprm = { timestamp = "2026-09-01T12:38:10.4791022Z", span = "PT1S" }
+firm-client = { timestamp = "2026-09-01T12:38:10.479053Z", span = "PT1S" }
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -126,6 +124,7 @@ dependencies = [
     { name = "gpiod", marker = "sys_platform == 'linux'" },
     { name = "gpiozero" },
     { name = "hprm" },
+    { name = "lewanlib" },
     { name = "msgspec" },
     { name = "numpy" },
     { name = "numpy-quaternion" },
@@ -172,6 +171,7 @@ requires-dist = [
     { name = "gpiod", marker = "sys_platform == 'linux'", specifier = ">=2.4.2" },
     { name = "gpiozero" },
     { name = "hprm", specifier = ">=0.2.0" },
+    { name = "lewanlib", specifier = "==0.1.1" },
     { name = "lgpio", marker = "extra == 'encoder'", specifier = ">=0.2.2.0" },
     { name = "msgspec" },
     { name = "numpy" },
@@ -414,6 +414,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
+]
+
+[[package]]
+name = "lewanlib"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "msgspec" },
+    { name = "numpy" },
+    { name = "pyserial" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fe/62/7404046d74fef66540056f988c4f2232072fc668fe4d4ff41f29917571ac/lewanlib-0.1.1.tar.gz", hash = "sha256:7f0e0a939d4e419dfaa0576828ad32ccaf760df0b471301d9da369de8afe2f58", size = 17166, upload-time = "2026-08-27T18:16:12.402Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/24/b9f6dc236bda0b98036f00c2840c19d1714825b486991e86c0eba29c7686/lewanlib-0.1.1-py3-none-any.whl", hash = "sha256:c23128ccd8020d01f0243b6799a21fd2c154c388e6487486f16819625d7651ad", size = 15387, upload-time = "2026-08-27T18:16:11.373Z" },
 ]
 
 [[package]]
@@ -952,6 +967,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6d/e4/a9c41f24bb9c3d3db66cdd645fe1178533954491f5c3cc9645c1f987635d/pyinstrument-5.1.3-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:fcdc41a648a7c6c420c507998f00134639c2a0c6097904a33b859938a3340031", size = 149366, upload-time = "2026-07-29T17:18:19Z" },
     { url = "https://files.pythonhosted.org/packages/87/b4/59d67f48adca36a6b2eb9c11cd90adef264c593b4b435c48f62b3241ef3e/pyinstrument-5.1.3-cp314-cp314t-win32.whl", hash = "sha256:dd4199f016827bda29d571b7c4e7c2ae968b881611da13b4e3c1991882f04445", size = 121735, upload-time = "2026-07-29T17:18:20.272Z" },
     { url = "https://files.pythonhosted.org/packages/dd/ca/e5b233969e15f600f3f0a03ed8d8e7f02e28d6d66cc9cdd1ce21cdcbba22/pyinstrument-5.1.3-cp314-cp314t-win_amd64.whl", hash = "sha256:1d66dd832db458f81ca71fbe5fa97dbeb0bfb930d8bde4ea650523ce61dc7ec9", size = 122519, upload-time = "2026-07-29T17:18:21.523Z" },
+]
+
+[[package]]
+name = "pyserial"
+version = "3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
 ]
 
 [[package]]

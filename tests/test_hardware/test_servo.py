@@ -1,6 +1,20 @@
+import sys
+from types import SimpleNamespace
+
 import pytest
 
-from airbrakes.constants import ServoExtension
+import airbrakes.hardware.servo as servo_module
+from airbrakes.constants import (
+    BAUDRATE,
+    I2C_ADDRESS,
+    I2C_BUS,
+    MAX_EXPECTED_AMPS,
+    SERVO_ID,
+    SERVO_MAX_EXTENSION,
+    SERVO_MIN_EXTENSION,
+    SERVO_PORT,
+    SHUNT_OHMS,
+)
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.mock_servo import MockServo
 
@@ -45,14 +59,22 @@ class TestBaseServo:
         Tests that the servo extends to the maximum extension.
         """
         servo.extend_airbrakes()
-        assert servo.servo_extension == ServoExtension.MAX_EXTENSION
+        assert servo.servo_extension == SERVO_MAX_EXTENSION
 
     def test_set_retracted(self, servo):
         """
         Tests that the servo retracts to the minimum extension.
         """
         servo.retract_airbrakes()
-        assert servo.servo_extension == ServoExtension.MIN_EXTENSION
+        assert servo.servo_extension == SERVO_MIN_EXTENSION
+
+    def test_set_extension(self, servo):
+        """
+        Tests that the servo can be set to a specific extension.
+        """
+        test_extension = (SERVO_MAX_EXTENSION + SERVO_MIN_EXTENSION) / 2
+        servo.set_extension(test_extension)
+        assert servo.servo_extension == test_extension
 
     def test_repeated_extension_retraction(self, servo):
         """
@@ -64,14 +86,6 @@ class TestBaseServo:
         servo.extend_airbrakes()
         servo.retract_airbrakes()
 
-    def test_angle_to_duty_cycle(self):
-        """Tests that the angle to duty cycle conversion is correct."""
-        assert Servo._angle_to_duty_cycle(0) == approx(2.5)
-        assert Servo._angle_to_duty_cycle(90) == approx(7.5)
-        assert Servo._angle_to_duty_cycle(180) == approx(12.5)
-        assert Servo._angle_to_duty_cycle(-10) == approx(2.5)  # Test clamping
-        assert Servo._angle_to_duty_cycle(190) == approx(12.5)  # Test clamping
-
     def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
         assert servo.battery_volts == 0.0
@@ -79,3 +93,166 @@ class TestBaseServo:
     def test_system_current_milliamps(self, servo):
         """Tests that the mock system current returns a safe default."""
         assert servo.system_current_milliamps == 0.0
+
+    def test_servo_voltage(self, servo):
+        """Tests that the mock servo voltage returns a safe default."""
+        assert servo.servo_voltage == 0.0
+
+    def test_servo_temp(self, servo):
+        """Tests that the mock servo temperature returns a safe default."""
+        assert servo.servo_temp == 0.0
+
+    def test_get_servo_data_packet(self, servo):
+        """Tests that the mock servo data packet returns a safe default."""
+        packet = servo.get_servo_data_packet()
+        assert packet.current_position == SERVO_MIN_EXTENSION
+        assert packet.system_current_milliamps == 0.0
+        assert packet.battery_volts == 0.0
+        assert packet.voltage == 0.0
+        assert packet.current_temp == 0.0
+
+
+class TestServo:
+    """Tests the real Servo implementation with its hardware dependencies mocked."""
+
+    @pytest.fixture
+    def servo(self, monkeypatch) -> Servo:
+        class MockLine:
+            def __init__(self) -> None:
+                self.values: list[tuple[int, object]] = []
+                self.released = False
+
+            def set_value(self, pin: int, value: object) -> None:
+                self.values.append((pin, value))
+
+            def release(self) -> None:
+                self.released = True
+
+        class MockGpiod:
+            class line:
+                class Direction:
+                    OUTPUT = object()
+
+                class Value:
+                    ACTIVE = object()
+                    INACTIVE = object()
+
+            class LineSettings:
+                def __init__(self, direction: object) -> None:
+                    self.direction = direction
+
+            line_request: MockLine | None = None
+
+            @classmethod
+            def request_lines(cls, **_: object) -> MockLine:
+                cls.line_request = MockLine()
+                return cls.line_request
+
+        class MockServoBus:
+            def __init__(self, port: str, baudrate: int, on_exit_power_off: bool) -> None:
+                self.port = port
+                self.baudrate = baudrate
+                self.on_exit_power_off = on_exit_power_off
+
+        class MockLewanServo:
+            def __init__(self, servo_id: int, bus: MockServoBus) -> None:
+                self.servo_id = servo_id
+                self.bus = bus
+                self.moves: list[tuple[float, int]] = []
+                self.powered = False
+
+            def move_time_write(self, angle: float, time: int) -> None:
+                self.moves.append((angle, time))
+
+            def set_powered(self, powered: bool) -> None:
+                self.powered = powered
+
+            def is_powered(self) -> bool:
+                return self.powered
+
+            def pos_read(self) -> float:
+                return 42.0
+
+            def vin_read(self) -> float:
+                return 7.4
+
+            def temp_read(self) -> float:
+                return 25.0
+
+        class MockINA219:
+            ADC_9BIT = object()
+
+            def __init__(
+                self,
+                shunt_ohms: float,
+                address: int,
+                max_expected_amps: float,
+                busnum: int,
+            ) -> None:
+                self.shunt_ohms = shunt_ohms
+                self.address = address
+                self.max_expected_amps = max_expected_amps
+                self.busnum = busnum
+                self.configured_with: object | None = None
+
+            def configure(self, shunt_adc: object) -> None:
+                self.configured_with = shunt_adc
+
+            def supply_voltage(self) -> float:
+                return 12.1
+
+            def current(self) -> float:
+                return 350.0
+
+        monkeypatch.setattr(servo_module, "gpiod", MockGpiod, raising=False)
+        monkeypatch.setattr(servo_module, "ServoBus", MockServoBus)
+        monkeypatch.setattr(servo_module, "LewanServo", MockLewanServo)
+        monkeypatch.setitem(sys.modules, "ina219", SimpleNamespace(INA219=MockINA219))
+        return Servo()
+
+    def test_operations(self, servo: Servo) -> None:
+        assert servo.__slots__ == ("_bus", "_ina", "_servo", "_servo_line")
+        assert not hasattr(servo, "bus")
+        assert not hasattr(servo, "ina")
+        assert not hasattr(servo, "servo")
+        assert not hasattr(servo, "servo_line")
+
+        assert servo._bus.port == SERVO_PORT
+        assert servo._bus.baudrate == BAUDRATE
+        assert servo._bus.on_exit_power_off is False
+        assert servo._servo.servo_id == SERVO_ID
+        assert servo._servo.bus is servo._bus
+        assert servo._servo.moves == [(SERVO_MIN_EXTENSION, 0)]
+        assert servo._ina.shunt_ohms == SHUNT_OHMS
+        assert servo._ina.address == I2C_ADDRESS
+        assert servo._ina.max_expected_amps == MAX_EXPECTED_AMPS
+        assert servo._ina.busnum == I2C_BUS
+        assert servo._ina.configured_with is servo._ina.ADC_9BIT
+
+        servo.start()
+        servo.extend_airbrakes()
+        servo.set_extension(45.0)
+
+        assert servo.is_powered
+        assert servo._servo.moves == [
+            (SERVO_MIN_EXTENSION, 0),
+            (SERVO_MIN_EXTENSION, 0),
+            (SERVO_MAX_EXTENSION, 0),
+            (45.0, 0),
+        ]
+        assert servo.servo_extension == 42.0
+        assert servo.battery_volts == 12.1
+        assert servo.system_current_milliamps == 350.0
+        assert servo.servo_voltage == 7.4
+        assert servo.servo_temp == 25.0
+
+        packet = servo.get_servo_data_packet()
+        assert packet.current_position == 42.0
+        assert packet.system_current_milliamps == 350.0
+        assert packet.battery_volts == 12.1
+        assert packet.voltage == 7.4
+        assert packet.current_temp == 25.0
+
+        servo.stop()
+        assert not servo.is_powered
+        assert servo._servo_line.released

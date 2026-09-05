@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Servo & Encoder TUI — stylesheet
+    Servo TUI — stylesheet
    Designed for vertical / narrow terminals (width ≤ height) first.
    ========================================================================== */
 
@@ -32,8 +32,8 @@ Footer {
 }
 
 /* --------------------------------------------------------------------------
-   Top info row: [Encoder] [AngleDisplay] [Current (A)]
-   -------------------------------------------------------------------------- */
+    Top info row: [Position] [Current (A)]
+    -------------------------------------------------------------------------- */
 #info-row {
     width: 1fr;
     height: auto;
@@ -41,24 +41,6 @@ Footer {
     align: center middle;
     margin-top: 1;
     margin-bottom: 0;
-}
-
-#encoder-box {
-    width: 1fr;
-    height: auto;
-    min-height: 4;
-    padding: 0 1;
-    content-align: center middle;
-}
-
-EncoderBox {
-    width: 1fr;
-    height: auto;
-    padding-left: 1;
-    content-align: left middle;
-    color: $text;
-    border: round $accent-darken-1;
-    border-title-align: left;
 }
 
 AngleDisplay {

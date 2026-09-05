@@ -23,6 +23,7 @@ dependencies = [
     "firm-client>=1.2.2",
     "pi-ina219>=1.4.1",
     "gpiod>=2.4.2; platform_system == 'Linux'",
+    "lewanlib==0.1.1",
 ]
 
 # TODO: Remove this once polars has official wheels for python 3.14t
@@ -72,8 +73,7 @@ build-backend = "hatchling.build"
 
 # UV:
 [tool.uv]
-exclude-newer = "7 days"
-exclude-newer-package = { firm-client = "1 second", hprm = "1 second" }
+exclude-newer-package = { firm-client = "1 second", hprm = "1 second" , lewanlib = "1 second"}
 python-preference = "only-managed"
 
 # HATCH:

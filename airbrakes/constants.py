@@ -1,6 +1,6 @@
 """Contains the constants used in the Airbrakes module."""
 
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 
 from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg
@@ -50,6 +50,16 @@ https://pypi.org/project/rpi-hardware-pwm/
 for more information.
 """
 
+SERVO_ID = 1
+"""The ID of the servo on the Lewan serial bus."""
+
+BAUDRATE = 115200
+"""The serial baud rate used by the Lewan servo bus."""
+
+SERVO_PORT = "/dev/ttyUSB0"
+"""The port the servo is connected to on the Pi."""
+
+
 SERVO_DELAY_SECONDS = 1.0
 """This is how long the servo approximately takes to move from one extreme to
 the other.
@@ -58,28 +68,14 @@ This is used for the no buzz code, to make sure the servo has enough
 time to move to the desired position.
 """
 
+SERVO_MIN_EXTENSION = 0
+"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
-class ServoExtension(Enum):
-    """
-    Enum that represents the extension of the servo motor.
+SERVO_MAX_EXTENSION = 180
+"""The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
-    First we set it to an extreme, then to the actual position. This is
-    to ensure that the servo will move fast enough and with enough power
-    to actually make it to the position, but then once it's there, we
-    don't want it to keep straining past the physical bounds of the air
-    brakes. The range of the servo is from 0 to 180 degrees, but we only
-    use a portion of that range to prevent the servo from straining too
-    much. We obtained the below values through guess and check, and they
-    differ depending on the design.
-    """
-
-    # in degrees:
-    MIN_EXTENSION = 112
-    MIN_NO_BUZZ = 113
-
-    MAX_EXTENSION = 130
-    MAX_NO_BUZZ = 125
-
+SERVO_EXTENSION_TOLERANCE = 2
+"""The tolerance in degrees for the servo extension."""
 
 SHUNT_OHMS = 0.01
 """
