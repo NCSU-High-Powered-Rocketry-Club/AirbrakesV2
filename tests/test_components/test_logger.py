@@ -149,7 +149,7 @@ class TestLogger:
         """Tests that the logger retains each processor packet's altitude source."""
         logger_packets = Logger._prepare_logger_packets(
             make_context_data_packet(state=StandbyState),
-            make_servo_data_packet(set_extension=ServoExtension.MIN_EXTENSION),
+            make_servo_data_packet(current_position=0.1),
             [make_firm_data_packet(), make_firm_data_packet()],
             [
                 make_processor_data_packet(integrating_for_altitude="F"),

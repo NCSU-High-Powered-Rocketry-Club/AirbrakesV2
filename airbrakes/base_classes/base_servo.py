@@ -48,7 +48,7 @@ class BaseServo(ABC):
     @property
     @abstractmethod
     def is_powered(self) -> bool:
-        """Return whether the servo is currently powered."""
+        """Return whether the servo is currently powered and attempting to hold its position."""
 
     @property
     @abstractmethod
