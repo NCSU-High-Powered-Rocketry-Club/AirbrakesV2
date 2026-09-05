@@ -181,18 +181,15 @@ class Context:
                 self.most_recent_apogee_predictor_data_packet,
             )
 
-    def extend_airbrakes(self) -> None:
-        """Extends the air brakes to the maximum extension."""
+    def extend_airbrakes(self, velocity: float) -> None:
+        """Extends the air brakes based on the rocket's current velocity."""
         self.data_processor.prepare_for_extending_airbrakes()
-        self.servo.extend_airbrakes()
+        self.servo.extend_airbrakes(velocity)
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
         # We don't want to retract the air brakes if they are already retracted
-        if self.servo.servo_extension in (
-            ServoExtension.MAX_EXTENSION,
-            ServoExtension.MAX_NO_BUZZ,
-        ):
+        if self.servo.servo_angle > ServoExtension.MIN_NO_BUZZ.value:
             self.data_processor.prepare_for_retracting_airbrakes()
             self.servo.retract_airbrakes()
 

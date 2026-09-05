@@ -23,6 +23,7 @@ class MockServo(BaseServo):
     """
 
     __slots__ = (
+        "_current_angle",
         "_go_to_max_no_buzz",
         "_go_to_min_no_buzz",
         "_servo_extension",
@@ -47,6 +48,7 @@ class MockServo(BaseServo):
         self.duty_cycle = 0.0
         self._go_to_max_no_buzz: threading.Timer | None = None
         self._go_to_min_no_buzz: threading.Timer | None = None
+        self._current_angle = float(ServoExtension.MIN_NO_BUZZ.value)
 
     def start(self) -> None:
         """
@@ -62,10 +64,11 @@ class MockServo(BaseServo):
         self._cancel_timer("_go_to_min_no_buzz")
         self.duty_cycle = 0.0
 
-    def extend_airbrakes(self) -> None:
+    def extend_airbrakes(self, velocity: float = 0.0) -> None:
         """
         Extends the servo to deploy the airbrakes (Mock).
         """
+        _ = velocity
         self._cancel_timer("_go_to_min_no_buzz")
         self._set_extension(ServoExtension.MAX_EXTENSION)
         self._go_to_max_no_buzz = threading.Timer(
@@ -87,6 +90,7 @@ class MockServo(BaseServo):
     def _set_extension(self, extension: ServoExtension) -> None:
         """Sets the simulated servo extension."""
         self._servo_extension = extension
+        self._current_angle = float(extension.value)
         self.duty_cycle = self._angle_to_duty_cycle(extension.value)
 
     def _cancel_timer(self, timer_name: str) -> None:
@@ -114,6 +118,10 @@ class MockServo(BaseServo):
         :return: The commanded servo extension.
         """
         return self._servo_extension
+
+    @property
+    def servo_angle(self) -> float:
+        return self._current_angle
 
     @property
     def current_extension(self) -> ServoExtension:

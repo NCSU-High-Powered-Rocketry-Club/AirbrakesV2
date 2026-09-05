@@ -6,6 +6,9 @@ controls the extension of the airbrakes.
 import contextlib
 import threading
 
+#from turtle import speed
+import numpy as np
+
 # Can only be imported on Linux:
 with contextlib.suppress(ImportError):
     import gpiod
@@ -14,9 +17,14 @@ from rpi_hardware_pwm import HardwarePWM
 
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
+    AIR_DENSITY_KG_PER_M3,
+    AIRBRAKE_DRAG_COEFFICIENT,
+    AIRBRAKE_EXTENSIONS,
+    AIRBRAKE_SURFACE_AREAS_IN2,
     CHIP_PATH,
     I2C_ADDRESS,
     I2C_BUS,
+    MAX_AIRBRAKE_FORCE_LBS,
     MAX_EXPECTED_AMPS,
     SERVO_DELAY_SECONDS,
     SERVO_MAX_ANGLE_DEGREES,
@@ -41,6 +49,7 @@ class Servo(BaseServo):
     """
 
     __slots__ = (
+        "_current_angle",
         "_go_to_max_no_buzz",
         "_go_to_min_no_buzz",
         "current_extension",
@@ -83,6 +92,7 @@ class Servo(BaseServo):
             # which is the default setting). We lose about ~8mA of resolution.
             shunt_adc=INA219.ADC_9BIT
         )
+        self._current_angle = float(ServoExtension.MIN_NO_BUZZ.value)
 
     def start(self) -> None:
         """
@@ -109,16 +119,55 @@ class Servo(BaseServo):
         # Release the gpio pin back to the kernel
         self.servo_line.release()
 
-    def extend_airbrakes(self) -> None:
-        """
-        Extends the servo to the maximum extension.
-        """
+    def extend_airbrakes(self, velocity: float) -> None:
+        """Extends the airbrakes to the maximum safe extension for the rocket's current velocity."""
         self._cancel_timer("_go_to_min_no_buzz")
-        self._set_extension(ServoExtension.MAX_EXTENSION)
-        self._go_to_max_no_buzz = threading.Timer(
-            SERVO_DELAY_SECONDS, self._set_extension, args=(ServoExtension.MAX_NO_BUZZ,)
+
+        extension = self._calculate_deployment_extension(velocity)
+        angle = self._extension_to_angle(extension)
+
+        self._set_angle(angle)
+
+    def _calculate_deployment_extension(self, velocity: float) -> float:
+        speed = abs(velocity)
+
+        if speed == 0:
+            return 1.0
+
+        max_force_newtons = MAX_AIRBRAKE_FORCE_LBS * 4.44822
+
+        max_area_m2 = (
+            2 * max_force_newtons
+            / (
+                AIR_DENSITY_KG_PER_M3
+                * speed**2
+                * AIRBRAKE_DRAG_COEFFICIENT
+            )
         )
-        self._go_to_max_no_buzz.start()
+
+        max_area_in2 = max_area_m2 / 0.00064516
+
+        max_area_in2 = np.clip(
+            max_area_in2,
+            AIRBRAKE_SURFACE_AREAS_IN2[0],
+            AIRBRAKE_SURFACE_AREAS_IN2[-1],
+        )
+
+        extension = np.interp(
+            max_area_in2,
+            AIRBRAKE_SURFACE_AREAS_IN2,
+            AIRBRAKE_EXTENSIONS,
+        )
+
+        return float(extension)
+
+    def _extension_to_angle(self, extension: float) -> float:
+        extension = max(0.0, min(1.0, extension))
+
+        min_angle = ServoExtension.MIN_NO_BUZZ.value
+        max_angle = ServoExtension.MAX_NO_BUZZ.value
+
+        return min_angle + extension * (max_angle - min_angle)
 
     def retract_airbrakes(self) -> None:
         """
@@ -131,9 +180,17 @@ class Servo(BaseServo):
         )
         self._go_to_min_no_buzz.start()
 
+    def _set_angle(self, angle: float) -> None:
+        """Sets the servo to a specific angle in degrees."""
+        self._current_angle = angle
+        duty_cycle = self._angle_to_duty_cycle(angle)
+        self.servo.change_duty_cycle(duty_cycle)
+
     def _set_extension(self, extension: ServoExtension) -> None:
         """Sets the servo extension and corresponding PWM duty cycle."""
         self.current_extension = extension
+        self._current_angle = float(extension.value)
+
         duty_cycle: float = self._angle_to_duty_cycle(extension.value)
         self.servo.change_duty_cycle(duty_cycle)
 
@@ -151,6 +208,11 @@ class Servo(BaseServo):
         :return: The commanded servo extension.
         """
         return self.current_extension
+
+    @property
+    def servo_angle(self) -> float:
+        """Gets the most recently commanded servo angle."""
+        return self._current_angle
 
     @property
     def battery_volts(self) -> float:
