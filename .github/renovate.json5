@@ -29,6 +29,10 @@
   // Enable automerge globally:
   "automerge": true,
 
+  "ignoreDeps": [
+    "polars",  // Ignore for now since there isn't 3.14t support yet.
+  ],
+
   // Package-specific exceptions:
   "packageRules": [
     // Don't automatically upgrade python version:
