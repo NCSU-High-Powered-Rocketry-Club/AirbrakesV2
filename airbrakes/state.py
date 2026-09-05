@@ -153,7 +153,7 @@ class CoastState(State):
         )
 
         if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
-            self.context.extend_airbrakes()
+            self.context.extend_airbrakes(data.vertical_velocity)
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
             self.context.retract_airbrakes()

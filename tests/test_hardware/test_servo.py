@@ -79,3 +79,12 @@ class TestBaseServo:
     def test_system_current_milliamps(self, servo):
         """Tests that the mock system current returns a safe default."""
         assert servo.system_current_milliamps == 0.0
+
+    def test_calculate_deployment_extension(self):
+        servo = object.__new__(Servo)
+
+        assert servo._calculate_deployment_extension(0) == approx(1.0)
+        assert servo._calculate_deployment_extension(150) == approx(1.0)
+        assert servo._calculate_deployment_extension(200) == approx(0.8074, abs=0.001)
+        assert servo._calculate_deployment_extension(250) == approx(0.6131, abs=0.001)
+        assert servo._calculate_deployment_extension(300) == approx(0.4905, abs=0.001)

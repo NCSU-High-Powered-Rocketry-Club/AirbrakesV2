@@ -3,6 +3,8 @@
 from enum import Enum, StrEnum
 from pathlib import Path
 
+import numpy as np
+
 from airbrakes.utils import convert_ft_to_m, convert_lbs_to_kg
 
 # -------------------------------------------------------
@@ -57,6 +59,13 @@ the other.
 This is used for the no buzz code, to make sure the servo has enough
 time to move to the desired position.
 """
+
+
+AIRBRAKE_EXTENSIONS = np.array([0.0, 0.25, 0.50, 0.75, 1.0])
+AIRBRAKE_SURFACE_AREAS_IN2 = np.array([0.0, 4.0, 10.0, 19.0, 32.0])
+AIR_DENSITY_KG_PER_M3 = 1.225
+AIRBRAKE_DRAG_COEFFICIENT = 1.28
+MAX_AIRBRAKE_FORCE_LBS = 100.0
 
 
 class ServoExtension(Enum):
