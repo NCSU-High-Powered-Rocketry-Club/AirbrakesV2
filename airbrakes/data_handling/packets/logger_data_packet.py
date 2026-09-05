@@ -1,5 +1,7 @@
 """Module for describing the data packet for the logger to log."""
 
+from typing import Literal
+
 import msgspec
 
 
@@ -16,9 +18,11 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     state_letter: str | None
 
     # Fields in ServoDataPacket
-    set_extension: str | None
-    battery_voltage: str | None
-    current_milliamps: str | None
+    current_position: float | None = None
+    current_temp: float | None = None
+    voltage: float | None = None
+    system_current_milliamps: float | None = None
+    battery_volts: float | None = None
 
     # FIRMDataPacket Fields
     timestamp_seconds: float | None = None
@@ -45,6 +49,14 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     est_quaternion_y: float | None = None
     est_quaternion_z: float | None = None
 
+    # ProcessorDataPacket Fields
+    current_altitude: float | None = None
+    integrating_for_altitude: Literal["T", "F"] | None = None
+    vertical_velocity_meters_per_s: float | None = None
+    horizontal_velocity_meters_per_s: float | None = None
+    tilt_angle_degrees: float | None = None
+    angular_rate_deg_per_s: float | None = None
+
     # Apogee Predictor Data Packet Fields
     predicted_apogee: float | None = None
     height_used_for_prediction: float | None = None
@@ -54,6 +66,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     angular_rate_deg_per_s_used_for_prediction: float | None = None
 
     # Other fields in ContextDataPacket
-    retrieved_firm_packets: int | None
-    apogee_predictor_queue_size: int | None
-    update_timestamp_ns: int | None
+    retrieved_firm_packets: int | None = None
+    apogee_predictor_queue_size: int | None = None
+    update_timestamp_ns: int | None = None

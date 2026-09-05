@@ -1,6 +1,6 @@
 """Contains the constants used in the Airbrakes module."""
 
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 
 import numpy as np
@@ -52,6 +52,16 @@ https://pypi.org/project/rpi-hardware-pwm/
 for more information.
 """
 
+SERVO_ID = 1
+"""The ID of the servo on the Lewan serial bus."""
+
+BAUDRATE = 115200
+"""The serial baud rate used by the Lewan servo bus."""
+
+SERVO_PORT = "/dev/ttyUSB0"
+"""The port the servo is connected to on the Pi."""
+
+
 SERVO_DELAY_SECONDS = 1.0
 """This is how long the servo approximately takes to move from one extreme to
 the other.
@@ -60,35 +70,29 @@ This is used for the no buzz code, to make sure the servo has enough
 time to move to the desired position.
 """
 
+SERVO_MIN_EXTENSION = 0
+"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
 AIRBRAKE_EXTENSIONS = np.array([0.0, 0.25, 0.50, 0.75, 1.0])
+"""Placeholder airbrake extension fractions for the exposed-area lookup table."""
+
 AIRBRAKE_SURFACE_AREAS_IN2 = np.array([0.0, 4.0, 10.0, 19.0, 32.0])
+"""Placeholder exposed airbrake areas in square inches at each extension fraction."""
+
 AIR_DENSITY_KG_PER_M3 = 1.225
+"""Sea-level air density used for the conservative flat-plate drag estimate."""
+
 AIRBRAKE_DRAG_COEFFICIENT = 1.28
+"""Placeholder flat-plate drag coefficient for the deployed airbrakes."""
+
 MAX_AIRBRAKE_FORCE_LBS = 100.0
+"""Placeholder maximum total airbrake load in pounds-force."""
 
+SERVO_MAX_EXTENSION = 180
+"""The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
-class ServoExtension(Enum):
-    """
-    Enum that represents the extension of the servo motor.
-
-    First we set it to an extreme, then to the actual position. This is
-    to ensure that the servo will move fast enough and with enough power
-    to actually make it to the position, but then once it's there, we
-    don't want it to keep straining past the physical bounds of the air
-    brakes. The range of the servo is from 0 to 180 degrees, but we only
-    use a portion of that range to prevent the servo from straining too
-    much. We obtained the below values through guess and check, and they
-    differ depending on the design.
-    """
-
-    # in degrees:
-    MIN_EXTENSION = 112
-    MIN_NO_BUZZ = 113
-
-    MAX_EXTENSION = 130
-    MAX_NO_BUZZ = 125
-
+SERVO_EXTENSION_TOLERANCE = 2
+"""The tolerance in degrees for the servo extension."""
 
 SHUNT_OHMS = 0.01
 """
@@ -289,6 +293,12 @@ ROCKET_CL_A: float = 0.2
 GRAVITY_METERS_PER_SECOND_SQUARED = 9.81
 """The acceleration due to gravity in meters per second squared, used for
 apogee prediction."""
+
+SPEED_OF_SOUND_METERS_PER_SECOND = 343.0
+"""The assumed speed of sound in meters per second."""
+
+TRANSONIC_VELOCITY_METERS_PER_SECOND = 0.65 * SPEED_OF_SOUND_METERS_PER_SECOND
+"""The speed above which pressure altitude is unreliable, in meters per second."""
 
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """It takes the pressure a little bit of time to stabilize after airbrakes retract."""

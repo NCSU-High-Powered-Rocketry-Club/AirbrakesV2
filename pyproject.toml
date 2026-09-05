@@ -23,6 +23,7 @@ dependencies = [
     "firm-client>=1.2.2",
     "pi-ina219>=1.4.1",
     "gpiod>=2.4.2; platform_system == 'Linux'",
+    "lewanlib==0.1.1",
 ]
 
 # TODO: Remove this once polars has official wheels for python 3.14t
@@ -72,8 +73,7 @@ build-backend = "hatchling.build"
 
 # UV:
 [tool.uv]
-exclude-newer = "7 days"
-exclude-newer-package = { firm-client = "1 second", hprm = "1 second" }
+exclude-newer-package = { firm-client = "1 second", hprm = "1 second" , lewanlib = "1 second"}
 python-preference = "only-managed"
 
 # HATCH:
@@ -93,7 +93,7 @@ exclude = ["scripts"]
 
 [tool.ruff.lint]
 # Some of the ones prefixed with a d should probably not be ignored, but that can be fixed later.
-ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PERF203", "ISC001", "S311",
+ignore = ["PLR2004", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "PERF203", "ISC001", "S311",
     "D102", "D103", "D104", "D107", "D205", "D401", "D200"]
 select = ["E", "F", "I", "PL", "UP", "RUF", "PTH", "C4", "B", "PIE", "SIM", "RET", "RSE",
     "G", "ISC", "PT", "ASYNC", "TCH", "SLOT", "PERF", "PYI", "FLY", "AIR", "Q", "INP",

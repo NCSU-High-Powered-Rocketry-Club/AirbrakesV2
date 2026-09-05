@@ -2,6 +2,8 @@
 Module for describing the data packet for the processed IMU data.
 """
 
+from typing import Literal
+
 import msgspec
 
 
@@ -17,6 +19,13 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     The zeroed-out altitude of the rocket in meters.
 
     In other words, the altitude relative to the ground from the launch pad (AGL).
+    """
+
+    integrating_for_altitude: Literal["T", "F"]
+    """
+    Whether current_altitude was calculated by integrating vertical velocity.
+
+    "T" indicates integrated altitude; "F" indicates pressure altitude.
     """
 
     vertical_velocity_meters_per_s: float

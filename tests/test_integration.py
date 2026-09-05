@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
-from airbrakes.constants import STOP_SIGNAL, ServoExtension
+from airbrakes.constants import SERVO_MAX_EXTENSION, SERVO_MIN_EXTENSION, STOP_SIGNAL
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     JackPotLaunchCase1,
@@ -289,10 +289,8 @@ class TestIntegration:
 
         # Check if extensions are valid floats
         valid_extensions = [
-            ServoExtension.MIN_EXTENSION.value,
-            ServoExtension.MAX_EXTENSION.value,
-            ServoExtension.MIN_NO_BUZZ.value,
-            ServoExtension.MAX_NO_BUZZ.value,
+            SERVO_MIN_EXTENSION,
+            SERVO_MAX_EXTENSION,
         ]
         all_extensions_valid = (
             df.select(pl.col("set_extension").cast(pl.Float64).is_in(valid_extensions))

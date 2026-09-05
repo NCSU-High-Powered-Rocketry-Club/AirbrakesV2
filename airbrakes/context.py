@@ -6,10 +6,13 @@ rocket.
 import time
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import BUSY_WAIT_SECONDS, ServoExtension
+from airbrakes.constants import (
+    BUSY_WAIT_SECONDS,
+    SERVO_EXTENSION_TOLERANCE,
+    SERVO_MIN_EXTENSION,
+)
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
-from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-from airbrakes.state import StandbyState, State
+from airbrakes.state import StandbyState
 
 if TYPE_CHECKING:
     from firm_client import FIRMDataPacket
@@ -23,6 +26,8 @@ if TYPE_CHECKING:
         ApogeePredictorDataPacket,
     )
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+    from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
+    from airbrakes.state import State
 
 
 class Context:
@@ -177,6 +182,7 @@ class Context:
                 self.context_data_packet,
                 self.servo_data_packet,
                 self.firm_data_packets,
+                self.processor_data_packets,
                 self.most_recent_apogee_predictor_data_packet,
             )
 
@@ -188,7 +194,7 @@ class Context:
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
         # We don't want to retract the air brakes if they are already retracted
-        if self.servo.servo_angle > ServoExtension.MIN_NO_BUZZ.value:
+        if abs(self.servo.servo_extension - SERVO_MIN_EXTENSION) > SERVO_EXTENSION_TOLERANCE:
             self.data_processor.prepare_for_retracting_airbrakes()
             self.servo.retract_airbrakes()
 
@@ -217,11 +223,4 @@ class Context:
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
         )
-
-        # Creates a Servo Data Packet to log the current extension
-        # of the servo and the electrical metrics.
-        self.servo_data_packet = ServoDataPacket(
-            set_extension=self.servo.servo_extension,
-            battery_voltage=f"{self.servo.battery_volts}",
-            current_milliamps=f"{self.servo.system_current_milliamps}",
-        )
+        self.servo_data_packet = self.servo.get_servo_data_packet()
