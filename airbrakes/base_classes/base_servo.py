@@ -124,6 +124,4 @@ class BaseServo(ABC):
         if not isfinite(extension):
             return float(SERVO_MIN_EXTENSION)
         bounded_extension = min(max(extension, 0.0), 1.0)
-        return SERVO_MIN_EXTENSION + bounded_extension * (
-            SERVO_MAX_EXTENSION - SERVO_MIN_EXTENSION
-        )
+        return SERVO_MIN_EXTENSION + bounded_extension * (SERVO_MAX_EXTENSION - SERVO_MIN_EXTENSION)
