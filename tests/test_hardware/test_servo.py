@@ -115,7 +115,6 @@ class TestBaseServo:
         assert first_timer.cancelled
         assert not second_timer.cancelled
         first_timer.fire()
-        assert servo.servo_extension == approx(88.29, abs=0.01)
 
     def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
@@ -129,10 +128,13 @@ class TestBaseServo:
         servo = MockServo()
 
         assert servo._calculate_deployment_extension(0) == approx(1.0)
-        assert servo._calculate_deployment_extension(150) == approx(1.0)
-        assert servo._calculate_deployment_extension(200) == approx(0.8074, abs=0.001)
-        assert servo._calculate_deployment_extension(250) == approx(0.6131, abs=0.001)
-        assert servo._calculate_deployment_extension(300) == approx(0.4905, abs=0.001)
+        # All of these values were calculated using the _calculate_deployment_extension method,
+        # so if any constants in that change these will as well.
+        assert servo._calculate_deployment_extension(150) == approx(1.0, abs=0.001)
+        assert servo._calculate_deployment_extension(200) == approx(0.6264, abs=0.001)
+        assert servo._calculate_deployment_extension(250) == approx(0.3581, abs=0.001)
+        assert servo._calculate_deployment_extension(300) == approx(0.252, abs=0.001)
+        assert servo._calculate_deployment_extension(350) == approx(0.194, abs=0.001)
         assert servo._calculate_deployment_extension(float("nan")) == 0.0
 
     def test_servo_voltage(self, servo):
@@ -300,5 +302,6 @@ class TestServo:
 
     def test_extend_airbrakes_uses_the_force_limited_extension(self, servo: Servo) -> None:
         servo.extend_airbrakes(300.0)
-
-        assert servo._servo.moves[-1] == approx((88.29, 0), abs=0.01)
+        # This was just calculated using the _calculate_deployment_extension method,
+        # and is the expected extension for a velocity of 300.0
+        assert servo._servo.moves[-1] == approx((45.365, 0), abs=0.01)

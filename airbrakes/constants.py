@@ -73,20 +73,23 @@ time to move to the desired position.
 SERVO_MIN_EXTENSION = 0
 """The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
-AIRBRAKE_EXTENSIONS = np.array([0.0, 0.25, 0.50, 0.75, 1.0])
-"""Placeholder airbrake extension fractions for the exposed-area lookup table."""
+AIRBRAKE_EXTENSIONS = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+"""Airbrake extension fractions for the exposed-area lookup table."""
 
-AIRBRAKE_SURFACE_AREAS_IN2 = np.array([0.0, 4.0, 10.0, 19.0, 32.0])
-"""Placeholder exposed airbrake areas in square inches at each extension fraction."""
+AIRBRAKE_SURFACE_AREAS_IN2 = np.array(
+    [0.0, 3.079, 7.44, 11.921, 15.618, 18.626, 21.257, 24.018, 26.684, 29.244, 32.0]
+)
+"""Exposed airbrake areas in square inches at each extension fraction."""
 
 AIR_DENSITY_KG_PER_M3 = 1.225
 """Sea-level air density used for the conservative flat-plate drag estimate."""
 
 AIRBRAKE_DRAG_COEFFICIENT = 1.28
-"""Placeholder flat-plate drag coefficient for the deployed airbrakes."""
+"""This is the flat-plate drag coefficient for the deployed airbrakes."""
 
+# TODO: get this from load test
 MAX_AIRBRAKE_FORCE_LBS = 100.0
-"""Placeholder maximum total airbrake load in pounds-force."""
+"""Maximum total airbrake load in pounds-force."""
 
 SERVO_MAX_EXTENSION = 180
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
