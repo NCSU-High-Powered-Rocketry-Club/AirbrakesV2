@@ -38,6 +38,7 @@ class MockServo(BaseServo):
     def extend_airbrakes(self, velocity: float) -> None:
         """Request the maximum safe extension and schedule its delayed completion."""
         self._cancel_timer("retract")
+        self._cancel_timer("extend")
         angle = self._deployment_extension_to_angle(
             self._calculate_deployment_extension(velocity)
         )

@@ -40,6 +40,36 @@ def convert_lbs_to_kg(lb: float) -> float:
     return lb * 0.45359237
 
 
+def convert_lbf_to_newtons(pounds_force: float) -> float:
+    """
+    Converts pounds-force to newtons.
+
+    :param pounds_force: Force in pounds-force.
+    :return: Force in newtons.
+    """
+    return pounds_force * 4.4482216152605
+
+
+def convert_square_inches_to_square_meters(square_inches: float) -> float:
+    """
+    Converts square inches to square meters.
+
+    :param square_inches: Area in square inches.
+    :return: Area in square meters.
+    """
+    return square_inches * 0.00064516
+
+
+def convert_square_meters_to_square_inches(square_meters: float) -> float:
+    """
+    Converts square meters to square inches.
+
+    :param square_meters: Area in square meters.
+    :return: Area in square inches.
+    """
+    return square_meters / 0.00064516
+
+
 def convert_ns_to_s(nanoseconds: int) -> float:
     """
     Converts nanoseconds to seconds.

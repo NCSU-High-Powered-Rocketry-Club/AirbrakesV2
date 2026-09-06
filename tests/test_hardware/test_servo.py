@@ -86,6 +86,37 @@ class TestBaseServo:
         servo.extend_airbrakes(0.0)
         servo.retract_airbrakes()
 
+    def test_extend_airbrakes_cancels_existing(self, monkeypatch, servo):
+        class MockTimer:
+            def __init__(self, _, callback, args):
+                self.callback = callback
+                self.args = args
+                self.cancelled = False
+
+            def start(self):
+                pass
+
+            def cancel(self):
+                self.cancelled = True
+
+            def fire(self):
+                if not self.cancelled:
+                    self.callback(*self.args)
+
+        monkeypatch.setattr("airbrakes.mock.mock_servo.threading.Timer", MockTimer)
+
+        servo.extend_airbrakes(0.0)
+        first_timer = servo.extend
+        servo.extend_airbrakes(300.0)
+        second_timer = servo.extend
+
+        assert first_timer is not None
+        assert second_timer is not None
+        assert first_timer.cancelled
+        assert not second_timer.cancelled
+        first_timer.fire()
+        assert servo.servo_extension == approx(88.29, abs=0.01)
+
     def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
         assert servo.battery_volts == 0.0
@@ -95,7 +126,7 @@ class TestBaseServo:
         assert servo.system_current_milliamps == 0.0
 
     def test_calculate_deployment_extension(self):
-        servo = object.__new__(Servo)
+        servo = MockServo()
 
         assert servo._calculate_deployment_extension(0) == approx(1.0)
         assert servo._calculate_deployment_extension(150) == approx(1.0)

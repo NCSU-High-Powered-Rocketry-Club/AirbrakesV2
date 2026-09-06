@@ -17,13 +17,10 @@ from airbrakes.constants import (
     SERVO_MAX_EXTENSION,
     SERVO_MIN_EXTENSION,
 )
+from airbrakes.utils import convert_lbf_to_newtons, convert_square_meters_to_square_inches
 
 if TYPE_CHECKING:
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
-
-
-_POUNDS_FORCE_TO_NEWTONS = 4.4482216152605
-_SQUARE_INCHES_TO_SQUARE_METERS = 0.00064516
 
 
 class BaseServo(ABC):
@@ -96,19 +93,24 @@ class BaseServo(ABC):
     def get_servo_data_packet(self) -> ServoDataPacket:
         """Create a data packet containing the current servo telemetry."""
 
-    def _calculate_deployment_extension(self, velocity: float) -> float:
-        """Return the largest safe extension fraction for a rocket speed."""
-        speed = abs(velocity)
+    def _calculate_deployment_extension(self, velocity_meters_per_s: float) -> float:
+        """
+        Return the largest safe extension fraction for a rocket speed.
+
+        :param velocity_meters_per_s: The rocket's current speed in meters per second.
+        :return: The largest safe extension fraction, between 0.0 and 1.
+        """
+        speed = abs(velocity_meters_per_s)
         if not isfinite(speed):
             return 0.0
         if speed == 0:
             return 1.0
 
-        max_force_newtons = MAX_AIRBRAKE_FORCE_LBS * _POUNDS_FORCE_TO_NEWTONS
+        max_force_newtons = convert_lbf_to_newtons(MAX_AIRBRAKE_FORCE_LBS)
         max_area_m2 = (
             2 * max_force_newtons / (AIR_DENSITY_KG_PER_M3 * speed**2 * AIRBRAKE_DRAG_COEFFICIENT)
         )
-        max_area_in2 = max_area_m2 / _SQUARE_INCHES_TO_SQUARE_METERS
+        max_area_in2 = convert_square_meters_to_square_inches(max_area_m2)
         return float(
             np.interp(
                 max_area_in2,
