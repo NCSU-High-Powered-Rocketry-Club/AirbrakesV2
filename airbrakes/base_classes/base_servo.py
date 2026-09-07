@@ -31,34 +31,6 @@ class BaseServo(ABC):
 
     __slots__ = ()
 
-    @abstractmethod
-    def start(self) -> None:
-        """
-        Starts the servo.
-        """
-
-    @abstractmethod
-    def stop(self) -> None:
-        """
-        Stops the servo.
-        """
-
-    @abstractmethod
-    def extend_airbrakes(self, velocity: float) -> None:
-        """Command the servo to the maximum safe extension for ``velocity``."""
-
-    @abstractmethod
-    def retract_airbrakes(self) -> None:
-        """Command the servo to its minimum extension."""
-
-    @abstractmethod
-    def set_extension(self, angle: float) -> None:
-        """
-        Command a specific airbrake extension in servo-position degrees.
-
-        :param angle: The desired servo position.
-        """
-
     @property
     @abstractmethod
     def is_powered(self) -> bool:
@@ -88,6 +60,39 @@ class BaseServo(ABC):
     @abstractmethod
     def servo_temp(self) -> float:
         """Return the servo motor temperature in degrees Celsius."""
+
+    @abstractmethod
+    def start(self) -> None:
+        """
+        Starts the servo.
+        """
+
+    @abstractmethod
+    def stop(self) -> None:
+        """
+        Stops the servo.
+        """
+
+    @abstractmethod
+    def extend_airbrakes(self, velocity_meters_per_s: float) -> None:
+        """
+        Command the servo to extend the airbrakes to the largest safe extension for a given rocket
+        speed.
+
+        :param velocity_meters_per_s: The rocket's current speed in meters per second.
+        """
+
+    @abstractmethod
+    def retract_airbrakes(self) -> None:
+        """Command the servo to its minimum extension."""
+
+    @abstractmethod
+    def set_extension(self, angle: float) -> None:
+        """
+        Command a specific airbrake extension in servo-position degrees.
+
+        :param angle: The desired servo position.
+        """
 
     @abstractmethod
     def get_servo_data_packet(self) -> ServoDataPacket:
