@@ -308,7 +308,7 @@ class TestCoastState:
         """
         calls = 0
 
-        def extend_airbrakes(_):
+        def extend_airbrakes(_, __):
             nonlocal calls
             calls += 1
 

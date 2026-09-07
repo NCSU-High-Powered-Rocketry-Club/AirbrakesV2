@@ -46,7 +46,7 @@ class TestContext:
 
     def test_set_extension(self, context):
         # Hardcoded calculated values, based on MIN_EXTENSION and MAX_EXTENSION in constants.py
-        context.extend_airbrakes()
+        context.extend_airbrakes(0.0)
         time.sleep(SERVO_DELAY_SECONDS + 0.1)  # wait for servo to extend
         assert context.servo.servo_extension == SERVO_MAX_EXTENSION
         context.retract_airbrakes()
@@ -146,7 +146,7 @@ class TestContext:
             calls.append("state update called")
             if isinstance(self.context.state, CoastState):
                 self.context.predict_apogee()
-                self.context.servo.extend_airbrakes()
+                self.context.servo.extend_airbrakes(0.0)
 
         def log(self, ctx_dp, servo_dp, firm_data_packets, processor_data_packets, apg_dps):
             # monkeypatched method of Logger

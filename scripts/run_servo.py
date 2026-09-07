@@ -20,7 +20,7 @@ if int(input()) == 0:
         if int(input()) == 0:
             servo.retract_airbrakes()
         else:
-            servo.extend_airbrakes()
+            servo.extend_airbrakes(0.0)
 else:
     while True:
         print("0 is min, 1 is max")

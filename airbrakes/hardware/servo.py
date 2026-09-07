@@ -19,7 +19,6 @@ from airbrakes.constants import (
     I2C_BUS,
     MAX_EXPECTED_AMPS,
     SERVO_ID,
-    SERVO_MAX_EXTENSION,
     SERVO_MIN_EXTENSION,
     SERVO_PORT,
     SERVO_SWITCH_PIN,
@@ -70,6 +69,30 @@ class Servo(BaseServo):
             shunt_adc=INA219.ADC_9BIT
         )
 
+    @property
+    def is_powered(self) -> bool:
+        return self._servo.is_powered()
+
+    @property
+    def servo_extension(self) -> float:
+        return self._servo.pos_read()
+
+    @property
+    def battery_volts(self) -> float:
+        return self._ina.supply_voltage()
+
+    @property
+    def system_current_milliamps(self) -> float:
+        return self._ina.current()
+
+    @property
+    def servo_voltage(self) -> float:
+        return self._servo.vin_read()
+
+    @property
+    def servo_temp(self) -> float:
+        return self._servo.temp_read()
+
     def start(self) -> None:
         """Power on the servo and command its minimum extension."""
         self._servo_line.set_value(SERVO_SWITCH_PIN, gpiod.line.Value.ACTIVE)
@@ -84,54 +107,17 @@ class Servo(BaseServo):
         # Release the gpio pin back to the kernel
         self._servo_line.release()
 
-    def extend_airbrakes(self) -> None:
-        """Command the physical servo to its maximum extension."""
-        self._servo.move_time_write(SERVO_MAX_EXTENSION, 0)
+    def extend_airbrakes(self, velocity_meters_per_s: float) -> None:
+        extension = self._calculate_deployment_extension(velocity_meters_per_s)
+        self.set_extension(self._deployment_extension_to_angle(extension))
 
     def retract_airbrakes(self) -> None:
-        """Command the physical servo to its minimum extension."""
         self._servo.move_time_write(SERVO_MIN_EXTENSION, 0)
 
     def set_extension(self, angle: float) -> None:
-        """
-        Command a specific servo position.
-
-        :param angle: The desired servo position in degrees.
-        """
         self._servo.move_time_write(angle, 0)
 
-    @property
-    def is_powered(self) -> bool:
-        """Return whether the physical servo reports that it is powered."""
-        return self._servo.is_powered()
-
-    @property
-    def servo_extension(self) -> float:
-        """Return the physical servo position reported by the Lewan bus."""
-        return self._servo.pos_read()
-
-    @property
-    def battery_volts(self) -> float:
-        """Return the battery voltage measured by the INA219 sensor."""
-        return self._ina.supply_voltage()
-
-    @property
-    def system_current_milliamps(self) -> float:
-        """Return the system current measured by the INA219 sensor."""
-        return self._ina.current()
-
-    @property
-    def servo_voltage(self) -> float:
-        """Return the servo motor voltage reported by the Lewan bus."""
-        return self._servo.vin_read()
-
-    @property
-    def servo_temp(self) -> float:
-        """Return the servo temperature reported by the Lewan bus."""
-        return self._servo.temp_read()
-
     def get_servo_data_packet(self) -> ServoDataPacket:
-        """Create a data packet from the physical servo's telemetry."""
         return ServoDataPacket(
             current_position=self.servo_extension,
             system_current_milliamps=self.system_current_milliamps,

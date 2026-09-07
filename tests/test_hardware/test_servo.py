@@ -58,7 +58,7 @@ class TestBaseServo:
         """
         Tests that the servo extends to the maximum extension.
         """
-        servo.extend_airbrakes()
+        servo.extend_airbrakes(0.0)
         assert servo.servo_extension == SERVO_MAX_EXTENSION
 
     def test_set_retracted(self, servo):
@@ -81,10 +81,40 @@ class TestBaseServo:
         Tests that repeatedly extending and retracting the servo works as
         expected without crashing.
         """
-        servo.extend_airbrakes()
+        servo.extend_airbrakes(0.0)
         servo.retract_airbrakes()
-        servo.extend_airbrakes()
+        servo.extend_airbrakes(0.0)
         servo.retract_airbrakes()
+
+    def test_extend_airbrakes_cancels_existing(self, monkeypatch, servo):
+        class MockTimer:
+            def __init__(self, _, callback, args):
+                self.callback = callback
+                self.args = args
+                self.cancelled = False
+
+            def start(self):
+                pass
+
+            def cancel(self):
+                self.cancelled = True
+
+            def fire(self):
+                if not self.cancelled:
+                    self.callback(*self.args)
+
+        monkeypatch.setattr("airbrakes.mock.mock_servo.threading.Timer", MockTimer)
+
+        servo.extend_airbrakes(0.0)
+        first_timer = servo.extend
+        servo.extend_airbrakes(300.0)
+        second_timer = servo.extend
+
+        assert first_timer is not None
+        assert second_timer is not None
+        assert first_timer.cancelled
+        assert not second_timer.cancelled
+        first_timer.fire()
 
     def test_battery_volts(self, servo):
         """Tests that the mock battery voltage returns a safe default."""
@@ -93,6 +123,19 @@ class TestBaseServo:
     def test_system_current_milliamps(self, servo):
         """Tests that the mock system current returns a safe default."""
         assert servo.system_current_milliamps == 0.0
+
+    def test_calculate_deployment_extension(self):
+        servo = MockServo()
+
+        assert servo._calculate_deployment_extension(0) == approx(1.0)
+        # All of these values were calculated using the _calculate_deployment_extension method,
+        # so if any constants in that change these will as well.
+        assert servo._calculate_deployment_extension(150) == approx(1.0, abs=0.001)
+        assert servo._calculate_deployment_extension(200) == approx(0.6264, abs=0.001)
+        assert servo._calculate_deployment_extension(250) == approx(0.3581, abs=0.001)
+        assert servo._calculate_deployment_extension(300) == approx(0.252, abs=0.001)
+        assert servo._calculate_deployment_extension(350) == approx(0.194, abs=0.001)
+        assert servo._calculate_deployment_extension(float("nan")) == 0.0
 
     def test_servo_voltage(self, servo):
         """Tests that the mock servo voltage returns a safe default."""
@@ -230,7 +273,7 @@ class TestServo:
         assert servo._ina.configured_with is servo._ina.ADC_9BIT
 
         servo.start()
-        servo.extend_airbrakes()
+        servo.extend_airbrakes(0.0)
         servo.set_extension(45.0)
 
         assert servo.is_powered
@@ -256,3 +299,9 @@ class TestServo:
         servo.stop()
         assert not servo.is_powered
         assert servo._servo_line.released
+
+    def test_extend_airbrakes_uses_the_force_limited_extension(self, servo: Servo) -> None:
+        servo.extend_airbrakes(300.0)
+        # This was just calculated using the _calculate_deployment_extension method,
+        # and is the expected extension for a velocity of 300.0
+        assert servo._servo.moves[-1] == approx((45.365, 0), abs=0.01)

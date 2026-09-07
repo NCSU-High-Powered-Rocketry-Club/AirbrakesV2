@@ -5,7 +5,6 @@ import threading
 from airbrakes.base_classes.base_servo import BaseServo
 from airbrakes.constants import (
     SERVO_DELAY_SECONDS,
-    SERVO_MAX_EXTENSION,
     SERVO_MIN_EXTENSION,
 )
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
@@ -36,14 +35,16 @@ class MockServo(BaseServo):
         self._cancel_timer("retract")
         self._is_powered = False
 
-    def extend_airbrakes(self) -> None:
-        """Request maximum extension and schedule its delayed completion."""
+    def extend_airbrakes(self, velocity: float) -> None:
+        """Request the maximum safe extension and schedule its delayed completion."""
         self._cancel_timer("retract")
-        self.set_extension(SERVO_MAX_EXTENSION)
+        self._cancel_timer("extend")
+        angle = self._deployment_extension_to_angle(self._calculate_deployment_extension(velocity))
+        self.set_extension(angle)
         self.extend = threading.Timer(
             SERVO_DELAY_SECONDS,
             self.set_extension,
-            args=(SERVO_MAX_EXTENSION,),
+            args=(angle,),
         )
         self.extend.start()
 

@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from airbrakes.utils import arg_parser, deadband
+from airbrakes.utils import (
+    arg_parser,
+    convert_lbf_to_newtons,
+    convert_square_inches_to_square_meters,
+    convert_square_meters_to_square_inches,
+    deadband,
+)
 
 
 def test_deadband():
@@ -12,6 +18,12 @@ def test_deadband():
     assert deadband(1.0, 0.5) == 1.0
     assert deadband(-0.1, 0.5) == 0.0
     assert deadband(-1.0, 0.5) == -1.0
+
+
+def test_unit_conversions():
+    assert convert_lbf_to_newtons(1.0) == pytest.approx(4.4482216152605)
+    assert convert_square_inches_to_square_meters(1.0) == pytest.approx(0.00064516)
+    assert convert_square_meters_to_square_inches(0.00064516) == pytest.approx(1.0)
 
 
 class TestArgumentParsing:

@@ -332,7 +332,7 @@ class ServoControllerApp(App[None]):
         if self.tuning_mode:
             self._nudge_angle(ANGLE_STEP)
         else:
-            self.servo.extend_airbrakes()
+            self.servo.extend_airbrakes(0.0)
             # Don't touch current_angle here — _sync_angle_from_servo will
             # pick it up: first MAX_EXTENSION, then MAX_NO_BUZZ after the timer.
 
@@ -350,7 +350,7 @@ class ServoControllerApp(App[None]):
             # Normal mode — let the servo handle the state machine;
             # _sync_angle_from_servo will keep the Digits up to date.
             case "extend-btn":
-                self.servo.extend_airbrakes()
+                self.servo.extend_airbrakes(0.0)
             case "retract-btn":
                 self.servo.retract_airbrakes()
             case "min-btn":
