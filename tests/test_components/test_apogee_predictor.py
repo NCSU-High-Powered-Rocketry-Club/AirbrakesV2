@@ -57,7 +57,8 @@ class TestApogeePredictor:
         apogee_predictor.start()
         assert apogee_predictor.is_running
         apogee_predictor._processor_data_packet_queue.put(STOP_SIGNAL)
-        time.sleep(0.001)  # wait for the thread to fetch the packet
+        apogee_predictor._prediction_thread.join(timeout=1)
+        assert not apogee_predictor._prediction_thread.is_alive()
         assert not apogee_predictor.is_running
 
     @pytest.mark.parametrize(

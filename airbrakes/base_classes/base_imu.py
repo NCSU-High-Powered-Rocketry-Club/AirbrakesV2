@@ -5,12 +5,11 @@ from typing import TYPE_CHECKING
 
 from airbrakes import utils
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, STOP_SIGNAL
+from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 if TYPE_CHECKING:
     import queue
     from pathlib import Path
-
-    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 
 class BaseIMU:
@@ -112,6 +111,4 @@ class BaseIMU:
         """
         packets = []
         packets.extend(utils.get_all_packets_from_queue(self._queued_imu_packets, block=block))
-        if STOP_SIGNAL in packets:  # only used by the MockIMU
-            return []  # Makes the main update() loop exit early.
-        return packets
+        return [packet for packet in packets if isinstance(packet, IMUDataPacket)]
