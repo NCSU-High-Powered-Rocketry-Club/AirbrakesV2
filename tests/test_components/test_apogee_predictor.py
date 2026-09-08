@@ -61,7 +61,7 @@ class TestApogeePredictor:
         assert not apogee_predictor.is_running
 
     @pytest.mark.parametrize(
-        ("firm_data_packets", "expected_apogee"),
+        ("processor_data_packets", "expected_apogee"),
         [
             # Hovering case: v = 0, a ≈ g, should give apogee basically at current altitude.
             # TODO: Investigate why HPRM panics when vertical velocity is exactly 0.0
@@ -98,14 +98,14 @@ class TestApogeePredictor:
         ids=["at_apogee", "start_of_coast_phase"],
     )
     def test_prediction_loop_no_mock(
-        self, apogee_predictor, firm_data_packets, expected_apogee, monkeypatch
+        self, apogee_predictor, processor_data_packets, expected_apogee, monkeypatch
     ):
         """
         Integration-ish test of the apogee predictor using the real HPRM
         call. These tests assume that HPRM works perfectly. To test the actual
         correctness of HPRM, we rely on HPRM's own unit tests.
 
-        - Feeds a sequence of FIRMDataPackets into the predictor.
+        - Feeds a sequence of processed IMU packets into the predictor.
         - Waits for a prediction to appear on the apogee queue.
         - Asserts that:
             * A prediction was produced.
@@ -122,7 +122,7 @@ class TestApogeePredictor:
         apogee_predictor.start()
 
         # Feed all packets into the predictor, one by one
-        for pkt in firm_data_packets:
+        for pkt in processor_data_packets:
             apogee_predictor.update(pkt)
 
         # Wait (with timeout) for a prediction to show up
@@ -139,7 +139,7 @@ class TestApogeePredictor:
 
         assert prediction is not None
 
-        last_packet = firm_data_packets[-1]
+        last_packet = processor_data_packets[-1]
 
         assert prediction.height_used_for_prediction == pytest.approx(last_packet.current_altitude)
         assert prediction.vertical_velocity_meters_per_s_used_for_prediction == pytest.approx(

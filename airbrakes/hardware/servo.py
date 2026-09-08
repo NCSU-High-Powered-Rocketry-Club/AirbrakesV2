@@ -6,7 +6,7 @@ controls the extension of the airbrakes.
 import contextlib
 
 with contextlib.suppress(ImportError):
-    import gpiod
+    import gpiod  # ty: ignore[unresolved-import]  # Linux-only optional dependency.
 
 from lewanlib.bus import ServoBus
 from lewanlib.servo import Servo as LewanServo

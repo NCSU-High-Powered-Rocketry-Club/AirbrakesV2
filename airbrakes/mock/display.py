@@ -68,11 +68,8 @@ class FlightDisplay:
         self.end_mock_natural = threading.Event()
         self.end_mock_interrupted = threading.Event()
 
-        try:
-            # Try to get the launch file name (only available in MockFIRM)
-            self._launch_file = self._context.firm._log_file_path.name
-        except AttributeError:  # If it failed, that means we are running a real flight!
-            self._launch_file = "N/A"
+        log_file_path = self._context.imu.log_file_path
+        self._launch_file = log_file_path.name if log_file_path is not None else "N/A"
 
         # The string to show at the top of the display:
         self._display_header = f"{Y}{'=' * 15} {'REPLAY' if self._args.mode == 'mock' else 'REAL TIME'} INFO {'=' * 15}{RESET}"  # noqa: E501
@@ -110,7 +107,10 @@ class FlightDisplay:
 
         # If we have too many packets in one iteration, that means the IMU is producing data faster
         # # than we can consume it, which is a problem:
-        if self._context.context_data_packet.retrieved_firm_packets > 30:
+        context_packet = self._context.context_data_packet
+        if context_packet is None:
+            raise RuntimeError("Cannot inspect IMU health before receiving a context packet.")
+        if context_packet.retrieved_imu_packets > 30:
             imu_queue_backlog = True
 
         if has_large_velocity or imu_queue_backlog:
@@ -162,7 +162,10 @@ class FlightDisplay:
 
         :param end_type: The type of ending for the flight data display.
         """
-        fetched_packets_in_main = self._context.context_data_packet.retrieved_firm_packets
+        context_packet = self._context.context_data_packet
+        if context_packet is None:
+            raise RuntimeError("Cannot display flight data before receiving a context packet.")
+        fetched_packets_in_main = context_packet.retrieved_imu_packets
 
         data_processor = self._context.data_processor
 

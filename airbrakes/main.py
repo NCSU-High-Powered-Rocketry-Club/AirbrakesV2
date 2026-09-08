@@ -8,15 +8,15 @@ import sys
 import sysconfig
 from typing import TYPE_CHECKING
 
-from airbrakes.constants import LOGS_PATH
+from airbrakes.constants import IMU_PORT, LOGS_PATH
 from airbrakes.context import Context
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
-from airbrakes.hardware.firm import FIRM
+from airbrakes.hardware.imu import IMU
 from airbrakes.hardware.servo import Servo
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.mock.mock_firm import MockFIRM
+from airbrakes.mock.mock_imu import MockIMU
 from airbrakes.mock.mock_logger import MockLogger
 from airbrakes.mock.mock_servo import MockServo
 from airbrakes.utils import arg_parser
@@ -24,7 +24,7 @@ from airbrakes.utils import arg_parser
 if TYPE_CHECKING:
     import argparse
 
-    from airbrakes.base_classes.base_firm import BaseFIRM
+    from airbrakes.base_classes.base_imu import BaseIMU
     from airbrakes.base_classes.base_servo import BaseServo
 
 
@@ -54,19 +54,6 @@ def run_mock_flight() -> None:
     run_flight(args)
 
 
-def run_pretend_flight() -> None:
-    """
-    Entry point for the application to run the pretend flight.
-
-    Entered when run with
-    `uvx --from git+... pretend` or `uv run pretend`.
-    """
-    # Modify sys.argv to include mock as the first argument:
-    sys.argv.insert(1, "pretend")
-    args = arg_parser()
-    run_flight(args)
-
-
 def run_flight(args: argparse.Namespace) -> None:
     """
     Initializes the Airbrakes components and starts the main loop.
@@ -74,7 +61,7 @@ def run_flight(args: argparse.Namespace) -> None:
     :param args: Command line arguments determining the program
         configuration.
     """
-    servo, firm, logger, data_processor, apogee_predictor = create_components(args)
+    servo, imu, logger, data_processor, apogee_predictor = create_components(args)
 
     # Assert that we are running in the free-threaded build, and the GIL is disabled:
     if not bool(sysconfig.get_config_var("Py_GIL_DISABLED")) or sys._is_gil_enabled():
@@ -85,7 +72,7 @@ def run_flight(args: argparse.Namespace) -> None:
         )
 
     # Initialize the Airbrakes Context and display
-    context = Context(servo, firm, logger, data_processor, apogee_predictor)
+    context = Context(servo, imu, logger, data_processor, apogee_predictor)
     flight_display = FlightDisplay(context, args)
 
     # Run the main flight loop
@@ -94,7 +81,7 @@ def run_flight(args: argparse.Namespace) -> None:
 
 def create_components(
     args: argparse.Namespace,
-) -> tuple[BaseServo, BaseFIRM, Logger, DataProcessor, ApogeePredictor]:
+) -> tuple[BaseServo, BaseIMU, Logger, DataProcessor, ApogeePredictor]:
     """
     Creates the system components needed for the air brakes system.
 
@@ -102,19 +89,14 @@ def create_components(
     components.
     :param args: Command line arguments determining the program
         configuration.
-    :return: A tuple containing the Servo, FIRM, Logger, DataProcessor,
+    :return: A tuple containing the Servo, IMU, Logger, DataProcessor,
         and ApogeePredictor objects.
     """
-    if args.mode in ("mock", "pretend"):
-        if args.mode == "pretend":
-            if args.path.suffix != ".FRM":
-                raise ValueError("The pretend FIRM log file must have a .FRM extension.")
-            firm = FIRM(is_pretend=True, log_file_path=args.path)
-        else:
-            firm = MockFIRM(
-                real_time_replay=not args.fast_replay,
-                log_file_path=args.path,
-            )
+    if args.mode == "mock":
+        imu = MockIMU(
+            real_time_replay=not args.fast_replay,
+            log_file_path=args.path,
+        )
 
         # If using a real servo, use the real servo object, otherwise use a mock servo object
         servo = Servo() if args.real_servo else MockServo()
@@ -122,7 +104,7 @@ def create_components(
 
     else:
         # Use real hardware components
-        firm = FIRM()
+        imu = IMU(IMU_PORT)
 
         logger = Logger(LOGS_PATH)
 
@@ -134,7 +116,7 @@ def create_components(
     # these classes.
     data_processor = DataProcessor()
     apogee_predictor = ApogeePredictor()
-    return servo, firm, logger, data_processor, apogee_predictor
+    return servo, imu, logger, data_processor, apogee_predictor
 
 
 def run_flight_loop(
@@ -161,7 +143,7 @@ def run_flight_loop(
             context.update()
 
             # Stop the replay when the data is exhausted
-            if is_mock and not context.firm.is_running:
+            if is_mock and not context.imu.is_running:
                 break
 
     # Handle user interrupt gracefully
@@ -196,9 +178,6 @@ if __name__ == "__main__":
     #   Optional arguments include:
     #     -s, --real-servo   : Uses the real servo instead of a mock one.
     #     -f, --fast-replay  : Runs the replay at full speed instead of real-time.
-    #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
-
-    # `uv run pretend [ARGS]`: Runs the program in mock replay mode, using pre-recorded flight data.
     #     -p, --path <file>  : Specifies a flight data file to use (default is the first file).
 
     # Global options for all modes:

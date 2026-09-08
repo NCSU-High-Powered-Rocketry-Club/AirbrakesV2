@@ -496,7 +496,7 @@ class GovernmentWorkLaunchCase2(LaunchCase):
 class JackPotLaunchCase1(LaunchCase):
     """The test case for the jackpot launch data (Full scale 2025)."""
 
-    # This is the first FIRM dataset, and thus the kalman filter wasn't tuned:
+    # This is the first dataset, and thus the estimator was not tuned:
 
     def motor_burn_case_test(self) -> CaseResult:
         case_result = super().motor_burn_case_test()
@@ -537,7 +537,7 @@ class JackPotLaunchCase1(LaunchCase):
 class JackPotLaunchCase2(LaunchCase):
     """The test case for the jackpot launch data (Full scale 2025)."""
 
-    # This is the first FIRM dataset, and thus the kalman filter wasn't tuned:
+    # This is the first dataset, and thus the estimator was not tuned:
 
     def motor_burn_case_test(self) -> CaseResult:
         case_result = super().motor_burn_case_test()

@@ -1,245 +1,230 @@
-"""Module for processing FIRM data on a higher level."""
+"""High-level processing for estimated IMU data."""
 
+from collections import deque
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
+import quaternion
 
 from airbrakes.constants import (
+    ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
     GRAVITY_METERS_PER_SECOND_SQUARED,
     SECONDS_UNTIL_PRESSURE_STABILIZATION,
     TRANSONIC_VELOCITY_METERS_PER_SECOND,
+    WINDOW_SIZE_FOR_PRESSURE_ZEROING,
 )
-from airbrakes.data_handling.packets.processor_data_packet import (
-    ProcessorDataPacket,
-)
+from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
+from airbrakes.utils import convert_ns_to_s
 
 if TYPE_CHECKING:
-    from firm_client import FIRMDataPacket
+    from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 
 
 class DataProcessor:
-    """
-    Performs high-level calculations on the data packets received from FIRM.
-
-    Includes calculation the vertical acceleration, velocity, maximum
-    altitude so far, etc., from the set of data points.
-    """
+    """Calculates flight-state values from estimated IMU packets."""
 
     __slots__ = (
         "_current_altitudes",
+        "_current_orientation_quaternion",
         "_data_packets",
         "_initial_altitude",
         "_integrating_for_altitude",
         "_integrating_for_altitudes",
         "_last_data_packet",
+        "_longitudinal_axis",
         "_max_altitude",
         "_max_vertical_velocity",
+        "_pressure_alt_buffer",
         "_previous_altitude",
+        "_previous_vertical_velocity",
         "_retraction_timestamp_seconds",
-        "_rotated_raw_accelerations",
+        "_rotated_accelerations",
         "_time_differences",
         "_vertical_accelerations",
         "_vertical_velocities",
     )
 
-    def __init__(self):
-        """
-        Initializes the DataProcessor object.
-
-        It processes data points to calculate various things we need
-        such as the maximum altitude, vertical acceleration, velocity,
-        etc. All numbers in this class are handled with numpy. This
-        class also has properties to return some of these values.
-        """
+    def __init__(self) -> None:
+        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
+        self._current_orientation_quaternion: quaternion.quaternion | None = None
+        self._data_packets: list[EstimatedDataPacket] = []
+        self._initial_altitude: np.float64 | None = None
+        self._integrating_for_altitude = False
+        self._integrating_for_altitudes: list[Literal["T", "F"]] = ["F"]
+        self._last_data_packet: EstimatedDataPacket | None = None
+        self._longitudinal_axis = quaternion.quaternion(0, 0, 0, 0)
+        self._max_altitude = np.float64(0.0)
+        self._max_vertical_velocity = np.float64(0.0)
+        self._pressure_alt_buffer: deque[float] = deque(maxlen=WINDOW_SIZE_FOR_PRESSURE_ZEROING)
+        self._previous_altitude = np.float64(0.0)
+        self._previous_vertical_velocity = np.float64(0.0)
+        self._retraction_timestamp_seconds: float | None = None
+        self._rotated_accelerations: npt.NDArray[np.float64] = np.array([0.0])
+        self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
         self._vertical_accelerations: npt.NDArray[np.float64] = np.array([0.0])
         self._vertical_velocities: npt.NDArray[np.float64] = np.array([0.0])
-        self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
-        self._rotated_raw_accelerations: npt.NDArray[np.float64] = np.array([0.0])
-        self._max_altitude: np.float64 = np.float64(0.0)
-        self._max_vertical_velocity: np.float64 = np.float64(0.0)
-        self._last_data_packet: FIRMDataPacket | None = None
-        self._data_packets: list[FIRMDataPacket] = []
-        self._integrating_for_altitude: bool = False
-        self._integrating_for_altitudes: list[Literal["T", "F"]] = ["F"]
-        self._time_differences: npt.NDArray[np.float64] = np.array([0.0])
-        self._previous_altitude: np.float64 = np.float64(0.0)
-        self._initial_altitude: float | None = None
-        self._retraction_timestamp_seconds: float | None = None
 
     @property
     def max_altitude(self) -> float:
-        """
-        Returns the highest altitude (zeroed-out) attained by the rocket for
-        the entire flight so far, in meters.
-
-        :return: the maximum zeroed-out altitude of the rocket.
-        """
+        """Return the highest altitude above the launch-pad baseline in meters."""
         return float(self._max_altitude)
 
     @property
     def current_altitude(self) -> float:
-        """
-        Returns the altitudes of the rocket (zeroed out) from the data
-        points, in meters.
-
-        :return: the current zeroed-out altitude of the rocket.
-        """
+        """Return the latest altitude above the launch-pad baseline in meters."""
         return float(self._current_altitudes[-1])
 
     @property
     def vertical_velocity(self) -> float:
-        """
-        The current vertical velocity of the rocket in m/s.
-
-        Calculated by integrating the compensated acceleration after
-        rotating it to the vertical direction.
-        :return: The vertical velocity of the rocket.
-        """
+        """Return the latest integrated vertical velocity in meters per second."""
         return float(self._vertical_velocities[-1])
 
     @property
     def max_vertical_velocity(self) -> float:
-        """
-        The maximum vertical velocity the rocket has attained during the
-        flight, in m/s.
-
-        :return: The maximum vertical velocity of the rocket.
-        """
+        """Return the largest vertical velocity seen during this flight."""
         return float(self._max_vertical_velocity)
 
     @property
     def average_vertical_acceleration(self) -> float:
-        """
-        The average vertical acceleration of the rocket in m/s^2.
+        """Return the average gravity-including vertical acceleration for the latest batch."""
+        return float(np.mean(self._rotated_accelerations))
 
-        :return: The average vertical acceleration of the rocket.
-        """
-        return float(np.mean(self._vertical_accelerations))
+    @property
+    def average_pitch(self) -> float:
+        """Return the rocket tilt, where zero degrees is aligned with the upward vertical axis."""
+        if self._current_orientation_quaternion is None:
+            return 0.0
+
+        rotated = (
+            self._current_orientation_quaternion
+            * self._longitudinal_axis
+            * self._current_orientation_quaternion.conjugate()
+        )
+        dot_product = np.clip(np.dot(rotated.vec, [0, 0, 1]), -1.0, 1.0)
+        return float(np.degrees(np.arccos(dot_product)))
 
     @property
     def current_timestamp_seconds(self) -> float:
-        """
-        The timestamp of the last data packet in seconds.
-
-        :return: the current timestamp of the most recent
-            FIRMDataPacket.
-        """
+        """Return the most recent estimated-packet timestamp in seconds."""
         if self._last_data_packet is None:
-            return 0
-        return self._last_data_packet.timestamp_seconds
+            return 0.0
+        return convert_ns_to_s(self._last_data_packet.timestamp)
 
-    def update(self, data_packets: list[FIRMDataPacket]) -> None:
-        """
-        Updates the data points to process.
-
-        This will recompute all information such as altitude, velocity,
-        etc.
-        :param data_packets: A list of FIRMDataPacket objects to process
-        """
-        # If the data points are empty, we don't want to try to process anything
+    def update(self, data_packets: list[EstimatedDataPacket]) -> None:
+        """Process a chronologically ordered batch of estimated IMU packets."""
         if not data_packets:
             return
 
         self._data_packets = data_packets
-
-        # If this is the first update, initialize arrays from the full batch.
         if self._last_data_packet is None:
-            self._last_data_packet = self._data_packets[-1]
-            self._initial_altitude = float(
-                np.mean([data_packet.est_position_z_meters for data_packet in self._data_packets]),
-            )
-            self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
-                (packet.raw_rotated_acceleration_z_gs for packet in self._data_packets),
-                dtype=np.float64,
-            )
-            self._vertical_velocities = np.fromiter(
-                (packet.est_velocity_z_meters_per_s for packet in self._data_packets),
-                dtype=np.float64,
-            )
-            self._current_altitudes = np.fromiter(
-                (
-                    packet.est_position_z_meters - self._initial_altitude
-                    for packet in self._data_packets
-                ),
-                dtype=np.float64,
-            )
-            self._integrating_for_altitudes = ["F"] * len(self._data_packets)
-            self._previous_altitude = self._current_altitudes[-1]
-            self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
-            self._max_vertical_velocity = max(
-                self._vertical_velocities.max(), self._max_vertical_velocity
-            )
-            return
+            self._first_update()
 
         self._time_differences = self._calculate_time_differences()
-        self._vertical_accelerations = GRAVITY_METERS_PER_SECOND_SQUARED * np.fromiter(
-            (packet.raw_rotated_acceleration_z_gs for packet in self._data_packets),
-            dtype=np.float64,
+        self._rotated_accelerations = self._calculate_rotated_accelerations()
+        self._vertical_accelerations = (
+            self._rotated_accelerations - GRAVITY_METERS_PER_SECOND_SQUARED
         )
-        self._vertical_velocities = np.fromiter(
-            (packet.est_velocity_z_meters_per_s for packet in self._data_packets), dtype=np.float64
+        self._vertical_accelerations = np.where(
+            np.abs(self._vertical_accelerations) < ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED,
+            0.0,
+            self._vertical_accelerations,
         )
-
+        self._vertical_velocities = self._calculate_vertical_velocity()
         self._current_altitudes = self._calculate_current_altitudes()
 
         self._max_vertical_velocity = max(
             self._vertical_velocities.max(), self._max_vertical_velocity
         )
-
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
-
-        # Store the last data point for the next update
         self._last_data_packet = data_packets[-1]
 
-    def prepare_for_extending_airbrakes(self) -> None:
-        """
-        When we extend the airbrakes, it messes with the pressure sensor which messes up the
-        altitude data.
+    def zero_out_altitude(self) -> None:
+        """Update the launch-pad pressure-altitude baseline from the rolling standby window."""
+        self._pressure_alt_buffer.extend(
+            self._required(packet.estPressureAlt, "estPressureAlt") for packet in self._data_packets
+        )
+        if self._pressure_alt_buffer:
+            self._initial_altitude = np.float64(np.mean(self._pressure_alt_buffer))
 
-        Additionally, the velocity data could have accumulated error due to the strong acceleration
-        from the motor burn. Because of these things, this function makes the data processor start
-        integrating for altitude.
-        """
+    def prepare_for_extending_airbrakes(self) -> None:
+        """Use integrated altitude while airbrakes disturb the pressure sensor."""
         self._integrating_for_altitude = True
 
     def prepare_for_retracting_airbrakes(self) -> None:
-        """
-        After we retract airbrakes, we want to switch back to using pressure altitude, but we need
-        to wait a little bit of time for the pressure to stabilize.
-        """
+        """Resume pressure altitude after its post-retraction stabilization interval."""
         self._integrating_for_altitude = False
         self._retraction_timestamp_seconds = self.current_timestamp_seconds
 
-    def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
-        """
-        Calculates the current altitudes, by zeroing out the initial altitude.
+    @staticmethod
+    def _required(value: float | None, field_name: str) -> float:
+        if value is None:
+            raise ValueError(f"Estimated IMU packet is missing required field {field_name}.")
+        return value
 
-        It either uses the altitude from the pressure sensor or integrates vertical velocity for
-        altitude.
-        :return: A numpy array of the current altitudes of the rocket at each data point
-        """
+    def _first_update(self) -> None:
+        """Initialize the pressure baseline and gravity-derived longitudinal axis."""
+        first_packet = self._data_packets[0]
+        self._last_data_packet = first_packet
+        self._initial_altitude = np.float64(
+            np.mean(
+                [
+                    self._required(packet.estPressureAlt, "estPressureAlt")
+                    for packet in self._data_packets
+                ]
+            )
+        )
+
+        self._current_orientation_quaternion = quaternion.from_float_array(
+            np.array(
+                [
+                    self._required(first_packet.estOrientQuaternionW, "estOrientQuaternionW"),
+                    self._required(first_packet.estOrientQuaternionX, "estOrientQuaternionX"),
+                    self._required(first_packet.estOrientQuaternionY, "estOrientQuaternionY"),
+                    self._required(first_packet.estOrientQuaternionZ, "estOrientQuaternionZ"),
+                ]
+            )
+        )
+        gravity_vector = np.array(
+            [
+                self._required(first_packet.estGravityVectorX, "estGravityVectorX"),
+                self._required(first_packet.estGravityVectorY, "estGravityVectorY"),
+                self._required(first_packet.estGravityVectorZ, "estGravityVectorZ"),
+            ]
+        )
+        dominant_axis = int(np.argmax(np.abs(gravity_vector)))
+        longitudinal_axis = np.zeros(4)
+        longitudinal_axis[dominant_axis + 1] = np.sign(gravity_vector[dominant_axis])
+        self._longitudinal_axis = quaternion.from_float_array(longitudinal_axis)
+
+    def _calculate_current_altitudes(self) -> npt.NDArray[np.float64]:
+        """Calculate pressure or integrated altitude for every packet in the latest batch."""
         altitudes = np.empty(len(self._data_packets), dtype=np.float64)
         previous_altitude = self._previous_altitude
         self._integrating_for_altitudes = []
 
-        for i, data_packet in enumerate(self._data_packets):
-            vertical_velocity = self._vertical_velocities[i]
-            integrating_for_altitude = self._requires_integrated_altitude(
-                vertical_velocity, data_packet.timestamp_seconds
+        for index, data_packet in enumerate(self._data_packets):
+            timestamp_seconds = convert_ns_to_s(data_packet.timestamp)
+            integrating = self._requires_integrated_altitude(
+                self._vertical_velocities[index], timestamp_seconds
             )
-            self._integrating_for_altitudes.append("T" if integrating_for_altitude else "F")
+            self._integrating_for_altitudes.append("T" if integrating else "F")
 
-            if integrating_for_altitude:
-                altitude = previous_altitude + vertical_velocity * self._time_differences[i]
+            if integrating:
+                altitude = (
+                    previous_altitude
+                    + self._vertical_velocities[index] * self._time_differences[index]
+                )
             elif self._initial_altitude is not None:
-                altitude = data_packet.est_position_z_meters - self._initial_altitude
+                altitude = (
+                    self._required(data_packet.estPressureAlt, "estPressureAlt")
+                    - self._initial_altitude
+                )
             else:
-                # This should never happen, but if it does, we just use the pressure altitude
-                altitude = data_packet.est_position_z_meters
+                raise RuntimeError("Pressure altitude baseline was not initialized.")
 
-            altitudes[i] = altitude
-            previous_altitude = altitudes[i]
+            altitudes[index] = altitude
+            previous_altitude = altitude
 
         self._previous_altitude = previous_altitude
         return altitudes
@@ -247,13 +232,7 @@ class DataProcessor:
     def _requires_integrated_altitude(
         self, vertical_velocity: float, timestamp_seconds: float
     ) -> bool:
-        """
-        Determines whether pressure altitude is unreliable for a data point.
-
-        :param vertical_velocity: The estimated vertical velocity in meters per second.
-        :param timestamp_seconds: The timestamp of the data point in seconds.
-        :return: Whether altitude should be calculated by integrating vertical velocity.
-        """
+        """Return whether pressure altitude is currently unsuitable for use."""
         return (
             self._integrating_for_altitude
             or (
@@ -264,55 +243,72 @@ class DataProcessor:
             or abs(vertical_velocity) > TRANSONIC_VELOCITY_METERS_PER_SECOND
         )
 
+    def _calculate_rotated_accelerations(self) -> npt.NDArray[np.float64]:
+        """Rotate compensated acceleration into the vertical frame using integrated gyro motion."""
+        if self._current_orientation_quaternion is None:
+            raise RuntimeError("IMU orientation was not initialized.")
+
+        accelerations: list[quaternion.quaternion] = []
+        angular_displacements = np.empty((len(self._data_packets), 3))
+        for index, data_packet in enumerate(self._data_packets):
+            accelerations.append(
+                quaternion.quaternion(
+                    0,
+                    self._required(data_packet.estCompensatedAccelX, "estCompensatedAccelX"),
+                    self._required(data_packet.estCompensatedAccelY, "estCompensatedAccelY"),
+                    self._required(data_packet.estCompensatedAccelZ, "estCompensatedAccelZ"),
+                )
+            )
+            angular_displacements[index] = [
+                self._required(data_packet.estAngularRateX, "estAngularRateX")
+                * self._time_differences[index],
+                self._required(data_packet.estAngularRateY, "estAngularRateY")
+                * self._time_differences[index],
+                self._required(data_packet.estAngularRateZ, "estAngularRateZ")
+                * self._time_differences[index],
+            ]
+
+        delta_rotations = quaternion.from_rotation_vector(angular_displacements)
+        orientations = self._current_orientation_quaternion * np.cumprod(delta_rotations)
+        rotated_accelerations = orientations * accelerations * orientations.conjugate()
+        self._current_orientation_quaternion = orientations[-1]
+        return -quaternion.as_float_array(rotated_accelerations)[..., 3]
+
+    def _calculate_vertical_velocity(self) -> npt.NDArray[np.float64]:
+        """Integrate deadbanded vertical acceleration over the latest packet timestamps."""
+        vertical_velocities = self._previous_vertical_velocity + np.cumsum(
+            self._vertical_accelerations * self._time_differences
+        )
+        self._previous_vertical_velocity = vertical_velocities[-1]
+        return vertical_velocities
+
     def _calculate_time_differences(self) -> npt.NDArray[np.float64]:
-        """
-        Calculates the time difference between each data packet and the previous data packet.
-
-        This cannot be called on the first update as _last_data_packet is None. Units are in
-        seconds.
-        :return: A numpy array of the time difference between each data packet and the previous data
-            packet.
-        """
-        # calculate the time differences between each data packet
-        # We are converting from ns to s, since we don't want to have a velocity in m/ns^2
-        # We are using the last data packet to calculate the time difference between the last data
-        # packet from the previous loop, and the first data packet from the current loop
-
+        """Calculate timestamp differences, including the previous batch's final packet."""
         if self._last_data_packet is None:
-            raise RuntimeError("Cannot calculate time differences before the first data packet.")
+            raise RuntimeError("Cannot calculate time differences before the first IMU packet.")
 
-        timestamps_in_seconds = np.array(
+        timestamps = np.array(
             [
-                data_packet.timestamp_seconds
-                for data_packet in [self._last_data_packet, *self._data_packets]
+                convert_ns_to_s(packet.timestamp)
+                for packet in [self._last_data_packet, *self._data_packets]
             ]
         )
-        # Not using np.diff() results in a ~40% speedup!
-        return timestamps_in_seconds[1:] - timestamps_in_seconds[:-1]
+        time_differences = timestamps[1:] - timestamps[:-1]
+        if np.any(time_differences < 0):
+            raise ValueError("Estimated IMU packet timestamps must be chronological.")
+        return time_differences
 
     def get_processor_data_packets(self) -> list[ProcessorDataPacket]:
-        """
-        Processes the data points and returns a list of ProcessorDataPackets. These will correspond
-        one-to-one with the estimated data packets most recently passed in by update().
-
-        The length of the list should be the same as the length of the list of estimated data
-        packets most recently passed in by update()
-        :return: A list of ProcessorDataPacket objects.
-        """
-        # TODO: Horizontal velocity is currently unavailable. Using an estimate of 0 m/s until a
-        # proper estimate of the velocity magnitude is available.
-        # TODO: The angular rate is currently unavailable. Using an estimate of 0 deg/s until a
-        # proper estimate of the angular rate is available.
-
+        """Return one current-format processed packet per estimated IMU packet."""
         return [
             ProcessorDataPacket(
-                current_altitude=float(self._current_altitudes[i]),
-                integrating_for_altitude=self._integrating_for_altitudes[i],
-                vertical_velocity_meters_per_s=float(self._vertical_velocities[i]),
+                current_altitude=float(self._current_altitudes[index]),
+                integrating_for_altitude=self._integrating_for_altitudes[index],
+                vertical_velocity_meters_per_s=float(self._vertical_velocities[index]),
                 horizontal_velocity_meters_per_s=0.0,
-                tilt_angle_degrees=float(self._data_packets[i].est_tilt_angle_degrees),
+                tilt_angle_degrees=self.average_pitch,
                 angular_rate_deg_per_s=0.0,
-                timestamp_seconds=float(self._data_packets[i].timestamp_seconds),
+                timestamp_seconds=convert_ns_to_s(data_packet.timestamp),
             )
-            for i in range(len(self._data_packets))
+            for index, data_packet in enumerate(self._data_packets)
         ]
