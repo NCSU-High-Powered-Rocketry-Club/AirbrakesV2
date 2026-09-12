@@ -1,113 +1,169 @@
-"""Tests for IMU hardware packet conversion and lifecycle."""
-
 import queue
+import signal
 import threading
 import time
+from pathlib import Path
 
-from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket, RawDataPacket
+import pytest
+
+from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
+from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.data_handling.packets.imu_data_packet import (
+    IMUDataPacket,
+)
+from tests.auxil.utils import make_est_data_packet
 
 
-def test_imu_initializes_packet_queue_and_fetch_thread():
-    imu = IMU("/dev/ttyACM0")
+class PortIMU(IMU):
+    """
+    IMU class that puts the port in the queue.
+    """
 
-    assert isinstance(imu._queued_imu_packets, queue.SimpleQueue)
-    assert isinstance(imu._data_fetch_thread, threading.Thread)
-    assert imu._data_fetch_thread.name == "IMU Thread"
-    assert not imu.is_running
-
-
-def test_fetch_loop_converts_raw_and_estimated_parser_packets(monkeypatch):
-    imu = IMU("/dev/ttyACM0")
-
-    class RawParserPacket:
-        packet_type = "raw"
-        timestamp = 1
-        invalid_fields = "raw-invalid"
-        scaled_accel = (1.0, 2.0, 3.0)
-        scaled_gyro = None
-        delta_theta = (4.0, 5.0, 6.0)
-        delta_vel = None
-        scaled_ambient_pressure = 7.0
-
-    class EstimatedParserPacket:
-        packet_type = "estimated"
-        timestamp = 2
-        invalid_fields = None
-        est_orient_quaternion = (1.0, 0.0, 0.0, 0.0)
-        est_attitude_uncert_quaternion = None
-        est_angular_rate = (8.0, 9.0, 10.0)
-        est_compensated_accel = None
-        est_linear_accel = (11.0, 12.0, 13.0)
-        est_gravity_vector = None
-        est_pressure_alt = 14.0
-
-    class FakeParser:
-        stopped = False
-
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def start(self):
-            pass
-
-        def get_data_packets(self, *, block):
-            assert block
-            imu._requested_to_run.clear()
-            return [RawParserPacket(), EstimatedParserPacket()]
-
-        def stop(self):
-            self.stopped = True
-
-    monkeypatch.setattr("airbrakes.hardware.imu.mscl_rs.SerialParser", FakeParser)
-    imu._requested_to_run.set()
-
-    imu._fetch_data_loop("/dev/ttyACM0")
-    raw_packet, estimated_packet = imu.get_imu_data_packets(block=False)
-
-    assert imu.imu_packets_per_cycle == 2
-    assert raw_packet == RawDataPacket(
-        timestamp=1,
-        invalid_fields="raw-invalid",
-        scaledAccelX=1.0,
-        scaledAccelY=2.0,
-        scaledAccelZ=3.0,
-        deltaThetaX=4.0,
-        deltaThetaY=5.0,
-        deltaThetaZ=6.0,
-        scaledAmbientPressure=7.0,
-    )
-    assert estimated_packet == EstimatedDataPacket(
-        timestamp=2,
-        estOrientQuaternionW=1.0,
-        estOrientQuaternionX=0.0,
-        estOrientQuaternionY=0.0,
-        estOrientQuaternionZ=0.0,
-        estAngularRateX=8.0,
-        estAngularRateY=9.0,
-        estAngularRateZ=10.0,
-        estLinearAccelX=11.0,
-        estLinearAccelY=12.0,
-        estLinearAccelZ=13.0,
-        estPressureAlt=14.0,
-    )
+    def _fetch_data_loop(self, port: str):
+        self._running.set()
+        self._queued_imu_packets.put(port)
+        self._running.clear()
 
 
-def test_stop_marker_does_not_discard_already_queued_imu_packets():
-    packet = EstimatedDataPacket(timestamp=1)
+class PacketsIMU(IMU):
+    """
+    IMU class that puts packets in the queue.
+    """
 
-    class QueuedPacketIMU(IMU):
-        def _fetch_data_loop(self, _port):
-            self._queued_imu_packets.put(packet)
-            while self._requested_to_run.is_set():
-                time.sleep(0.001)
+    def _fetch_data_loop(self, _: str):
+        self._running.set()
+        while self._requested_to_run.is_set():
+            self._queued_imu_packets.put(make_est_data_packet())
+        self._running.clear()
 
-    imu = QueuedPacketIMU("/dev/ttyACM0")
-    imu.start()
-    deadline = time.monotonic() + 1
-    while imu.queued_imu_packets == 0 and time.monotonic() < deadline:
-        time.sleep(0.001)
 
-    imu.stop()
+class SinglePacketIMU(IMU):
+    """
+    IMU class that only puts one packet in the queue.
+    """
 
-    assert imu.get_imu_data_packets(block=False) == [packet]
+    def _fetch_data_loop(self, _: str):
+        self._running.set()
+        self._queued_imu_packets.put(make_est_data_packet())
+        self._running.clear()
+
+
+class CtrlCIMU(IMU):
+    """
+    IMU class that handles Ctrl+C signals.
+    """
+
+    def _fetch_data_loop(self, port: str):
+        """
+        Monkeypatched method for testing.
+        """
+        self._running.set()
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        while self._requested_to_run.is_set():
+            continue
+        self._queued_imu_packets.put(port)
+        self._running.clear()
+
+
+class TestIMU:
+    """
+    Class to test the IMU class in imu.py.
+    """
+
+    def test_slots(self, imu):
+        inst = imu
+        for attr in inst.__slots__:
+            assert getattr(inst, attr, "err") != "err", f"got extra slot '{attr}'"
+
+    def test_init(self, imu, mock_imu):
+        """
+        Tests whether the IMU and MockIMU objects initialize correctly.
+        """
+        # Tests that the data queue is correctly initialized
+        assert isinstance(imu._queued_imu_packets, queue.SimpleQueue)
+        assert type(imu._queued_imu_packets) is type(mock_imu._queued_imu_packets)
+        # Tests that _running is correctly initialized
+        assert isinstance(imu._running, threading.Event)
+        assert type(imu._running) is type(mock_imu._running)
+        assert not imu._running.is_set()
+        assert not mock_imu._running.is_set()
+        # Tests that the thread is correctly initialized
+        assert isinstance(imu._data_fetch_thread, threading.Thread)
+        assert type(imu._data_fetch_thread) is type(mock_imu._data_fetch_thread)
+
+        # Test IMU properties:
+        assert isinstance(imu.queued_imu_packets, int)
+        assert isinstance(imu._imu_packets_per_cycle, int)
+        assert isinstance(imu.imu_packets_per_cycle, int)
+
+        # Test Legacy Launch 2 exception:
+        with pytest.raises(ValueError, match="There is no data for this flight"):
+            MockIMU(False, log_file_path=Path("launch_data/legacy_launch_2.csv"))
+
+    def test_imu_start(self):
+        """
+        Tests whether the IMU thread starts correctly with the passed arguments.
+        """
+        imu = PortIMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.4)  # Give the thread time to start and put the values
+        assert imu._requested_to_run.is_set()
+        assert imu._queued_imu_packets.qsize() == 1
+        assert imu._queued_imu_packets.get() == IMU_PORT
+
+    def test_imu_stop_simple(self):
+        """
+        Tests whether the IMU thread stops correctly.
+        """
+        imu = PortIMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.4)  # Sleep a bit to let the thread start and put the data
+        assert imu._queued_imu_packets.qsize() == 1
+        imu.stop()
+        assert not imu._running.is_set()
+        assert not imu.is_running
+        assert not imu._data_fetch_thread.is_alive()
+        # Test that packets are waiting in the queue before stopping (including the STOP_SIGNAL):
+        assert imu.queued_imu_packets == 2
+
+    def test_imu_stop_when_queue_is_full(self):
+        """
+        Tests whether the IMU thread stops correctly when the queue is full.
+        """
+        imu = PacketsIMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.2)  # Sleep a bit to let the thread start and put the data
+        assert imu._queued_imu_packets.qsize() >= 10
+        imu.stop()
+        assert not imu.is_running
+        assert not imu._data_fetch_thread.is_alive()
+        assert imu.queued_imu_packets > 1000
+
+    def test_imu_stop_signal(self):
+        """
+        Tests that get_imu_data_packets() returns an empty deque upon receiving STOP_SIGNAL.
+        """
+        imu = SinglePacketIMU(port=IMU_PORT)
+        imu.start()
+        time.sleep(0.01)  # Give the thread time to start and put the values
+        packets = imu.get_imu_data_packets()
+        assert len(packets) == 1, f"Expected 1 packet, got {len(packets)} packets"
+        imu.stop()  # puts STOP_SIGNAL in the queue
+        packets = imu.get_imu_data_packets(block=False)
+        assert not packets, f"Expected empty deque, got {len(packets)} packets"
+
+    def test_data_packets_fetch(self, random_data_mock_imu):
+        """
+        Tests whether the data fetching loop actually adds data to the queue.
+        """
+        imu = random_data_mock_imu
+        imu.start()
+        time.sleep(0.9)  # Time to start the thread
+        time.sleep(0.31)  # Time to put data
+        # Theoretical number of packets in 0.3s:
+        # T = N / 1000 => N = 0.3 * 1000 = 300
+        assert imu._queued_imu_packets.qsize() > 300, (
+            "Queue should have more than 400 packets in 0.3s"
+        )
+        imu.stop()

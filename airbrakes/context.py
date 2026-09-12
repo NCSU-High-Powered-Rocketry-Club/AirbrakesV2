@@ -96,6 +96,7 @@ class Context:
 
     def update(self) -> None:
         """Consume a batch of IMU data, process it, advance state, and log it."""
+        # TODO: add all comments back
         self.imu_data_packets = self.imu.get_imu_data_packets()
         if not self.imu_data_packets:
             return
@@ -103,11 +104,24 @@ class Context:
         self.est_data_packets = [
             packet for packet in self.imu_data_packets if isinstance(packet, EstimatedDataPacket)
         ]
-        self.processor_data_packets = []
+
+        # TODO: figure out what to do for the zeroing altitude
+        # if self.est_data_packets:
+        #     self.data_processor.update(self.est_data_packets)
+        #     if isinstance(self.state, StandbyState):
+        #         self.data_processor.zero_out_altitude()
+        #     self.processor_data_packets = self.data_processor.get_processor_data_packets()
+
+        # Update the data processor with the new data packets.
+        self.data_processor.update(self.est_data_packets)
+
+        # Get the Processor Data Packets from the data processor, this will have the same length
+        # as the number of EstimatedDataPackets in data_packets because a processor data packet is
+        # created for each estimated data packet.
+        # TODO: figure out of this is a good idea or not, it's nice because we don't want to do
+        # prediction if we don't have any estimated data packets/new processor data packets
+        # self.processor_data_packets = []
         if self.est_data_packets:
-            self.data_processor.update(self.est_data_packets)
-            if isinstance(self.state, StandbyState):
-                self.data_processor.zero_out_altitude()
             self.processor_data_packets = self.data_processor.get_processor_data_packets()
 
         apogee_prediction_packet = self.apogee_predictor.get_prediction_data_packet()
@@ -139,7 +153,8 @@ class Context:
 
     def predict_apogee(self) -> None:
         """Queue the latest processed IMU value for HPRM apogee prediction."""
-        if self.processor_data_packets:
+        # TODO: see if we should change this to processed_data_packets
+        if self.est_data_packets:
             self.apogee_predictor.update(self.processor_data_packets[-1])
 
     def generate_data_packets(self) -> None:

@@ -10,7 +10,7 @@ from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataP
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
 
 
-def make_estimated_data_packet(**kwargs) -> EstimatedDataPacket:
+def make_est_data_packet(**kwargs) -> EstimatedDataPacket:
     """Create an estimated packet whose stationary defaults require no velocity integration."""
     defaults = {
         "timestamp": 0,

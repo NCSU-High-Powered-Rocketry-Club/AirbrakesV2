@@ -207,6 +207,19 @@ lose data.
 IMU_PORT = "/dev/ttyACM0"
 """The serial port connected to the Parker LORD IMU."""
 
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends raw data packets.
+
+This is the reciprocal of the frequency.
+"""
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends estimated data packets.
+
+This is the reciprocal of the frequency.
+"""
+
 IMU_TIMEOUT_SECONDS = 3.0
 """The maximum time to wait for an IMU packet or orderly IMU shutdown."""
 

@@ -11,7 +11,7 @@ from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import LandedState, MotorBurnState, StandbyState
 from tests.auxil.utils import (
     make_context_data_packet,
-    make_estimated_data_packet,
+    make_est_data_packet,
     make_processor_data_packet,
     make_raw_data_packet,
     make_servo_data_packet,
@@ -37,7 +37,7 @@ class TestLogger:
 
     def test_prepare_rows_preserves_raw_estimated_order_and_alignment(self):
         raw_packet = make_raw_data_packet(timestamp=1, scaledAccelX=1.0)
-        estimated_packet = make_estimated_data_packet(timestamp=2, estPressureAlt=100.0)
+        estimated_packet = make_est_data_packet(timestamp=2, estPressureAlt=100.0)
         processed_packet = make_processor_data_packet(current_altitude=5.0)
 
         rows = Logger._prepare_logger_packets(
@@ -58,8 +58,8 @@ class TestLogger:
         ("imu_packets", "processor_packets"),
         [
             ([make_raw_data_packet()], [make_processor_data_packet()]),
-            ([make_estimated_data_packet()], []),
-            ([make_raw_data_packet(), make_estimated_data_packet()], []),
+            ([make_est_data_packet()], []),
+            ([make_raw_data_packet(), make_est_data_packet()], []),
         ],
     )
     def test_prepare_rows_rejects_unaligned_processor_packets(self, imu_packets, processor_packets):
