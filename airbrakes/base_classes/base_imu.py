@@ -1,15 +1,19 @@
-"""Base class for IMU devices."""
+"""
+Module defining the base class (BaseIMU) for interacting with the IMU (Inertial measurement unit) on
+the rocket.
+"""
 
 import threading
 from typing import TYPE_CHECKING
 
 from airbrakes import utils
 from airbrakes.constants import IMU_TIMEOUT_SECONDS, STOP_SIGNAL
-from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 if TYPE_CHECKING:
     import queue
     from pathlib import Path
+
+    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
 
 
 class BaseIMU:
@@ -53,7 +57,7 @@ class BaseIMU:
     @property
     def imu_packets_per_cycle(self) -> int:
         """
-        :return: The number of data packets fetched from the IMU per iteration. Useful for measuring
+        Returns the number of data packets fetched from the IMU per iteration. Useful for measuring
         the performance of our loop.
         """
         return self._imu_packets_per_cycle
@@ -61,9 +65,7 @@ class BaseIMU:
     @property
     def queued_imu_packets(self) -> int:
         """
-        Gets the amount of IMU data packets in the queue.
-
-        :return: The number of IMUDataPackets in the queue.
+        Returns the number of IMUDataPackets in the queue.
         """
         return self._queued_imu_packets.qsize()
 
@@ -111,4 +113,6 @@ class BaseIMU:
         """
         packets = []
         packets.extend(utils.get_all_packets_from_queue(self._queued_imu_packets, block=block))
-        return [packet for packet in packets if isinstance(packet, IMUDataPacket)]
+        if STOP_SIGNAL in packets:  # only used by the MockIMU
+            return []  # Makes the main update() loop exit early.
+        return packets

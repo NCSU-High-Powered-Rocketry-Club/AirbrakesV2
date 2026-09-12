@@ -116,6 +116,7 @@ class ApogeePredictor:
         finally predicting the apogee using the chosen method (e.g. HPRM).
         Runs in a separate thread.
         """
+        # TODO: this is so the mocks still work but this should be investigated if its necessary
         stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
 
         rocket = Rocket(
