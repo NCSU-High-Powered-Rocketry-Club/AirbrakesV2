@@ -60,10 +60,9 @@ class ApogeePredictor:
     @property
     def processor_data_packet_queue_size(self) -> int:
         """
-        Gets the number of data packets in the FIRM data packet queue.
+        Gets the number of processed IMU packets awaiting prediction.
 
-        :return: The number of FIRMDataPacket in the FIRM data packet
-            queue.
+        :return: The number of processed IMU packets in the prediction queue.
         """
         return self._processor_data_packet_queue.qsize()
 
@@ -84,13 +83,13 @@ class ApogeePredictor:
 
     def update(self, processor_data_packet: ProcessorDataPacket) -> None:
         """
-        Updates the apogee predictor to include the most recent FIRM data
+        Updates the apogee predictor to include the most recent processed IMU
         packet.
 
         This method should only be called during the coast phase of the
         rocket's flight.
 
-        :param processor_data_packet: The most recent FIRMDataPacket.
+        :param processor_data_packet: The most recent processed IMU packet.
         """
         self._processor_data_packet_queue.put(processor_data_packet)
 
@@ -117,6 +116,7 @@ class ApogeePredictor:
         finally predicting the apogee using the chosen method (e.g. HPRM).
         Runs in a separate thread.
         """
+        # TODO: this is so the mocks still work but this should be investigated if its necessary
         stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
 
         rocket = Rocket(

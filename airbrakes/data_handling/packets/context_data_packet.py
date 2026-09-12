@@ -1,37 +1,49 @@
-"""Module for the ContextDataPacket class."""
+"""Data produced by the coordinating flight context."""
 
 import msgspec
-
 from airbrakes.state import State  # noqa: TC001 (doesn't work with msgspec)
 
 
-class ContextDataPacket(msgspec.Struct, tag=True, array_like=True):
-    """
-    This data packet keeps data owned by the Context as well as metadata
-    about the context.
-    """
+class ContextDataPacket(msgspec.Struct, array_like=True, kw_only=True):
+    """Context state and IMU queue observability for a log row."""
 
     state: type[State]
-    """Represents the stage of flight we are in.
+    """
+    Represents the stage of flight we are in.
 
     This is the state that the state machine is in.
     """
 
-    retrieved_firm_packets: int
-    """This is the number of packets we got from FIRM, in the main thread.
+    retrieved_imu_packets: int
+    """
+    This is the number of packets we got from the IMU thread, in the main thread.
 
-    If this number is on the high end, it indicates some performance
-    issues with the main thread.
+    This number will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high
+    end, it indicates some performance issues with the main thread.
+    """
+
+    queued_imu_packets: int
+    """
+    The number of IMU data packets in the IMU queue, waiting to be fetched, by the main thread.
     """
 
     apogee_predictor_queue_size: int
-    """The number of apogee predictor data packets in the apogee predictor
-    queue, waiting to be fetched by the main thread."""
+    """
+    The number of apogee predictor data packets in the apogee predictor queue, waiting to be fetched
+    by the main thread.
+    """
+
+    imu_packets_per_cycle: int
+    """
+    The number of packets we directly fetch from the LORD IMU in the IMU thread.
+
+    This is before we put the packets in the queue to the main thread.
+    """
 
     update_timestamp_ns: int
-    """The timestamp reported by the local computer at which we processed and
-    logged this data packet.
+    """
+    The timestamp reported by the local computer at which we processed and logged this data packet.
 
-    This is used to compare the time difference between what is reported
-    by the FIRM, and when we finished processing the data packet.
+    This is used to compare the time difference between what is reported by the IMU, and when we
+    finished processing the data packet.
     """

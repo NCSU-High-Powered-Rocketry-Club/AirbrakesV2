@@ -72,15 +72,6 @@ class TestArgumentParsing:
         assert args.verbose is False
         assert args.debug is False
 
-    def test_pretend_mode(self, monkeypatch):
-        """Tests 'pretend' mode arguments."""
-        path_str = "mock/data/firm.FRM"
-        monkeypatch.setattr(sys, "argv", ["main.py", "pretend", "-p", path_str])
-
-        args = arg_parser()
-        assert args.mode == "pretend"
-        assert args.path == Path(path_str)
-
     def test_verbose_and_debug_exclusivity(self, monkeypatch, capsys):
         """Tests that the `-v` and `-d` flags are mutually exclusive."""
         monkeypatch.setattr(sys, "argv", ["main.py", "real", "-v", "-d"])
@@ -98,7 +89,7 @@ class TestArgumentParsing:
             ("real", ["-f"]),
             ("real", ["-p", "path/to/log"]),
         ],
-        ids=["real_keep_log", "real_fast_replay", "real_pretend_firm"],
+        ids=["real_keep_log", "real_fast_replay", "real_path"],
     )
     def test_invalid_args_in_real_mode(self, monkeypatch, mode, args, capsys):
         """
