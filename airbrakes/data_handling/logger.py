@@ -76,14 +76,14 @@ class Logger:
         context_data_packet: ContextDataPacket,
         servo_data_packet: ServoDataPacket,
         imu_data_packets: list[IMUDataPacket],
-        processor_data_packets: list[ProcessorDataPacket],
+        processor_data_packets: list[ProcessorDataPacket] | None,
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """Create one log row for each raw or estimated IMU packet."""
         estimated_packet_count = sum(
             isinstance(packet, EstimatedDataPacket) for packet in imu_data_packets
         )
-        if len(processor_data_packets) != estimated_packet_count:
+        if processor_data_packets is not None and len(processor_data_packets) != estimated_packet_count:
             raise ValueError("Processor data packets must align with estimated IMU data packets.")
 
         context_values = asdict(context_data_packet)
@@ -92,13 +92,13 @@ class Logger:
         prediction_values = (
             asdict(apogee_predictor_data_packet) if apogee_predictor_data_packet is not None else {}
         )
-        processed_packets = iter(processor_data_packets)
+        processed_packets = iter(processor_data_packets) if processor_data_packets is not None else None
         logger_packets: list[LoggerDataPacket] = []
 
         for imu_data_packet in imu_data_packets:
             processor_values = (
                 asdict(next(processed_packets))
-                if isinstance(imu_data_packet, EstimatedDataPacket)
+                if isinstance(imu_data_packet, EstimatedDataPacket) and processed_packets is not None
                 else {}
             )
             logger_packets.append(
