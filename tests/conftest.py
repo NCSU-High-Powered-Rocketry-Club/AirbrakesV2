@@ -8,20 +8,17 @@ from pathlib import Path
 import pytest
 
 from airbrakes.constants import (
-    ENCODER_PIN_A,
-    ENCODER_PIN_B,
     EST_DATA_PACKET_SAMPLING_RATE,
     IMU_PORT,
     RAW_DATA_PACKET_SAMPLING_RATE,
-    SERVO_CHANNEL,
 )
 from airbrakes.context import Context
-from airbrakes.hardware.imu import IMU
-from airbrakes.mock.mock_imu import MockIMU
-from airbrakes.mock.mock_servo import MockServo
 from airbrakes.data_handling.apogee_predictor import ApogeePredictor
 from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.logger import Logger
+from airbrakes.hardware.imu import IMU
+from airbrakes.mock.mock_imu import MockIMU
+from airbrakes.mock.mock_servo import MockServo
 from tests.auxil.utils import make_est_data_packet, make_raw_data_packet
 
 LOG_PATH = Path("tests/logs")
@@ -122,9 +119,11 @@ def idle_mock_imu():
     yield imu
     if imu.is_running:
         imu.stop()
+
         @pytest.fixture
         def idle_imu():
             return IdleIMU()
+
 
 @pytest.fixture(params=LAUNCH_DATA, ids=LAUNCH_DATA_IDS)
 def mock_imu(request):

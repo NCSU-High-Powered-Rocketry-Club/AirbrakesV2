@@ -1,6 +1,7 @@
 """Data produced by the coordinating flight context."""
 
 import msgspec
+
 from airbrakes.state import State  # noqa: TC001 (doesn't work with msgspec)
 
 

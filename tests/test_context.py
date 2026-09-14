@@ -17,7 +17,7 @@ from airbrakes.data_handling.data_processor import DataProcessor
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
 from airbrakes.mock.display import FlightDisplay
-from airbrakes.state import CoastState, MotorBurnState, StandbyState
+from airbrakes.state import CoastState, StandbyState
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_est_data_packet,
@@ -449,7 +449,9 @@ class TestContext:
 
         context.stop()
 
-        assert context.most_recent_apogee_predictor_data_packet, ApogeePredictorDataPacket is not None
+        assert context.most_recent_apogee_predictor_data_packet, (
+            ApogeePredictorDataPacket is not None
+        )
 
         assert context.most_recent_apogee_predictor_data_packet.predicted_apogee is not None
         assert (

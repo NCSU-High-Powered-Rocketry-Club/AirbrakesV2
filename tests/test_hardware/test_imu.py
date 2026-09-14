@@ -9,9 +9,6 @@ import pytest
 from airbrakes.constants import IMU_PORT
 from airbrakes.hardware.imu import IMU
 from airbrakes.mock.mock_imu import MockIMU
-from airbrakes.data_handling.packets.imu_data_packet import (
-    IMUDataPacket,
-)
 from tests.auxil.utils import make_est_data_packet
 
 
