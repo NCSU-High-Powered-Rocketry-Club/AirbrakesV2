@@ -178,12 +178,12 @@ NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 1000  # 1 second of data
 the OS to write to the file."""
 
 STOP_SIGNAL = "STOP"
-"""The signal to stop the FIRM device, Logger, and ApogeePredictor thread, this
+"""The signal to stop the IMU, Logger, and ApogeePredictor thread, this
 will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# FIRM outputs data at 100 hz, so T = N / 100
+# IMU packets arrive at their configured raw and estimated frequencies.
 
 IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
 """The maximum number of data packets to log in the StandbyState and
@@ -201,16 +201,27 @@ lose data.
 
 
 # -------------------------------------------------------
-# FIRM Configuration
+# IMU Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "/dev/ttyACM0"
+IMU_PORT = "/dev/ttyACM0"
+"""The serial port connected to the Parker LORD IMU."""
 
-FIRM_BAUD_RATE = 2_000_000
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends raw data packets.
 
-FIRM_SERIAL_TIMEOUT_SECONDS = 1.0
+This is the reciprocal of the frequency.
+"""
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends estimated data packets.
 
-FIRM_FREQUENCY = 100
+This is the reciprocal of the frequency.
+"""
+
+IMU_TIMEOUT_SECONDS = 3.0
+"""The maximum time to wait for an IMU packet or orderly IMU shutdown."""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -305,3 +316,9 @@ TRANSONIC_VELOCITY_METERS_PER_SECOND = 0.65 * SPEED_OF_SOUND_METERS_PER_SECOND
 
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """It takes the pressure a little bit of time to stabilize after airbrakes retract."""
+
+ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
+"""Acceleration noise threshold used before integrating vertical velocity."""
+
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000
+"""Number of standby pressure-altitude samples used for the rolling baseline."""

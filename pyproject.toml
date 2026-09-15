@@ -20,7 +20,7 @@ dependencies = [
     # `dtoverlay=pwm-2chan` in /boot/firmware/config.txt.
     "rpi-hardware-pwm>=0.3.0",
     "hprm>=0.2.0",
-    "firm-client>=1.2.2",
+    "mscl-rs==0.2.0",
     "pi-ina219>=1.4.1",
     "gpiod>=2.4.2; platform_system == 'Linux'",
     "lewanlib==0.1.1",
@@ -65,7 +65,6 @@ profiling = [
 [project.scripts]
 mock = "airbrakes.main:run_mock_flight"
 real = "airbrakes.main:run_real_flight"
-pretend = "airbrakes.main:run_pretend_flight"
 
 [build-system]
 requires = ["hatchling"]
@@ -73,7 +72,7 @@ build-backend = "hatchling.build"
 
 # UV:
 [tool.uv]
-exclude-newer-package = { firm-client = "1 second", hprm = "1 second" , lewanlib = "1 second"}
+exclude-newer-package = { hprm = "1 second", lewanlib = "1 second" }
 python-preference = "only-managed"
 
 # HATCH:
@@ -82,7 +81,7 @@ packages = ["airbrakes"]
 
 [tool.hatch.build.targets.wheel.force-include]
 # specify one launch file so that the mock flight can be run as a demo with uvx.
-"launch_data/real_firm_launches/jackpot_launch_1.csv" = "/launch_data/real_firm_launches/jackpot_launch_1.csv"
+"launch_data/purple_launch.csv" = "/launch_data/purple_launch.csv"
 
 # RUFF:
 [tool.ruff]

@@ -26,8 +26,9 @@ from airbrakes.state import (
 from tests.auxil.utils import (
     make_apogee_predictor_data_packet,
     make_context_data_packet,
-    make_firm_data_packet,
+    make_est_data_packet,
     make_processor_data_packet,
+    make_raw_data_packet,
     make_servo_data_packet,
 )
 from tests.conftest import LOG_PATH
@@ -99,7 +100,7 @@ class TestLogger:
         battery_volts="3.7",
         system_current_milliamps="500.0",
         timestamp_seconds=4,
-        retrieved_firm_packets=None,
+        retrieved_imu_packets=None,
         apogee_predictor_queue_size=None,
         update_timestamp_ns=None,
     )
@@ -150,7 +151,7 @@ class TestLogger:
         logger_packets = Logger._prepare_logger_packets(
             make_context_data_packet(state=StandbyState),
             make_servo_data_packet(current_position=0.1),
-            [make_firm_data_packet(), make_firm_data_packet()],
+            [make_est_data_packet(), make_est_data_packet()],
             [
                 make_processor_data_packet(integrating_for_altitude="F"),
                 make_processor_data_packet(integrating_for_altitude="T"),
@@ -239,7 +240,7 @@ class TestLogger:
         (
             "context_packet",
             "servo_packet",
-            "firm_data_packets",
+            "imu_data_packets",
             "apogee_predictor_data_packet",
             "file_lines",
             "expected_output",
@@ -248,8 +249,8 @@ class TestLogger:
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
-                [make_firm_data_packet()],
-                [],
+                [make_raw_data_packet()],
+                None,
                 1,
                 [
                     {
@@ -257,15 +258,15 @@ class TestLogger:
                             asdict(make_context_data_packet(state=StandbyState))
                         ),
                         **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     }
                 ],
             ),
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
-                [make_firm_data_packet()] * 2,
-                [],
+                [make_raw_data_packet()] * 2,
+                None,
                 2,
                 [
                     {
@@ -273,7 +274,7 @@ class TestLogger:
                             asdict(make_context_data_packet(state=StandbyState))
                         ),
                         **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     }
                 ]
                 * 2,
@@ -281,8 +282,8 @@ class TestLogger:
             (
                 make_context_data_packet(state=MotorBurnState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
-                [make_firm_data_packet()],
-                [],
+                [make_raw_data_packet()],
+                None,
                 1,
                 [
                     {
@@ -290,15 +291,15 @@ class TestLogger:
                             asdict(make_context_data_packet(state=MotorBurnState))
                         ),
                         **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     }
                 ],
             ),
             (
                 make_context_data_packet(state=CoastState),
                 make_servo_data_packet(current_position=SERVO_MAX_EXTENSION),
-                [make_firm_data_packet()],
-                [],
+                [make_raw_data_packet()],
+                None,
                 1,
                 [
                     {
@@ -306,16 +307,16 @@ class TestLogger:
                             asdict(make_context_data_packet(state=CoastState))
                         ),
                         **asdict(make_servo_data_packet(current_position=str(SERVO_MAX_EXTENSION))),
-                        **convert_dict_vals_to_str(make_firm_data_packet().as_dict()),
+                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
                     }
                 ],
             ),
         ],
         ids=[
-            "FIRMDataPacket",
-            "2 FIRMDataPackets",
-            "FIRMDataPacket in MotorBurn",
-            "FIRMDataPacket in Coast",
+            "ESTDataPacket",
+            "2 ESTDataPackets",
+            "ESTDataPacket in MotorBurn",
+            "ESTDataPacket in Coast",
         ],
     )
     def test_log_method(
@@ -323,7 +324,7 @@ class TestLogger:
         logger,
         context_packet,
         servo_packet,
-        firm_data_packets,
+        imu_data_packets,
         apogee_predictor_data_packet,
         file_lines,
         expected_output: list[dict],
@@ -337,7 +338,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            firm_data_packets.copy(),
+            imu_data_packets.copy(),
             None,
             apogee_predictor_data_packet,
         )
@@ -355,7 +356,7 @@ class TestLogger:
                 # Only fetch non-empty values:
                 row_dict_non_empty = {k: v for k, v in row.items() if v}
                 # Random check to make sure we aren't missing any fields
-                assert len(row_dict_non_empty) > 19
+                assert len(row_dict_non_empty) > 11
 
                 exp = expected_output[idx].copy()
                 # Replace "state" with "state_letter" so it matches the CSV output
@@ -376,7 +377,7 @@ class TestLogger:
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
         servo_packet = make_servo_data_packet(current_position=SERVO_MIN_EXTENSION)
-        firm_data_packets = [make_firm_data_packet()]
+        imu_data_packets = [make_raw_data_packet()]
         apogee_predictor_data_packets = make_apogee_predictor_data_packet()
 
         monkeypatch.setattr(logger.__class__, "stop", patched_stop)
@@ -389,7 +390,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
             None,
             apogee_predictor_data_packets,
         )
@@ -420,7 +421,7 @@ class TestLogger:
         # Setup packets
         context_packet = make_context_data_packet(state=StandbyState)
         servo_packet = make_servo_data_packet(current_position=SERVO_MIN_EXTENSION)
-        firm_data_packets = [make_firm_data_packet()]
+        imu_data_packets = [make_raw_data_packet()]
         apogee_predictor_data_packets = make_apogee_predictor_data_packet()
 
         logger.start()
@@ -429,7 +430,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
             None,
             apogee_predictor_data_packets,
         )
@@ -439,7 +440,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            firm_data_packets * (LOG_BUFFER_SIZE + 10),
+            imu_data_packets * (LOG_BUFFER_SIZE + 10),
             None,
             apogee_predictor_data_packets,
         )
@@ -472,7 +473,7 @@ class TestLogger:
         context_motor = make_context_data_packet(state=MotorBurnState)
         servo_packet = make_servo_data_packet(current_position=SERVO_MIN_EXTENSION)
 
-        firm_data_packets = [make_firm_data_packet()]
+        imu_data_packets = [make_raw_data_packet()]
         apogee_predictor_data_packet = make_apogee_predictor_data_packet()
 
         # Note: We are not monkeypatching the stop method here, because we want to test if the
@@ -484,7 +485,7 @@ class TestLogger:
         logger.log(
             context_standby,
             servo_packet,
-            firm_data_packets * (IDLE_LOG_CAPACITY + 10),
+            imu_data_packets * (IDLE_LOG_CAPACITY + 10),
             None,
             apogee_predictor_data_packet,
         )
@@ -497,7 +498,7 @@ class TestLogger:
         logger.log(
             context_motor,
             servo_packet,
-            firm_data_packets * 8,
+            imu_data_packets * 8,
             None,
             apogee_predictor_data_packet,
         )
@@ -546,7 +547,7 @@ class TestLogger:
         # Setup the specific packets for this test
         context_packet = make_context_data_packet(state=LandedState)
         servo_packet = make_servo_data_packet(current_position=SERVO_MIN_EXTENSION)
-        firm_data_packets = [make_firm_data_packet()]
+        imu_data_packets = [make_raw_data_packet()]
         apogee_predictor_data_packet = None
 
         # Note: We are not monkeypatching the stop method here, because we want to test if the
@@ -560,7 +561,7 @@ class TestLogger:
         logger.log(
             context_packet,
             servo_packet,
-            firm_data_packets * packets_to_log,
+            imu_data_packets * packets_to_log,
             None,
             apogee_predictor_data_packet,
         )
@@ -619,7 +620,7 @@ class TestLogger:
         threaded_logger,
         num_packets: int,
         expected_flush_calls: int,
-        expected_lines_in_file,
+        expected_lines_in_file: int,
         monkeypatch,
     ):
         """
@@ -629,7 +630,8 @@ class TestLogger:
         # Prepare sample data packets
         context_packet = make_context_data_packet(state=MotorBurnState)  # Avoid buffering
         servo_packet = make_servo_data_packet(current_position=SERVO_MIN_EXTENSION)
-        firm_data_packets = [make_firm_data_packet()]
+        imu_data_packets = [make_raw_data_packet()]
+        processor_data_packets = []
 
         flush_calls = 0
         # Monkeypatch Path.open to return our custom TextIOWrapper
@@ -658,8 +660,8 @@ class TestLogger:
             threaded_logger.log(
                 context_packet,
                 servo_packet,
-                firm_data_packets.copy(),
-                None,
+                imu_data_packets.copy(),
+                processor_data_packets,
                 apogee_predictor_data_packet=None,
             )
 
@@ -709,14 +711,14 @@ class TestLogger:
     #     """
     #     context_packet = make_context_data_packet(state=StandbyState)
     #     servo_packet = make_servo_data_packet(set_extension="0.1")
-    #     firm_data_packets = [make_firm_data_packet()]
+    #     imu_data_packets = [make_est_data_packet(), make_raw_data_packet()]
     #     apogee_predictor_data_packet = make_apogee_predictor_data_packet()
     #
     #     benchmark(
     #         logger.log,
     #         context_packet,
     #         servo_packet,
-    #         firm_data_packets,
+    #         imu_data_packets,
     #         apogee_predictor_data_packet,
     #     )
     #
@@ -726,13 +728,13 @@ class TestLogger:
     #     """
     #     context_packet = make_context_data_packet(state=StandbyState)
     #     servo_packet = make_servo_data_packet(set_extension="0.1")
-    #     firm_data_packets = [make_firm_data_packet()]
+    #     imu_data_packets = [make_est_data_packet(), make_raw_data_packet()]
     #     apogee_predictor_data_packet = make_apogee_predictor_data_packet()
     #
     #     benchmark(
     #         logger._prepare_logger_packets,
     #         context_packet,
     #         servo_packet,
-    #         firm_data_packets,
+    #         imu_data_packets,
     #         apogee_predictor_data_packet,
     #     )

@@ -107,7 +107,7 @@ class MotorBurnState(State):
             self.next_state()
             return
 
-        # Fallback! If FIRM data wasn't good, we need to transition to coast state:
+        # Fallback! If IMU data is unavailable, we need to transition to coast state:
         # time_since_burn = time.time() - self.start_motor_burn_time_s
 
         # if time_since_burn > 3:

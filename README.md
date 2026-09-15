@@ -252,7 +252,7 @@ For performance improvements, we _highly_ recommend switching off the Global Int
 and turning on the experimental Python Just-In-Time (JIT) compiler. This should be in the `python-settings.env` file, which `uv` will automatically load when you run `uv run ...`.
 
 ### Running Mock Launches
-Testing our code can be difficult, so we've developed a way to run mock launches based on previous flight data--the rocket pretends, in real-time, that it's flying through a previous launch.
+Testing our code can be difficult, so we've developed a way to replay previous IMU flight data in real time.
 
 To run a mock launch, run:
 ```bash
