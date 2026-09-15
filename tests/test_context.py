@@ -496,6 +496,6 @@ class TestContext:
         ab = context
         ab.imu = random_data_mock_imu
         ab.start()
-        time.sleep(0.05)  # Sleep a bit so that the FIRM queue is being filled
+        time.sleep(0.05)  # Sleep a bit so that the IMU queue is being filled
         benchmark(context.update)
         ab.stop()

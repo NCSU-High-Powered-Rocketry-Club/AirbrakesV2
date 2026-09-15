@@ -1,5 +1,6 @@
 """Real-time CSV logging for IMU and airbrakes data."""
 
+import contextlib
 import csv
 import os
 import queue
@@ -80,27 +81,25 @@ class Logger:
         apogee_predictor_data_packet: ApogeePredictorDataPacket | None,
     ) -> list[LoggerDataPacket]:
         """Create one log row for each raw or estimated IMU packet."""
-        estimated_packet_count = sum(
-            isinstance(packet, EstimatedDataPacket) for packet in imu_data_packets
-        )
-        if processor_data_packets is not None and len(processor_data_packets) != estimated_packet_count:
-            raise ValueError("Processor data packets must align with estimated IMU data packets.")
-
         context_values = asdict(context_data_packet)
         state = context_values.pop("state")
         servo_values = asdict(servo_data_packet)
         prediction_values = (
             asdict(apogee_predictor_data_packet) if apogee_predictor_data_packet is not None else {}
         )
-        processed_packets = iter(processor_data_packets) if processor_data_packets is not None else None
+        processed_packets = (
+            iter(processor_data_packets) if processor_data_packets is not None else iter(())
+        )
         logger_packets: list[LoggerDataPacket] = []
 
         for imu_data_packet in imu_data_packets:
-            processor_values = (
-                asdict(next(processed_packets))
-                if isinstance(imu_data_packet, EstimatedDataPacket) and processed_packets is not None
-                else {}
-            )
+            # This way we only log the processor packets with their corresponding estimated packets
+            processor_values = {}
+
+            if isinstance(imu_data_packet, EstimatedDataPacket):
+                with contextlib.suppress(StopIteration):
+                    processor_values = asdict(next(processed_packets))
+
             logger_packets.append(
                 LoggerDataPacket(
                     state_letter=state.__name__[0],

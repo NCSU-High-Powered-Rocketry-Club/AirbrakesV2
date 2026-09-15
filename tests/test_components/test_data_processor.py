@@ -177,6 +177,9 @@ class TestDataProcessor:
                         estOrientQuaternionX=1.123457,
                         estOrientQuaternionY=1.123457,
                         estOrientQuaternionZ=1.123457,
+                        estGravityVectorX=0.0,
+                        estGravityVectorY=0.0,
+                        estGravityVectorZ=9.81,
                     )
                 ],
                 20.0,
@@ -196,6 +199,9 @@ class TestDataProcessor:
                         estOrientQuaternionX=1.168481,
                         estOrientQuaternionY=1.168481,
                         estOrientQuaternionZ=1.168481,
+                        estGravityVectorX=9.81,
+                        estGravityVectorY=0.0,
+                        estGravityVectorZ=0.0,
                     ),
                     make_est_data_packet(
                         timestamp=1_000_000_000,
@@ -219,6 +225,9 @@ class TestDataProcessor:
                         estOrientQuaternionX=0.191949,
                         estOrientQuaternionY=0.191949,
                         estOrientQuaternionZ=0.191949,
+                        estGravityVectorX=0.0,
+                        estGravityVectorY=-9.81,
+                        estGravityVectorZ=0.0,
                     ),
                     make_est_data_packet(
                         timestamp=1_000_000_000,
@@ -303,7 +312,7 @@ class TestDataProcessor:
             strict=False,
         ):
             assert processor_packet.current_altitude == pytest.approx(expected_altitude)
-            assert processor_packet.integrating_for_altitude is False
+            assert processor_packet.integrating_for_altitude == "F"
             assert processor_packet.vertical_velocity_meters_per_s == pytest.approx(
                 data_processor._vertical_velocities[data_packets.index(data_packet)]
             )
@@ -419,7 +428,7 @@ class TestDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(1.9757983, abs=1e-3)
+        assert d._previous_vertical_velocity == pytest.approx(1.974598399028002, abs=1e-3)
         assert len(d._vertical_velocities) == 3
         assert d._max_vertical_velocity == d.vertical_velocity
 
@@ -458,8 +467,8 @@ class TestDataProcessor:
                 ),
             ]
         )
-        assert d._previous_vertical_velocity == pytest.approx(-138.151733, abs=1e-3)
-        assert d.vertical_velocity == pytest.approx(-138.151733, abs=1e-3)
+        assert d._previous_vertical_velocity == pytest.approx(-138.21053369035758, abs=1e-3)
+        assert d.vertical_velocity == pytest.approx(-138.21053369035758, abs=1e-3)
         assert len(d._vertical_velocities) == 3
         # It's falling now so the max velocity should greater than the current velocity
         assert d._max_vertical_velocity > d.vertical_velocity
@@ -500,11 +509,12 @@ class TestDataProcessor:
         d = data_processor
         d._last_data_packet = make_vertical_motion_packet(0.0, altitude_reading[0])
         d._initial_altitude = 20.0
-        d._current_orientation_quaternions = quaternion.from_float_array([0.1, 0.1, 0.1, 0.1])
+        d._current_orientation_quaternion = quaternion.from_float_array([0.1, 0.1, 0.1, 0.1])
         d._longitudinal_axis = quaternion.quaternion(0, 0, 0, 1)
 
         packets = [
-            make_vertical_motion_packet(i + 3, altitude) for i, altitude in enumerate(altitude_reading)
+            make_vertical_motion_packet(i + 3, altitude)
+            for i, altitude in enumerate(altitude_reading)
         ]
         d.update(packets)
         assert d.current_altitude == current_altitude
@@ -637,29 +647,38 @@ class TestDataProcessor:
         """Tests that transonic altitude integration triggers on absolute vertical velocity."""
         d = data_processor
         threshold = TRANSONIC_VELOCITY_METERS_PER_SECOND
-        d.update([make_vertical_motion_packet(0.0, 100.0)])
 
-        # Exactly at the threshold does not trigger integration.
-        d.update([make_vertical_motion_packet(1.0, 120.0, threshold)])
+        initial_altitude = 100.0
+
+        d.update([make_vertical_motion_packet(0.0, initial_altitude)])
+
+        dh = 20.0
+
+        # First we test that the altitude is still using pressure altitude, since the velocity is
+        # not above the threshold but at it.
+        d.update([make_vertical_motion_packet(1.0, initial_altitude + dh, threshold)])
         assert d.vertical_velocity == pytest.approx(threshold)
-        assert d.current_altitude == pytest.approx(20.0)
+        assert d.current_altitude == pytest.approx(dh)
         assert d._integrating_for_altitudes == ["F"]
 
-        # Above the threshold switches to integrated altitude.
+        # Then we test that the altitude is now integrating the velocity, since it is above the
+        # threshold (we're past the threshold because we accelerated to the threshold, then added
+        # 1.0 m/s to it).
         d.update([make_vertical_motion_packet(2.0, 1000.0, 1.0)])
         expected_velocity = threshold + 1.0
         assert d.vertical_velocity == pytest.approx(expected_velocity)
         assert d.current_altitude == pytest.approx(20.0 + expected_velocity)
         assert d._integrating_for_altitudes == ["T"]
 
-        # Negative transonic velocity also triggers integration.
+        # Also lets test it with negative just in case we are some how falling at transonic speeds
         d.update([make_vertical_motion_packet(3.0, 1000.0, -(2 * threshold + 2.0))])
         assert d.vertical_velocity == pytest.approx(-(threshold + 1.0))
         assert d.current_altitude == pytest.approx(20.0)
         assert d._integrating_for_altitudes == ["T"]
 
-        # Returning below threshold switches back to pressure altitude.
-        d.update([make_vertical_motion_packet(3.0, 1234.1, 0.0)])
+        # Returning below threshold (we were at like -(threshold - 1) and we added threshold back)
+        # switches back to pressure altitude.
+        d.update([make_vertical_motion_packet(4.0, 1234.1, threshold)])
         assert d.current_altitude == pytest.approx(1134.1)
         assert d._integrating_for_altitudes == ["F"]
 

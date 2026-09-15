@@ -222,7 +222,7 @@ class DataProcessor:
         to wait a little bit of time for the pressure to stabilize.
         """
         self._integrating_for_altitude = False
-        self._retraction_timestamp_seconds = convert_ns_to_s(self.current_timestamp)
+        self._retraction_timestamp_seconds = self.current_timestamp_seconds
 
     def _first_update(self) -> None:
         """
