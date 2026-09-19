@@ -153,7 +153,8 @@ class TestContext:
             # monkeypatched method of Logger
             calls.append("log called")
             asserts.append(len(imu_data_packets) > 10)
-            # It will be equal to the number of est packets, which is less than the number of imu packets
+            # It will be equal to the number of est packets, which is less than the number of imu
+            # packets
             asserts.append(0 < len(processor_data_packets) < len(imu_data_packets))
             asserts.append(
                 all(packet.integrating_for_altitude == "F" for packet in processor_data_packets)

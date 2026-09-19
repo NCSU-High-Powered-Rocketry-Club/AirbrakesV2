@@ -16,6 +16,7 @@ from airbrakes.constants import (
     STOP_SIGNAL,
 )
 from airbrakes.data_handling.logger import Logger
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.state import (
     CoastState,
@@ -241,82 +242,52 @@ class TestLogger:
             "context_packet",
             "servo_packet",
             "imu_data_packets",
+            "processor_data_packets",
             "apogee_predictor_data_packet",
-            "file_lines",
-            "expected_output",
         ),
         [
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
                 [make_raw_data_packet()],
+                [],
                 None,
-                1,
-                [
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=StandbyState))
-                        ),
-                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                    }
-                ],
             ),
             (
                 make_context_data_packet(state=StandbyState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
-                [make_raw_data_packet()] * 2,
+                [make_est_data_packet()],
+                [make_processor_data_packet()],
                 None,
-                2,
-                [
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=StandbyState))
-                        ),
-                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                    }
-                ]
-                * 2,
             ),
             (
                 make_context_data_packet(state=MotorBurnState),
                 make_servo_data_packet(current_position=SERVO_MIN_EXTENSION),
-                [make_raw_data_packet()],
+                [make_raw_data_packet(), make_est_data_packet()],
+                [make_processor_data_packet()],
                 None,
-                1,
-                [
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=MotorBurnState))
-                        ),
-                        **asdict(make_servo_data_packet(current_position=str(SERVO_MIN_EXTENSION))),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                    }
-                ],
+            ),
+            (
+                make_context_data_packet(state=CoastState),
+                make_servo_data_packet(current_position=SERVO_MAX_EXTENSION),
+                [make_raw_data_packet(), make_est_data_packet()],
+                [make_processor_data_packet()],
+                make_apogee_predictor_data_packet(),
             ),
             (
                 make_context_data_packet(state=CoastState),
                 make_servo_data_packet(current_position=SERVO_MAX_EXTENSION),
                 [make_raw_data_packet()],
-                None,
-                1,
-                [
-                    {
-                        **convert_dict_vals_to_str(
-                            asdict(make_context_data_packet(state=CoastState))
-                        ),
-                        **asdict(make_servo_data_packet(current_position=str(SERVO_MAX_EXTENSION))),
-                        **convert_dict_vals_to_str(asdict(make_raw_data_packet())),
-                    }
-                ],
+                [],
+                make_apogee_predictor_data_packet(),
             ),
         ],
         ids=[
-            "ESTDataPacket",
-            "2 ESTDataPackets",
-            "ESTDataPacket in MotorBurn",
-            "ESTDataPacket in Coast",
+            "standby-one-raw-no-est-or-processed-or-apogee",
+            "standby-no-raw-one-est-and-processed-no-apogee",
+            "motorburn-one-raw-one-est-and-processed-no-apogee",
+            "coast-one-raw-one-est-and-processed-one-apogee",
+            "coast-one-raw-no-est-or-processed-one-apogee",
         ],
     )
     def test_log_method(
@@ -325,9 +296,8 @@ class TestLogger:
         context_packet,
         servo_packet,
         imu_data_packets,
+        processor_data_packets,
         apogee_predictor_data_packet,
-        file_lines,
-        expected_output: list[dict],
     ):
         """
         Tests whether the log method logs the data correctly to the CSV
@@ -339,7 +309,7 @@ class TestLogger:
             context_packet,
             servo_packet,
             imu_data_packets.copy(),
-            None,
+            processor_data_packets.copy(),
             apogee_predictor_data_packet,
         )
         time.sleep(0.01)  # Give the thread time to log to file
@@ -348,26 +318,36 @@ class TestLogger:
         # Let's check the contents of the file:
         with logger.log_path.open() as f:
             reader = csv.DictReader(f)
+            actual_rows = [{key: value for key, value in row.items() if value} for row in reader]
 
-            # The row with the data packet:
-            row: dict[str, str]
-            idx = -1
-            for idx, row in enumerate(reader):
-                # Only fetch non-empty values:
-                row_dict_non_empty = {k: v for k, v in row.items() if v}
-                # Random check to make sure we aren't missing any fields
-                assert len(row_dict_non_empty) > 11
+        expected_rows = []
+        processed_packets = iter(processor_data_packets)
+        for imu_data_packet in imu_data_packets:
+            expected_row = {
+                **asdict(context_packet),
+                **asdict(servo_packet),
+                **asdict(imu_data_packet),
+                **(
+                    asdict(next(processed_packets))
+                    if isinstance(imu_data_packet, EstimatedDataPacket)
+                    else {}
+                ),
+                **(
+                    asdict(apogee_predictor_data_packet)
+                    if apogee_predictor_data_packet is not None
+                    else {}
+                ),
+            }
+            expected_row["state_letter"] = extract_state_letter(expected_row.pop("state"))
+            expected_rows.append(
+                {
+                    key: f"{value:.8f}" if isinstance(value, float) else str(value)
+                    for key, value in expected_row.items()
+                    if value is not None
+                }
+            )
 
-                exp = expected_output[idx].copy()
-                # Replace "state" with "state_letter" so it matches the CSV output
-                if "state" in exp and "state_letter" not in exp:
-                    exp["state_letter"] = extract_state_letter(exp["state"])
-                    exp.pop("state")
-
-                exp = convert_dict_vals_to_str(exp, truncation=False)
-                assert row_dict_non_empty == exp
-
-            assert idx + 1 == file_lines
+        assert actual_rows == expected_rows
 
     def test_log_capacity_exceeded_standby(self, monkeypatch, logger):
         """

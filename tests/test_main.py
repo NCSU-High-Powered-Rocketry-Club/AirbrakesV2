@@ -18,6 +18,7 @@ from airbrakes.utils import arg_parser
 
 @pytest.fixture
 def parsed_args(request, monkeypatch):
+    """Fixture to return parsed command-line arguments."""
     monkeypatch.setattr(sys, "argv", request.param)
     return arg_parser()
 
@@ -25,38 +26,68 @@ def parsed_args(request, monkeypatch):
 @pytest.mark.parametrize(
     "parsed_args",
     [
-        ["main.py", "real"],
-        ["main.py", "real", "--mock-servo"],
-        ["main.py", "mock"],
-        ["main.py", "mock", "--real-servo", "--keep-log-file", "--fast-replay"],
-        ["main.py", "mock", "--path", "launch_data/purple_launch.csv"],
+        (["main.py", "real"]),
+        (["main.py", "real", "--mock-servo"]),
+        (["main.py", "mock"]),
+        (["main.py", "mock", "--real-servo"]),
+        (["main.py", "mock", "--real-servo", "--keep-log-file"]),
+        (["main.py", "mock", "--real-servo", "--keep-log-file", "--fast-replay"]),
+        (
+            [
+                "main.py",
+                "mock",
+                "--real-servo",
+                "--keep-log-file",
+                "--fast-replay",
+                "--path",
+                "launch_data/purple_launch.csv",
+            ]
+        ),
+    ],
+    ids=[
+        "real flight with real servo",
+        "real flight with mock servo",
+        "mock flight with mock servo",
+        "mock flight with real servo",
+        "mock flight with real servo and kept log",
+        "mock flight with real servo, kept log, and fast replay",
+        "mock flight with real servo, kept log, fast replay, and specific path",
     ],
     indirect=True,
 )
-def test_create_components_for_supported_imu_modes(parsed_args, monkeypatch):
-    monkeypatch.setattr("airbrakes.hardware.servo.Servo.__init__", lambda _: None)
+def test_create_components(parsed_args, monkeypatch):
+    """Tests that create_components creates the correct components."""
+    monkeypatch.setattr(
+        "airbrakes.hardware.servo.Servo.__init__",
+        lambda *_: None,
+    )
 
     servo, imu, logger, processor, predictor = create_components(parsed_args)
 
     assert isinstance(processor, DataProcessor)
     assert isinstance(predictor, ApogeePredictor)
+
     if parsed_args.mode == "real":
         assert isinstance(imu, IMU)
         assert isinstance(logger, Logger)
         assert isinstance(servo, MockServo) is parsed_args.mock_servo
-    else:
+
+    elif parsed_args.mode == "mock":
         assert isinstance(imu, MockIMU)
         assert isinstance(logger, MockLogger)
         assert isinstance(servo, MockServo) is not parsed_args.real_servo
+
         if parsed_args.path is not None:
             assert imu.log_file_path == parsed_args.path
         else:
             assert imu.log_file_path.parent.name == "launch_data"
+
         assert imu._data_fetch_thread._args[0] is (not parsed_args.fast_replay)
         assert logger._delete_log_file is (not parsed_args.keep_log_file)
 
 
 def test_cli_only_accepts_real_and_mock_modes(monkeypatch):
+    """Tests that the CLI rejects unsupported flight modes."""
     monkeypatch.setattr(sys, "argv", ["main.py", "pretend"])
 
     with pytest.raises(SystemExit):
@@ -64,10 +95,17 @@ def test_cli_only_accepts_real_and_mock_modes(monkeypatch):
 
 
 def test_cli_parses_mock_path_as_path_object(monkeypatch):
+    """Tests that the CLI converts --path to a Path."""
     monkeypatch.setattr(
         sys,
         "argv",
-        ["main.py", "mock", "--fast-replay", "--path", "launch_data/purple_launch.csv"],
+        [
+            "main.py",
+            "mock",
+            "--fast-replay",
+            "--path",
+            "launch_data/purple_launch.csv",
+        ],
     )
 
     args = arg_parser()
@@ -77,47 +115,93 @@ def test_cli_parses_mock_path_as_path_object(monkeypatch):
     assert args.path == Path("launch_data/purple_launch.csv")
 
 
-def test_flight_entry_points_insert_their_mode(monkeypatch):
+def test_run_real_flight(monkeypatch):
+    """Tests that run_real_flight parses arguments and selects real mode."""
     calls = []
 
-    def parse_arguments():
+    def mock_arg_parser():
+        calls.append("arg_parser")
         return object()
 
-    monkeypatch.setattr("airbrakes.main.run_flight", lambda _: calls.append(sys.argv[1]))
-    monkeypatch.setattr("airbrakes.main.arg_parser", parse_arguments)
+    def mock_run_flight(args):
+        calls.append(("run_flight", args))
+
+    monkeypatch.setattr("airbrakes.main.arg_parser", mock_arg_parser)
+    monkeypatch.setattr("airbrakes.main.run_flight", mock_run_flight)
 
     run_real_flight()
+
+    assert calls[0] == "arg_parser"
+    assert calls[1][0] == "run_flight"
+    assert sys.argv[1] == "real"
+
+
+def test_run_mock_flight(monkeypatch):
+    """Tests that run_mock_flight parses arguments and selects mock mode."""
+    calls = []
+
+    def mock_arg_parser():
+        calls.append("arg_parser")
+        return object()
+
+    def mock_run_flight(args):
+        calls.append(("run_flight", args))
+
+    monkeypatch.setattr("airbrakes.main.arg_parser", mock_arg_parser)
+    monkeypatch.setattr("airbrakes.main.run_flight", mock_run_flight)
+
     run_mock_flight()
 
-    assert calls == ["real", "mock"]
+    assert calls[0] == "arg_parser"
+    assert calls[1][0] == "run_flight"
+    assert sys.argv[1] == "mock"
 
 
-def test_run_flight_wires_components_context_display_and_loop(monkeypatch, mocked_args_parser):
+def test_run_flight(monkeypatch, mocked_args_parser):
+    """Tests that run_flight wires components into the flight loop."""
+    components = (
+        object(),
+        object(),
+        object(),
+        object(),
+        object(),
+    )
+
     calls = []
-    components = (object(), object(), object(), object(), object())
 
     class StubContext:
         def __init__(self, *args):
-            calls.append(("context", args))
+            calls.append(("context", self, args))
 
-    class StubDisplay:
+    class StubFlightDisplay:
         def __init__(self, *args):
-            calls.append(("display", args))
+            calls.append(("display", self, args))
+
+    def mock_run_flight_loop(context, display, is_mock):
+        calls.append(("loop", context, display, is_mock))
 
     monkeypatch.setattr("airbrakes.main.create_components", lambda _: components)
     monkeypatch.setattr("airbrakes.main.Context", StubContext)
-    monkeypatch.setattr("airbrakes.main.FlightDisplay", StubDisplay)
-    monkeypatch.setattr(
-        "airbrakes.main.run_flight_loop",
-        lambda context, display, is_mock: calls.append(("loop", context, display, is_mock)),
-    )
-    monkeypatch.setattr("airbrakes.main.sysconfig.get_config_var", lambda _: True)
-    monkeypatch.setattr("airbrakes.main.sys._is_gil_enabled", lambda: False)
+    monkeypatch.setattr("airbrakes.main.FlightDisplay", StubFlightDisplay)
+    monkeypatch.setattr("airbrakes.main.run_flight_loop", mock_run_flight_loop)
 
     run_flight(mocked_args_parser)
 
-    assert calls[0] == ("context", components)
+    assert len(calls) == 3
+
+    # Context was constructed from the components.
+    assert calls[0][0] == "context"
+    context = calls[0][1]
+    assert calls[0][2] == components
+
+    # FlightDisplay was constructed from the Context and arguments.
     assert calls[1][0] == "display"
-    assert calls[1][1][1] is mocked_args_parser
+    display = calls[1][1]
+    assert calls[1][2][0] is context
+    assert calls[1][2][1] is mocked_args_parser
+
+    # The same Context and FlightDisplay were passed to the flight loop.
     assert calls[2][0] == "loop"
-    assert calls[2][-1] is True
+    assert calls[2][1] is context
+    assert calls[2][2] is display
+    assert calls[2][3] is True

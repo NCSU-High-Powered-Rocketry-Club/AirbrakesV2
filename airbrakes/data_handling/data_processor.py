@@ -3,7 +3,7 @@ Module for processing IMU data on a higher level.
 """
 
 from collections import deque
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -58,7 +58,7 @@ class DataProcessor:
         self._data_packets: list[EstimatedDataPacket] = []
         self._initial_altitude: np.float64 | None = None
         self._integrating_for_altitude = False
-        self._integrating_for_altitudes: list[Literal[T, F]] = ["F"]
+        self._integrating_for_altitudes: list[Literal["T", "F"]] = ["F"]
         self._last_data_packet: EstimatedDataPacket | None = None
         self._longitudinal_axis = quaternion.quaternion(0, 0, 0, 0)
         self._max_altitude = np.float64(0.0)

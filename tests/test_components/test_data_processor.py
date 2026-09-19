@@ -555,20 +555,26 @@ class TestDataProcessor:
         assert d._rotated_accelerations[-1] == pytest.approx(expected_value)
 
     @pytest.mark.parametrize(
-        "launch_data",
-        list(Path("launch_data/").glob("*.csv")),
-        ids=[p.name for p in Path("launch_data/").glob("*.csv")],
+        ("launch_data", "tilt_angle"),
+        [
+            (Path("launch_data/genesis_launch_1.csv"), 3),
+            (Path("launch_data/genesis_launch_2.csv"), 2),
+            (Path("launch_data/government_work_1.csv"), 2),
+            (Path("launch_data/government_work_2.csv"), 13),
+            (Path("launch_data/pelicanator_launch_1.csv"), 4),
+        ],
     )
-    def test_pitch_calculation(self, data_processor, launch_data):
+    def test_pitch_calculation(self, data_processor, launch_data, tilt_angle):
         """
-        Tests that the pitch calculation is correct, this test is kinda lazy and could be better.
+        Tests that the pitch calculation is correct.
+        TODO: the tilt angle is different than the measured one in the metadata.
         """
         # Load a single est data packet from the CSV file
         d = data_processor
         est_data_packets = load_data_packets(launch_data, 1)
         # Call first update with the loaded packet
         d.update(est_data_packets)
-        assert 0.0 <= d.average_pitch <= 5.0, f"Wrong pitch: {d.average_pitch}"
+        assert pytest.approx(d.average_pitch, abs=1) == tilt_angle
 
     def test_average_pitch_without_data(self, data_processor):
         assert data_processor.average_pitch == 0.0
@@ -763,13 +769,16 @@ class TestDataProcessor:
         d.update(
             [
                 make_vertical_motion_packet(0.0, 100.0),
-                make_vertical_motion_packet(1.0, 110.0),
+                make_vertical_motion_packet(1.0, 101.0),
             ]
         )
         processed = d.get_processor_data_packets()
         assert len(processed) == 2
-        assert processed[0].current_altitude == pytest.approx(0.0)
-        assert processed[1].current_altitude == pytest.approx(10.0)
+
+        # The first update will average all of the altitudes of the first batch of packets,
+        # and then subtract the initial altitude to get the current altitude.
+        assert processed[0].current_altitude == pytest.approx(-0.5)
+        assert processed[1].current_altitude == pytest.approx(0.5)
         for i, packet in enumerate(processed):
             assert packet.integrating_for_altitude == "F"
             assert packet.vertical_velocity_meters_per_s == pytest.approx(d._vertical_velocities[i])

@@ -7,6 +7,9 @@ from pathlib import Path
 import pytest
 
 from airbrakes.constants import IMU_PORT
+from airbrakes.data_handling.packets.imu_data_packet import (
+    IMUDataPacket,
+)
 from airbrakes.hardware.imu import IMU
 from airbrakes.mock.mock_imu import MockIMU
 from tests.auxil.utils import make_est_data_packet
@@ -163,4 +166,5 @@ class TestIMU:
         assert imu._queued_imu_packets.qsize() > 300, (
             "Queue should have more than 400 packets in 0.3s"
         )
+        assert isinstance(imu.get_imu_data_packets()[0], IMUDataPacket)
         imu.stop()
