@@ -111,6 +111,10 @@ filterwarnings = [
     "ignore:To reduce servo jitter", # ignore warning about pigpio
     "ignore:Covariance of the parameters", # ignore warning about scipt curve_fit
 ]
+addopts = "--benchmark-skip"  # skip benchmarks by default:
+markers = [
+    "imu_benchmark",
+]
 
 [tool.coverage.run]
 branch = true
