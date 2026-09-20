@@ -105,13 +105,6 @@ class Context:
             packet for packet in self.imu_data_packets if isinstance(packet, EstimatedDataPacket)
         ]
 
-        # TODO: figure out what to do for the zeroing altitude
-        # if self.est_data_packets:
-        #     self.data_processor.update(self.est_data_packets)
-        #     if isinstance(self.state, StandbyState):
-        #         self.data_processor.zero_out_altitude()
-        #     self.processor_data_packets = self.data_processor.get_processor_data_packets()
-
         # Update the data processor with the new data packets.
         self.data_processor.update(self.est_data_packets)
 

@@ -122,6 +122,24 @@ class TestStandbyState:
         standby_state.update()
         assert isinstance(standby_state.context.state, expected_state)
 
+    def test_update_zeroes_altitude(self, standby_state):
+        data_processor = standby_state.context.data_processor
+
+        for timestamp, pressure_altitude in [
+            (1_000_000_000, 100.0),
+            (2_000_000_000, 110.0),
+            (3_000_000_000, 105.0),
+        ]:
+            data_processor.update(
+                [make_est_data_packet(timestamp=timestamp, estPressureAlt=pressure_altitude)]
+            )
+            standby_state.update()
+
+        assert isinstance(standby_state.context.state, StandbyState)
+        assert list(data_processor._pressure_alt_buffer) == [100.0, 110.0, 105.0]
+        assert data_processor._initial_altitude == pytest.approx(105.0)
+        assert data_processor.current_altitude == pytest.approx(0.0)
+
 
 class TestMotorBurnState:
     """Tests the MotorBurnState class."""

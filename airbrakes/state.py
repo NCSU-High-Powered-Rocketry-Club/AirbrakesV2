@@ -81,6 +81,11 @@ class StandbyState(State):
             self.next_state()
             return
 
+        # If the rocket has not launched, we zero out the altitude overtime to account for drift in
+        # the barometer/pressure. At Huntsville 2026 we saw the measured altitude drift by 10 meters
+        # over the course of the standby state.
+        self.context.data_processor.zero_out_altitude()
+
     def next_state(self):
         self.context.state = MotorBurnState(self.context)
 
