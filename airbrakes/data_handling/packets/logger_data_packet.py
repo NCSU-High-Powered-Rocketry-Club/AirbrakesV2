@@ -79,6 +79,6 @@ class LoggerDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     # Other fields from ContextDataPacket
     retrieved_imu_packets: int | None = None
     queued_imu_packets: int | None = None
-    imu_packets_per_cycle: int | None = None
     apogee_predictor_queue_size: int | None = None
+    imu_packets_per_cycle: int | None = None
     update_timestamp_ns: int | None = None

@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pytest
 
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
