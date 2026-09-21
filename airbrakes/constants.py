@@ -186,7 +186,7 @@ will be put in the queue to stop the threads."""
 # T = N / (raw IMU frequency + estimated IMU frequency).
 # N = T * (raw IMU frequency + estimated IMU frequency).
 
-#TODO: Update this formula. I think this is still using firm values. Logging only .5s of data in
+# TODO: Update this formula. I think this is still using firm values. Logging only .5s of data in
 # idle states. We may want more than that.
 IDLE_LOG_CAPACITY = 500
 """The maximum number of data packets to log in the StandbyState and
@@ -196,7 +196,7 @@ This is to prevent log file sizes from growing too large. Some of our
 2023-2024 launches were >300 mb.
 """
 
-#TODO: Verify whether this buffer size should be updated for the new IMU packet rates.
+# TODO: Verify whether this buffer size should be updated for the new IMU packet rates.
 LOG_BUFFER_SIZE = 500
 """Buffer size if CAPACITY is reached.
 
@@ -220,7 +220,7 @@ The period at which the IMU sends raw data packets.
 This is the reciprocal of the frequency.
 """
 
-#TODO: Update this constant with the correct frequency used to calculate idle log capacity.
+# TODO: Update this constant with the correct frequency used to calculate idle log capacity.
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends estimated data packets.

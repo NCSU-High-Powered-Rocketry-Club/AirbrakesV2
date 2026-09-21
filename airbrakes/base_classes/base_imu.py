@@ -90,7 +90,7 @@ class BaseIMU:
         """
         Stops the IMU data-fetch thread.
 
-        :raises RuntimeError: If the IMU data fetch thread does not terminate in configured 
+        :raises RuntimeError: If the IMU data fetch thread does not terminate in configured
                               timeout.
         """
         self._requested_to_run.clear()

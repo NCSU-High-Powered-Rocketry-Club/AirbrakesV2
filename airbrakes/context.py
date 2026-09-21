@@ -201,7 +201,7 @@ class Context:
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
-        # We don't want to retract the airbrakes if they are already retracted, so we check if the 
+        # We don't want to retract the airbrakes if they are already retracted, so we check if the
         # servo is
         if abs(self.servo.servo_extension - SERVO_MIN_EXTENSION) > SERVO_EXTENSION_TOLERANCE:
             self.data_processor.prepare_for_retracting_airbrakes()

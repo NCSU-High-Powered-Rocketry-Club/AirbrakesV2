@@ -220,7 +220,7 @@ class Logger:
             self._log_queue.put(packet)
         self._log_buffer.clear()
 
-# ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
+    # ------------------------ ALL METHODS BELOW RUN IN A SEPARATE THREAD -------------------------
 
     @staticmethod
     def _truncate_floats(data: DecodedLoggerDataPacket) -> list[str | int]:
