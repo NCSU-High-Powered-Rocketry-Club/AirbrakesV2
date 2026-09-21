@@ -183,15 +183,20 @@ will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# IMU packets arrive at their configured raw and estimated frequencies.
+# T = N / (raw IMU frequency + estimated IMU frequency).
+# N = T * (raw IMU frequency + estimated IMU frequency).
 
-IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
+#TODO: Update this formula. I think this is still using firm values. Logging only .5s of data in
+# idle states. We may want more than that.
+IDLE_LOG_CAPACITY = 500
 """The maximum number of data packets to log in the StandbyState and
 LandedState.
 
 This is to prevent log file sizes from growing too large. Some of our
 2023-2024 launches were >300 mb.
 """
+
+#TODO: Verify whether this buffer size should be updated for the new IMU packet rates.
 LOG_BUFFER_SIZE = 500
 """Buffer size if CAPACITY is reached.
 
@@ -205,14 +210,17 @@ lose data.
 # -------------------------------------------------------
 
 IMU_PORT = "/dev/ttyACM0"
-"""The serial port connected to the Parker LORD IMU."""
+"""The serial port connected to the IMU."""
 
+# TODO: Verify this sampling period against the frequency used in log capacity calculations.
 RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends raw data packets.
 
 This is the reciprocal of the frequency.
 """
+
+#TODO: Update this constant with the correct frequency used to calculate idle log capacity.
 EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
 """
 The period at which the IMU sends estimated data packets.
@@ -318,7 +326,8 @@ SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """It takes the pressure a little bit of time to stabilize after airbrakes retract."""
 
 ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
-"""Acceleration noise threshold used before integrating vertical velocity."""
+"""Acceleration threshold below which measurements are treated as noise before velocity
+integration."""
 
 WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000
-"""Number of standby pressure-altitude samples used for the rolling baseline."""
+"""The number of pressure-derived altitude samples used to establish the zero-altitude baseline."""

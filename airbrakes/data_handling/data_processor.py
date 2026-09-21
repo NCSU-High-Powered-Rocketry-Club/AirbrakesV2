@@ -27,8 +27,8 @@ class DataProcessor:
     """
     Performs high level calculations on the estimated data packets received from the IMU.
 
-    Includes calculation the vertical acceleration, velocity, maximum altitude so far, etc., from
-    the set of data points.
+    Includes the calculation for the vertical acceleration, velocity, maximum altitude so far, etc.,
+    from the set of data points.
     """
 
     __slots__ = (
@@ -53,6 +53,14 @@ class DataProcessor:
     )
 
     def __init__(self) -> None:
+        """
+        Initializes the DataProcessor object.
+
+        It processes data points to calculate various things we need
+        such as the maximum altitude, vertical acceleration, velocity,
+        etc. All numbers in this class are handled with numpy. This
+        class also has properties to return some of these values.
+        """
         self._current_altitudes: npt.NDArray[np.float64] = np.array([0.0])
         self._current_orientation_quaternion: quaternion.quaternion | None = None
         self._data_packets: list[EstimatedDataPacket] = []
@@ -171,8 +179,8 @@ class DataProcessor:
 
         self._rotated_accelerations = self._calculate_rotated_accelerations()
 
-        # Gets the vertical accelerations from the rotated vertical acceleration. gravity needs to
-        # be subtracted from vertical acceleration, Then deadbanded.
+        # Remove gravity from the rotated vertical accelerations, then apply a deadband
+        # to prevent small acceleration noise from being integrated into vertical velocity.
         # Using np.where() is faster than using our deadband() function by about ~15%
         adjusted = self._rotated_accelerations - GRAVITY_METERS_PER_SECOND_SQUARED
         self._vertical_accelerations = np.where(
@@ -188,6 +196,8 @@ class DataProcessor:
             self._vertical_velocities.max(), self._max_vertical_velocity
         )
         self._max_altitude = max(self._current_altitudes.max(), self._max_altitude)
+
+        # Store the last data point for the next update.
         self._last_data_packet = data_packets[-1]
 
     def zero_out_altitude(self):
@@ -433,6 +443,10 @@ class DataProcessor:
         packets most recently passed in by update()
         :return: A list of ProcessorDataPacket objects.
         """
+        # TODO: Horizontal velocity is currently unavailable. Using an estimate of 0 m/s until a
+        # proper estimate of the velocity magnitude is available.
+        # TODO: The angular rate is currently unavailable. Using an estimate of 0 deg/s until a
+        # proper estimate of the angular rate is available.
         return [
             ProcessorDataPacket(
                 current_altitude=float(self._current_altitudes[index]),

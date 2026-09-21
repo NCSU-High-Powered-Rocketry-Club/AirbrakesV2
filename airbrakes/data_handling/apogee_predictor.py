@@ -60,9 +60,9 @@ class ApogeePredictor:
     @property
     def processor_data_packet_queue_size(self) -> int:
         """
-        Gets the number of processed IMU packets awaiting prediction.
+        Gets the number of data packets in the IMU data packet queue.
 
-        :return: The number of processed IMU packets in the prediction queue.
+        :return: The number of processed IMU packets in the IMU data packet queue.
         """
         return self._processor_data_packet_queue.qsize()
 
@@ -116,7 +116,9 @@ class ApogeePredictor:
         finally predicting the apogee using the chosen method (e.g. HPRM).
         Runs in a separate thread.
         """
-        # TODO: this is so the mocks still work but this should be investigated if its necessary
+        # The stability margin is calculated here to use updated constants in its calculation.
+        # If the stability margin was calculated in constants, it would result in a state
+        # value that may not be applicable to the rocket.
         stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
 
         rocket = Rocket(

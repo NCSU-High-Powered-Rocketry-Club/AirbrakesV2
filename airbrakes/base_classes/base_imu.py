@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
 class BaseIMU:
     """
-    Base class for production and mock IMU devices.
+    A base class for IMU devices that defines the interface for fetching data packets and provides
+    common functionality for mock and real IMU devices.
     """
 
     __slots__ = (
@@ -35,9 +36,9 @@ class BaseIMU:
         """
         Initialises object using arguments passed by the constructors of the subclasses.
 
-        :param data_fetch_thread: the threading thread for the IMU.
-        :param queued_imu_packets: the queue that the IMUDataPackets will be put into and taken
-            from.
+        :param data_fetch_thread: Thread used for fetching IMU data.
+        :param queued_imu_packets: The queue that the IMUDataPackets will be put into and taken
+                                   from.
         """
         self._queued_imu_packets = queued_imu_packets
         self._data_fetch_thread = data_fetch_thread
@@ -80,12 +81,17 @@ class BaseIMU:
 
     @property
     def log_file_path(self) -> Path | None:
-        """Return the replay log path for mock devices, if available."""
+        """
+        Returns the replay log path for mock devices, or None for real devices.
+        """
         return None
 
     def stop(self) -> None:
         """
-        Stops the thread separate from the main thread for fetching data from the IMU.
+        Stops the IMU data-fetch thread.
+
+        :raises RuntimeError: If the IMU data fetch thread does not terminate in configured 
+                              timeout.
         """
         self._requested_to_run.clear()
         # Fetch all packets which are not yet fetched and discard them, so main() does not get
@@ -99,7 +105,7 @@ class BaseIMU:
 
     def start(self) -> None:
         """
-        Starts the thread separate from the main thread for fetching data from the IMU.
+        Starts the IMU data-fetch thread.
         """
         self._requested_to_run.set()
         self._data_fetch_thread.start()
@@ -113,6 +119,6 @@ class BaseIMU:
         """
         packets = []
         packets.extend(utils.get_all_packets_from_queue(self._queued_imu_packets, block=block))
-        if STOP_SIGNAL in packets:  # only used by the MockIMU
-            return []  # Makes the main update() loop exit early.
+        if STOP_SIGNAL in packets:
+            return []
         return packets
