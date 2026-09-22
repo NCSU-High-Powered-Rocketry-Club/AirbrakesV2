@@ -15,34 +15,8 @@ BUSY_WAIT_SECONDS = 0.1
 """The amount of time to sleep while busy waiting in a loop."""
 
 # -------------------------------------------------------
-# Servo Configuration (DS3235 SG)
+# Servo Configuration (Hiwonder 85kg-cm)
 # -------------------------------------------------------
-
-SERVO_MIN_PULSE_WIDTH_US = 500
-"""The minimum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the minimum rotation of the
-servo.
-"""
-
-SERVO_MAX_PULSE_WIDTH_US = 2500
-"""The maximum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the maximum rotation of the
-servo.
-"""
-
-SERVO_MIN_ANGLE_DEGREES = 0
-"""The minimum angle that the servo can rotate to."""
-
-SERVO_MAX_ANGLE_DEGREES = 180
-"""The maximum angle that the servo can rotate to."""
-
-SERVO_OPERATING_FREQUENCY_HZ = 50
-"""The operating frequency of the servo in Hertz.
-
-It supports 50-330Hz.
-"""
 
 SERVO_CHANNEL = 2
 """The PWM channel the servo is connected to on the Pi.
@@ -58,20 +32,13 @@ SERVO_ID = 1
 BAUDRATE = 115200
 """The serial baud rate used by the Lewan servo bus."""
 
-SERVO_PORT = "/dev/ttyUSB0"
+SERVO_PORT = "/dev/ttyAMA0"
 """The port the servo is connected to on the Pi."""
-
 
 SERVO_DELAY_SECONDS = 1.0
 """This is how long the servo approximately takes to move from one extreme to
 the other.
-
-This is used for the no buzz code, to make sure the servo has enough
-time to move to the desired position.
 """
-
-SERVO_MIN_EXTENSION = 0
-"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
 AIRBRAKE_EXTENSIONS = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 """Airbrake extension fractions for the exposed-area lookup table."""
@@ -91,7 +58,10 @@ AIRBRAKE_DRAG_COEFFICIENT = 1.28
 MAX_AIRBRAKE_FORCE_LBS = 100.0
 """Maximum total airbrake load in pounds-force."""
 
-SERVO_MAX_EXTENSION = 180
+SERVO_MIN_EXTENSION = 161
+"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
+
+SERVO_MAX_EXTENSION = 192
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
 SERVO_EXTENSION_TOLERANCE = 2
@@ -129,25 +99,11 @@ The GPIO pin which controls the servo switch which is wired via Airbender
 """
 
 # -------------------------------------------------------
-# Encoder Configuration
-# -------------------------------------------------------
-
-ENCODER_RESOLUTION = 20
-"""The points per revolution of the encoder."""
-
-ENCODER_PIN_A = 23
-"""The GPIO pin that the encoder's A pin is connected to."""
-
-ENCODER_PIN_B = 24
-"""The GPIO pin that the encoder's B pin is connected to."""
-
-# -------------------------------------------------------
 # Buzzer Configuration
 # -------------------------------------------------------
 
 BUZZER_PIN = 7
 """The GPIO pin the buzzer is connected to."""
-
 
 # -------------------------------------------------------
 # Display Configuration
@@ -275,7 +231,7 @@ it to have landed.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = convert_ft_to_m(40000.0)
+TARGET_APOGEE_METERS = convert_ft_to_m(40.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend

@@ -113,7 +113,6 @@ class Context:
         self.logger.start()
         self.apogee_predictor.start()
         self.servo.start()
-        self.servo.retract_airbrakes()
 
         if wait_for_start:
             # Wait for all threads to start. It is assumed that once IMU is running, all other

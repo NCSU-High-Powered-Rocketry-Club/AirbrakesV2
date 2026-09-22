@@ -117,6 +117,9 @@ class Servo(BaseServo):
     def set_extension(self, angle: float) -> None:
         self._servo.move_time_write(angle, 0)
 
+    def set_powered(self, powered: bool) -> None:
+        self._servo.set_powered(powered)
+
     def get_servo_data_packet(self) -> ServoDataPacket:
         return ServoDataPacket(
             current_position=self.servo_extension,
