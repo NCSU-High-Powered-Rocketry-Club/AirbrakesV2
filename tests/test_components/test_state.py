@@ -152,12 +152,14 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, context):
         assert motor_burn_state.context == context
         assert issubclass(motor_burn_state.__class__, State)
-        assert motor_burn_state.start_time_seconds == 0
+        assert motor_burn_state.start_time_seconds == -1.0
 
     def test_init_launch_time_set(self, motor_burn_state):
         ctx = motor_burn_state.context
         ctx.data_processor._last_data_packet = make_est_data_packet(timestamp=1_000_000_000)
         m = MotorBurnState(ctx)
+        # This only gets set on the first update
+        m.update()
         assert m.start_time_seconds == 1
 
     def test_name(self, motor_burn_state):
