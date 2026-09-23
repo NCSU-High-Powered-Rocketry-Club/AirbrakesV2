@@ -65,6 +65,10 @@ class MockServo(BaseServo):
         """Record a commanded servo position in degrees."""
         self._servo_extension = angle
 
+    def set_powered(self, powered: bool) -> None:
+        """Set the mock servo's powered state."""
+        self._is_powered = powered
+
     def _cancel_timer(self, timer_name: str) -> None:
         """Cancel the pending timer stored under ``timer_name``, if any."""
         timer = getattr(self, timer_name)

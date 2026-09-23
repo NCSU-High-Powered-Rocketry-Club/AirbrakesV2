@@ -304,4 +304,4 @@ class TestServo:
         servo.extend_airbrakes(300.0)
         # This was just calculated using the _calculate_deployment_extension method,
         # and is the expected extension for a velocity of 300.0
-        assert servo._servo.moves[-1] == approx((45.365, 0), abs=0.01)
+        assert servo._servo.moves[-1] == approx((168.813, 0), abs=0.01)

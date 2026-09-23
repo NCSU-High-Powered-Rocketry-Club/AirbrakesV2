@@ -6,6 +6,7 @@ the rocket is in.
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from airbrakes import context
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
@@ -41,14 +42,18 @@ class State(ABC):
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
-        # At the very beginning of each state, we retract the air brakes
-        self.context.retract_airbrakes()
         self.start_time_seconds = context.data_processor.current_timestamp_seconds
+        self.start()
 
     @property
     def name(self) -> str:
         """:return: The name of the state"""
         return self.__class__.__name__
+
+    @abstractmethod
+    def start(self) -> None:
+        """Called when the state is first entered."""
+        self.start_time_seconds = self.context.data_processor.current_timestamp_seconds
 
     @abstractmethod
     def update(self) -> None:
@@ -72,6 +77,11 @@ class StandbyState(State):
     """When the rocket is on the launch rail on the ground."""
 
     __slots__ = ()
+
+    def start(self) -> None:
+        super().start()
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
 
     def update(self) -> None:
         """Checks if the rocket has launched, based on our velocity."""
@@ -98,6 +108,11 @@ class MotorBurnState(State):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
         self.context.launch_time_seconds = context.data_processor.current_timestamp_seconds
+
+    def start(self) -> None:
+        super().start()
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
 
     def update(self) -> None:
         """
@@ -133,7 +148,13 @@ class CoastState(State):
     __slots__ = ("airbrakes_extended",)
 
     def __init__(self, context: Context) -> None:
+        self.airbrakes_extended = False
         super().__init__(context)
+
+    def start(self) -> None:
+        super().start()
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
         self.airbrakes_extended = False
 
     def update(self) -> None:
@@ -177,7 +198,6 @@ class CoastState(State):
     def next_state(self) -> None:
         self.context.state = FreeFallState(self.context)
 
-
 class FreeFallState(State):
     """When the rocket is falling back to the ground after apogee."""
 
@@ -185,6 +205,11 @@ class FreeFallState(State):
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
+
+    def start(self) -> None:
+        super().start()
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
 
     def update(self) -> None:
         """
@@ -213,6 +238,11 @@ class LandedState(State):
     """When the rocket has landed."""
 
     __slots__ = ()
+
+    def start(self) -> None:
+        super().start()
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
 
     def update(self) -> None:
         """

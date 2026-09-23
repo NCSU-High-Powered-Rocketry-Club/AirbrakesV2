@@ -30,6 +30,9 @@ def state(context):
     class StateImpl(State):
         __slots__ = ()
 
+        def start(self):
+            pass
+
         def update(self):
             pass
 
