@@ -345,7 +345,7 @@ class TestCoastState:
         coast_state.update()
         assert calls == 1
         coast_state.update()
-        # we will call extend airbrakes again as we are calculating the extension based on vel each 
+        # we will call extend airbrakes again as we are calculating the extension based on vel each
         # time
         assert calls == 2
 

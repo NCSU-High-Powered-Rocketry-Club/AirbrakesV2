@@ -9,8 +9,8 @@ import statistics
 import types
 
 import msgspec
-import pytest
 import numpy as np
+import pytest
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
