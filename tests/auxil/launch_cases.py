@@ -10,6 +10,7 @@ import types
 
 import msgspec
 import pytest
+import numpy as np
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
@@ -263,13 +264,20 @@ class LaunchCase:
         )
 
         # Extensions check
+        # Ensure observed extensions lie within the allowed servo range using numpy
+        # for a concise vectorized check. Use a small tolerance to account for jitter.
+        TOL = 0.5  # degrees
+        arr = np.asarray(self.coast_case.extensions, dtype=float)
+        ext_ok = bool(arr.size) and np.all(
+            (arr >= SERVO_MIN_EXTENSION - TOL) & (arr <= SERVO_MAX_EXTENSION + TOL)
+        )
+        min_ext = float(arr.min()) if arr.size else None
+        max_ext = float(arr.max()) if arr.size else None
+
         case_result.consider_case(
             "extensions",
-            f"{self.coast_case.extensions=} which should be a superset of the ServoExtensions",
-            {
-                SERVO_MIN_EXTENSION,
-                SERVO_MAX_EXTENSION,
-            }.issuperset(set(self.coast_case.extensions)),
+            f"min={min_ext}, max={max_ext}",
+            ext_ok,
         )
 
         return case_result

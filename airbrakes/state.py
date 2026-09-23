@@ -3,6 +3,7 @@ Module for the finite state machine that represents which state of flight
 the rocket is in.
 """
 
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, override
 
@@ -170,7 +171,7 @@ class CoastState(State):
             else 0.0
         )
 
-        if apogee > TARGET_APOGEE_METERS and not self.airbrakes_extended:
+        if apogee > TARGET_APOGEE_METERS:
             self.context.extend_airbrakes(data.vertical_velocity)
             self.airbrakes_extended = True
         elif apogee <= TARGET_APOGEE_METERS and self.airbrakes_extended:
