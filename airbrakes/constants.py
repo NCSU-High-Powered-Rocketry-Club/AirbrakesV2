@@ -59,10 +59,10 @@ MAX_AIRBRAKE_FORCE_LBS = 160.0
 were able to extend/retract a couple of times at 180 lbf before eventually the servo stopped working
 maybe due to thermal throttling."""
 
-SERVO_MIN_EXTENSION = 160
+SERVO_MIN_EXTENSION = 99
 """The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
-SERVO_MAX_EXTENSION = 190
+SERVO_MAX_EXTENSION = 132
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
 SERVO_EXTENSION_TOLERANCE = 2
