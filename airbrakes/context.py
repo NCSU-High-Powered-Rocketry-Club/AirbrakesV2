@@ -1,5 +1,7 @@
 """Module which provides a high level interface to the airbrakes system on the rocket."""
 
+from __future__ import annotations
+
 import time
 from typing import TYPE_CHECKING
 

@@ -54,14 +54,15 @@ AIR_DENSITY_KG_PER_M3 = 1.225
 AIRBRAKE_DRAG_COEFFICIENT = 1.28
 """This is the flat-plate drag coefficient for the deployed airbrakes."""
 
-# TODO: get this from load test
-MAX_AIRBRAKE_FORCE_LBS = 100.0
-"""Maximum total airbrake load in pounds-force."""
+MAX_AIRBRAKE_FORCE_LBS = 150.0
+"""Maximum total airbrake load in pounds-force. When we did the load test, the airbrakes
+were able to extend/retract a couple of times at 180 lbf before eventually the servo stopped working,
+maybe due to thermal throttling."""
 
-SERVO_MIN_EXTENSION = 161
+SERVO_MIN_EXTENSION = 160
 """The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
-SERVO_MAX_EXTENSION = 192
+SERVO_MAX_EXTENSION = 190
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
 SERVO_EXTENSION_TOLERANCE = 2

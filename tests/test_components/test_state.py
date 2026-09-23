@@ -345,7 +345,9 @@ class TestCoastState:
         coast_state.update()
         assert calls == 1
         coast_state.update()
-        assert calls == 1
+        # we will call extend airbrakes again as we are calculating the extension based on vel each 
+        # time
+        assert calls == 2
 
     # def test_update_with_fallback_deploy(self, coast_state, monkeypatch):
     #     """

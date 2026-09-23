@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 import pytest
 
-from airbrakes.constants import SERVO_MAX_ANGLE_DEGREES, SERVO_MIN_ANGLE_DEGREES
+from airbrakes.constants import SERVO_MAX_EXTENSION, SERVO_MIN_EXTENSION
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from tests.auxil.launch_cases import (
     GenesisLaunchCase,
@@ -299,7 +299,7 @@ class TestIntegration:
             df.select(
                 pl.col("current_position")
                 .cast(pl.Float64)
-                .is_between(SERVO_MIN_ANGLE_DEGREES, SERVO_MAX_ANGLE_DEGREES, closed="both")
+                .is_between(SERVO_MIN_EXTENSION, SERVO_MAX_EXTENSION, closed="both")
             )
             .to_series()
             .all()
