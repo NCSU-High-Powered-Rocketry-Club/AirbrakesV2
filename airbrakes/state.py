@@ -4,7 +4,7 @@ the rocket is in.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from airbrakes.constants import (
     GROUND_ALTITUDE_METERS,
@@ -41,9 +41,7 @@ class State(ABC):
     def __init__(self, context: Context) -> None:
         """:param context: The Airbrakes Context managing the state machine."""
         self.context = context
-        # At the very beginning of each state, we retract the air brakes
-        self.context.retract_airbrakes()
-        self.start_time_seconds = context.data_processor.current_timestamp_seconds
+        self.start_time_seconds = -1.0
 
     @property
     def name(self) -> str:
@@ -58,6 +56,9 @@ class State(ABC):
         Uses the Airbrakes Context to interact with the hardware and
         decides when to move to the next state.
         """
+        # We only want this to be called on the first update loop
+        if self.start_time_seconds == -1.0:
+            self.start()
 
     @abstractmethod
     def next_state(self) -> None:
@@ -67,6 +68,14 @@ class State(ABC):
         state.
         """
 
+    def start(self) -> None:
+        """
+        Called on the state's first update loop.
+        """
+        # At the very beginning of each state, we retract the air brakes
+        self.context.retract_airbrakes()
+        self.start_time_seconds = self.context.data_processor.current_timestamp_seconds
+
 
 class StandbyState(State):
     """When the rocket is on the launch rail on the ground."""
@@ -75,6 +84,7 @@ class StandbyState(State):
 
     def update(self) -> None:
         """Checks if the rocket has launched, based on our velocity."""
+        super().update()
         data = self.context.data_processor
         # If the velocity of the rocket is above a threshold, the rocket has launched.
         if data.vertical_velocity > TAKEOFF_VELOCITY_METERS_PER_SECOND:
@@ -95,15 +105,17 @@ class MotorBurnState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: Context) -> None:
-        super().__init__(context)
-        self.context.launch_time_seconds = context.data_processor.current_timestamp_seconds
+    @override
+    def start(self) -> None:
+        super().start()
+        self.context.launch_time_seconds = self.context.data_processor.current_timestamp_seconds
 
     def update(self) -> None:
         """
         Checks to see if the velocity has decreased lower than the maximum
         velocity, indicating the motor has burned out.
         """
+        super().update()
         data = self.context.data_processor
 
         # If our current velocity is less than our max velocity, that means we have stopped
@@ -141,6 +153,7 @@ class CoastState(State):
         Checks to see if the rocket has reached apogee, indicating the start
         of free fall.
         """
+        super().update()
         # In Coast State we start predicting the apogee
         self.context.predict_apogee()
 
@@ -183,14 +196,12 @@ class FreeFallState(State):
 
     __slots__ = ()
 
-    def __init__(self, context: Context) -> None:
-        super().__init__(context)
-
     def update(self) -> None:
         """
         Check if the rocket has landed, based on our altitude and a spike in
         acceleration.
         """
+        super().update()
         data = self.context.data_processor
 
         # If our altitude is around 0, and we have an acceleration spike, we have landed
@@ -219,6 +230,7 @@ class LandedState(State):
         We use this method to stop the air brakes system after we have hit
         our log buffer.
         """
+        super().update()
         if self.context.logger.is_log_buffer_full:
             self.context.stop()
 
