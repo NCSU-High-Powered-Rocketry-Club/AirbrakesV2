@@ -15,34 +15,8 @@ BUSY_WAIT_SECONDS = 0.1
 """The amount of time to sleep while busy waiting in a loop."""
 
 # -------------------------------------------------------
-# Servo Configuration (DS3235 SG)
+# Servo Configuration (Hiwonder 85kg-cm)
 # -------------------------------------------------------
-
-SERVO_MIN_PULSE_WIDTH_US = 500
-"""The minimum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the minimum rotation of the
-servo.
-"""
-
-SERVO_MAX_PULSE_WIDTH_US = 2500
-"""The maximum pulse width in microseconds that the servo will accept.
-
-This is the pulse width that corresponds to the maximum rotation of the
-servo.
-"""
-
-SERVO_MIN_ANGLE_DEGREES = 0
-"""The minimum angle that the servo can rotate to."""
-
-SERVO_MAX_ANGLE_DEGREES = 180
-"""The maximum angle that the servo can rotate to."""
-
-SERVO_OPERATING_FREQUENCY_HZ = 50
-"""The operating frequency of the servo in Hertz.
-
-It supports 50-330Hz.
-"""
 
 SERVO_CHANNEL = 2
 """The PWM channel the servo is connected to on the Pi.
@@ -58,20 +32,13 @@ SERVO_ID = 1
 BAUDRATE = 115200
 """The serial baud rate used by the Lewan servo bus."""
 
-SERVO_PORT = "/dev/ttyUSB0"
+SERVO_PORT = "/dev/ttyAMA0"
 """The port the servo is connected to on the Pi."""
-
 
 SERVO_DELAY_SECONDS = 1.0
 """This is how long the servo approximately takes to move from one extreme to
 the other.
-
-This is used for the no buzz code, to make sure the servo has enough
-time to move to the desired position.
 """
-
-SERVO_MIN_EXTENSION = 0
-"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
 
 AIRBRAKE_EXTENSIONS = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 """Airbrake extension fractions for the exposed-area lookup table."""
@@ -87,11 +54,15 @@ AIR_DENSITY_KG_PER_M3 = 1.225
 AIRBRAKE_DRAG_COEFFICIENT = 1.28
 """This is the flat-plate drag coefficient for the deployed airbrakes."""
 
-# TODO: get this from load test
-MAX_AIRBRAKE_FORCE_LBS = 100.0
-"""Maximum total airbrake load in pounds-force."""
+MAX_AIRBRAKE_FORCE_LBS = 160.0
+"""Maximum total airbrake load in pounds-force. When we did the load test, the airbrakes
+were able to extend/retract a couple of times at 180 lbf before eventually the servo stopped working
+maybe due to thermal throttling."""
 
-SERVO_MAX_EXTENSION = 180
+SERVO_MIN_EXTENSION = 99
+"""The minimum extension of the servo, which corresponds to the airbrakes being fully retracted."""
+
+SERVO_MAX_EXTENSION = 132
 """The maximum extension of the servo, which corresponds to the airbrakes being fully extended."""
 
 SERVO_EXTENSION_TOLERANCE = 2
@@ -129,25 +100,11 @@ The GPIO pin which controls the servo switch which is wired via Airbender
 """
 
 # -------------------------------------------------------
-# Encoder Configuration
-# -------------------------------------------------------
-
-ENCODER_RESOLUTION = 20
-"""The points per revolution of the encoder."""
-
-ENCODER_PIN_A = 23
-"""The GPIO pin that the encoder's A pin is connected to."""
-
-ENCODER_PIN_B = 24
-"""The GPIO pin that the encoder's B pin is connected to."""
-
-# -------------------------------------------------------
 # Buzzer Configuration
 # -------------------------------------------------------
 
 BUZZER_PIN = 7
 """The GPIO pin the buzzer is connected to."""
-
 
 # -------------------------------------------------------
 # Display Configuration
@@ -178,20 +135,25 @@ NUMBER_OF_LINES_TO_LOG_BEFORE_FLUSHING = 1000  # 1 second of data
 the OS to write to the file."""
 
 STOP_SIGNAL = "STOP"
-"""The signal to stop the FIRM device, Logger, and ApogeePredictor thread, this
+"""The signal to stop the IMU, Logger, and ApogeePredictor thread, this
 will be put in the queue to stop the threads."""
 
 # Formula for converting number of packets to seconds and vice versa:
 # If N = total number of packets, T = total time in seconds:
-# FIRM outputs data at 100 hz, so T = N / 100
+# T = N / (raw IMU frequency + estimated IMU frequency).
+# N = T * (raw IMU frequency + estimated IMU frequency).
 
-IDLE_LOG_CAPACITY = 500  # Using the formula above, this is 5 seconds of data
+# TODO: Update this formula. I think this is still using firm values. Logging only .5s of data in
+# idle states. We may want more than that.
+IDLE_LOG_CAPACITY = 500
 """The maximum number of data packets to log in the StandbyState and
 LandedState.
 
 This is to prevent log file sizes from growing too large. Some of our
 2023-2024 launches were >300 mb.
 """
+
+# TODO: Verify whether this buffer size should be updated for the new IMU packet rates.
 LOG_BUFFER_SIZE = 500
 """Buffer size if CAPACITY is reached.
 
@@ -201,16 +163,30 @@ lose data.
 
 
 # -------------------------------------------------------
-# FIRM Configuration
+# IMU Configuration
 # -------------------------------------------------------
 
-FIRM_PORT = "/dev/ttyACM0"
+IMU_PORT = "/dev/ttyACM0"
+"""The serial port connected to the IMU."""
 
-FIRM_BAUD_RATE = 2_000_000
+# TODO: Verify this sampling period against the frequency used in log capacity calculations.
+RAW_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends raw data packets.
 
-FIRM_SERIAL_TIMEOUT_SECONDS = 1.0
+This is the reciprocal of the frequency.
+"""
 
-FIRM_FREQUENCY = 100
+# TODO: Update this constant with the correct frequency used to calculate idle log capacity.
+EST_DATA_PACKET_SAMPLING_RATE = 1 / 500
+"""
+The period at which the IMU sends estimated data packets.
+
+This is the reciprocal of the frequency.
+"""
+
+IMU_TIMEOUT_SECONDS = 3.0
+"""The maximum time to wait for an IMU packet or orderly IMU shutdown."""
 
 # -------------------------------------------------------
 # State Machine Configuration
@@ -256,7 +232,7 @@ it to have landed.
 # Apogee Prediction Configuration
 # -------------------------------------------------------
 
-TARGET_APOGEE_METERS = convert_ft_to_m(40000.0)
+TARGET_APOGEE_METERS = convert_ft_to_m(40.0)
 """The target apogee in meters that we want the rocket to reach.
 
 This is used with our bang-bang controller to determine when to extend
@@ -305,3 +281,10 @@ TRANSONIC_VELOCITY_METERS_PER_SECOND = 0.65 * SPEED_OF_SOUND_METERS_PER_SECOND
 
 SECONDS_UNTIL_PRESSURE_STABILIZATION = 0.5
 """It takes the pressure a little bit of time to stabilize after airbrakes retract."""
+
+ACCEL_DEADBAND_METERS_PER_SECOND_SQUARED = 0.35
+"""Acceleration threshold below which measurements are treated as noise before velocity
+integration."""
+
+WINDOW_SIZE_FOR_PRESSURE_ZEROING = 3000
+"""The number of pressure-derived altitude samples used to establish the zero-altitude baseline."""

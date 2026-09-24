@@ -8,8 +8,10 @@ from airbrakes.state import StandbyState
 def context_packet():
     return ContextDataPacket(
         state=StandbyState,
-        retrieved_firm_packets=0,
+        retrieved_imu_packets=0,
+        queued_imu_packets=1,
         apogee_predictor_queue_size=1,
+        imu_packets_per_cycle=2,
         update_timestamp_ns=4782379489276,
     )
 
@@ -27,9 +29,25 @@ class TestContextDataPacket:
     def test_init(self, context_packet):
         packet = context_packet
         assert packet.state.__name__[0] == self.state_letter
-        assert packet.retrieved_firm_packets == self.retrieved_imu_packets
-        assert packet.apogee_predictor_queue_size == self.apogee_predictor_queue_size
+        assert packet.queued_imu_packets == self.queued_imu_packets
+        assert packet.retrieved_imu_packets == self.retrieved_imu_packets
+        assert packet.imu_packets_per_cycle == self.imu_packets_per_cycle
         assert packet.update_timestamp_ns == self.update_timestamp
+
+    def test_context_packet_records_imu_metrics(self):
+        packet = ContextDataPacket(
+            state=StandbyState,
+            retrieved_imu_packets=2,
+            queued_imu_packets=3,
+            imu_packets_per_cycle=4,
+            apogee_predictor_queue_size=5,
+            update_timestamp_ns=6,
+        )
+        assert packet.retrieved_imu_packets == 2
+        assert packet.queued_imu_packets == 3
+        assert packet.imu_packets_per_cycle == 4
+        assert packet.apogee_predictor_queue_size == 5
+        assert packet.update_timestamp_ns == 6
 
     def test_required_args(self):
         with pytest.raises(TypeError):

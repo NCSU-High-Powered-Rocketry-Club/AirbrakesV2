@@ -27,6 +27,4 @@ class TestServoDataPacket:
 
     def test_required_args(self):
         with pytest.raises(TypeError):
-            ServoDataPacket(
-                current_position=0.5, current_temp=25.0, voltage=3.7, system_current_milliamps=500.0
-            )
+            ServoDataPacket()

@@ -1,11 +1,10 @@
 """Module for predicting apogee."""
 
-import math
 import queue
 import threading
 from typing import TYPE_CHECKING, Literal, cast
 
-from hprm import InitialState3DOF, OdeMethod, Rocket
+from hprm import InitialState1DOF, OdeMethod, Rocket
 
 from airbrakes import constants
 from airbrakes.constants import (
@@ -60,10 +59,9 @@ class ApogeePredictor:
     @property
     def processor_data_packet_queue_size(self) -> int:
         """
-        Gets the number of data packets in the FIRM data packet queue.
+        Gets the number of data packets in the IMU data packet queue.
 
-        :return: The number of FIRMDataPacket in the FIRM data packet
-            queue.
+        :return: The number of processed IMU packets in the IMU data packet queue.
         """
         return self._processor_data_packet_queue.qsize()
 
@@ -84,13 +82,13 @@ class ApogeePredictor:
 
     def update(self, processor_data_packet: ProcessorDataPacket) -> None:
         """
-        Updates the apogee predictor to include the most recent FIRM data
+        Updates the apogee predictor to include the most recent processed IMU
         packet.
 
         This method should only be called during the coast phase of the
         rocket's flight.
 
-        :param processor_data_packet: The most recent FIRMDataPacket.
+        :param processor_data_packet: The most recent processed IMU packet.
         """
         self._processor_data_packet_queue.put(processor_data_packet)
 
@@ -117,6 +115,9 @@ class ApogeePredictor:
         finally predicting the apogee using the chosen method (e.g. HPRM).
         Runs in a separate thread.
         """
+        # The stability margin is calculated here to use updated constants in its calculation.
+        # If the stability margin was calculated in constants, it would result in a state
+        # value that may not be applicable to the rocket.
         stability_margin_m = constants.ROCKET_STAB_MARGIN_CAL * constants.ROCKET_DIAMETER_M
 
         rocket = Rocket(
@@ -143,16 +144,12 @@ class ApogeePredictor:
 
             # Compute apogee given the latest state and history
 
-            initial_state = InitialState3DOF(
-                x=0.0,
-                y=most_recent_packet.current_altitude,
-                angle=math.radians(most_recent_packet.tilt_angle_degrees),
-                vx=most_recent_packet.horizontal_velocity_meters_per_s,
-                vy=most_recent_packet.vertical_velocity_meters_per_s,
-                angular_rate=math.radians(most_recent_packet.angular_rate_deg_per_s),
+            initial_state = InitialState1DOF(
+                initial_height=most_recent_packet.current_altitude,
+                initial_velocity=most_recent_packet.vertical_velocity_meters_per_s,
             )
 
-            apogee = rocket.predict_apogee_3dof(
+            apogee = rocket.predict_apogee_1dof(
                 initial_state,
                 integration_method=OdeMethod.RK45,
             )

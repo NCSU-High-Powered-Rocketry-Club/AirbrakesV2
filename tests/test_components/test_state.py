@@ -20,7 +20,7 @@ from airbrakes.state import (
     StandbyState,
     State,
 )
-from tests.auxil.utils import make_apogee_predictor_data_packet, make_firm_data_packet
+from tests.auxil.utils import make_apogee_predictor_data_packet, make_est_data_packet
 
 
 @pytest.fixture
@@ -122,6 +122,24 @@ class TestStandbyState:
         standby_state.update()
         assert isinstance(standby_state.context.state, expected_state)
 
+    def test_update_zeroes_altitude(self, standby_state):
+        data_processor = standby_state.context.data_processor
+
+        for timestamp, pressure_altitude in [
+            (1_000_000_000, 100.0),
+            (2_000_000_000, 110.0),
+            (3_000_000_000, 105.0),
+        ]:
+            data_processor.update(
+                [make_est_data_packet(timestamp=timestamp, estPressureAlt=pressure_altitude)]
+            )
+            standby_state.update()
+
+        assert isinstance(standby_state.context.state, StandbyState)
+        assert list(data_processor._pressure_alt_buffer) == [100.0, 110.0, 105.0]
+        assert data_processor._initial_altitude == pytest.approx(105.0)
+        assert data_processor.current_altitude == pytest.approx(0.0)
+
 
 class TestMotorBurnState:
     """Tests the MotorBurnState class."""
@@ -134,12 +152,14 @@ class TestMotorBurnState:
     def test_init(self, motor_burn_state, context):
         assert motor_burn_state.context == context
         assert issubclass(motor_burn_state.__class__, State)
-        assert motor_burn_state.start_time_seconds == 0
+        assert motor_burn_state.start_time_seconds == -1.0
 
     def test_init_launch_time_set(self, motor_burn_state):
         ctx = motor_burn_state.context
-        ctx.data_processor._last_data_packet = make_firm_data_packet(timestamp_seconds=1)
+        ctx.data_processor._last_data_packet = make_est_data_packet(timestamp=1_000_000_000)
         m = MotorBurnState(ctx)
+        # This only gets set on the first update
+        m.update()
         assert m.start_time_seconds == 1
 
     def test_name(self, motor_burn_state):
@@ -165,8 +185,8 @@ class TestMotorBurnState:
     def test_update(self, motor_burn_state, current_velocity, max_velocity, expected_state):
         motor_burn_state.context.data_processor._vertical_velocities = [current_velocity]
         motor_burn_state.context.data_processor._max_vertical_velocity = max_velocity
-        motor_burn_state.context.data_processor._last_data_packet = make_firm_data_packet(
-            timestamp_seconds=1.1
+        motor_burn_state.context.data_processor._last_data_packet = make_est_data_packet(
+            timestamp=1_100_000_000
         )
         motor_burn_state.update()
         assert isinstance(motor_burn_state.context.state, expected_state)
@@ -174,7 +194,7 @@ class TestMotorBurnState:
 
     # def test_motor_burn_fallback(self, motor_burn_state):
     #     """
-    #     Test that if we don't get good FIRM data, we transition to coast
+    #     Test that if we don't get good IMU data, we transition to coast
     #     state after 3 seconds.
     #     """
     #     # Test before 3 seconds have passed, we should still be in motor burn state:
@@ -325,7 +345,9 @@ class TestCoastState:
         coast_state.update()
         assert calls == 1
         coast_state.update()
-        assert calls == 1
+        # we will call extend airbrakes again as we are calculating the extension based on vel each
+        # time
+        assert calls == 2
 
     # def test_update_with_fallback_deploy(self, coast_state, monkeypatch):
     #     """
@@ -467,10 +489,10 @@ class TestFreeFallState:
         time_length,
     ):
         free_fall_state.context.data_processor._current_altitudes = [current_altitude]
-        free_fall_state.context.data_processor._vertical_accelerations = [vertical_accel]
+        free_fall_state.context.data_processor._rotated_accelerations = [vertical_accel]
         free_fall_state.start_time_seconds = 0
-        free_fall_state.context.data_processor._last_data_packet = make_firm_data_packet(
-            timestamp_seconds=time_length
+        free_fall_state.context.data_processor._last_data_packet = make_est_data_packet(
+            timestamp=int(time_length * 1e9)
         )
         free_fall_state.update()
         assert isinstance(free_fall_state.context.state, expected_state)
@@ -493,15 +515,15 @@ class TestLandedState:
     def test_name(self, landed_state):
         assert landed_state.name == "LandedState"
 
-    def test_update(self, data_processor, logger, random_data_mock_firm, servo, apogee_predictor):
+    def test_update(self, data_processor, logger, idle_mock_imu, servo, apogee_predictor):
         # Test that calling update before shutdown delay does not shut down the system:
-        context = Context(servo, random_data_mock_firm, logger, data_processor, apogee_predictor)
+        context = Context(servo, idle_mock_imu, logger, data_processor, apogee_predictor)
         context.start(wait_for_start=True)
         ls = LandedState(context)
         ls.context.state = ls
         ls.update()
         assert context.logger.is_running
-        assert context.firm.is_running
+        assert context.imu.is_running
         assert not context.logger.is_log_buffer_full
         # Test that if our log buffer is full, we shut down the system:
         context.logger._log_buffer.extend([[1]] * LOG_BUFFER_SIZE)

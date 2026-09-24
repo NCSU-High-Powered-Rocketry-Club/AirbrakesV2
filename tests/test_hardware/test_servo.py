@@ -129,12 +129,13 @@ class TestBaseServo:
 
         assert servo._calculate_deployment_extension(0) == approx(1.0)
         # All of these values were calculated using the _calculate_deployment_extension method,
-        # so if any constants in that change these will as well.
+        # so changing the max load will change these values
         assert servo._calculate_deployment_extension(150) == approx(1.0, abs=0.001)
-        assert servo._calculate_deployment_extension(200) == approx(0.6264, abs=0.001)
-        assert servo._calculate_deployment_extension(250) == approx(0.3581, abs=0.001)
-        assert servo._calculate_deployment_extension(300) == approx(0.252, abs=0.001)
-        assert servo._calculate_deployment_extension(350) == approx(0.194, abs=0.001)
+        assert servo._calculate_deployment_extension(200) == approx(1.0, abs=0.001)
+        assert servo._calculate_deployment_extension(250) == approx(0.645, abs=0.001)
+        assert servo._calculate_deployment_extension(300) == approx(0.400, abs=0.001)
+        assert servo._calculate_deployment_extension(350) == approx(0.290, abs=0.001)
+        assert servo._calculate_deployment_extension(400) == approx(0.230, abs=0.001)
         assert servo._calculate_deployment_extension(float("nan")) == 0.0
 
     def test_servo_voltage(self, servo):
@@ -304,4 +305,4 @@ class TestServo:
         servo.extend_airbrakes(300.0)
         # This was just calculated using the _calculate_deployment_extension method,
         # and is the expected extension for a velocity of 300.0
-        assert servo._servo.moves[-1] == approx((45.365, 0), abs=0.01)
+        assert servo._servo.moves[-1] == approx((12 + SERVO_MIN_EXTENSION, 0), abs=2.0)

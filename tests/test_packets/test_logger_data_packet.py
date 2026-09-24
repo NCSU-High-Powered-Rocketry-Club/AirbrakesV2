@@ -1,8 +1,12 @@
 import pytest
-from firm_client import FIRMDataPacket
 
 from airbrakes.data_handling.packets.apogee_predictor_data_packet import ApogeePredictorDataPacket
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import (
+    EstimatedDataPacket,
+    IMUDataPacket,
+    RawDataPacket,
+)
 from airbrakes.data_handling.packets.logger_data_packet import LoggerDataPacket
 from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
 from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
@@ -30,7 +34,9 @@ class TestLoggerDataPacket:
 
         context_dp_fields = set(ContextDataPacket.__struct_fields__)
         servo_dp_fields = set(ServoDataPacket.__struct_fields__)
-        firm_dp_fields = set(FIRMDataPacket.__struct_fields__)
+        raw_dp_fields = set(RawDataPacket.__struct_fields__)
+        estimated_dp_fields = set(EstimatedDataPacket.__struct_fields__)
+        imu_dp_fields = set(IMUDataPacket.__struct_fields__)
         processor_dp_fields = set(ProcessorDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = set(ApogeePredictorDataPacket.__struct_fields__)
 
@@ -42,8 +48,8 @@ class TestLoggerDataPacket:
         assert servo_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {servo_dp_fields - log_dp_fields}"
         )
-        assert firm_dp_fields.issubset(log_dp_fields), (
-            f"Missing fields: {firm_dp_fields - log_dp_fields}"
+        assert imu_dp_fields.issubset(log_dp_fields), (
+            f"Missing fields: {imu_dp_fields - log_dp_fields}"
         )
         assert processor_dp_fields.issubset(log_dp_fields), (
             f"Missing fields: {processor_dp_fields - log_dp_fields}"
@@ -56,7 +62,9 @@ class TestLoggerDataPacket:
         )
 
         available_fields = (
-            firm_dp_fields.union(context_dp_fields_mapped)
+            imu_dp_fields.union(raw_dp_fields)
+            .union(estimated_dp_fields)
+            .union(context_dp_fields_mapped)
             .union(servo_dp_fields)
             .union(processor_dp_fields)
             .union(apogee_predictor_dp_fields)
@@ -76,17 +84,34 @@ class TestLoggerDataPacket:
         log_dp_fields = list(LoggerDataPacket.__struct_fields__)
         context_dp_fields = list(ContextDataPacket.__struct_fields__)
         servo_dp_fields = list(ServoDataPacket.__struct_fields__)
-        firm_dp_fields = list(FIRMDataPacket.__struct_fields__)
-        processor_dp_fields = [
-            field for field in ProcessorDataPacket.__struct_fields__ if field != "timestamp_seconds"
-        ]
+        imu_dp_fields = list(IMUDataPacket.__struct_fields__)
+        raw_dp_fields = list(RawDataPacket.__struct_fields__)[len(imu_dp_fields) :]
+        estimated_dp_fields = list(EstimatedDataPacket.__struct_fields__)[len(imu_dp_fields) :]
+        processor_dp_fields = list(ProcessorDataPacket.__struct_fields__)
         apogee_predictor_dp_fields = list(ApogeePredictorDataPacket.__struct_fields__)
 
         assert (
             log_dp_fields[1:]
             == servo_dp_fields
-            + firm_dp_fields
+            + imu_dp_fields
+            + raw_dp_fields
+            + estimated_dp_fields
             + processor_dp_fields
             + apogee_predictor_dp_fields
             + context_dp_fields[1:]
         )
+
+    def test_logger_packet_contains_all_source_and_derived_fields(self):
+        logger_fields = set(LoggerDataPacket.__struct_fields__)
+        assert set(RawDataPacket.__struct_fields__).issubset(logger_fields)
+        assert set(IMUDataPacket.__struct_fields__).issubset(logger_fields)
+        assert set(EstimatedDataPacket.__struct_fields__).issubset(logger_fields)
+        assert set(ApogeePredictorDataPacket.__struct_fields__).issubset(logger_fields)
+        assert set(ProcessorDataPacket.__struct_fields__).issubset(logger_fields)
+        assert set(ServoDataPacket.__struct_fields__).issubset(logger_fields)
+        context_fields_mapped = {
+            ("state_letter" if field == "state" else field)
+            for field in ContextDataPacket.__struct_fields__
+        }
+        assert context_fields_mapped.issubset(logger_fields)
+        assert "state_letter" in logger_fields

@@ -95,6 +95,14 @@ class BaseServo(ABC):
         """
 
     @abstractmethod
+    def set_powered(self, powered: bool) -> None:
+        """
+        Command the servo to be powered or unpowered.
+
+        :param powered: Whether the servo should be powered.
+        """
+
+    @abstractmethod
     def get_servo_data_packet(self) -> ServoDataPacket:
         """Create a data packet containing the current servo telemetry."""
 
