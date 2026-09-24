@@ -1,6 +1,5 @@
 """Module for predicting apogee."""
 
-import math
 import queue
 import threading
 from typing import TYPE_CHECKING, Literal, cast
