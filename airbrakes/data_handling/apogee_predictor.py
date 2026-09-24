@@ -5,7 +5,7 @@ import queue
 import threading
 from typing import TYPE_CHECKING, Literal, cast
 
-from hprm import InitialState3DOF, OdeMethod, Rocket
+from hprm import InitialState1DOF, OdeMethod, Rocket
 
 from airbrakes import constants
 from airbrakes.constants import (
@@ -145,16 +145,12 @@ class ApogeePredictor:
 
             # Compute apogee given the latest state and history
 
-            initial_state = InitialState3DOF(
-                x=0.0,
-                y=most_recent_packet.current_altitude,
-                angle=math.radians(most_recent_packet.tilt_angle_degrees),
-                vx=most_recent_packet.horizontal_velocity_meters_per_s,
-                vy=most_recent_packet.vertical_velocity_meters_per_s,
-                angular_rate=math.radians(most_recent_packet.angular_rate_deg_per_s),
+            initial_state = InitialState1DOF(
+                initial_height=most_recent_packet.current_altitude,
+                initial_velocity=most_recent_packet.vertical_velocity_meters_per_s,
             )
 
-            apogee = rocket.predict_apogee_3dof(
+            apogee = rocket.predict_apogee_1dof(
                 initial_state,
                 integration_method=OdeMethod.RK45,
             )

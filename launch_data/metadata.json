@@ -392,10 +392,10 @@
       "rocket_Cd": 0.55,
       "rocket_cross_sectional_area_m2": 0.008107319665,
       "rocket_dry_mass_kg": 4.67,
-      "rocket_diameter_m": null,
-      "rocket_moment_of_inertia_kg_m2": null,
-      "rocket_stab_margin_cal": null,
-      "rocket_cl_a": null,
+      "rocket_diameter_m": 0.1016,
+      "rocket_moment_of_inertia_kg_m2": 1.45,
+      "rocket_stab_margin_cal": 3.91,
+      "rocket_cl_a": 0.2,
       "motor": ""
     },
     "launch_site": {
@@ -435,10 +435,10 @@
       "rocket_Cd": 0.55,
       "rocket_cross_sectional_area_m2": 0.008107319665,
       "rocket_dry_mass_kg": 4.77,
-      "rocket_diameter_m": null,
-      "rocket_moment_of_inertia_kg_m2": null,
-      "rocket_stab_margin_cal": null,
-      "rocket_cl_a": null,
+      "rocket_diameter_m": 0.1016,
+      "rocket_moment_of_inertia_kg_m2": 1.45,
+      "rocket_stab_margin_cal": 3.77,
+      "rocket_cl_a": 0.2,
       "motor": ""
     },
     "launch_site": {
