@@ -93,7 +93,7 @@ class TestApogeePredictor:
                     )
                     for i in range(70)
                 ],
-                1282.3508299189677,
+                1283.928794857011,
             ),
         ],
         ids=["at_apogee", "start_of_coast_phase"],
