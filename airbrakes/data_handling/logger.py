@@ -45,7 +45,7 @@ class Logger:
     for the file to be written to. By running it in a separate thread,
     we can continue to log data while the main loop is running. It uses
     Python's csv module to append the airbrakes' current state,
-    extension, and FIRM data to our logs in real time.
+    extension, and IMU data to our logs in real time.
     """
 
     __slots__ = ("_log_buffer", "_log_counter", "_log_queue", "_log_thread", "log_path")

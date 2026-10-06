@@ -19,7 +19,7 @@ class ContextDataPacket(msgspec.Struct, array_like=True, kw_only=True):
     """
     This is the number of packets we got from the IMU thread, in the main thread.
 
-    This number will always be below constants.MAX_FETCHED_PACKETS. If this number is on the high
+    This number will always be below constants.LOG_BUFFER_SIZE. If this number is on the high
     end, it indicates some performance issues with the main thread.
     """
 

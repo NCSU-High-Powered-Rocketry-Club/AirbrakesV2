@@ -60,7 +60,7 @@ class MockIMU(BaseIMU):
         Initializes the object that pretends to be an IMU for testing purposes by reading from a log
         file.
 
-        We don't call the parent constructor as the IMU class has different parameters, so we
+        We call the parent constructor as the IMU class has different parameters, so we
         manually start the thread that fetches data from the log file.
         :param real_time_replay: Whether to mimmick a real flight by sleeping for a set period, or
             run at full speed, e.g. for using it in the CI.
@@ -165,7 +165,7 @@ class MockIMU(BaseIMU):
 
         :param start_index: The index to start reading the file from. Must be a keyword argument.
         :param kwargs: Additional keyword arguments to pass to pl.read_csv.
-        :return: The DataFrame or TextFileReader object.
+        :return: The LazyFrame object.
         """
         self._headers: list[str] = pl.scan_csv(self._log_file_path).collect_schema().names()
         # Get the columns that are common between the data packet and the log file, since we only
