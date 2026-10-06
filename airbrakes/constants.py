@@ -154,7 +154,7 @@ This is to prevent log file sizes from growing too large. Some of our
 """
 
 # TODO: Verify whether this buffer size should be updated for the new IMU packet rates.
-LOG_BUFFER_SIZE = 500
+LOG_BUFFER_SIZE = 5000
 """Buffer size if CAPACITY is reached.
 
 Once the state changes, this buffer will be logged to make sure we don't
