@@ -32,7 +32,6 @@ from textual.widgets import (
 from textual_plot import HiResMode, PlotWidget
 
 from airbrakes.constants import (
-    SERVO_MAX_ANGLE_DEGREES,
     SERVO_MAX_EXTENSION,
     SERVO_MIN_EXTENSION,
 )
@@ -359,9 +358,9 @@ class ServoControllerApp(App[None]):
                 self.servo.set_extension(float(SERVO_MAX_EXTENSION))
             # Tuning mode — save current tuning angle as a named constant
             case "set-min-btn":
-                self._save_constant("MIN_EXTENSION", self._tuning_angle)
+                self._save_constant("SERVO_MIN_EXTENSION", self._tuning_angle)
             case "set-max-btn":
-                self._save_constant("MAX_EXTENSION", self._tuning_angle)
+                self._save_constant("SERVO_MAX_EXTENSION", self._tuning_angle)
 
     # ── Internal helpers ─────────────────────────────────────────────────
     def _sync_angle_from_servo(self) -> None:
@@ -382,7 +381,7 @@ class ServoControllerApp(App[None]):
 
     def _nudge_angle(self, delta: float) -> None:
         """Move the servo by *delta* degrees (tuning mode only)."""
-        new_angle = max(0.0, min(float(SERVO_MAX_ANGLE_DEGREES), self._tuning_angle + delta))
+        new_angle = max(0.0, min(float(SERVO_MAX_EXTENSION), self._tuning_angle + delta))
         self._tuning_angle = new_angle
         self.current_angle = new_angle
         self._apply_angle(new_angle)

@@ -11,7 +11,7 @@ class ProcessorDataPacket(msgspec.Struct, array_like=True, tag=True):
     """
     Represents a packet of processed data from the IMUDataProcessor.
 
-    All of these fields are the processed values of the Firms's estimated data.
+    All of these fields are processed values derived from estimated IMU data.
     """
 
     current_altitude: float

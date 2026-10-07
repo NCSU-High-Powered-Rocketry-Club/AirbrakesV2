@@ -6,7 +6,7 @@ controls the extension of the airbrakes.
 import contextlib
 
 with contextlib.suppress(ImportError):
-    import gpiod
+    import gpiod  # ty: ignore[unresolved-import]  # Linux-only optional dependency.
 
 from lewanlib.bus import ServoBus
 from lewanlib.servo import Servo as LewanServo
@@ -116,6 +116,9 @@ class Servo(BaseServo):
 
     def set_extension(self, angle: float) -> None:
         self._servo.move_time_write(angle, 0)
+
+    def set_powered(self, powered: bool) -> None:
+        self._servo.set_powered(powered)
 
     def get_servo_data_packet(self) -> ServoDataPacket:
         return ServoDataPacket(

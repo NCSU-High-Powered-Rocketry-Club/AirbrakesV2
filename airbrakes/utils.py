@@ -186,27 +186,4 @@ def arg_parser() -> argparse.Namespace:
         type=Path,
     )
 
-    pretend_parser = subparsers.add_parser(
-        "pretend",
-        parents=[common_parser],
-        help="Run in pretend mode with FIRM outputting data from a previous log.",
-        description="Configuration for the pretend replay.",
-    )
-
-    pretend_parser.add_argument(
-        "-p",
-        "--path",
-        help="Define the pathname of flight data to use in the pretend replay. "
-        "Must be a .FRM file.",
-        type=Path,
-        required=True,
-    )
-
-    pretend_parser.add_argument(
-        "-s", "--real-servo", action="store_true", help="Run the pretend with the real servo."
-    )
-    pretend_parser.add_argument(
-        "-l", "--keep-log-file", action="store_true", help="Keep the log file after replay stops."
-    )
-
     return parser.parse_args()

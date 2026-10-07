@@ -1,7 +1,6 @@
-"""
-Module which provides a high level interface to the air brakes system on the
-rocket.
-"""
+"""Module which provides a high level interface to the airbrakes system on the rocket."""
+
+from __future__ import annotations
 
 import time
 from typing import TYPE_CHECKING
@@ -12,12 +11,11 @@ from airbrakes.constants import (
     SERVO_MIN_EXTENSION,
 )
 from airbrakes.data_handling.packets.context_data_packet import ContextDataPacket
+from airbrakes.data_handling.packets.imu_data_packet import EstimatedDataPacket
 from airbrakes.state import StandbyState
 
 if TYPE_CHECKING:
-    from firm_client import FIRMDataPacket
-
-    from airbrakes.base_classes.base_firm import BaseFIRM
+    from airbrakes.base_classes.base_imu import BaseIMU
     from airbrakes.base_classes.base_servo import BaseServo
     from airbrakes.data_handling.apogee_predictor import ApogeePredictor
     from airbrakes.data_handling.data_processor import DataProcessor
@@ -25,6 +23,7 @@ if TYPE_CHECKING:
     from airbrakes.data_handling.packets.apogee_predictor_data_packet import (
         ApogeePredictorDataPacket,
     )
+    from airbrakes.data_handling.packets.imu_data_packet import IMUDataPacket
     from airbrakes.data_handling.packets.processor_data_packet import ProcessorDataPacket
     from airbrakes.data_handling.packets.servo_data_packet import ServoDataPacket
     from airbrakes.state import State
@@ -34,7 +33,7 @@ class Context:
     """
     Manages the state machine for the rocket's air brakes system, keeping
     track of the current state and communicating with hardware like the servo
-    and FIRM. This class is what connects the state machine to the hardware.
+    and IMU. This class is what connects the state machine to the hardware.
 
     Read more about the state machine pattern here:
     https://www.tutorialspoint.com/design_pattern/state_pattern.htm
@@ -44,8 +43,9 @@ class Context:
         "apogee_predictor",
         "context_data_packet",
         "data_processor",
-        "firm",
-        "firm_data_packets",
+        "est_data_packets",
+        "imu",
+        "imu_data_packets",
         "launch_time_seconds",
         "logger",
         "most_recent_apogee_predictor_data_packet",
@@ -59,7 +59,7 @@ class Context:
     def __init__(
         self,
         servo: BaseServo,
-        firm: BaseFIRM,
+        imu: BaseIMU,
         logger: Logger,
         data_processor: DataProcessor,
         apogee_predictor: ApogeePredictor,
@@ -72,37 +72,36 @@ class Context:
         state of the air brakes system.
         :param servo: The servo object that controls the extension of
             the air brakes. This can be a real servo or a mocked servo.
-        :param firm: The FIRM object that reads data from the rocket's
-            FIRM device. This can be a real FIRM or mock FIRM.
+        :param imu: The IMU object that reads data from the rocket's
+            IMU device. This can be a real IMU or mock IMU.
         :param logger: The logger object that logs data to a CSV file.
             This can be a real logger or a mock logger.
         :param data_processor: The DataProcessor object that processes
-            FIRM data on a higher level.
+            IMU data on a higher level.
         :param apogee_predictor: The ApogeePredictor object that
             predicts what the apogee of the rocket will be based on the
             processed data.
         """
-        self.servo: BaseServo = servo
-        self.firm: BaseFIRM = firm
-        self.logger: Logger = logger
-        self.data_processor: DataProcessor = data_processor
-        self.apogee_predictor: ApogeePredictor = apogee_predictor
-        # The rocket starts in the StandbyState
+        self.servo = servo
+        self.imu = imu
+        self.logger = logger
+        self.data_processor = data_processor
+        self.apogee_predictor = apogee_predictor
+        # The rocket starts in the StandbyState.
         self.state: State = StandbyState(self)
 
         self.shutdown_requested = False
-        self.firm_data_packets: list[FIRMDataPacket] = []
+        self.imu_data_packets: list[IMUDataPacket] = []
+        self.est_data_packets: list[EstimatedDataPacket] = []
         self.processor_data_packets: list[ProcessorDataPacket] = []
         self.most_recent_apogee_predictor_data_packet: ApogeePredictorDataPacket | None = None
         self.context_data_packet: ContextDataPacket | None = None
         self.servo_data_packet: ServoDataPacket | None = None
-
-        # Keeps track of the launch time, used for calculating convergence time
-        self.launch_time_seconds: float = 0
+        self.launch_time_seconds = 0.0
 
     def start(self, wait_for_start: bool = False) -> None:
         """
-        Starts the threads for the FIRM device, Logger, and ApogeePredictor.
+        Starts the threads for the IMU device, Logger, and ApogeePredictor.
 
         This is called before the main loop starts.
 
@@ -112,17 +111,16 @@ class Context:
             prevent data races where the main loop tries to access data
             before the threads have started.
         """
-        self.firm.start()
+        self.imu.start()
         self.logger.start()
         self.apogee_predictor.start()
         self.servo.start()
-        self.servo.retract_airbrakes()
 
         if wait_for_start:
-            # Wait for all processes to start. It is assumed that once FIRM is running, all other
-            # processes are also running. Even if they aren't it's okay, since the queue will fill
-            # up with data and the other processes will start processing it when they wake up.
-            while not self.firm.is_running:
+            # Wait for all threads to start. It is assumed that once IMU is running, all other
+            # threads are also running. Even if they aren't it's okay, since the queue will fill
+            # up with data and the other threads will start when they wake up.
+            while not self.imu.is_running:
                 time.sleep(BUSY_WAIT_SECONDS)
 
     def stop(self) -> None:
@@ -130,14 +128,14 @@ class Context:
         Handles shutting down the air brakes system.
 
         This will cause the main loop to break. It retracts the air
-        brakes and stops the processes for the FIRM device, Logger, and
+        brakes and stops the processes for the IMU device, Logger, and
         ApogeePredictor.
         """
         if self.shutdown_requested:
             return
         self.shutdown_requested = True
         self.retract_airbrakes()
-        self.firm.stop()
+        self.imu.stop()
         self.logger.stop()
         self.apogee_predictor.stop()
         self.servo.stop()
@@ -148,19 +146,30 @@ class Context:
         essentially the "brain" of the air brakes system, where all the data is
         collected, processed, and logged, and the state machine is updated.
 
-        This function retrieves the latest FIRM data packets, processes
+        This function retrieves the latest IMU data packets, processes
         them, updates the state machine, generates data packets for
         logging, and logs all relevant data.
         """
-        self.firm_data_packets = self.firm.get_data_packets()
-        # This should not happen generally, since we wait for FIRM packets. Only happens at the end
-        # of the flight in a mock replay.
-        if not self.firm_data_packets:
+        self.imu_data_packets = self.imu.get_imu_data_packets()
+        if not self.imu_data_packets:
             return
 
-        # Update the data processor with the new data packets.
-        self.data_processor.update(self.firm_data_packets)
-        self.processor_data_packets = self.data_processor.get_processor_data_packets()
+        # Filter the IMU data packets to keep only estimated data packets.
+        self.est_data_packets = [
+            packet for packet in self.imu_data_packets if isinstance(packet, EstimatedDataPacket)
+        ]
+
+        # Update the data processor with the new estimated data packets.
+        self.data_processor.update(self.est_data_packets)
+
+        # Gets the processor data packets generated by the data processor.
+        # One processor data packet is created for each estimated data packet.
+        # TODO: Determine whether processor_data_packets should be cleared when no new estimated
+        # data packets are available to prevent apogee prediction from using stale processor data.
+        # self.processor_data_packets = []
+        if self.est_data_packets:
+            self.processor_data_packets = self.data_processor.get_processor_data_packets()
+
         # Gets the most recent Apogee Predictor Data Packets, this will only have new data if we are
         # in coast and have called predict_apogee(), and the apogee predictor has had time to
         # process the data and predict the apogee.
@@ -171,17 +180,17 @@ class Context:
         # Update the state machine based on the latest processed data
         self.state.update()
 
-        # Create Context Data Packets representing the current state of the air brakes system:
+        # Create context Data Packets representing the current state of the air brakes system:
         self.generate_data_packets()
 
-        # This if statement is just because my ide is being dumb, but it's not possible for them to
-        # be None here
+        # This if statement is just because of an IDE issue, it's not possible for them to be
+        # None here
         if self.context_data_packet is not None and self.servo_data_packet is not None:
-            # Logs all the packet types from each of the relevant processes
+            # Logs all the packet types from each of the relevant processes.
             self.logger.log(
                 self.context_data_packet,
                 self.servo_data_packet,
-                self.firm_data_packets,
+                self.imu_data_packets,
                 self.processor_data_packets,
                 self.most_recent_apogee_predictor_data_packet,
             )
@@ -193,7 +202,8 @@ class Context:
 
     def retract_airbrakes(self) -> None:
         """Retracts the air brakes to the minimum extension."""
-        # We don't want to retract the air brakes if they are already retracted
+        # We don't want to retract the airbrakes if they are already retracted, so we check if the
+        # servo is
         if abs(self.servo.servo_extension - SERVO_MIN_EXTENSION) > SERVO_EXTENSION_TOLERANCE:
             self.data_processor.prepare_for_retracting_airbrakes()
             self.servo.retract_airbrakes()
@@ -206,8 +216,9 @@ class Context:
         This should only be called in the coast state, before we start
         controlling the air brakes.
         """
-        if self.processor_data_packets:
-            # We pass in the most recent FIRM Data Packet to the apogee predictor
+        # TODO: see if we should change this to processed_data_packets
+        if self.est_data_packets:
+            # We pass in the most recent IMU Data Packet to the apogee predictor.
             self.apogee_predictor.update(self.processor_data_packets[-1])
 
     def generate_data_packets(self) -> None:
@@ -219,7 +230,9 @@ class Context:
         # Airbrakes program.
         self.context_data_packet = ContextDataPacket(
             state=type(self.state),
-            retrieved_firm_packets=len(self.firm_data_packets),
+            retrieved_imu_packets=len(self.imu_data_packets),
+            queued_imu_packets=self.imu.queued_imu_packets,
+            imu_packets_per_cycle=self.imu.imu_packets_per_cycle,
             apogee_predictor_queue_size=self.apogee_predictor.processor_data_packet_queue_size,
             update_timestamp_ns=time.time_ns(),
         )
